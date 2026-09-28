@@ -1,11 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isPublicPath } from "@/lib/paths";
+import type { Database } from "@/lib/database.types";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
-  const supabase = createServerClient(
+  const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
@@ -36,7 +37,11 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = `?next=${encodeURIComponent(pathname + search)}`;
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    // Carry over any cookies Supabase cleared/refreshed on supabaseResponse -- otherwise a
+    // signed-out visitor's stale/expired cookies would survive the redirect unchanged.
+    supabaseResponse.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
+    return redirectResponse;
   }
 
   // Return supabaseResponse as-is so refreshed cookies reach the browser.

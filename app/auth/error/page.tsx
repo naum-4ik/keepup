@@ -22,9 +22,16 @@ export default async function AuthErrorPage({
           This link was already used or has expired. Request a new one.
         </p>
       )}
-      <p className="text-sm text-muted-foreground">
-        Links expire after an hour and must be opened in the same browser you requested them from.
-      </p>
+      {reason === "denied" && (
+        <p className="text-sm text-muted-foreground">
+          Sign-in was cancelled or not allowed. Try again.
+        </p>
+      )}
+      {reason !== "denied" && (
+        <p className="text-sm text-muted-foreground">
+          Links expire after an hour and must be opened in the same browser you requested them from.
+        </p>
+      )}
       <Button asChild className="h-11">
         <Link href="/login">Back to sign in</Link>
       </Button>

@@ -1,9 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ProfileInput } from "@/lib/profile-schema";
+import type { Database } from "@/lib/database.types";
 
 // Returns null when saved, otherwise a message to show the user.
 export async function saveProfile(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   userId: string,
   input: ProfileInput,
   opts: { markOnboarded: boolean },

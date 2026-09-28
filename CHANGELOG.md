@@ -14,7 +14,3 @@
 ### Bug Fixes
 
 * explain failed sign-in links instead of dropping users on the home page ([#16](https://github.com/naum-4ik/keepup/issues/16)) ([f75ea84](https://github.com/naum-4ik/keepup/commit/f75ea84c9ff7ac8d87a5ae75c9ed31e37ae29255))
-
-## Changelog
-
-Release notes appear here once the first version ships.
