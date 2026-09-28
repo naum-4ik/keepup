@@ -12,12 +12,12 @@ export default async function LoginPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const params = await searchParams;
-  const reason = authErrorReason(params);
-  if (reason) redirect(`/auth/error?reason=${reason}`);
-
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (data?.claims) redirect("/today");
+
+  const reason = authErrorReason(params);
+  if (reason) redirect(`/auth/error?reason=${reason}`);
 
   const nextPath = safeNextPath(params.next);
   const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";

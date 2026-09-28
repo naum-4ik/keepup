@@ -98,3 +98,11 @@ test("an expired magic link at the callback explains itself", async ({ page }) =
   await expect(page).toHaveURL(/\/auth\/error\?reason=expired$/);
   await expect(page.getByText("already used or has expired")).toBeVisible();
 });
+
+test("a signed-in user clicking a stale link still lands on Today", async ({ page }) => {
+  await signInWithMagicLink(page, uniqueEmail());
+  await completeOnboarding(page);
+
+  await page.goto("/?error=access_denied&error_code=otp_expired");
+  await expect(page).toHaveURL(/\/today$/);
+});

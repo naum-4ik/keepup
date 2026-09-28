@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import type { AuthErrorReason } from "@/lib/auth-errors";
 
-const KNOWN_REASONS = new Set(["expired", "denied", "unknown"]);
+function isAuthErrorReason(value: string | undefined): value is AuthErrorReason {
+  return value === "expired" || value === "denied" || value === "unknown";
+}
 
 export default async function AuthErrorPage({
   searchParams,
@@ -9,7 +12,7 @@ export default async function AuthErrorPage({
   searchParams: Promise<{ reason?: string }>;
 }) {
   const { reason: rawReason } = await searchParams;
-  const reason = rawReason && KNOWN_REASONS.has(rawReason) ? rawReason : null;
+  const reason = isAuthErrorReason(rawReason) ? rawReason : null;
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-4 px-4">
