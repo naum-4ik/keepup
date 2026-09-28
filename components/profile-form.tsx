@@ -33,7 +33,7 @@ export function ProfileForm({ action, timezones, defaults, detectTimezone = fals
   const errors = state.status === "error" ? (state.errors ?? {}) : {};
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form key={JSON.stringify(values)} action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="displayName">Display name</Label>
         <Input
