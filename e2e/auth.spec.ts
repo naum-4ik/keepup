@@ -78,6 +78,12 @@ test("a broken sign-in link shows a helpful error", async ({ page }) => {
   await expect(page.getByText("same browser")).toBeVisible();
 });
 
+test("Google sign-in denied or disallowed shows a helpful error", async ({ page }) => {
+  await page.goto("/auth/error?reason=denied");
+  await expect(page.getByText("cancelled")).toBeVisible();
+  await expect(page.getByText("same browser")).not.toBeVisible();
+});
+
 const EXPIRED_ERROR_QUERY = "error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired";
 
 test("an expired magic link on the landing page explains itself", async ({ page }) => {
