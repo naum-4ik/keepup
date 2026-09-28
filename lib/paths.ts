@@ -1,0 +1,15 @@
+const PUBLIC_EXACT = new Set(["/"]);
+const PUBLIC_PREFIXES = ["/login", "/auth", "/whats-new"];
+
+export function isPublicPath(pathname: string): boolean {
+  if (PUBLIC_EXACT.has(pathname)) return true;
+  return PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+// Only same-site absolute paths. Browsers strip tabs/newlines and treat "\" as "/",
+// so "/\t/evil.com" and "/\\evil.com" would become protocol-relative URLs.
+export function safeNextPath(next: string | null | undefined, fallback = "/today"): string {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return fallback;
+  if (/[\u0000-\u001f\\]/.test(next)) return fallback;
+  return next;
+}
