@@ -10,19 +10,21 @@ export default async function OnboardingPage() {
 
   return (
     <main className="mx-auto max-w-sm px-4 py-10">
-      <h1 className="text-2xl font-semibold">Welcome to Keepup</h1>
+      <h1 className="text-2xl font-bold">Welcome to Keepup</h1>
       <p className="mb-6 text-sm text-muted-foreground">A few basics and you&apos;re in.</p>
-      <ProfileForm
-        action={completeOnboarding}
-        timezones={listTimezones()}
-        defaults={{
-          displayName: profile.display_name,
-          timezone: profile.timezone,
-          reminderHour: String(profile.reminder_hour),
-        }}
-        detectTimezone
-        submitLabel="Continue"
-      />
+      <div className="rounded-2xl bg-card p-6 shadow-soft">
+        <ProfileForm
+          action={completeOnboarding}
+          timezones={listTimezones()}
+          defaults={{
+            displayName: profile.display_name,
+            timezone: profile.timezone,
+            reminderHour: String(profile.reminder_hour),
+          }}
+          detectTimezone
+          submitLabel="Continue"
+        />
+      </div>
     </main>
   );
 }

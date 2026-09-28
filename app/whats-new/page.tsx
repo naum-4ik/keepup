@@ -11,12 +11,12 @@ export default async function WhatsNewPage() {
   const html = await marked.parse(markdown);
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10">
-      <Link href="/profile" className="text-sm text-muted-foreground">
+    <main className="mx-auto max-w-md px-4 py-10">
+      <Link href="/profile" className="text-sm font-semibold text-muted-foreground">
         ← Back
       </Link>
       <article
-        className="prose prose-neutral mt-4 dark:prose-invert"
+        className="prose prose-neutral mt-4 max-w-none dark:prose-invert"
         dangerouslySetInnerHTML={{ __html: html }}
       />
     </main>

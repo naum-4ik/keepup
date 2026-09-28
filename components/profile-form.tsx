@@ -15,7 +15,7 @@ type Props = {
   submitLabel: string;
 };
 
-const selectClass = "h-9 rounded-md border border-input bg-background px-3 text-sm";
+const selectClass = "h-11 rounded-lg border border-input bg-transparent px-3 text-sm";
 const initialState: ProfileFormState = { status: "idle" };
 
 export function ProfileForm({ action, timezones, defaults, detectTimezone = false, submitLabel }: Props) {
@@ -37,7 +37,9 @@ export function ProfileForm({ action, timezones, defaults, detectTimezone = fals
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="displayName">Display name</Label>
+        <Label htmlFor="displayName" className="font-semibold">
+          Display name
+        </Label>
         <Input
           id="displayName"
           name="displayName"
@@ -54,7 +56,9 @@ export function ProfileForm({ action, timezones, defaults, detectTimezone = fals
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="timezone">Time zone</Label>
+        <Label htmlFor="timezone" className="font-semibold">
+          Time zone
+        </Label>
         <select
           key={values.timezone}
           id="timezone"
@@ -79,7 +83,9 @@ export function ProfileForm({ action, timezones, defaults, detectTimezone = fals
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="reminderHour">Daily reminder</Label>
+        <Label htmlFor="reminderHour" className="font-semibold">
+          Daily reminder
+        </Label>
         <select
           key={values.reminderHour}
           id="reminderHour"
@@ -113,7 +119,7 @@ export function ProfileForm({ action, timezones, defaults, detectTimezone = fals
         </p>
       )}
 
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" disabled={pending} className="h-11">
         {pending ? "Saving…" : submitLabel}
       </Button>
     </form>
