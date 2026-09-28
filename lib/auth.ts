@@ -2,14 +2,12 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import type { Database } from "@/lib/database.types";
 
-export type Profile = {
-  id: string;
-  display_name: string;
-  timezone: string;
-  reminder_hour: number;
-  onboarded_at: string | null;
-};
+export type Profile = Pick<
+  Database["public"]["Tables"]["profiles"]["Row"],
+  "id" | "display_name" | "timezone" | "reminder_hour" | "onboarded_at"
+>;
 
 export async function requireUser() {
   const supabase = await createClient();
