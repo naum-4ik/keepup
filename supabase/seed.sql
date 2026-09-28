@@ -1,4 +1,8 @@
--- Test helpers for pgTAP. Local and CI only; never deployed.
+-- Test helpers for pgTAP. seed.sql only runs on `supabase start` / `supabase db reset`; it must
+-- never be pushed to a hosted project with `supabase db push --include-seed` or
+-- `supabase seed --linked`. The `tests` schema is also not exposed through the API (PostgREST only
+-- serves the schemas listed in config.toml's [api].schemas), so these helpers aren't callable from
+-- outside the database even if seed.sql were mistakenly applied somewhere it shouldn't be.
 create schema if not exists tests;
 grant usage on schema tests to anon, authenticated;
 

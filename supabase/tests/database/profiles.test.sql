@@ -1,12 +1,16 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(23);
 
 select tests.create_user('00000000-0000-0000-0000-00000000000a', 'ana@example.com', '{"full_name":"Ana Example"}');
 select tests.create_user('00000000-0000-0000-0000-00000000000b', 'bob@example.com');
 select tests.create_user('00000000-0000-0000-0000-00000000000c', null);
 select tests.create_user('00000000-0000-0000-0000-00000000000d', 'long@example.com',
   jsonb_build_object('full_name', repeat('x', 60)));
+select lives_ok(
+  $$select tests.create_user('00000000-0000-0000-0000-00000000000e', 'edge@example.com',
+      jsonb_build_object('full_name', repeat('m', 39) || ' '))$$,
+  'signup succeeds when the 40th character of full_name is a space');
 
 -- Guard: every table in public has RLS on.
 select is(
@@ -22,6 +26,8 @@ select is((select display_name from public.profiles where id = '00000000-0000-00
   'Guest', 'a user without email or name is Guest');
 select is((select char_length(display_name) from public.profiles where id = '00000000-0000-0000-0000-00000000000d'),
   40, 'long names are truncated to 40 characters');
+select is((select display_name from public.profiles where id = '00000000-0000-0000-0000-00000000000e'),
+  repeat('m', 39), 'a cut landing on a space is trimmed again, leaving no trailing space');
 select ok((select timezone = 'UTC' and reminder_hour = 20 and onboarded_at is null
            from public.profiles where id = '00000000-0000-0000-0000-00000000000a'),
   'new profiles default to UTC, 20:00, not onboarded');
@@ -48,6 +54,15 @@ select throws_ok(
 select throws_ok(
   $$update public.profiles set display_name = '   ' where id = '00000000-0000-0000-0000-00000000000a'$$,
   '23514', null, 'blank display names are rejected');
+select throws_ok(
+  $$update public.profiles set display_name = 'Ana ' where id = '00000000-0000-0000-0000-00000000000a'$$,
+  '23514', null, 'a stored value with trailing spaces is rejected');
+select throws_ok(
+  $$update public.profiles set display_name = E'\t' where id = '00000000-0000-0000-0000-00000000000a'$$,
+  '23514', null, 'a tab-only display name is rejected');
+select throws_ok(
+  $$update public.profiles set display_name = chr(160) where id = '00000000-0000-0000-0000-00000000000a'$$,
+  '23514', null, 'an NBSP-only display name is rejected');
 select throws_ok(
   $$insert into public.profiles (id, display_name) values ('00000000-0000-0000-0000-00000000000b', 'x')$$,
   '42501', null, 'users cannot insert profiles');

@@ -2,8 +2,15 @@
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 
-const raw = execFileSync("npx", ["supabase", "status", "-o", "json"], { encoding: "utf8" });
-const status = JSON.parse(raw.slice(raw.indexOf("{")));
+let status;
+try {
+  const raw = execFileSync("npx", ["supabase", "status", "-o", "json"], { encoding: "utf8" });
+  status = JSON.parse(raw.slice(raw.indexOf("{")));
+} catch {
+  console.error("Could not read the local Supabase status. Is `npx supabase start` running?");
+  process.exit(1);
+}
+
 const url = status.API_URL;
 const key = status.PUBLISHABLE_KEY ?? status.ANON_KEY;
 
