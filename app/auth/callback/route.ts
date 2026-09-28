@@ -1,9 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { authErrorReason } from "@/lib/auth-errors";
 import { safeNextPath } from "@/lib/paths";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
+  const reason = authErrorReason(searchParams);
+  if (reason) return NextResponse.redirect(new URL(`/auth/error?reason=${reason}`, origin));
+
   const code = searchParams.get("code");
   const next = safeNextPath(searchParams.get("next"));
 

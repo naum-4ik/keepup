@@ -77,3 +77,24 @@ test("a broken sign-in link shows a helpful error", async ({ page }) => {
   await expect(page).toHaveURL(/\/auth\/error$/);
   await expect(page.getByText("same browser")).toBeVisible();
 });
+
+const EXPIRED_ERROR_QUERY = "error=access_denied&error_code=otp_expired&error_description=Email+link+is+invalid+or+has+expired";
+
+test("an expired magic link on the landing page explains itself", async ({ page }) => {
+  await page.goto(`/?${EXPIRED_ERROR_QUERY}`);
+  await expect(page).toHaveURL(/\/auth\/error\?reason=expired$/);
+  await expect(page.getByText("already used or has expired")).toBeVisible();
+  await expect(page.getByText("same browser")).toBeVisible();
+});
+
+test("an expired magic link on the login page explains itself", async ({ page }) => {
+  await page.goto("/login?error=access_denied&error_code=otp_expired");
+  await expect(page).toHaveURL(/\/auth\/error\?reason=expired$/);
+  await expect(page.getByText("already used or has expired")).toBeVisible();
+});
+
+test("an expired magic link at the callback explains itself", async ({ page }) => {
+  await page.goto("/auth/callback?error=access_denied&error_code=otp_expired");
+  await expect(page).toHaveURL(/\/auth\/error\?reason=expired$/);
+  await expect(page.getByText("already used or has expired")).toBeVisible();
+});
