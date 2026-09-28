@@ -1,6 +1,4 @@
-import { signOut } from "@/app/auth/actions";
 import { ProfileForm } from "@/components/profile-form";
-import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
 import { listTimezones } from "@/lib/timezones";
 import { updateProfile } from "./actions";
@@ -23,11 +21,6 @@ export default async function SettingsPage() {
           submitLabel="Save"
         />
       </div>
-      <form action={signOut}>
-        <Button type="submit" variant="outline" className="h-11 w-full">
-          Sign out
-        </Button>
-      </form>
     </section>
   );
 }

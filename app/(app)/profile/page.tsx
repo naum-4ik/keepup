@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { signOut } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
 import { appVersion } from "@/lib/version";
@@ -27,6 +28,11 @@ export default async function ProfilePage() {
       <Button asChild variant="outline" className="h-11">
         <Link href="/profile/settings">Settings</Link>
       </Button>
+      <form action={signOut}>
+        <Button type="submit" variant="outline" className="h-11 w-full">
+          Sign out
+        </Button>
+      </form>
       <footer className="text-center text-xs text-muted-foreground">
         <Link href="/whats-new" className="font-mono underline-offset-4 hover:underline">
           {appVersion()}
