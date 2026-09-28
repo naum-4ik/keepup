@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(23);
+select plan(25);
 
 select tests.create_user('00000000-0000-0000-0000-00000000000a', 'ana@example.com', '{"full_name":"Ana Example"}');
 select tests.create_user('00000000-0000-0000-0000-00000000000b', 'bob@example.com');
@@ -9,8 +9,13 @@ select tests.create_user('00000000-0000-0000-0000-00000000000d', 'long@example.c
   jsonb_build_object('full_name', repeat('x', 60)));
 select lives_ok(
   $$select tests.create_user('00000000-0000-0000-0000-00000000000e', 'edge@example.com',
-      jsonb_build_object('full_name', repeat('m', 39) || ' '))$$,
-  'signup succeeds when the 40th character of full_name is a space');
+      jsonb_build_object('full_name', repeat('m', 39) || ' ' || repeat('z', 5)))$$,
+  'signup succeeds when the 40-character cut lands on an interior space');
+-- split_part(' @example.com', '@', 1) is a single space: a whitespace-only local part, exercising
+-- the same btrim-before-nullif fallback as full_name/name.
+select lives_ok(
+  $$select tests.create_user('00000000-0000-0000-0000-00000000000f', ' @example.com')$$,
+  'signup succeeds when the email local part is whitespace-only');
 
 -- Guard: every table in public has RLS on.
 select is(
@@ -27,7 +32,9 @@ select is((select display_name from public.profiles where id = '00000000-0000-00
 select is((select char_length(display_name) from public.profiles where id = '00000000-0000-0000-0000-00000000000d'),
   40, 'long names are truncated to 40 characters');
 select is((select display_name from public.profiles where id = '00000000-0000-0000-0000-00000000000e'),
-  repeat('m', 39), 'a cut landing on a space is trimmed again, leaving no trailing space');
+  repeat('m', 39), 'a cut landing on an interior space is trimmed again, leaving no trailing space');
+select is((select display_name from public.profiles where id = '00000000-0000-0000-0000-00000000000f'),
+  'Guest', 'a whitespace-only email local part falls back to Guest');
 select ok((select timezone = 'UTC' and reminder_hour = 20 and onboarded_at is null
            from public.profiles where id = '00000000-0000-0000-0000-00000000000a'),
   'new profiles default to UTC, 20:00, not onboarded');

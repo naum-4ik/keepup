@@ -57,7 +57,7 @@ begin
   candidate := coalesce(
     nullif(btrim(new.raw_user_meta_data ->> 'full_name', ws), ''),
     nullif(btrim(new.raw_user_meta_data ->> 'name', ws), ''),
-    nullif(split_part(coalesce(new.email, ''), '@', 1), ''),
+    nullif(btrim(split_part(coalesce(new.email, ''), '@', 1), ws), ''),
     'Guest'
   );
   -- Cutting to 40 characters can land on a space (e.g. when the 40th character of a long name
