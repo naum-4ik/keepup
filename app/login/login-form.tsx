@@ -14,7 +14,7 @@ export function LoginForm({ next }: { next: string }) {
 
   if (state.status === "sent") {
     return (
-      <p role="status" className="rounded-md border p-4 text-sm">
+      <p role="status" className="text-sm">
         {state.message}
       </p>
     );
@@ -23,7 +23,9 @@ export function LoginForm({ next }: { next: string }) {
   return (
     <form action={action} className="flex flex-col gap-3">
       <input type="hidden" name="next" value={next} />
-      <Label htmlFor="email">Email</Label>
+      <Label htmlFor="email" className="font-semibold">
+        Email
+      </Label>
       <Input
         id="email"
         name="email"
@@ -37,7 +39,7 @@ export function LoginForm({ next }: { next: string }) {
           {state.message}
         </p>
       )}
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" disabled={pending} className="h-11">
         {pending ? "Sending…" : "Email me a link"}
       </Button>
     </form>

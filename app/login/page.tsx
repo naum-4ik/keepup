@@ -21,18 +21,20 @@ export default async function LoginPage({
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 px-4">
       <div>
-        <h1 className="text-2xl font-semibold">Sign in to Keepup</h1>
+        <h1 className="text-2xl font-bold">Sign in to Keepup</h1>
         <p className="text-sm text-muted-foreground">Habits, together.</p>
       </div>
-      {googleEnabled && (
-        <form action={signInWithGoogle}>
-          <input type="hidden" name="next" value={nextPath} />
-          <Button type="submit" variant="outline" className="w-full">
-            Continue with Google
-          </Button>
-        </form>
-      )}
-      <LoginForm next={nextPath} />
+      <div className="flex flex-col gap-4 rounded-2xl bg-card p-6 shadow-soft">
+        {googleEnabled && (
+          <form action={signInWithGoogle}>
+            <input type="hidden" name="next" value={nextPath} />
+            <Button type="submit" variant="outline" className="h-11 w-full">
+              Continue with Google
+            </Button>
+          </form>
+        )}
+        <LoginForm next={nextPath} />
+      </div>
     </main>
   );
 }

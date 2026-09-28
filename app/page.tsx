@@ -11,10 +11,13 @@ export default async function Home() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 px-4 text-center">
       <div>
-        <h1 className="text-4xl font-bold tracking-tight">Keepup</h1>
+        <h1 className="text-4xl font-bold tracking-tight">
+          <span className="text-foreground">Keep</span>
+          <span className="text-primary">up</span>
+        </h1>
         <p className="mt-2 text-muted-foreground">Habits, together.</p>
       </div>
-      <Button asChild size="lg">
+      <Button asChild size="lg" className="h-11">
         <Link href="/login">Sign in</Link>
       </Button>
     </main>

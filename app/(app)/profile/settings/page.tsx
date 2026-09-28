@@ -10,19 +10,21 @@ export default async function SettingsPage() {
 
   return (
     <section className="flex flex-col gap-8 py-6">
-      <h1 className="text-xl font-semibold">Settings</h1>
-      <ProfileForm
-        action={updateProfile}
-        timezones={listTimezones()}
-        defaults={{
-          displayName: profile.display_name,
-          timezone: profile.timezone,
-          reminderHour: String(profile.reminder_hour),
-        }}
-        submitLabel="Save"
-      />
+      <h1 className="text-xl font-bold">Settings</h1>
+      <div className="rounded-2xl bg-card p-6 shadow-soft">
+        <ProfileForm
+          action={updateProfile}
+          timezones={listTimezones()}
+          defaults={{
+            displayName: profile.display_name,
+            timezone: profile.timezone,
+            reminderHour: String(profile.reminder_hour),
+          }}
+          submitLabel="Save"
+        />
+      </div>
       <form action={signOut}>
-        <Button type="submit" variant="outline" className="w-full">
+        <Button type="submit" variant="outline" className="h-11 w-full">
           Sign out
         </Button>
       </form>
