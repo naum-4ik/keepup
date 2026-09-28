@@ -37,7 +37,11 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = `?next=${encodeURIComponent(pathname + search)}`;
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    // Carry over any cookies Supabase cleared/refreshed on supabaseResponse -- otherwise a
+    // signed-out visitor's stale/expired cookies would survive the redirect unchanged.
+    supabaseResponse.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie));
+    return redirectResponse;
   }
 
   // Return supabaseResponse as-is so refreshed cookies reach the browser.
