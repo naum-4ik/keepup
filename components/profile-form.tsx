@@ -42,32 +42,60 @@ export function ProfileForm({ action, timezones, defaults, detectTimezone = fals
           defaultValue={values.displayName}
           required
           aria-invalid={Boolean(errors.displayName)}
+          aria-describedby={errors.displayName ? "displayName-error" : undefined}
         />
-        {errors.displayName && <p className="text-sm text-destructive">{errors.displayName}</p>}
+        {errors.displayName && (
+          <p id="displayName-error" className="text-sm text-destructive">
+            {errors.displayName}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="timezone">Time zone</Label>
-        <select id="timezone" name="timezone" ref={timezoneRef} defaultValue={values.timezone} className={selectClass}>
+        <select
+          id="timezone"
+          name="timezone"
+          ref={timezoneRef}
+          defaultValue={values.timezone}
+          className={selectClass}
+          aria-invalid={Boolean(errors.timezone)}
+          aria-describedby={errors.timezone ? "timezone-error" : undefined}
+        >
           {timezones.map((tz) => (
             <option key={tz} value={tz}>
               {tz.replaceAll("_", " ")}
             </option>
           ))}
         </select>
-        {errors.timezone && <p className="text-sm text-destructive">{errors.timezone}</p>}
+        {errors.timezone && (
+          <p id="timezone-error" className="text-sm text-destructive">
+            {errors.timezone}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="reminderHour">Daily reminder</Label>
-        <select id="reminderHour" name="reminderHour" defaultValue={values.reminderHour} className={selectClass}>
+        <select
+          id="reminderHour"
+          name="reminderHour"
+          defaultValue={values.reminderHour}
+          className={selectClass}
+          aria-invalid={Boolean(errors.reminderHour)}
+          aria-describedby={errors.reminderHour ? "reminderHour-error" : undefined}
+        >
           {Array.from({ length: 24 }, (_, h) => (
             <option key={h} value={String(h)}>
               {String(h).padStart(2, "0")}:00
             </option>
           ))}
         </select>
-        {errors.reminderHour && <p className="text-sm text-destructive">{errors.reminderHour}</p>}
+        {errors.reminderHour && (
+          <p id="reminderHour-error" className="text-sm text-destructive">
+            {errors.reminderHour}
+          </p>
+        )}
       </div>
 
       {state.status === "error" && state.message && (
