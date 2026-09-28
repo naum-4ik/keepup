@@ -24,7 +24,14 @@ export function LoginForm({ next }: { next: string }) {
     <form action={action} className="flex flex-col gap-3">
       <input type="hidden" name="next" value={next} />
       <Label htmlFor="email">Email</Label>
-      <Input id="email" name="email" type="email" autoComplete="email" required />
+      <Input
+        id="email"
+        name="email"
+        type="email"
+        autoComplete="email"
+        required
+        defaultValue={state.status === "error" ? state.email : undefined}
+      />
       {state.status === "error" && (
         <p role="alert" className="text-sm text-destructive">
           {state.message}

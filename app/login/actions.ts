@@ -13,7 +13,7 @@ function callbackUrl(origin: string, next: string) {
 
 export async function signInWithEmail(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim();
-  if (!isValidEmail(email)) return { status: "error", message: "Enter a valid email address." };
+  if (!isValidEmail(email)) return { status: "error", message: "Enter a valid email address.", email };
 
   const next = safeNextPath(String(formData.get("next") ?? ""));
   const supabase = await createClient();
@@ -21,7 +21,8 @@ export async function signInWithEmail(_prev: LoginState, formData: FormData): Pr
     email,
     options: { emailRedirectTo: callbackUrl(await requestOrigin(), next) },
   });
-  if (error) return { status: "error", message: "Couldn't send the link. Try again in a minute." };
+  if (error)
+    return { status: "error", message: "Couldn't send the link. Try again in a minute.", email };
 
   return { status: "sent", message: `Check ${email} for a sign-in link. Open it in this browser.` };
 }

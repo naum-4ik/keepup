@@ -13,7 +13,12 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet, headers) {
+          // headers (the no-cache/no-store/must-revalidate set) go unused here:
+          // reading cookies via next/headers already marks this route dynamic,
+          // so Next never lets a CDN cache it; proxy.ts is what fronts a CDN
+          // and applies these headers to the responses it returns.
+          void headers;
           try {
             cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
           } catch {
