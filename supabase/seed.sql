@@ -1,0 +1,31 @@
+-- Test helpers for pgTAP. Local and CI only; never deployed.
+create schema if not exists tests;
+grant usage on schema tests to anon, authenticated;
+
+create or replace function tests.create_user(p_id uuid, p_email text, p_meta jsonb default '{}'::jsonb)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, raw_app_meta_data, created_at, updated_at)
+  values (p_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+          p_email, p_meta, '{}'::jsonb, now(), now());
+  return p_id;
+end;
+$$;
+
+-- Act as a signed-in user for the rest of the transaction. Undo with `reset role;`.
+create or replace function tests.authenticate_as(p_user_id uuid)
+returns void
+language plpgsql
+as $$
+begin
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', p_user_id, 'role', 'authenticated')::text, true);
+end;
+$$;
+
+grant execute on all functions in schema tests to anon, authenticated;
