@@ -28,7 +28,9 @@ export function ProfileForm({ action, timezones, defaults, detectTimezone = fals
     }
   }, [detectTimezone, timezones]);
 
-  // React resets the form after an action; defaults come back from the state so input survives errors.
+  // React resets uncontrolled fields to their defaultValue after an action. Inputs re-sync fine because
+  // React updates defaultValue on every render; <select> doesn't, so each select is keyed by its own
+  // value below to force a remount (with the fresh defaultValue baked in) instead of remounting the form.
   const values = state.status === "error" && state.values ? state.values : defaults;
   const errors = state.status === "error" ? (state.errors ?? {}) : {};
 
@@ -54,6 +56,7 @@ export function ProfileForm({ action, timezones, defaults, detectTimezone = fals
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="timezone">Time zone</Label>
         <select
+          key={values.timezone}
           id="timezone"
           name="timezone"
           ref={timezoneRef}
@@ -78,6 +81,7 @@ export function ProfileForm({ action, timezones, defaults, detectTimezone = fals
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="reminderHour">Daily reminder</Label>
         <select
+          key={values.reminderHour}
           id="reminderHour"
           name="reminderHour"
           defaultValue={values.reminderHour}
