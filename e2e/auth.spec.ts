@@ -27,7 +27,7 @@ test("a returning user skips onboarding", async ({ page }) => {
   await page.goto("/onboarding");
   await expect(page).toHaveURL(/\/today$/);
 
-  await page.goto("/profile/settings");
+  await page.goto("/profile");
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/$/);
 
