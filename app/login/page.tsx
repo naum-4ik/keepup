@@ -5,6 +5,7 @@ import { authErrorReason } from "@/lib/auth-errors";
 import { safeNextPath } from "@/lib/paths";
 import { signInWithGoogle } from "./actions";
 import { LoginForm } from "./login-form";
+import { GoogleIcon } from "@/components/google-icon";
 
 export default async function LoginPage({
   searchParams,
@@ -33,6 +34,7 @@ export default async function LoginPage({
           <form action={signInWithGoogle}>
             <input type="hidden" name="next" value={nextPath} />
             <Button type="submit" variant="outline" className="h-11 w-full">
+              <GoogleIcon className="size-5" />
               Continue with Google
             </Button>
           </form>
