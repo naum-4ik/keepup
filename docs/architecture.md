@@ -35,8 +35,8 @@ Vercel's serverless functions are stateless and scale horizontally by request â€
 |---|---|---|
 | RLS on every table | Row-level security scoped to the authenticated user/family; guarded by a pgTAP test | Live |
 | Least privilege | Column-level UPDATE grants on `profiles` (no blanket table grants) | Live |
-| Key exposure | Browser holds only the publishable key; server-side auth uses the service role only where needed | Live |
-| Session verification | Server checks `getClaims()`, never the unverified `getSession()` | Live |
+| Key exposure | No service-role key in the app anywhere â€” browser and server both use only the publishable key, under RLS. A service-role key will exist only in CI secrets / Edge Functions when a later feature needs it | Live |
+| Session verification | Google OAuth and magic link both use the PKCE code flow; server checks the session with `getClaims()`, never the unverified `getSession()` | Live |
 | Open-redirect protection | `safeNextPath` validates post-auth redirects; unit-tested | Live |
 | Input validation | Every server action validates input server-side, not just in the client form | Live |
 | Session response caching | Responses that refresh a Supabase session carry no-cache headers | Live |
@@ -44,7 +44,7 @@ Vercel's serverless functions are stateless and scale horizontally by request â€
 | Supply chain | Pinned dependencies + committed lockfile | Live |
 | CI gates | Lint, types, unit, pgTAP, Playwright e2e required by branch protection on `develop` and `main` | Live |
 | Data region | EU (Frankfurt) for Postgres and Auth | Live |
-| Kids' data minimization | Nickname only, no photos | Planned |
+| Kids' data minimization | Current schema stores no photos or birthdates; kid profiles (M3) will keep nickname-only | Live / Planned, M3 |
 | Encrypted nightly backups | â€” | Planned, M3 |
 | GDPR export/delete | â€” | Planned, M6 |
 
