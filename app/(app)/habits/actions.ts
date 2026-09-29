@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { GENERIC_ERROR, habitErrorMessage } from "@/lib/habit-errors";
-import { parseHabit, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
+import { isUuid, parseHabit, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 
 export type ActionResult = { ok: true } | { ok: false; message: string };
+const NOT_FOUND: ActionResult = { ok: false, message: "That habit isn't available." };
 export type FormActionState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string };
 
 function refresh(habitId?: string) {
@@ -35,4 +36,22 @@ export async function createHabit(_prev: HabitFormState, formData: FormData): Pr
 
   refresh();
   redirect("/today");
+}
+
+export async function checkIn(habitId: string): Promise<ActionResult> {
+  if (!isUuid(habitId)) return NOT_FOUND;
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("check_in", { p_habit_id: habitId });
+  if (error) return { ok: false, message: habitErrorMessage(error) };
+  refresh(habitId);
+  return { ok: true };
+}
+
+export async function undoCheckIn(checkInId: string, habitId: string): Promise<ActionResult> {
+  if (!isUuid(checkInId) || !isUuid(habitId)) return NOT_FOUND;
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("undo_check_in", { p_check_in_id: checkInId });
+  if (error) return { ok: false, message: habitErrorMessage(error) };
+  refresh(habitId);
+  return { ok: true };
 }

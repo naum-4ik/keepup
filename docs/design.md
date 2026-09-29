@@ -83,9 +83,11 @@ Icons come from `lucide-react` (rounded line style). **Kid habits** use picture 
 ## Motion
 
 - **Durations:** 150–250 ms, ease-out.
-- **Check-in:** the button fills, a short pop, "+10 XP" floats up and fades.
-- **Confetti:** only for level-up and achievement unlocked, once each.
-- **Reduced motion:** with `prefers-reduced-motion`, keep the state change and drop the animation.
+- **Check-in:** the round button fills sage green with a small bounce; a soft haptic tick where the phone supports it (Android); no sound. From M5, "+10 XP" floats up and fades.
+- **Finishing check-in** (target reached): a warm glow and "Done for today" / "Done for this week" / "Done for this month".
+- **Milestones:** a card at the top of Today (flame animation from 7), never a full-screen interruption.
+- **Full-screen moments:** only level-ups and new badges, about 2 seconds of soft confetti in category colors, once each. Settings → Celebrations: Full / Subtle (Subtle shows cards instead).
+- **Reduced motion:** with `prefers-reduced-motion`, keep the state change and drop bounce, float, glow and confetti.
 
 ## App icon
 
