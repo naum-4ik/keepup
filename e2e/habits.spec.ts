@@ -12,7 +12,7 @@ test("a new user adds a habit from a template", async ({ page }) => {
   await expect(page.getByLabel("Title")).toHaveValue("Drink water");
   await expect(page.getByLabel("Times")).toHaveValue("8");
   await expect(page.getByLabel("Per")).toHaveValue("day");
-  await expect(page.getByLabel("Starts")).not.toHaveValue("");
+  await expect(page.getByRole("button", { name: "Today", exact: true })).toHaveAttribute("aria-pressed", "true");
 
   await page.getByRole("button", { name: "Add habit" }).click();
   await expect(page).toHaveURL(/\/today$/);
@@ -84,4 +84,24 @@ test("every template tab fits above the bottom nav on a small phone", async ({ p
     const last = await page.getByRole("button", { name: "Create your own" }).boundingBox();
     expect(last!.y + last!.height, name).toBeLessThanOrEqual(nav!.y);
   }
+});
+
+test("the start date can be picked from quick choices or the calendar", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: /^Read 20 min/ }).click();
+  const dialog = page.getByRole("dialog", { name: "Add habit" });
+
+  await dialog.getByRole("button", { name: "Tomorrow" }).click();
+  await expect(dialog.getByRole("button", { name: "Tomorrow" })).toHaveAttribute("aria-pressed", "true");
+
+  await dialog.getByRole("button", { name: "Pick a date" }).click();
+  await dialog.getByRole("button", { name: "Next month" }).click();
+  await dialog.getByRole("button", { name: /^\w{3} 15 / }).click();
+  const picked = dialog.getByRole("button", { name: /^Pick a date, \w{3} 15 / });
+  await expect(picked).toHaveAttribute("aria-pressed", "true");
+  await expect(dialog.getByRole("button", { name: "Next month" })).toBeHidden();
+
+  await dialog.getByRole("button", { name: /^Add habit/ }).click();
+  await expect(page).toHaveURL(/\/today$/);
 });

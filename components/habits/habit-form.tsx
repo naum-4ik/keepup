@@ -4,11 +4,13 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { Minus, Plus, Star } from "lucide-react";
 import { createHabit } from "@/app/(app)/habits/actions";
 import { CategoryIcon } from "@/components/habits/category-icon";
+import { StartDatePicker } from "@/components/habits/start-date-picker";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
+import { formatLocalDate } from "@/lib/dates";
 import { HABIT_TEMPLATES, type HabitTemplate } from "@/lib/habit-templates";
 import {
   HABIT_TITLE_MAX, TARGET_LIMITS, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod,
@@ -23,7 +25,7 @@ const initialState: HabitFormState = { status: "idle" };
 type Tab = "popular" | HabitCategory;
 type Draft = { key: number; custom: boolean; values: HabitFormValues };
 
-export function HabitForm({ today }: { today: string }) {
+export function HabitForm({ today, weekStart }: { today: string; weekStart: 0 | 1 }) {
   const [tab, setTab] = useState<Tab>("popular");
   const [draft, setDraft] = useState<Draft | null>(null);
   const templates = HABIT_TEMPLATES.filter((t) => (tab === "popular" ? t.popular : t.category === tab));
@@ -103,14 +105,14 @@ export function HabitForm({ today }: { today: string }) {
             <DialogTitle>{draft?.custom ? "Create your own" : "Add habit"}</DialogTitle>
             <DialogDescription>You can change anything before adding it.</DialogDescription>
           </div>
-          {draft && <HabitFields key={draft.key} initial={draft.values} today={today} />}
+          {draft && <HabitFields key={draft.key} initial={draft.values} today={today} weekStart={weekStart} />}
         </DialogContent>
       </Dialog>
     </div>
   );
 }
 
-function HabitFields({ initial, today }: { initial: HabitFormValues; today: string }) {
+function HabitFields({ initial, today, weekStart }: { initial: HabitFormValues; today: string; weekStart: 0 | 1 }) {
   const [state, formAction, pending] = useActionState(createHabit, initialState);
   const [values, setValues] = useState(initial);
   const categoryRef = useRef<HTMLSelectElement>(null);
@@ -198,22 +200,21 @@ function HabitFields({ initial, today }: { initial: HabitFormValues; today: stri
         {errors.period && <p className="text-sm text-destructive">{errors.period}</p>}
       </fieldset>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="startsOn" className="font-semibold">Starts</Label>
-        <Input
-          id="startsOn"
-          name="startsOn"
-          type="date"
-          min={today}
+      <fieldset className="flex flex-col gap-1.5">
+        <legend className="mb-1.5 text-sm font-semibold">Starts</legend>
+        <input type="hidden" name="startsOn" value={values.startsOn} />
+        <StartDatePicker
           value={values.startsOn}
-          onChange={set("startsOn")}
-          className={fieldClass}
-          aria-invalid={Boolean(errors.startsOn)}
-          aria-describedby={errors.startsOn ? "startsOn-error" : "startsOn-hint"}
+          onChange={(startsOn) => setValues((v) => ({ ...v, startsOn }))}
+          today={today}
+          weekStart={weekStart}
+          errorId={errors.startsOn ? "startsOn-error" : undefined}
         />
-        <p id="startsOn-hint" className="text-xs text-muted-foreground">Nothing before this day counts.</p>
+        <p className="text-xs text-muted-foreground">
+          {formatLocalDate(values.startsOn)}. Nothing before this day counts.
+        </p>
         {errors.startsOn && <p id="startsOn-error" className="text-sm text-destructive">{errors.startsOn}</p>}
-      </div>
+      </fieldset>
 
       {state.status === "error" && state.message && (
         <p role="alert" className="text-sm text-destructive">{state.message}</p>
