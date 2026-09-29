@@ -2,10 +2,12 @@ import Link from "next/link";
 import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard } from "@/components/habits/habit-card";
 import { Button } from "@/components/ui/button";
-import { getHabitSummaries } from "@/lib/habits";
+import { getHabitSummaries, type HabitSummary } from "@/lib/habits";
+import { groupForToday } from "@/lib/today";
 
 export default async function TodayPage() {
   const habits = (await getHabitSummaries()).filter((h) => !h.archived_at);
+  const { todo, done, later } = groupForToday(habits);
 
   return (
     <section className="flex flex-col gap-4 py-6">
@@ -21,14 +23,36 @@ export default async function TodayPage() {
           </Button>
         </div>
       ) : (
-        <ul className="flex flex-col gap-3">
-          {habits.map((h) => (
-            <li key={h.habit_id}>
-              <HabitCard habit={h} />
-            </li>
-          ))}
-        </ul>
+        <>
+          {todo.length > 0 ? (
+            <HabitList habits={todo} />
+          ) : done.length > 0 ? (
+            <p className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">All checked off. Nice work.</p>
+          ) : null}
+          {done.length > 0 && <HabitList title="Done" habits={done} />}
+          {later.length > 0 && <HabitList title="Later" habits={later} />}
+        </>
       )}
+    </section>
+  );
+}
+
+function HabitList({ title, habits }: { title?: string; habits: HabitSummary[] }) {
+  if (habits.length === 0) return null;
+  const list = (
+    <ul className="flex flex-col gap-3">
+      {habits.map((h) => (
+        <li key={h.habit_id}>
+          <HabitCard habit={h} />
+        </li>
+      ))}
+    </ul>
+  );
+  if (!title) return list;
+  return (
+    <section aria-label={title} className="flex flex-col gap-2 pt-2">
+      <h2 className="text-sm font-semibold text-muted-foreground">{title}</h2>
+      {list}
     </section>
   );
 }
