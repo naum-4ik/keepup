@@ -26,11 +26,11 @@ export default async function LoginPage({
   return (
     <main className="mx-auto flex w-full min-h-dvh max-w-sm flex-col justify-center gap-6 px-4">
       <div className="text-center">
-        <div className="text-3xl font-bold">
+        <h1 className="text-3xl font-bold">
           <span className="text-foreground">Keep</span>
           <span className="text-primary">up</span>
-        </div>
-        <h1 className="mt-2 text-xl font-semibold">Sign in</h1>
+          <span className="sr-only"> — sign in</span>
+        </h1>
         <p className="text-sm text-muted-foreground">Habits, together.</p>
       </div>
       <div className="flex w-full max-w-sm flex-col gap-4 self-stretch rounded-2xl bg-card p-6 shadow-soft">
