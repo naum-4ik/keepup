@@ -32,6 +32,7 @@ test("custom habits are validated", async ({ page }) => {
   await page.getByLabel("Per").selectOption("week");
   await page.getByRole("button", { name: "Add habit" }).click();
   await expect(page.getByText("Pick 1–7 times a week.")).toBeVisible();
+  await expect(page.getByLabel("Per")).toHaveValue("week");
 
   await page.getByLabel("Times").fill("2");
   await page.getByRole("button", { name: "Add habit" }).click();
@@ -49,6 +50,16 @@ test("category tabs show more templates and 'Create your own'", async ({ page })
   await page.getByRole("button", { name: "Create your own" }).click();
   await expect(page.getByLabel("Category")).toHaveValue("money");
   await expect(page.getByLabel("Title")).toBeFocused();
+});
+
+test("browsing tabs after picking a template doesn't change its category", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: /^Drink water/ }).click();
+  await expect(page.getByLabel("Category")).toHaveValue("health");
+
+  await page.getByRole("tab", { name: "Fitness" }).click();
+  await expect(page.getByLabel("Category")).toHaveValue("health");
 });
 
 test("the ＋ button opens a new habit", async ({ page }) => {

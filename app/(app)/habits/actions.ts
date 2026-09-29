@@ -28,7 +28,10 @@ export async function createHabit(_prev: HabitFormState, formData: FormData): Pr
     period: parsed.value.period,
     starts_on: parsed.value.startsOn,
   });
-  if (error) return { status: "error", message: habitErrorMessage(error) === GENERIC_ERROR ? "Couldn't save the habit. Try again." : habitErrorMessage(error), values };
+  if (error) {
+    const message = habitErrorMessage(error);
+    return { status: "error", message: message === GENERIC_ERROR ? "Couldn't save the habit. Try again." : message, values };
+  }
 
   refresh();
   redirect("/today");

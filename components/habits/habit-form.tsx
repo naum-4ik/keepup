@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { createHabit } from "@/app/(app)/habits/actions";
 import { CategoryIcon } from "@/components/habits/category-icon";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
 import { HABIT_TEMPLATES } from "@/lib/habit-templates";
-import type { HabitCategory, HabitFormState, HabitFormValues, HabitPeriod } from "@/lib/habit-schema";
+import { HABIT_TITLE_MAX, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod } from "@/lib/habit-schema";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
@@ -24,15 +24,20 @@ export function HabitForm({ today }: { today: string }) {
     title: "", category: "health", targetCount: "1", period: "day", startsOn: today,
   });
   const titleRef = useRef<HTMLInputElement>(null);
+  const categoryRef = useRef<HTMLSelectElement>(null);
+  const periodRef = useRef<HTMLSelectElement>(null);
   const errors = state.status === "error" ? (state.errors ?? {}) : {};
   const set = (key: keyof HabitFormValues) => (e: { target: { value: string } }) =>
     setValues((v) => ({ ...v, [key]: e.target.value }));
 
+  // The browser resets <form> fields after a server action runs. Inputs re-sync from their
+  // `value` prop automatically, but <select> doesn't, so force it back to our state here.
+  useEffect(() => {
+    if (categoryRef.current) categoryRef.current.value = values.category;
+    if (periodRef.current) periodRef.current.value = values.period;
+  }, [state, values.category, values.period]);
+
   const templates = HABIT_TEMPLATES.filter((t) => (tab === "popular" ? t.popular : t.category === tab));
-  const selectTab = (next: Tab) => {
-    setTab(next);
-    if (next !== "popular") setValues((v) => ({ ...v, category: next }));
-  };
   const createOwn = () => {
     setValues((v) => ({ ...v, title: "", targetCount: "1", period: "day", category: tab === "popular" ? "health" : tab }));
     titleRef.current?.focus();
@@ -48,9 +53,9 @@ export function HabitForm({ today }: { today: string }) {
               type="button"
               role="tab"
               aria-selected={tab === key}
-              onClick={() => selectTab(key)}
+              onClick={() => setTab(key)}
               className={cn(
-                "shrink-0 rounded-full px-4 py-2 text-sm font-semibold",
+                "min-h-11 shrink-0 rounded-full px-4 py-2 text-sm font-semibold",
                 tab === key ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground shadow-soft",
               )}
             >
@@ -97,6 +102,7 @@ export function HabitForm({ today }: { today: string }) {
             ref={titleRef}
             value={values.title}
             onChange={set("title")}
+            maxLength={HABIT_TITLE_MAX}
             aria-invalid={Boolean(errors.title)}
             aria-describedby={errors.title ? "title-error" : undefined}
           />
@@ -105,7 +111,7 @@ export function HabitForm({ today }: { today: string }) {
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="category">Category</Label>
-          <select id="category" name="category" value={values.category} onChange={set("category")} className={selectClass}
+          <select id="category" name="category" ref={categoryRef} value={values.category} onChange={set("category")} className={selectClass}
             aria-invalid={Boolean(errors.category)} aria-describedby={errors.category ? "category-error" : undefined}>
             {CATEGORY_ORDER.map((c) => (
               <option key={c} value={c}>{CATEGORIES[c].label}</option>
@@ -131,7 +137,7 @@ export function HabitForm({ today }: { today: string }) {
               aria-describedby={errors.targetCount ? "targetCount-error" : undefined}
             />
             <Label htmlFor="period" className="sr-only">Per</Label>
-            <select id="period" name="period" value={values.period} onChange={set("period")} className={selectClass}>
+            <select id="period" name="period" ref={periodRef} value={values.period} onChange={set("period")} className={selectClass}>
               {(["day", "week", "month"] as HabitPeriod[]).map((p) => (
                 <option key={p} value={p}>{`times a ${p}`}</option>
               ))}
