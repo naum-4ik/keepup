@@ -69,13 +69,13 @@ isOneToOne: false
                   ]
                 },"habits": {
                   Row: {
-                    "archived_at": string | null,"category": Database["public"]['Enums']["habit_category"],"created_at": string,"id": string,"owner_id": string,"period": Database["public"]['Enums']["habit_period"],"starts_on": string,"target_count": number,"title": string
+                    "archived_at": string | null,"category": Database["public"]['Enums']["habit_category"],"created_at": string,"id": string,"owner_id": string,"period": Database["public"]['Enums']["habit_period"],"starts_on": string,"target_count": number,"title": string,"week_start": number
                   }
                   Insert: {
-                    "archived_at"?: string | null,"category": Database["public"]['Enums']["habit_category"],"created_at"?: string,"id"?: string,"owner_id"?: string,"period": Database["public"]['Enums']["habit_period"],"starts_on": string,"target_count": number,"title": string
+                    "archived_at"?: string | null,"category": Database["public"]['Enums']["habit_category"],"created_at"?: string,"id"?: string,"owner_id"?: string,"period": Database["public"]['Enums']["habit_period"],"starts_on": string,"target_count": number,"title": string,"week_start"?: number
                   }
                   Update: {
-                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"],"created_at"?: string,"id"?: string,"owner_id"?: string,"period"?: Database["public"]['Enums']["habit_period"],"starts_on"?: string,"target_count"?: number,"title"?: string
+                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"],"created_at"?: string,"id"?: string,"owner_id"?: string,"period"?: Database["public"]['Enums']["habit_period"],"starts_on"?: string,"target_count"?: number,"title"?: string,"week_start"?: number
                   }
                   Relationships: [
                     {
@@ -83,6 +83,25 @@ isOneToOne: false
       columns: ["owner_id"]
 isOneToOne: false
       referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"period_results": {
+                  Row: {
+                    "finalized_at": string,"habit_id": string,"outcome": string,"period_start": string
+                  }
+                  Insert: {
+                    "finalized_at"?: string,"habit_id": string,"outcome": string,"period_start": string
+                  }
+                  Update: {
+                    "finalized_at"?: string,"habit_id"?: string,"outcome"?: string,"period_start"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "period_results_habit_id_fkey"
+      columns: ["habit_id"]
+isOneToOne: false
+      referencedRelation: "habits"
       referencedColumns: ["id"]
     }
                   ]
@@ -138,6 +157,16 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"habit_history":
+{ Args: { "p_habit_id": string,"p_limit"?: number }; Returns: {
+              "outcome": string,"period_start": string
+            }[]
+                           },
+"habit_summaries":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "archived_at": string,"best_streak": number,"category": Database["public"]['Enums']["habit_category"],"checked_in_today": boolean,"created_at": string,"current_streak": number,"days_left": number,"done_count": number,"frozen": boolean,"frozen_until": string,"habit_id": string,"not_started": boolean,"period": Database["public"]['Enums']["habit_period"],"period_start": string,"starts_on": string,"target_count": number,"title": string
+            }[]
+                           },
 "is_valid_timezone":
 { Args: { "tz": string }; Returns: boolean
                            },

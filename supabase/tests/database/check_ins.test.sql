@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(28);
+select plan(29);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a4', 'ci-a@example.com');
 select tests.create_user('00000000-0000-0000-0000-0000000000b4', 'ci-b@example.com');
@@ -48,10 +48,17 @@ select lives_ok($$select private.check_in_impl('00000000-0000-0000-0000-00000000
 select is((select count(*)::int from public.check_ins where habit_id = '00000000-0000-0000-0000-0000000000e3' and period_start = '2026-10-05'),
   2, 'both count for the week starting Monday 5 Oct');
 
--- Sunday weeks
+-- Sunday weeks: a habit snapshots its own week_start at creation (C1), independent of the profile.
+set local session_replication_role = replica;
+insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, archived_at, week_start) values
+  ('00000000-0000-0000-0000-0000000000e4', '00000000-0000-0000-0000-0000000000a4', 'Sunday Gym', 'fitness', 3, 'week', '2026-09-01', '2026-09-01T08:00:00Z', null, 0);
+set local session_replication_role = origin;
+select is((private.check_in_impl('00000000-0000-0000-0000-0000000000e4', '00000000-0000-0000-0000-0000000000a4', '2026-10-11T08:00:00Z')).period_start,
+  '2026-10-11'::date, 'a habit created with week_start=0 starts a new week on Sunday 11 Oct');
+
 update public.profiles set week_start = 0 where id = '00000000-0000-0000-0000-0000000000a4';
-select is((private.check_in_impl('00000000-0000-0000-0000-0000000000e3', '00000000-0000-0000-0000-0000000000a4', '2026-10-11T08:00:00Z')).period_start,
-  '2026-10-11'::date, 'with Sunday weeks, Sunday 11 Oct starts a new week');
+select is((select private.habit_period_start(h, '2026-10-07'::date) from public.habits h where h.id = '00000000-0000-0000-0000-0000000000e3'),
+  '2026-10-05'::date, 'changing the profile''s week_start does not change an existing habit''s period key (still Monday-based)');
 update public.profiles set week_start = 1 where id = '00000000-0000-0000-0000-0000000000a4';
 
 -- Local dates
