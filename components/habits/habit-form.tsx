@@ -1,20 +1,24 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Plus, Star } from "lucide-react";
+import { Minus, Plus, Star } from "lucide-react";
 import { createHabit } from "@/app/(app)/habits/actions";
 import { CategoryIcon } from "@/components/habits/category-icon";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
 import { HABIT_TEMPLATES, type HabitTemplate } from "@/lib/habit-templates";
-import { HABIT_TITLE_MAX, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod } from "@/lib/habit-schema";
+import {
+  HABIT_TITLE_MAX, TARGET_LIMITS, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod,
+} from "@/lib/habit-schema";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
-const selectClass = "h-11 rounded-xl border border-input bg-transparent px-3 text-base";
+// Every control in the dialog shares one height so the fields line up.
+const fieldClass = "h-11 rounded-xl px-3 text-base";
+const selectClass = cn(fieldClass, "w-full border border-input bg-transparent");
 const initialState: HabitFormState = { status: "idle" };
 type Tab = "popular" | HabitCategory;
 type Draft = { key: number; custom: boolean; values: HabitFormValues };
@@ -24,7 +28,7 @@ export function HabitForm({ today }: { today: string }) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const templates = HABIT_TEMPLATES.filter((t) => (tab === "popular" ? t.popular : t.category === tab));
 
-  // Each open gets a new key, so the sheet's form starts fresh (no errors from a previous try).
+  // Each open gets a new key, so the dialog's form starts fresh (no errors from a previous try).
   const open = (custom: boolean, values: Omit<HabitFormValues, "startsOn">) =>
     setDraft((d) => ({ key: (d?.key ?? 0) + 1, custom, values: { ...values, startsOn: today } }));
   const pickTemplate = (t: HabitTemplate) =>
@@ -33,7 +37,7 @@ export function HabitForm({ today }: { today: string }) {
     open(true, { title: "", category: tab === "popular" ? "health" : tab, targetCount: "1", period: "day" });
 
   return (
-    <section aria-label="Templates" className="flex flex-col gap-3">
+    <div className="flex flex-col gap-5">
       <div role="tablist" aria-label="Template categories" className="grid grid-cols-3 gap-2">
         {(["popular", ...CATEGORY_ORDER] as Tab[]).map((key) => (
           <button
@@ -43,58 +47,61 @@ export function HabitForm({ today }: { today: string }) {
             aria-selected={tab === key}
             onClick={() => setTab(key)}
             className={cn(
-              "flex min-h-11 flex-col items-center gap-1.5 rounded-2xl bg-card p-2.5 text-xs font-semibold shadow-soft",
+              "flex min-h-11 items-center gap-1.5 rounded-xl bg-card px-2 py-1.5 text-left text-xs leading-tight font-semibold shadow-soft",
               tab === key ? "text-foreground ring-2 ring-primary" : "text-muted-foreground hover:bg-muted",
             )}
           >
             {key === "popular" ? (
-              <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent">
-                <Star className="size-4.5 text-primary" />
+              <span aria-hidden className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent">
+                <Star className="size-4 text-primary" />
               </span>
             ) : (
-              <CategoryIcon category={key} size="sm" />
+              <CategoryIcon category={key} size="xs" />
             )}
             {key === "popular" ? "Popular" : CATEGORIES[key].label}
           </button>
         ))}
       </div>
 
-      <div role="tabpanel" className="grid grid-cols-2 gap-3">
+      <div role="tabpanel" className="flex flex-col gap-3">
         {templates.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => pickTemplate(t)}
-            className="flex items-center gap-2 rounded-2xl bg-card p-3 text-left shadow-soft hover:bg-muted"
+            className="flex min-h-18 items-center gap-4 rounded-2xl bg-card p-4 text-left shadow-soft hover:bg-muted"
           >
-            <CategoryIcon category={t.category} />
-            <span className="flex min-w-0 flex-col">
-              <span className="text-sm font-bold">{t.title}</span>
-              <span className="text-xs text-muted-foreground">{describeSchedule(t.targetCount, t.period)}</span>
+            <CategoryIcon category={t.category} size="lg" />
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <span className="text-base font-bold">{t.title}</span>
+              <span className="text-sm text-muted-foreground">{describeSchedule(t.targetCount, t.period)}</span>
             </span>
+            <Plus aria-hidden className="size-5 shrink-0 text-muted-foreground" />
           </button>
         ))}
         <button
           type="button"
           onClick={createOwn}
-          className="flex items-center gap-2 rounded-2xl border-2 border-dashed border-input p-3 text-left text-sm font-bold text-muted-foreground hover:bg-muted"
+          className="flex min-h-18 items-center gap-4 rounded-2xl border-2 border-dashed border-input p-4 text-left text-base font-bold text-muted-foreground hover:bg-muted"
         >
-          <span className="flex size-10 items-center justify-center rounded-full bg-accent text-primary" aria-hidden>
-            <Plus className="size-5" />
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent text-primary" aria-hidden>
+            <Plus className="size-7" />
           </span>
           Create your own
         </button>
       </div>
 
-      <Sheet open={draft !== null} onOpenChange={(isOpen) => !isOpen && setDraft(null)}>
+      <Dialog open={draft !== null} onOpenChange={(isOpen) => !isOpen && setDraft(null)}>
         {/* Templates open without focusing a field, so the phone keyboard doesn't cover the form. */}
-        <SheetContent onOpenAutoFocus={(e) => !draft?.custom && e.preventDefault()}>
-          <SheetTitle>{draft?.custom ? "Create your own" : "Add habit"}</SheetTitle>
-          <SheetDescription>You can change anything before adding it.</SheetDescription>
+        <DialogContent onOpenAutoFocus={(e) => !draft?.custom && e.preventDefault()}>
+          <div className="flex flex-col gap-1 pr-10">
+            <DialogTitle>{draft?.custom ? "Create your own" : "Add habit"}</DialogTitle>
+            <DialogDescription>You can change anything before adding it.</DialogDescription>
+          </div>
           {draft && <HabitFields key={draft.key} initial={draft.values} today={today} />}
-        </SheetContent>
-      </Sheet>
-    </section>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
 
@@ -107,6 +114,13 @@ function HabitFields({ initial, today }: { initial: HabitFormValues; today: stri
   const set = (key: keyof HabitFormValues) => (e: { target: { value: string } }) =>
     setValues((v) => ({ ...v, [key]: e.target.value }));
 
+  const count = Number(values.targetCount);
+  const period = (values.period in TARGET_LIMITS ? values.period : "day") as HabitPeriod;
+  const limit = TARGET_LIMITS[period];
+  const step = (delta: number) =>
+    setValues((v) => ({ ...v, targetCount: String(Math.min(limit, Math.max(1, (Number(v.targetCount) || 0) + delta))) }));
+  const validCount = Number.isInteger(count) && count >= 1 && count <= limit;
+
   // The browser resets <form> fields after a server action runs. Inputs re-sync from their
   // `value` prop automatically, but <select> doesn't, so force it back to our state here.
   useEffect(() => {
@@ -117,13 +131,14 @@ function HabitFields({ initial, today }: { initial: HabitFormValues; today: stri
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="title">Title</Label>
+        <Label htmlFor="title" className="font-semibold">Title</Label>
         <Input
           id="title"
           name="title"
           value={values.title}
           onChange={set("title")}
           maxLength={HABIT_TITLE_MAX}
+          className={fieldClass}
           aria-invalid={Boolean(errors.title)}
           aria-describedby={errors.title ? "title-error" : undefined}
         />
@@ -131,7 +146,7 @@ function HabitFields({ initial, today }: { initial: HabitFormValues; today: stri
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="category">Category</Label>
+        <Label htmlFor="category" className="font-semibold">Category</Label>
         <select id="category" name="category" ref={categoryRef} value={values.category} onChange={set("category")} className={selectClass}
           aria-invalid={Boolean(errors.category)} aria-describedby={errors.category ? "category-error" : undefined}>
           {CATEGORY_ORDER.map((c) => (
@@ -142,21 +157,31 @@ function HabitFields({ initial, today }: { initial: HabitFormValues; today: stri
       </div>
 
       <fieldset className="flex flex-col gap-1.5">
-        <legend className="text-sm font-semibold">How often</legend>
-        <div className="flex gap-2">
-          <Label htmlFor="targetCount" className="sr-only">Times</Label>
-          <Input
-            id="targetCount"
-            name="targetCount"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            value={values.targetCount}
-            onChange={set("targetCount")}
-            className="w-24"
-            aria-invalid={Boolean(errors.targetCount)}
-            aria-describedby={errors.targetCount ? "targetCount-error" : undefined}
-          />
+        <legend className="mb-1.5 text-sm font-semibold">How often</legend>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex h-11 items-center rounded-xl border border-input">
+            <button type="button" onClick={() => step(-1)} disabled={count <= 1} aria-label="Decrease"
+              className="flex size-11 shrink-0 items-center justify-center rounded-l-xl text-primary disabled:text-muted-foreground/50">
+              <Minus className="size-4" />
+            </button>
+            <Label htmlFor="targetCount" className="sr-only">Times</Label>
+            <input
+              id="targetCount"
+              name="targetCount"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              value={values.targetCount}
+              onChange={set("targetCount")}
+              className="h-full w-full min-w-0 bg-transparent text-center text-base font-bold tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+              aria-invalid={Boolean(errors.targetCount)}
+              aria-describedby={errors.targetCount ? "targetCount-error" : undefined}
+            />
+            <button type="button" onClick={() => step(1)} disabled={count >= limit} aria-label="Increase"
+              className="flex size-11 shrink-0 items-center justify-center rounded-r-xl text-primary disabled:text-muted-foreground/50">
+              <Plus className="size-4" />
+            </button>
+          </div>
           <Label htmlFor="period" className="sr-only">Per</Label>
           <select id="period" name="period" ref={periodRef} value={values.period} onChange={set("period")} className={selectClass}>
             {(["day", "week", "month"] as HabitPeriod[]).map((p) => (
@@ -169,7 +194,7 @@ function HabitFields({ initial, today }: { initial: HabitFormValues; today: stri
       </fieldset>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="startsOn">Starts</Label>
+        <Label htmlFor="startsOn" className="font-semibold">Starts</Label>
         <Input
           id="startsOn"
           name="startsOn"
@@ -177,6 +202,7 @@ function HabitFields({ initial, today }: { initial: HabitFormValues; today: stri
           min={today}
           value={values.startsOn}
           onChange={set("startsOn")}
+          className={fieldClass}
           aria-invalid={Boolean(errors.startsOn)}
           aria-describedby={errors.startsOn ? "startsOn-error" : "startsOn-hint"}
         />
@@ -187,7 +213,9 @@ function HabitFields({ initial, today }: { initial: HabitFormValues; today: stri
       {state.status === "error" && state.message && (
         <p role="alert" className="text-sm text-destructive">{state.message}</p>
       )}
-      <Button type="submit" disabled={pending}>{pending ? "Adding…" : "Add habit"}</Button>
+      <Button type="submit" disabled={pending} className="h-11 text-base">
+        {pending ? "Adding…" : validCount ? `Add habit · ${describeSchedule(count, period)}` : "Add habit"}
+      </Button>
     </form>
   );
 }

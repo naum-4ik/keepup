@@ -57,7 +57,7 @@ Pastel chip background with a deeper icon color, always with the icon.
 | Fitness | `#E5F2E6` | `#4F8A5B` | footprints |
 | Mind | `#EEE8F8` | `#7B61B0` | sun |
 | Learning | `#FBF3D9` | `#B08A1E` | book-open |
-| People | `#FBE6E8` | `#C2505F` | heart |
+| People | `#FBE6E8` | `#C2505F` | users |
 | Home | `#E0F3EF` | `#3A8C7E` | house |
 | Money | `#F1EADF` | `#8A6B45` | wallet |
 | Break a habit | `#F0ECE8` | `#8A7F76` | shield-ban |
