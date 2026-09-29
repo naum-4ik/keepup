@@ -37,7 +37,7 @@ export function HabitForm({ today }: { today: string }) {
     open(true, { title: "", category: tab === "popular" ? "health" : tab, targetCount: "1", period: "day" });
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <div role="tablist" aria-label="Template categories" className="grid grid-cols-3 gap-2">
         {(["popular", ...CATEGORY_ORDER] as Tab[]).map((key) => (
           <button
@@ -63,29 +63,29 @@ export function HabitForm({ today }: { today: string }) {
         ))}
       </div>
 
-      <div role="tabpanel" className="flex flex-col gap-3">
+      {/* Two columns so every tab (at most 6 templates + Create your own) fits on one phone screen. */}
+      <div role="tabpanel" className="grid grid-cols-2 gap-2.5">
         {templates.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => pickTemplate(t)}
-            className="flex min-h-18 items-center gap-4 rounded-2xl bg-card p-4 text-left shadow-soft hover:bg-muted"
+            className="flex min-h-14 items-center gap-2 rounded-2xl bg-card px-3 py-2.5 text-left shadow-soft hover:bg-muted"
           >
-            <CategoryIcon category={t.category} size="lg" />
-            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span className="text-base font-bold">{t.title}</span>
-              <span className="text-sm text-muted-foreground">{describeSchedule(t.targetCount, t.period)}</span>
+            <CategoryIcon category={t.category} size="xs" />
+            <span className="flex min-w-0 flex-col">
+              <span className="text-[0.9375rem] leading-snug font-bold">{t.title}</span>
+              <span className="text-xs text-muted-foreground">{describeSchedule(t.targetCount, t.period)}</span>
             </span>
-            <Plus aria-hidden className="size-5 shrink-0 text-muted-foreground" />
           </button>
         ))}
         <button
           type="button"
           onClick={createOwn}
-          className="flex min-h-18 items-center gap-4 rounded-2xl border-2 border-dashed border-input p-4 text-left text-base font-bold text-muted-foreground hover:bg-muted"
+          className="flex min-h-14 items-center gap-2 rounded-2xl border-2 border-dashed border-input px-3 py-2.5 text-left text-[0.9375rem] leading-snug font-bold text-muted-foreground hover:bg-muted"
         >
-          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent text-primary" aria-hidden>
-            <Plus className="size-7" />
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-primary" aria-hidden>
+            <Plus className="size-4" />
           </span>
           Create your own
         </button>

@@ -73,3 +73,15 @@ test("the ＋ button opens a new habit", async ({ page }) => {
   await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "New habit" }).click();
   await expect(page).toHaveURL(/\/habits\/new$/);
 });
+
+test("every template tab fits above the bottom nav on a small phone", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 667 });
+  await signUpAndOnboard(page);
+  await page.goto("/habits/new");
+  const nav = await page.getByRole("navigation", { name: "Main" }).boundingBox();
+  for (const name of ["Popular", "Health", "Fitness", "Mind", "Learning", "People", "Home", "Money", "Break a habit"]) {
+    await page.getByRole("tab", { name }).click();
+    const last = await page.getByRole("button", { name: "Create your own" }).boundingBox();
+    expect(last!.y + last!.height, name).toBeLessThanOrEqual(nav!.y);
+  }
+});
