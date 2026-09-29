@@ -55,12 +55,12 @@ Pastel chip background with a deeper icon color, always with the icon.
 |---|---|---|---|
 | Health | `#E3F1FA` | `#3B82B8` | droplet |
 | Fitness | `#E5F2E6` | `#4F8A5B` | footprints |
-| Mind | `#EEE8F8` | `#7B61B0` | book-open |
-| Learning | `#FBF3D9` | `#B08A1E` | graduation-cap |
-| Family | `#FBE6E8` | `#C2505F` | heart |
+| Mind | `#EEE8F8` | `#7B61B0` | sun |
+| Learning | `#FBF3D9` | `#B08A1E` | book-open |
+| People | `#FBE6E8` | `#C2505F` | heart |
 | Home | `#E0F3EF` | `#3A8C7E` | house |
-| Finance | `#F1EADF` | `#8A6B45` | wallet |
-| Other | `#F0ECE8` | `#8A7F76` | sparkles |
+| Money | `#F1EADF` | `#8A6B45` | wallet |
+| Break a habit | `#F0ECE8` | `#8A7F76` | shield-ban |
 
 Icons come from `lucide-react` (rounded line style). **Kid habits** use picture emoji a child recognizes (🪥 brush teeth, 🧸 tidy toys, 📖 read, 🛁 bath, 🥦 eat veggies, 😴 bedtime), chosen from a curated kid set, shown large in a pastel circle. Emoji only in copy (🔥 in the streak count) and in avatars, never as UI icons.
 

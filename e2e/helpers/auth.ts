@@ -24,3 +24,8 @@ export async function completeOnboarding(
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page).toHaveURL(/\/today$/);
 }
+
+export async function signUpAndOnboard(page: Page): Promise<void> {
+  await signInWithMagicLink(page, uniqueEmail());
+  await completeOnboarding(page);
+}

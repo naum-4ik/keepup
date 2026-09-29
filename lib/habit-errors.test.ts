@@ -1,0 +1,15 @@
+import { describe, expect, it } from "vitest";
+import { GENERIC_ERROR, habitErrorMessage } from "./habit-errors";
+
+describe("habitErrorMessage", () => {
+  it("maps database rule errors to friendly copy", () => {
+    expect(habitErrorMessage({ message: "keepup:already_checked_in_today" })).toBe("Already checked in today. Come back tomorrow.");
+    expect(habitErrorMessage({ message: "keepup:freeze_in_past" })).toBe("A pause can't start in the past.");
+    expect(habitErrorMessage({ message: "keepup:start_locked" })).toBe("The start date can't change after the first check-in.");
+  });
+
+  it("falls back to a generic message", () => {
+    expect(habitErrorMessage({ message: "connection reset" })).toBe(GENERIC_ERROR);
+    expect(habitErrorMessage(null)).toBe(GENERIC_ERROR);
+  });
+});
