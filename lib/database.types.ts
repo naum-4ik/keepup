@@ -23,7 +23,32 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "habit_freezes": {
+            "check_ins": {
+                  Row: {
+                    "created_at": string,"habit_id": string,"id": string,"local_date": string,"period_start": string,"status": string,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"habit_id": string,"id"?: string,"local_date": string,"period_start": string,"status"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"habit_id"?: string,"id"?: string,"local_date"?: string,"period_start"?: string,"status"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "check_ins_habit_id_fkey"
+      columns: ["habit_id"]
+isOneToOne: false
+      referencedRelation: "habits"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "check_ins_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"habit_freezes": {
                   Row: {
                     "created_at": string,"ends_on": string | null,"habit_id": string,"id": string,"starts_on": string
                   }
@@ -80,7 +105,26 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "freeze_habit":
+            "check_in":
+{ Args: { "p_habit_id": string }; Returns: {
+              "created_at": string,
+"habit_id": string,
+"id": string,
+"local_date": string,
+"period_start": string,
+"status": string,
+"user_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "check_ins"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"delete_habit":
+{ Args: { "p_habit_id": string }; Returns: undefined
+                           },
+"freeze_habit":
 { Args: { "p_ends_on"?: string,"p_habit_id": string,"p_starts_on": string }; Returns: {
               "created_at": string,
 "ends_on": string | null,
@@ -96,6 +140,9 @@ isOneToOne: false
       } },
 "is_valid_timezone":
 { Args: { "tz": string }; Returns: boolean
+                           },
+"undo_check_in":
+{ Args: { "p_check_in_id": string }; Returns: undefined
                            },
 "unfreeze_habit":
 { Args: { "p_habit_id": string }; Returns: undefined
