@@ -48,7 +48,7 @@ export function HabitForm({ today }: { today: string }) {
             onClick={() => setTab(key)}
             className={cn(
               "flex min-h-11 items-center gap-1.5 rounded-xl bg-card px-2 py-1.5 text-left text-xs leading-tight font-semibold shadow-soft",
-              tab === key ? "text-foreground ring-2 ring-primary" : "text-muted-foreground hover:bg-muted",
+              tab === key ? "bg-accent text-foreground ring-2 ring-primary" : "text-muted-foreground hover:bg-muted",
             )}
           >
             {key === "popular" ? (
@@ -63,33 +63,38 @@ export function HabitForm({ today }: { today: string }) {
         ))}
       </div>
 
-      {/* Two columns so every tab (at most 6 templates + Create your own) fits on one phone screen. */}
-      <div role="tabpanel" className="grid grid-cols-2 gap-2.5">
+      {/* Fixed 2×3 grid (no tab has more than 6 templates) with same-size cards, so switching
+          tabs never moves anything and "Create your own" always sits in the same place. */}
+      <div role="tabpanel" className="grid grid-cols-2 grid-rows-[repeat(3,4.75rem)] gap-2.5">
         {templates.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => pickTemplate(t)}
-            className="flex min-h-14 items-center gap-2 rounded-2xl bg-card px-3 py-2.5 text-left shadow-soft hover:bg-muted"
+            className="flex h-full items-center gap-2.5 rounded-2xl bg-card px-3 text-left shadow-soft hover:bg-muted"
           >
             <CategoryIcon category={t.category} size="xs" />
             <span className="flex min-w-0 flex-col">
-              <span className="text-[0.9375rem] leading-snug font-bold">{t.title}</span>
+              <span className="line-clamp-2 text-[0.9375rem] leading-snug font-bold">{t.title}</span>
               <span className="text-xs text-muted-foreground">{describeSchedule(t.targetCount, t.period)}</span>
             </span>
           </button>
         ))}
-        <button
-          type="button"
-          onClick={createOwn}
-          className="flex min-h-14 items-center gap-2 rounded-2xl border-2 border-dashed border-input px-3 py-2.5 text-left text-[0.9375rem] leading-snug font-bold text-muted-foreground hover:bg-muted"
-        >
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-primary" aria-hidden>
-            <Plus className="size-4" />
-          </span>
-          Create your own
-        </button>
+        {templates.length === 0 && (
+          <p className="col-span-2 row-span-3 flex items-center justify-center rounded-2xl bg-card/60 px-6 text-center text-sm text-muted-foreground">
+            No templates here yet. Create your own below.
+          </p>
+        )}
       </div>
+
+      <button
+        type="button"
+        onClick={createOwn}
+        className="flex h-12 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/30 text-[0.9375rem] font-bold text-primary hover:bg-accent"
+      >
+        <Plus aria-hidden className="size-5" />
+        Create your own
+      </button>
 
       <Dialog open={draft !== null} onOpenChange={(isOpen) => !isOpen && setDraft(null)}>
         {/* Templates open without focusing a field, so the phone keyboard doesn't cover the form. */}

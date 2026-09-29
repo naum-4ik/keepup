@@ -15,7 +15,7 @@ const t = (id: string, title: string, category: HabitCategory, targetCount: numb
 export const HABIT_TEMPLATES: HabitTemplate[] = [
   t("water", "Drink water", "health", 8, "day", true),
   t("sleep", "Sleep by 23:00", "health", 1, "day", true),
-  t("vitamins", "Take vitamins / medication", "health", 1, "day"),
+  t("vitamins", "Take vitamins or meds", "health", 1, "day"),
   t("veggies", "Eat fruit or vegetables", "health", 3, "day"),
   t("floss", "Floss", "health", 1, "day"),
   t("skincare", "Skincare routine", "health", 1, "day"),
@@ -37,12 +37,12 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
   t("read", "Read 20 min", "learning", 1, "day", true),
   t("language", "Learn a language", "learning", 1, "day"),
   t("instrument", "Practice an instrument", "learning", 3, "week"),
-  t("podcast", "Listen to a podcast or course", "learning", 3, "week"),
+  t("podcast", "Podcast or course", "learning", 3, "week"),
   t("study", "Study", "learning", 5, "week"),
 
   t("call", "Call family or a friend", "people", 1, "week"),
   t("message", "Message someone you miss", "people", 2, "week"),
-  t("kids-time", "Quality time with the kids (no phones)", "people", 1, "day"),
+  t("kids-time", "Phone-free time with the kids", "people", 1, "day"),
   t("date-night", "Date night", "people", 1, "week"),
   t("kind", "Do something kind", "people", 1, "week"),
 
