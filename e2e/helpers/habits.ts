@@ -8,6 +8,7 @@ export async function createHabit(page: Page, habit: NewHabit): Promise<void> {
     if (habit.tab) await page.getByRole("tab", { name: habit.tab }).click();
     await page.getByRole("button", { name: new RegExp(`^${habit.template.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`) }).click();
   } else {
+    await page.getByRole("button", { name: "Create your own" }).click();
     await page.getByLabel("Title").fill(habit.title);
     await page.getByLabel("Times").fill(String(habit.count));
     await page.getByLabel("Per").selectOption(habit.period);

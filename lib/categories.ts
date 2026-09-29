@@ -1,11 +1,11 @@
-import { BookOpen, Droplet, Footprints, Heart, House, ShieldBan, Sun, Wallet, type LucideIcon } from "lucide-react";
+import { BookOpen, Footprints, Heart, HeartPulse, House, ShieldBan, Sun, Wallet, type LucideIcon } from "lucide-react";
 import type { HabitCategory } from "@/lib/habit-schema";
 
 export type CategoryMeta = { label: string; icon: LucideIcon; chipClass: string; iconClass: string };
 
 // From ~/Projects/keepup-notes/templates-and-categories.md (pastel chip + deeper icon color).
 export const CATEGORIES: Record<HabitCategory, CategoryMeta> = {
-  health: { label: "Health", icon: Droplet, chipClass: "bg-[#E3F1FA] dark:bg-[#3B82B8]/20", iconClass: "text-[#3B82B8]" },
+  health: { label: "Health", icon: HeartPulse, chipClass: "bg-[#E3F1FA] dark:bg-[#3B82B8]/20", iconClass: "text-[#3B82B8]" },
   fitness: { label: "Fitness", icon: Footprints, chipClass: "bg-[#E5F2E6] dark:bg-[#4F8A5B]/20", iconClass: "text-[#4F8A5B]" },
   mind: { label: "Mind", icon: Sun, chipClass: "bg-[#EEE8F8] dark:bg-[#7B61B0]/20", iconClass: "text-[#7B61B0]" },
   learning: { label: "Learning", icon: BookOpen, chipClass: "bg-[#FBF3D9] dark:bg-[#B08A1E]/20", iconClass: "text-[#B08A1E]" },

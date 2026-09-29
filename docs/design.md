@@ -53,7 +53,7 @@ Pastel chip background with a deeper icon color, always with the icon.
 
 | Category | Chip | Icon color | Icon |
 |---|---|---|---|
-| Health | `#E3F1FA` | `#3B82B8` | droplet |
+| Health | `#E3F1FA` | `#3B82B8` | heart-pulse |
 | Fitness | `#E5F2E6` | `#4F8A5B` | footprints |
 | Mind | `#EEE8F8` | `#7B61B0` | sun |
 | Learning | `#FBF3D9` | `#B08A1E` | book-open |

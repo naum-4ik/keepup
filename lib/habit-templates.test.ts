@@ -3,9 +3,9 @@ import { HABIT_TEMPLATES } from "./habit-templates";
 import { parseHabit } from "./habit-schema";
 
 describe("HABIT_TEMPLATES", () => {
-  it("has 39 templates, 14 popular, unique ids", () => {
+  it("has 39 templates, 6 popular, unique ids", () => {
     expect(HABIT_TEMPLATES).toHaveLength(39);
-    expect(HABIT_TEMPLATES.filter((t) => t.popular)).toHaveLength(14);
+    expect(HABIT_TEMPLATES.filter((t) => t.popular)).toHaveLength(6);
     expect(new Set(HABIT_TEMPLATES.map((t) => t.id)).size).toBe(39);
   });
 

@@ -22,6 +22,7 @@ test("a new user adds a habit from a template", async ({ page }) => {
 test("custom habits are validated", async ({ page }) => {
   await signUpAndOnboard(page);
   await page.goto("/habits/new");
+  await page.getByRole("button", { name: "Create your own" }).click();
 
   await page.getByLabel("Title").fill("   ");
   await page.getByRole("button", { name: "Add habit" }).click();
@@ -52,14 +53,18 @@ test("category tabs show more templates and 'Create your own'", async ({ page })
   await expect(page.getByLabel("Title")).toBeFocused();
 });
 
-test("browsing tabs after picking a template doesn't change its category", async ({ page }) => {
+test("a template opens in a sheet that can be closed without adding", async ({ page }) => {
   await signUpAndOnboard(page);
   await page.goto("/habits/new");
   await page.getByRole("button", { name: /^Drink water/ }).click();
-  await expect(page.getByLabel("Category")).toHaveValue("health");
+  const sheet = page.getByRole("dialog", { name: "Add habit" });
+  await expect(sheet).toBeVisible();
+  await expect(sheet.getByLabel("Category")).toHaveValue("health");
 
-  await page.getByRole("tab", { name: "Fitness" }).click();
-  await expect(page.getByLabel("Category")).toHaveValue("health");
+  await sheet.getByRole("button", { name: "Close" }).click();
+  await expect(sheet).toBeHidden();
+  await page.goto("/today");
+  await expect(page.getByText("Nothing to do yet")).toBeVisible();
 });
 
 test("the ＋ button opens a new habit", async ({ page }) => {
