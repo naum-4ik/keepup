@@ -53,10 +53,18 @@ jobs:
           rm -rf dump recipients.txt
       - name: Commit to keepup-backups and prune to 30 days
         env:
-          BACKUPS_TOKEN: ${{ secrets.BACKUPS_TOKEN }}
+          BACKUPS_DEPLOY_KEY: ${{ secrets.BACKUPS_DEPLOY_KEY }}
         run: |
           set -euo pipefail
-          url="https://x-access-token:${BACKUPS_TOKEN}@github.com/naum-4ik/keepup-backups.git"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          umask 077
+          printf '%s\n' "$BACKUPS_DEPLOY_KEY" > ~/.ssh/backups_key
+          trap 'rm -f ~/.ssh/backups_key' EXIT
+          chmod 600 ~/.ssh/backups_key
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' >> ~/.ssh/known_hosts
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/backups_key -o IdentitiesOnly=yes"
+          url="git@github.com:naum-4ik/keepup-backups.git"
           # ls-remote failing aborts the job (set -e). Only an empty listing (no main yet, i.e. the
           # first run) may start a fresh repo; any other clone failure must fail, never wipe history.
           heads=$(git ls-remote --heads "$url" main)
