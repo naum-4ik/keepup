@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 const shortDate = (date: string) => formatLocalDate(date).split(" ").slice(1).join(" ");
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const chipClass =
-  "flex h-11 items-center justify-center gap-1 rounded-full border border-input px-1.5 text-[0.8125rem] font-semibold whitespace-nowrap text-muted-foreground aria-pressed:border-primary aria-pressed:bg-accent aria-pressed:text-foreground";
+  "flex h-11 items-center justify-center gap-1 rounded-full border border-input px-1.5 text-[0.8125rem] font-semibold whitespace-nowrap text-muted-foreground hover:border-primary/60 hover:bg-accent/60 hover:text-foreground aria-pressed:border-primary aria-pressed:bg-accent aria-pressed:text-foreground";
 
 type QuickPick = { label: string; date: string };
 
