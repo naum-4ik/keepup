@@ -285,6 +285,7 @@ test("progress groups habits by category and lists archived ones", async ({ page
   await page.getByRole("button", { name: "Check in: Read 20 min" }).click();
   await expect(page.getByRole("button", { name: "Done: Read 20 min" })).toBeVisible();
   await page.getByRole("link", { name: /Read 20 min/ }).click();
+  await openSection(page, "Archive");
   await page.getByRole("button", { name: "Archive habit" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Archive", exact: true }).click();
 
