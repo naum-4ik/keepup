@@ -16,11 +16,14 @@ export function FreezeForm({
   today,
   weekStart,
   activeFreeze,
+  paused,
 }: {
   habitId: string;
   today: string;
   weekStart: 0 | 1;
+  // The current pause (when `paused`) or the next scheduled one.
   activeFreeze: HabitFreeze | null;
+  paused: boolean;
 }) {
   const [state, formAction, pending] = useActionState(freezeHabit.bind(null, habitId), initialState);
   const [resuming, startResume] = useTransition();
@@ -36,7 +39,7 @@ export function FreezeForm({
   };
 
   if (activeFreeze) {
-    const scheduled = activeFreeze.starts_on > today;
+    const scheduled = !paused;
     return (
       <div className="flex flex-col gap-3">
         <p className="text-sm">
@@ -67,7 +70,8 @@ export function FreezeForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
-            <input type="hidden" name="startsOn" value={startsOn} />
+      {/* Today is sent as empty, so the server uses its own today (this page's may be stale after midnight). */}
+      <input type="hidden" name="startsOn" value={startsOn === today ? "" : startsOn} />
       <input type="hidden" name="endsOn" value={endsOn ?? ""} />
 
       <fieldset className="flex flex-col gap-1.5">

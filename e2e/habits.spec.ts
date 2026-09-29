@@ -53,16 +53,16 @@ test("category tabs show more templates and 'Create your own'", async ({ page })
   await expect(page.getByLabel("Title")).toBeFocused();
 });
 
-test("a template opens in a sheet that can be closed without adding", async ({ page }) => {
+test("a template opens in a dialog that can be closed without adding", async ({ page }) => {
   await signUpAndOnboard(page);
   await page.goto("/habits/new");
   await page.getByRole("button", { name: /^Drink water/ }).click();
-  const sheet = page.getByRole("dialog", { name: "Add habit" });
-  await expect(sheet).toBeVisible();
-  await expect(sheet.getByLabel("Category")).toHaveValue("health");
+  const dialog = page.getByRole("dialog", { name: "Add habit" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByLabel("Category")).toHaveValue("health");
 
-  await sheet.getByRole("button", { name: "Close" }).click();
-  await expect(sheet).toBeHidden();
+  await dialog.getByRole("button", { name: "Close" }).click();
+  await expect(dialog).toBeHidden();
   await page.goto("/today");
   await expect(page.getByText("Nothing to do yet")).toBeVisible();
 });

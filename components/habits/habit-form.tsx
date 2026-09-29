@@ -28,6 +28,8 @@ type Draft = { key: number; custom: boolean; values: HabitFormValues };
 export function HabitForm({ today, weekStart }: { today: string; weekStart: 0 | 1 }) {
   const [tab, setTab] = useState<Tab>("popular");
   const [draft, setDraft] = useState<Draft | null>(null);
+  // While the create is in flight the dialog stays open (Esc, outside click and Close are ignored).
+  const [pending, setPending] = useState(false);
   const templates = HABIT_TEMPLATES.filter((t) => (tab === "popular" ? t.popular : t.category === tab));
 
   // Each open gets a new key, so the dialog's form starts fresh (no errors from a previous try).
@@ -98,22 +100,35 @@ export function HabitForm({ today, weekStart }: { today: string; weekStart: 0 | 
         Create your own
       </button>
 
-      <Dialog open={draft !== null} onOpenChange={(isOpen) => !isOpen && setDraft(null)}>
+      <Dialog open={draft !== null} onOpenChange={(isOpen) => !isOpen && !pending && setDraft(null)}>
         {/* Templates open without focusing a field, so the phone keyboard doesn't cover the form. */}
         <DialogContent onOpenAutoFocus={(e) => !draft?.custom && e.preventDefault()}>
           <div className="flex flex-col gap-1 pr-10">
             <DialogTitle>{draft?.custom ? "Create your own" : "Add habit"}</DialogTitle>
             <DialogDescription>You can change anything before adding it.</DialogDescription>
           </div>
-          {draft && <HabitFields key={draft.key} initial={draft.values} today={today} weekStart={weekStart} />}
+          {draft && (
+            <HabitFields key={draft.key} initial={draft.values} today={today} weekStart={weekStart} onPendingChange={setPending} />
+          )}
         </DialogContent>
       </Dialog>
     </div>
   );
 }
 
-function HabitFields({ initial, today, weekStart }: { initial: HabitFormValues; today: string; weekStart: 0 | 1 }) {
+function HabitFields({
+  initial,
+  today,
+  weekStart,
+  onPendingChange,
+}: {
+  initial: HabitFormValues;
+  today: string;
+  weekStart: 0 | 1;
+  onPendingChange: (pending: boolean) => void;
+}) {
   const [state, formAction, pending] = useActionState(createHabit, initialState);
+  useEffect(() => onPendingChange(pending), [pending, onPendingChange]);
   const [values, setValues] = useState(initial);
   const categoryRef = useRef<HTMLSelectElement>(null);
   const periodRef = useRef<HTMLSelectElement>(null);
@@ -168,7 +183,7 @@ function HabitFields({ initial, today, weekStart }: { initial: HabitFormValues; 
         <div className="grid grid-cols-2 gap-2">
           <div className="flex h-11 items-center rounded-xl border border-input">
             <button type="button" onClick={() => step(-1)} disabled={count <= 1} aria-label="Decrease"
-              className="flex size-11 shrink-0 items-center justify-center rounded-l-xl text-primary disabled:text-muted-foreground/50">
+              className="flex size-11 shrink-0 items-center justify-center rounded-l-xl text-primary enabled:hover:bg-accent disabled:text-muted-foreground/50">
               <Minus className="size-4" />
             </button>
             <Label htmlFor="targetCount" className="sr-only">Times</Label>
@@ -185,7 +200,7 @@ function HabitFields({ initial, today, weekStart }: { initial: HabitFormValues; 
               aria-describedby={errors.targetCount ? "targetCount-error" : undefined}
             />
             <button type="button" onClick={() => step(1)} disabled={count >= limit} aria-label="Increase"
-              className="flex size-11 shrink-0 items-center justify-center rounded-r-xl text-primary disabled:text-muted-foreground/50">
+              className="flex size-11 shrink-0 items-center justify-center rounded-r-xl text-primary enabled:hover:bg-accent disabled:text-muted-foreground/50">
               <Plus className="size-4" />
             </button>
           </div>
@@ -202,7 +217,8 @@ function HabitFields({ initial, today, weekStart }: { initial: HabitFormValues; 
 
       <fieldset className="flex flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold">Starts</legend>
-        <input type="hidden" name="startsOn" value={values.startsOn} />
+        {/* Today is sent as empty, so the server uses its own today (this page's may be stale after midnight). */}
+        <input type="hidden" name="startsOn" value={values.startsOn === today ? "" : values.startsOn} />
         <StartDatePicker
           value={values.startsOn}
           onChange={(startsOn) => setValues((v) => ({ ...v, startsOn }))}

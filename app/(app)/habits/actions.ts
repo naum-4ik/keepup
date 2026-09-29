@@ -8,8 +8,9 @@ import { GENERIC_ERROR, habitErrorMessage } from "@/lib/habit-errors";
 import { isUuid, LOCAL_DATE, parseHabit, parseHabitDetails, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 
 const NOT_FOUND: ActionResult = { ok: false, message: "That habit isn't available." };
-// These errors mean another device already changed the count; refresh so this card stops showing stale data.
-const REFRESH_ON_ERROR = new Set(["target_reached", "already_checked_in_today"]);
+// These errors mean another device (or midnight) already changed the habit; refresh so this card
+// stops showing stale data.
+const REFRESH_ON_ERROR = new Set(["target_reached", "already_checked_in_today", "habit_frozen", "habit_archived", "habit_not_found"]);
 
 export type ActionResult = { ok: true } | { ok: false; message: string };
 export type FormActionState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string };
@@ -62,13 +63,14 @@ export async function freezeHabit(habitId: string, _prev: FormActionState, formD
   if (!isUuid(habitId)) return { status: "error", message: "That habit isn't available." };
   const startsOn = String(formData.get("startsOn") ?? "");
   const endsOn = String(formData.get("endsOn") ?? "");
-  if (!LOCAL_DATE.test(startsOn) || (endsOn !== "" && !LOCAL_DATE.test(endsOn))) {
+  // An empty start means today, decided by the database in the owner's time zone.
+  if ((startsOn !== "" && !LOCAL_DATE.test(startsOn)) || (endsOn !== "" && !LOCAL_DATE.test(endsOn))) {
     return { status: "error", message: "Pick valid dates." };
   }
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("freeze_habit", {
     p_habit_id: habitId,
-    p_starts_on: startsOn,
+    ...(startsOn ? { p_starts_on: startsOn } : {}),
     ...(endsOn ? { p_ends_on: endsOn } : {}),
   });
   if (error) return { status: "error", message: habitErrorMessage(error) };

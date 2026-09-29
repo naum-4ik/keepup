@@ -144,7 +144,7 @@ isOneToOne: false
 { Args: { "p_habit_id": string }; Returns: undefined
                            },
 "freeze_habit":
-{ Args: { "p_ends_on"?: string,"p_habit_id": string,"p_starts_on": string }; Returns: {
+{ Args: { "p_ends_on"?: string,"p_habit_id": string,"p_starts_on"?: string }; Returns: {
               "created_at": string,
 "ends_on": string | null,
 "habit_id": string,
