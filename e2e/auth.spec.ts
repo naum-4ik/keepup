@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, signInWithMagicLink, signUpAndOnboard, uniqueEmail } from "./helpers/auth";
+import { chooseTimezone, completeOnboarding, signInWithMagicLink, signUpAndOnboard, uniqueEmail } from "./helpers/auth";
 
 test("signed-out visitors are sent to sign in", async ({ page }) => {
   await page.goto("/today");
@@ -10,7 +10,7 @@ test("a new user signs in, onboards and lands on Today", async ({ page }) => {
   await signInWithMagicLink(page, uniqueEmail());
 
   await expect(page).toHaveURL(/\/onboarding$/);
-  await expect(page.getByLabel("Time zone")).toHaveValue("Europe/Rome"); // detected from the browser
+  await expect(page.locator('input[name="timezone"]')).toHaveValue("Europe/Rome"); // detected from the browser
   await expect(page.getByText("Rome", { exact: true })).toBeVisible();
 
   await completeOnboarding(page, { name: "Ana" });
@@ -41,12 +41,12 @@ test("invalid input keeps what the user typed", async ({ page }) => {
   await expect(page).toHaveURL(/\/onboarding$/);
 
   await page.getByLabel("Display name").fill("x".repeat(41));
-  await page.getByRole("button", { name: "Change" }).click();
-  await page.getByLabel("Time zone").selectOption("Asia/Tokyo");
+  await page.getByRole("button", { name: "Change", exact: true }).click();
+  await chooseTimezone(page, "Tokyo");
   await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page.getByText("Keep it to 40 characters.")).toBeVisible();
-  await expect(page.getByLabel("Time zone")).toHaveValue("Asia/Tokyo");
+  await expect(page.locator('input[name="timezone"]')).toHaveValue("Asia/Tokyo");
   await expect(page.getByLabel("Display name")).toHaveValue("x".repeat(41));
 });
 
@@ -55,12 +55,37 @@ test("settings changes show on the profile", async ({ page }) => {
   await completeOnboarding(page);
 
   await page.goto("/profile/settings");
-  await page.getByLabel("Daily reminder").selectOption("7");
+  await expect(page.getByLabel("Daily reminder")).toHaveCount(0); // returns with reminders (M4)
+  await expect(page.getByRole("group", { name: "Time zone" })).toContainText(/Rome · \d\d:\d\d now/);
+  await chooseTimezone(page, "Tokyo");
+  await expect(page.getByText("Changes apply from your next day and week.")).toBeVisible();
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("status")).toHaveText("Saved");
 
   await page.goto("/profile");
-  await expect(page.getByText("reminders at 07:00")).toBeVisible();
+  await expect(page.getByText("Tokyo · weeks start Sunday")).toBeVisible();
+});
+
+test("settings: search, the device link and the (i) hints", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await page.goto("/profile/settings");
+
+  const zone = page.getByRole("group", { name: "Time zone" });
+  await expect(page.getByRole("button", { name: /Use this device's time zone/ })).toHaveCount(0); // already Rome
+  await chooseTimezone(page, "Tokyo");
+  await page.getByRole("button", { name: "Use this device's time zone (Rome)" }).click();
+  await expect(zone).toContainText("Rome");
+
+  await page.getByRole("button", { name: "Change time zone" }).click();
+  await page.getByLabel("Search time zones").fill("GMT+5:30");
+  await expect(page.getByRole("list", { name: "Time zones" })).toContainText("Kolkata");
+  await page.getByLabel("Search time zones").fill("zzz");
+  await expect(page.getByText("No matches. Try a nearby city.")).toBeVisible();
+
+  const hint = page.getByText("Your days start at midnight here. Streaks follow it.");
+  await expect(hint).toBeHidden();
+  await zone.getByRole("button", { name: "What is this?" }).click();
+  await expect(hint).toBeVisible();
 });
 
 test("the first day of the week can be changed in settings", async ({ page }) => {

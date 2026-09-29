@@ -3,12 +3,12 @@ export const DISPLAY_NAME_MAX = 40;
 export const PURPOSES = ["me", "family", "friends"] as const;
 export type Purpose = (typeof PURPOSES)[number];
 
-// Fields both forms share: Settings adds the reminder hour, onboarding adds the purpose.
+// Fields both forms share; onboarding adds the purpose. The reminder hour returns to Settings with reminders (M4).
 type BaseValues = { displayName: string; timezone: string; weekStart: string };
 type BaseInput = { displayName: string; timezone: string; weekStart: 0 | 1 };
 
-export type ProfileFormValues = BaseValues & { reminderHour: string };
-export type ProfileInput = BaseInput & { reminderHour: number };
+export type ProfileFormValues = BaseValues;
+export type ProfileInput = BaseInput;
 export type OnboardingFormValues = BaseValues & { purpose: string };
 export type OnboardingInput = BaseInput & { purpose: Purpose | null };
 
@@ -23,7 +23,7 @@ export type OnboardingFormState = FormState<OnboardingFormValues>;
 type Parsed<T> = { ok: true; value: T } | { ok: false; errors: ProfileErrors };
 
 export function readProfileForm(formData: FormData): ProfileFormValues {
-  return { ...readBase(formData), reminderHour: String(formData.get("reminderHour") ?? "") };
+  return readBase(formData);
 }
 
 export function readOnboardingForm(formData: FormData): OnboardingFormValues {
@@ -55,12 +55,8 @@ function parseBase(values: BaseValues, timezones: ReadonlySet<string>, errors: P
 export function parseProfile(values: ProfileFormValues, timezones: ReadonlySet<string>): Parsed<ProfileInput> {
   const errors: ProfileErrors = {};
   const base = parseBase(values, timezones, errors);
-  const reminderHour = Number(values.reminderHour);
-  if (values.reminderHour === "" || !Number.isInteger(reminderHour) || reminderHour < 0 || reminderHour > 23) {
-    errors.reminderHour = "Pick an hour between 00:00 and 23:00.";
-  }
   if (Object.keys(errors).length > 0) return { ok: false, errors };
-  return { ok: true, value: { ...base, reminderHour } };
+  return { ok: true, value: base };
 }
 
 // Empty means "not answered" (null); anything else must be one of the three answers.

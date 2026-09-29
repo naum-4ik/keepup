@@ -1,11 +1,13 @@
 "use client";
 
 import { useActionState, useEffect, useId, useRef, useState } from "react";
+import { InfoHint } from "@/components/info-hint";
 import { SaveButton } from "@/components/save-button";
+import { TimezonePicker } from "@/components/timezone-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { OnboardingFormState, OnboardingFormValues, Purpose } from "@/lib/profile-schema";
-import { pickTimezone } from "@/lib/timezones";
+import { cityOf, pickTimezone } from "@/lib/timezones";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -34,8 +36,6 @@ function detectWeekStart(): "0" | "1" | null {
   return firstDay === 7 ? "0" : "1";
 }
 
-const cityOf = (tz: string) => (tz.split("/").pop() ?? tz).replaceAll("_", " ");
-
 export function AboutYouForm({ action, timezones, defaults }: Props) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const [timezone, setTimezone] = useState(defaults.timezone);
@@ -43,7 +43,6 @@ export function AboutYouForm({ action, timezones, defaults }: Props) {
   const [purpose, setPurpose] = useState(defaults.purpose);
   const [detected, setDetected] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const timezoneRef = useRef<HTMLSelectElement>(null);
   const weekStartRef = useRef<HTMLSelectElement>(null);
   const detailsId = useId();
 
@@ -63,9 +62,8 @@ export function AboutYouForm({ action, timezones, defaults }: Props) {
   // The browser resets <form> fields after a server action runs; <select> doesn't re-sync from its
   // `value` prop, so put it back to our state here.
   useEffect(() => {
-    if (timezoneRef.current) timezoneRef.current.value = timezone;
     if (weekStartRef.current) weekStartRef.current.value = weekStart;
-  }, [state, timezone, weekStart]);
+  }, [state, weekStart]);
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
@@ -108,39 +106,17 @@ export function AboutYouForm({ action, timezones, defaults }: Props) {
         </p>
       )}
 
-      {/* Both selects stay in the form either way, so the detected values are always submitted. */}
+      {/* Both fields stay in the form either way, so the detected values are always submitted. */}
       <div id={detailsId} hidden={!showDetails} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="timezone" className="font-semibold">
-            Time zone
-          </Label>
-          <select
-            id="timezone"
-            name="timezone"
-            ref={timezoneRef}
-            value={timezone}
-            onChange={(e) => setTimezone(e.target.value)}
-            className={selectClass}
-            aria-invalid={Boolean(errors.timezone)}
-            aria-describedby={errors.timezone ? "timezone-error" : undefined}
-          >
-            {timezones.map((tz) => (
-              <option key={tz} value={tz}>
-                {tz.replaceAll("_", " ")}
-              </option>
-            ))}
-          </select>
-          {errors.timezone && (
-            <p id="timezone-error" className="text-sm text-destructive">
-              {errors.timezone}
-            </p>
-          )}
-        </div>
+        <TimezonePicker name="timezone" value={timezone} onChange={setTimezone} timezones={timezones} error={errors.timezone} />
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="weekStart" className="font-semibold">
-            Week starts on
-          </Label>
+          <div className="flex flex-wrap items-center gap-1">
+            <Label htmlFor="weekStart" className="font-semibold">
+              Week starts on
+            </Label>
+            <InfoHint text="Weekly habits reset on this day." />
+          </div>
           <select
             id="weekStart"
             name="weekStart"

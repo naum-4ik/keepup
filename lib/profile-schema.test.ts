@@ -7,7 +7,6 @@ const zones = new Set(["UTC", "Europe/Rome", "Asia/Tokyo"]);
 const valid: ProfileFormValues = {
   displayName: "  Ana  ",
   timezone: "Europe/Rome",
-  reminderHour: "21",
   weekStart: "1",
 };
 
@@ -15,7 +14,7 @@ describe("parseProfile", () => {
   it("accepts valid input and trims the name", () => {
     expect(parseProfile(valid, zones)).toEqual({
       ok: true,
-      value: { displayName: "Ana", timezone: "Europe/Rome", reminderHour: 21, weekStart: 1 },
+      value: { displayName: "Ana", timezone: "Europe/Rome", weekStart: 1 },
     });
   });
 
@@ -44,15 +43,9 @@ describe("parseProfile", () => {
     });
   });
 
-  it.each(["24", "-1", "7.5", "", "abc"])("rejects reminder hour %j", (h) => {
-    expect(parseProfile({ ...valid, reminderHour: h }, zones)).toEqual({
-      ok: false,
-      errors: { reminderHour: "Pick an hour between 00:00 and 23:00." },
-    });
-  });
-
-  it("accepts midnight", () => {
-    expect(parseProfile({ ...valid, reminderHour: "0" }, zones).ok).toBe(true);
+  it("has no reminder hour until reminders exist (M4)", () => {
+    expect(parseProfile(valid, zones)).toMatchObject({ ok: true });
+    expect(readProfileForm(new FormData())).not.toHaveProperty("reminderHour");
   });
 
   it("accepts Sunday or Monday as the first day of the week", () => {
@@ -65,11 +58,11 @@ describe("parseProfile", () => {
 });
 
 describe("readProfileForm", () => {
-  it("reads the four fields as strings, missing ones as empty", () => {
+  it("reads the three fields as strings, missing ones as empty", () => {
     const fd = new FormData();
     fd.set("displayName", "Ana");
     fd.set("timezone", "UTC");
-    expect(readProfileForm(fd)).toEqual({ displayName: "Ana", timezone: "UTC", reminderHour: "", weekStart: "" });
+    expect(readProfileForm(fd)).toEqual({ displayName: "Ana", timezone: "UTC", weekStart: "" });
   });
 });
 
