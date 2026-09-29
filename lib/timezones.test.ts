@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cityOf, describeZone, listTimezones, pickTimezone, searchZones } from "./timezones";
+import { cityOf, describeZone, listTimezones, pickTimezone, timeChoices } from "./timezones";
 
 describe("listTimezones", () => {
   it("always includes UTC and real IANA zones", () => {
@@ -61,41 +61,35 @@ describe("describeZone", () => {
   });
 });
 
-describe("searchZones", () => {
-  const now = new Date("2026-01-15T12:00:00Z");
-  const zones = ["UTC", "Europe/London", "Asia/Tokyo", "Asia/Kolkata", "America/New_York", "Europe/Berlin", "Asia/Seoul"];
-  const ids = (q: string) => searchZones(zones, q, now).map((z) => z.id);
+describe("timeChoices", () => {
+  const summer = new Date("2026-07-01T12:00:00Z");
+  const winter = new Date("2026-01-15T12:00:00Z");
+  const zones = [
+    "UTC", "Europe/London", "Europe/Moscow", "Asia/Jerusalem", "Europe/Berlin", "Europe/Paris",
+    "Asia/Seoul", "Asia/Tokyo", "Asia/Calcutta", "Pacific/Chatham",
+  ];
+  const rows = (now: Date, preferred: string[] = []) =>
+    timeChoices(zones, now, preferred).map((c) => `${c.time} ${c.city}`);
 
-  it("lists everything by offset, then city, when the query is empty", () => {
-    expect(ids("")).toEqual([
-      "America/New_York", "Europe/London", "UTC", "Europe/Berlin", "Asia/Kolkata", "Asia/Seoul", "Asia/Tokyo",
+  it("gives one row per local time now, sorted, each with a well-known city", () => {
+    expect(rows(summer)).toEqual([
+      "12:00 UTC", "13:00 London", "14:00 Paris", "15:00 Jerusalem", "17:30 Kolkata", "21:00 Tokyo", "00:45 Chatham",
     ]);
   });
 
-  it("matches the city, ignoring case, spaces and underscores", () => {
-    expect(ids("lon")).toEqual(["Europe/London"]);
-    expect(ids("new york")).toEqual(["America/New_York"]);
+  it("regroups when clocks change: in winter Jerusalem is an hour apart from Moscow", () => {
+    expect(rows(winter)).toEqual([
+      "12:00 London", "13:00 Paris", "14:00 Jerusalem", "15:00 Moscow", "17:30 Kolkata", "21:00 Tokyo", "01:45 Chatham",
+    ]);
   });
 
-  it("puts cities that start with the query first", () => {
-    const list = ["America/Blanc-Sablon", "America/Miquelon", "Europe/London", "America/Argentina/Buenos_Aires"];
-    expect(searchZones(list, "lon", now).map((z) => z.city)).toEqual(["London", "Blanc-Sablon", "Miquelon"]);
-    expect(searchZones(list, "aires", now).map((z) => z.city)).toEqual(["Buenos Aires"]); // a later word counts as a start
+  it("uses a preferred zone (the saved one or the device's) for its row", () => {
+    expect(rows(summer, ["Europe/Moscow", "Europe/Berlin"])).toContain("15:00 Moscow");
+    expect(rows(summer, ["Europe/Moscow", "Europe/Berlin"])).toContain("14:00 Berlin");
+    expect(rows(summer, ["Asia/Seoul"])).toContain("21:00 Seoul");
   });
 
-  it("finds a renamed city by its modern name", () => {
-    expect(searchZones(["Asia/Calcutta"], "kolkata", now).map((z) => z.id)).toEqual(["Asia/Calcutta"]);
-  });
-
-  it("matches the region", () => {
-    expect(ids("asia")).toEqual(["Asia/Kolkata", "Asia/Seoul", "Asia/Tokyo"]);
-  });
-
-  it("matches an exact offset, with or without GMT", () => {
-    expect(ids("+9")).toEqual(["Asia/Seoul", "Asia/Tokyo"]);
-    expect(ids("GMT+9")).toEqual(["Asia/Seoul", "Asia/Tokyo"]);
-    expect(ids("+5:30")).toEqual(["Asia/Kolkata"]);
-    expect(ids("+5")).toEqual([]);
-    expect(ids("-5")).toEqual(["America/New_York"]);
+  it("returns the zone id to save for each row", () => {
+    expect(timeChoices(zones, summer, []).find((c) => c.time === "21:00")?.id).toBe("Asia/Tokyo");
   });
 });
