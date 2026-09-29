@@ -31,6 +31,7 @@ export function LoginForm({ next }: { next: string }) {
         name="email"
         type="email"
         autoComplete="email"
+        placeholder="you@example.com"
         required
         defaultValue={state.status === "error" ? state.email : undefined}
       />
