@@ -109,20 +109,22 @@ export async function updateHabitDetails(habitId: string, _prev: FormActionState
   return { status: "saved" };
 }
 
-export async function archiveHabit(habitId: string): Promise<void> {
-  if (!isUuid(habitId)) redirect("/today");
+// archiveHabit/deleteHabit are driven by a confirm dialog via useActionState (not a plain
+// <form>), so a failure must come back as state the dialog can show, not a thrown error.
+export async function archiveHabit(habitId: string): Promise<FormActionState> {
+  if (!isUuid(habitId)) return { status: "error", message: "That habit isn't available." };
   const { supabase } = await requireUser();
   const { error } = await supabase.from("habits").update({ archived_at: new Date().toISOString() }).eq("id", habitId);
-  if (error) throw new Error(habitErrorMessage(error));
+  if (error) return { status: "error", message: habitErrorMessage(error) };
   refresh(habitId);
   redirect("/progress?view=archived");
 }
 
-export async function deleteHabit(habitId: string): Promise<void> {
-  if (!isUuid(habitId)) redirect("/today");
+export async function deleteHabit(habitId: string): Promise<FormActionState> {
+  if (!isUuid(habitId)) return { status: "error", message: "That habit isn't available." };
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("delete_habit", { p_habit_id: habitId });
-  if (error) throw new Error(habitErrorMessage(error));
+  if (error) return { status: "error", message: habitErrorMessage(error) };
   refresh();
   redirect("/today");
 }

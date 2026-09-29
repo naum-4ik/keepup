@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { archiveHabit } from "@/app/(app)/habits/actions";
+import { ArchiveHabitButton } from "@/components/habits/archive-habit-button";
 import { CategoryIcon } from "@/components/habits/category-icon";
 import { CheckInButton } from "@/components/habits/check-in-button";
 import { CheckInList } from "@/components/habits/check-in-list";
@@ -7,7 +7,6 @@ import { DeleteHabitButton } from "@/components/habits/delete-habit-button";
 import { FreezeForm } from "@/components/habits/freeze-form";
 import { HabitDetailsForm } from "@/components/habits/habit-details-form";
 import { HistoryGrid } from "@/components/habits/history-grid";
-import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
 import { todayIn } from "@/lib/dates";
 import { isUuid } from "@/lib/habit-schema";
@@ -92,7 +91,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                 })}
               />
             </div>
-            <CheckInList habitId={h.habit_id} checkIns={checkIns} timeZone={profile.timezone} />
+            <CheckInList habitId={h.habit_id} checkIns={checkIns} timeZone={profile.timezone} period={h.period} />
           </Card>
 
           <Card title="Pause">
@@ -115,12 +114,10 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
             {totalCheckIns === 0 ? (
               <DeleteHabitButton habitId={h.habit_id} title={h.title} />
             ) : (
-              <form action={archiveHabit.bind(null, h.habit_id)} className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2">
                 <p className="text-sm text-muted-foreground">Archived habits keep their history but leave Today.</p>
-                <Button type="submit" variant="outline" className="h-11 w-full">
-                  Archive habit
-                </Button>
-              </form>
+                <ArchiveHabitButton habitId={h.habit_id} title={h.title} />
+              </div>
             )}
           </Card>
         </>

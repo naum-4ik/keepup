@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { updateHabitDetails, type FormActionState } from "@/app/(app)/habits/actions";
 import { StartDatePicker } from "@/components/habits/start-date-picker";
 import { Button } from "@/components/ui/button";
@@ -32,21 +32,38 @@ export function HabitDetailsForm({
   weekStart: 0 | 1;
 }) {
   const [state, formAction, pending] = useActionState(updateHabitDetails.bind(null, habitId), initialState);
-  const [start, setStart] = useState(startsOn);
+  // Controlled, like the new-habit form's HabitFields: a failed save must keep what the user
+  // typed rather than reverting to the original values (the browser resets uncontrolled
+  // <form> fields to their mount-time defaultValue once the action returns).
+  const [values, setValues] = useState({ title, category, startsOn });
+  const categoryRef = useRef<HTMLSelectElement>(null);
+
+  // <select> doesn't reliably resync from its `value` prop after that same reset, so force it
+  // back to our own state (same workaround as HabitFields in habit-form.tsx).
+  useEffect(() => {
+    if (categoryRef.current) categoryRef.current.value = values.category;
+  }, [state, values.category]);
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="title">Title</Label>
-        <Input id="title" name="title" defaultValue={title} key={title} className={fieldClass} />
+        <Input
+          id="title"
+          name="title"
+          value={values.title}
+          onChange={(e) => setValues((v) => ({ ...v, title: e.target.value }))}
+          className={fieldClass}
+        />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="category">Category</Label>
         <select
           id="category"
           name="category"
-          defaultValue={category}
-          key={category}
+          ref={categoryRef}
+          value={values.category}
+          onChange={(e) => setValues((v) => ({ ...v, category: e.target.value as HabitCategory }))}
           className={cn(fieldClass, "w-full border border-input bg-transparent")}
         >
           {CATEGORY_ORDER.map((c) => (
@@ -59,8 +76,13 @@ export function HabitDetailsForm({
       {canEditStart && (
         <fieldset className="flex flex-col gap-1.5">
           <legend className="text-sm font-semibold">Starts</legend>
-          <input type="hidden" name="startsOn" value={start} />
-          <StartDatePicker value={start} onChange={setStart} today={today} weekStart={weekStart} />
+          <input type="hidden" name="startsOn" value={values.startsOn} />
+          <StartDatePicker
+            value={values.startsOn}
+            onChange={(startsOn) => setValues((v) => ({ ...v, startsOn }))}
+            today={today}
+            weekStart={weekStart}
+          />
         </fieldset>
       )}
       {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}

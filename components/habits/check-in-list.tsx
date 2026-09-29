@@ -3,12 +3,31 @@
 import { useState, useTransition } from "react";
 import { undoCheckIn } from "@/app/(app)/habits/actions";
 import { Button } from "@/components/ui/button";
+import type { HabitPeriod } from "@/lib/habit-schema";
 import type { HabitCheckIn } from "@/lib/habits";
 
-export function CheckInList({ habitId, checkIns, timeZone }: { habitId: string; checkIns: HabitCheckIn[]; timeZone: string }) {
+export function CheckInList({
+  habitId,
+  checkIns,
+  timeZone,
+  period,
+}: {
+  habitId: string;
+  checkIns: HabitCheckIn[];
+  timeZone: string;
+  period: HabitPeriod;
+}) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const time = new Intl.DateTimeFormat("en-GB", { timeZone, weekday: "short", hour: "2-digit", minute: "2-digit" });
+  // A daily habit only ever has today's check-ins in this period, so the weekday plus time is
+  // enough; a week/month period spans several days, so show the date too.
+  const time = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    weekday: "short",
+    ...(period !== "day" ? { day: "numeric", month: "short" } : {}),
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   if (checkIns.length === 0) return <p className="text-sm text-muted-foreground">No check-ins this period yet.</p>;
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkInState, describeProgress, describeSchedule } from "./schedule";
+import { checkInState, describeProgress, describeSchedule, pauseEndQuickPicks } from "./schedule";
 
 describe("describeSchedule", () => {
   it.each([
@@ -42,6 +42,21 @@ describe("describeProgress", () => {
 
   it("not started yet", () => {
     expect(describeProgress({ ...base, notStarted: true, startsOn: "2026-10-12" })).toEqual({ text: "Starts Mon 12 Oct", atRisk: false });
+  });
+});
+
+describe("pauseEndQuickPicks", () => {
+  it("offers 1 week, 2 weeks and 1 month after the start date", () => {
+    expect(pauseEndQuickPicks("2026-09-29")).toEqual([
+      { label: "1 week", date: "2026-10-06" },
+      { label: "2 weeks", date: "2026-10-13" },
+      { label: "1 month", date: "2026-10-29" },
+    ]);
+  });
+
+  it("carries the day of month across a shorter month", () => {
+    // 31 Jan + 1 month: JS Date clamps day 31 in February by rolling into March.
+    expect(pauseEndQuickPicks("2026-01-31")[2]).toEqual({ label: "1 month", date: "2026-03-03" });
   });
 });
 
