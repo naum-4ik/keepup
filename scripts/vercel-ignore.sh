@@ -6,6 +6,11 @@ set -euo pipefail
 build() { echo "vercel-ignore: BUILD - $1"; exit 1; }
 skip() { echo "vercel-ignore: SKIP - $1"; exit 0; }
 
+# release-please pushes its release branch after every merge to develop; same code as develop.
+case "${VERCEL_GIT_COMMIT_REF:-}" in
+  release-please--*) skip "release-please branch ${VERCEL_GIT_COMMIT_REF}" ;;
+esac
+
 base="${VERCEL_GIT_PREVIOUS_SHA:-}"
 if [ -z "$base" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
   if [ -n "$base" ]; then
