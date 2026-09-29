@@ -1,10 +1,22 @@
-import { formatLocalDate } from "@/lib/dates";
+import { addDays, addMonthsToDate, formatLocalDate } from "@/lib/dates";
 import type { HabitPeriod } from "@/lib/habit-schema";
 
 const ONCE: Record<HabitPeriod, string> = { day: "Daily", week: "Weekly", month: "Monthly" };
 
 export function describeSchedule(targetCount: number, period: HabitPeriod): string {
   return targetCount === 1 ? ONCE[period] : `${targetCount}× a ${period}`;
+}
+
+export type QuickPick = { label: string; date: string };
+
+// Quick picks for a pause's optional end date, relative to when the pause starts
+// (unlike the start-date picker's Today/Tomorrow/Next-weekday, which are relative to today).
+export function pauseEndQuickPicks(startsOn: string): QuickPick[] {
+  return [
+    { label: "1 week", date: addDays(startsOn, 7) },
+    { label: "2 weeks", date: addDays(startsOn, 14) },
+    { label: "1 month", date: addMonthsToDate(startsOn, 1) },
+  ];
 }
 
 export type ProgressInput = {

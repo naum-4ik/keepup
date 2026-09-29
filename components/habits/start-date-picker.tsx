@@ -10,22 +10,31 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const chipClass =
   "flex h-11 items-center justify-center gap-1 rounded-full border border-input px-1.5 text-[0.8125rem] font-semibold whitespace-nowrap text-muted-foreground aria-pressed:border-primary aria-pressed:bg-accent aria-pressed:text-foreground";
 
+type QuickPick = { label: string; date: string };
+
 type Props = {
   value: string;
   onChange: (date: string) => void;
   today: string;
+  // Earliest selectable date; defaults to `today`. Lets a caller (e.g. a pause's "Until") pick
+  // from some later floor (its "Pause from" date) while `today` still marks the real today.
+  min?: string;
   weekStart: 0 | 1;
   errorId?: string;
+  // Overrides the default Today/Tomorrow/Next-weekday picks, for a date that isn't relative to
+  // today (e.g. a pause's end date, relative to when the pause starts).
+  quickPicks?: QuickPick[];
 };
 
 // Quick picks cover the common case (start now); the month grid handles anything else.
 // Styled with the app's tokens instead of the browser's native date popup.
-export function StartDatePicker({ value, onChange, today, weekStart, errorId }: Props) {
-  const quick = [
-    { label: "Today", date: today },
-    { label: "Tomorrow", date: addDays(today, 1) },
-    { label: `Next ${WEEKDAYS[weekStart]}`, date: nextWeekStart(today, weekStart) },
-  ];
+export function StartDatePicker({ value, onChange, today, min = today, weekStart, errorId, quickPicks }: Props) {
+  const quick =
+    quickPicks ?? [
+      { label: "Today", date: today },
+      { label: "Tomorrow", date: addDays(today, 1) },
+      { label: `Next ${WEEKDAYS[weekStart]}`, date: nextWeekStart(today, weekStart) },
+    ];
   const isQuick = quick.some((q) => q.date === value);
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(value.slice(0, 7));
@@ -50,7 +59,7 @@ export function StartDatePicker({ value, onChange, today, weekStart, errorId }: 
       {open && (
         <div className="rounded-2xl border border-input p-3" aria-describedby={errorId}>
           <div className="mb-1 flex items-center justify-between">
-            <button type="button" aria-label="Previous month" disabled={month <= today.slice(0, 7)}
+            <button type="button" aria-label="Previous month" disabled={month <= min.slice(0, 7)}
               onClick={() => setMonth((m) => addMonths(m, -1))}
               className="flex size-11 items-center justify-center rounded-full text-primary hover:bg-muted disabled:text-muted-foreground/40">
               <ChevronLeft className="size-5" />
@@ -72,7 +81,7 @@ export function StartDatePicker({ value, onChange, today, weekStart, errorId }: 
                 <button
                   key={date}
                   type="button"
-                  disabled={date < today}
+                  disabled={date < min}
                   aria-pressed={date === value}
                   aria-label={formatLocalDate(date)}
                   onClick={() => { onChange(date); setOpen(false); }}

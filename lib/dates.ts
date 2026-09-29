@@ -42,6 +42,12 @@ export function addMonths(month: string, delta: number): string {
   return new Date(Date.UTC(y, m - 1 + delta, 1)).toISOString().slice(0, 7);
 }
 
+// Like addMonths, but on a full "YYYY-MM-DD" date (keeps the day of month) rather than a month.
+export function addMonthsToDate(localDate: string, months: number): string {
+  const [y, m, d] = localDate.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1 + months, d)).toISOString().slice(0, 10);
+}
+
 export function formatMonth(month: string): string {
   const [y, m] = month.split("-").map(Number);
   return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", month: "long", year: "numeric" }).format(new Date(Date.UTC(y, m - 1, 1)));
