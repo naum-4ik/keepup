@@ -1,4 +1,5 @@
 import type { HabitCategory, HabitPeriod } from "@/lib/habit-schema";
+import type { Purpose } from "@/lib/profile-schema";
 
 export type HabitTemplate = {
   id: string;
@@ -59,3 +60,14 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
   t("no-smoking", "No smoking", "break_habit", 1, "day"),
   t("no-snacking", "No snacking after dinner", "break_habit", 1, "day"),
 ];
+
+export const MAX_STARTER_HABITS = 3;
+
+// Onboarding step 2: the Popular templates; a family or friends purpose adds People and Home.
+export function onboardingTemplates(purpose: Purpose | null): HabitTemplate[] {
+  const shared = purpose === "family" || purpose === "friends";
+  return [
+    ...HABIT_TEMPLATES.filter((t) => t.popular),
+    ...(shared ? HABIT_TEMPLATES.filter((t) => !t.popular && (t.category === "people" || t.category === "home")) : []),
+  ];
+}

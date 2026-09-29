@@ -107,13 +107,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "created_at": string,"display_name": string,"id": string,"onboarded_at": string | null,"reminder_hour": number,"timezone": string,"week_start": number
+                    "created_at": string,"display_name": string,"id": string,"onboarded_at": string | null,"purpose": string | null,"reminder_hour": number,"terms_accepted_at": string | null,"timezone": string,"week_start": number
                   }
                   Insert: {
-                    "created_at"?: string,"display_name": string,"id": string,"onboarded_at"?: string | null,"reminder_hour"?: number,"timezone"?: string,"week_start"?: number
+                    "created_at"?: string,"display_name": string,"id": string,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
                   }
                   Update: {
-                    "created_at"?: string,"display_name"?: string,"id"?: string,"onboarded_at"?: string | null,"reminder_hour"?: number,"timezone"?: string,"week_start"?: number
+                    "created_at"?: string,"display_name"?: string,"id"?: string,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
                   }
                   Relationships: [
                     

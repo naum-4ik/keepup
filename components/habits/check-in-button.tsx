@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Check, Clock, Plus, Snowflake } from "lucide-react";
 import { checkIn } from "@/app/(app)/habits/actions";
+import { dismissFirstCheckinTip } from "@/components/first-checkin-tip";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
@@ -56,6 +57,7 @@ export function CheckInButton({
               setError(result.message);
               return;
             }
+            dismissFirstCheckinTip();
             // The check-in moment: a soft haptic tick where supported (Android; iPhone Safari has none)
             // and a short bounce. CSS drops the animation under prefers-reduced-motion.
             if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);

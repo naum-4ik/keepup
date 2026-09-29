@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { insertHabits } from "@/lib/habit-create";
 import { GENERIC_ERROR, habitErrorMessage } from "@/lib/habit-errors";
 import { isUuid, LOCAL_DATE, parseHabit, parseHabitDetails, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 
@@ -25,13 +26,7 @@ export async function createHabit(_prev: HabitFormState, formData: FormData): Pr
   if (!parsed.ok) return { status: "error", errors: parsed.errors, values };
 
   const { supabase } = await requireUser();
-  const { error } = await supabase.from("habits").insert({
-    title: parsed.value.title,
-    category: parsed.value.category,
-    target_count: parsed.value.targetCount,
-    period: parsed.value.period,
-    starts_on: parsed.value.startsOn,
-  });
+  const error = await insertHabits(supabase, [parsed.value]);
   if (error) {
     const message = habitErrorMessage(error);
     return { status: "error", message: message === GENERIC_ERROR ? "Couldn't save the habit. Try again." : message, values };

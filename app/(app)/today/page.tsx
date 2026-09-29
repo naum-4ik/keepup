@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FirstCheckinTip } from "@/components/first-checkin-tip";
 import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard } from "@/components/habits/habit-card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ export default async function TodayPage() {
       ) : (
         <>
           {todo.length > 0 ? (
-            <HabitList habits={todo} />
+            <HabitList habits={todo} tipFor={todo[0].habit_id} />
           ) : done.length > 0 ? (
             <p className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">All checked off. Nice work.</p>
           ) : null}
@@ -37,13 +38,14 @@ export default async function TodayPage() {
   );
 }
 
-function HabitList({ title, habits }: { title?: string; habits: HabitSummary[] }) {
+function HabitList({ title, habits, tipFor }: { title?: string; habits: HabitSummary[]; tipFor?: string }) {
   if (habits.length === 0) return null;
   const list = (
     <ul className="flex flex-col gap-3">
       {habits.map((h) => (
         <li key={h.habit_id}>
           <HabitCard habit={h} />
+          {h.habit_id === tipFor && <FirstCheckinTip />}
         </li>
       ))}
     </ul>

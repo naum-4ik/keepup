@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { parseProfile, readProfileForm, type ProfileFormValues } from "./profile-schema";
+import {
+  parseOnboarding, parseProfile, parsePurpose, readOnboardingForm, readProfileForm, type ProfileFormValues,
+} from "./profile-schema";
 
 const zones = new Set(["UTC", "Europe/Rome", "Asia/Tokyo"]);
 const valid: ProfileFormValues = {
@@ -68,5 +70,47 @@ describe("readProfileForm", () => {
     fd.set("displayName", "Ana");
     fd.set("timezone", "UTC");
     expect(readProfileForm(fd)).toEqual({ displayName: "Ana", timezone: "UTC", reminderHour: "", weekStart: "" });
+  });
+});
+
+describe("parsePurpose", () => {
+  it("treats empty as not answered", () => {
+    expect(parsePurpose("")).toEqual({ ok: true, value: null });
+  });
+
+  it.each(["me", "family", "friends"])("accepts %j", (p) => {
+    expect(parsePurpose(p)).toEqual({ ok: true, value: p });
+  });
+
+  it.each(["work", "Family", " me"])("rejects %j", (p) => {
+    expect(parsePurpose(p)).toEqual({ ok: false });
+  });
+});
+
+describe("parseOnboarding", () => {
+  const onboarding = { displayName: " Ana ", timezone: "Europe/Rome", weekStart: "0", purpose: "" };
+
+  it("needs no reminder hour and keeps an unanswered purpose as null", () => {
+    expect(parseOnboarding(onboarding, zones)).toEqual({
+      ok: true,
+      value: { displayName: "Ana", timezone: "Europe/Rome", weekStart: 0, purpose: null },
+    });
+  });
+
+  it("keeps a chosen purpose", () => {
+    expect(parseOnboarding({ ...onboarding, purpose: "family" }, zones)).toMatchObject({ ok: true, value: { purpose: "family" } });
+  });
+
+  it("reports an unknown purpose alongside the other field errors", () => {
+    expect(parseOnboarding({ ...onboarding, displayName: "", purpose: "work" }, zones)).toEqual({
+      ok: false,
+      errors: { displayName: "Enter a name.", purpose: "Pick one of the options, or none." },
+    });
+  });
+
+  it("reads the purpose from the form, missing as empty", () => {
+    const fd = new FormData();
+    fd.set("displayName", "Ana");
+    expect(readOnboardingForm(fd)).toEqual({ displayName: "Ana", timezone: "", weekStart: "", purpose: "" });
   });
 });

@@ -1,44 +1,23 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState } from "react";
 import { SaveButton } from "@/components/save-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ProfileFormState, ProfileFormValues } from "@/lib/profile-schema";
-import { pickTimezone } from "@/lib/timezones";
 
 type Props = {
   action: (state: ProfileFormState, formData: FormData) => Promise<ProfileFormState>;
   timezones: string[];
   defaults: ProfileFormValues;
-  detectTimezone?: boolean;
   submitLabel: string;
 };
 
 const selectClass = "h-11 rounded-lg border border-input bg-transparent px-3 text-sm";
 const initialState: ProfileFormState = { status: "idle" };
 
-export function ProfileForm({ action, timezones, defaults, detectTimezone = false, submitLabel }: Props) {
+export function ProfileForm({ action, timezones, defaults, submitLabel }: Props) {
   const [state, formAction, pending] = useActionState(action, initialState);
-  const timezoneRef = useRef<HTMLSelectElement>(null);
-  const weekStartRef = useRef<HTMLSelectElement>(null);
-
-  useEffect(() => {
-    if (detectTimezone && timezoneRef.current) {
-      timezoneRef.current.value = pickTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone, timezones);
-    }
-    if (detectTimezone) {
-      const locale = new Intl.Locale(navigator.language) as Intl.Locale & {
-        getWeekInfo?: () => { firstDay: number };
-        weekInfo?: { firstDay: number };
-      };
-      const firstDay = locale.getWeekInfo?.().firstDay ?? locale.weekInfo?.firstDay;
-      if (weekStartRef.current && firstDay !== undefined) {
-        weekStartRef.current.value = firstDay === 7 ? "0" : "1";
-      }
-    }
-  }, [detectTimezone, timezones]);
-
   // React resets uncontrolled fields to their defaultValue after an action. Inputs re-sync fine because
   // React updates defaultValue on every render; <select> doesn't, so each select is keyed by its own
   // value below to force a remount (with the fresh defaultValue baked in) instead of remounting the form.
@@ -74,7 +53,6 @@ export function ProfileForm({ action, timezones, defaults, detectTimezone = fals
           key={values.timezone}
           id="timezone"
           name="timezone"
-          ref={timezoneRef}
           defaultValue={values.timezone}
           className={selectClass}
           aria-invalid={Boolean(errors.timezone)}
@@ -126,7 +104,6 @@ export function ProfileForm({ action, timezones, defaults, detectTimezone = fals
         <select
           id="weekStart"
           name="weekStart"
-          ref={weekStartRef}
           key={values.weekStart}
           defaultValue={values.weekStart}
           className={selectClass}
