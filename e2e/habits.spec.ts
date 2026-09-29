@@ -116,10 +116,10 @@ test.describe("Today check-ins", () => {
 
   test("a weekly habit allows one check-in per day", async ({ page }) => {
     await signUpAndOnboard(page);
-    await createHabit(page, { title: "Stretch", count: 2, period: "week" });
-    await page.getByRole("button", { name: "Check in: Stretch" }).click();
-    await expect(page.getByRole("button", { name: "Checked in today: Stretch" })).toBeDisabled();
-    await expect(page.getByText(/1 of 2 this week/)).toBeVisible();
+    await createHabit(page, { template: "Work out" });
+    await page.getByRole("button", { name: "Check in: Work out" }).click();
+    await expect(page.getByRole("button", { name: "Checked in today: Work out" })).toBeDisabled();
+    await expect(page.getByText(/1 of 3 this week/)).toBeVisible();
   });
 
   test("a double tap checks in only once", async ({ page }) => {
