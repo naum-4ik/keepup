@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
-import { CategoryIcon } from "@/components/habits/category-icon";
+import { HabitEmoji } from "@/components/habits/category-icon";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES } from "@/lib/categories";
 import { MAX_STARTER_HABITS, type HabitTemplate } from "@/lib/habit-templates";
@@ -62,7 +62,7 @@ export function PickHabits({ templates }: { templates: HabitTemplate[] }) {
                     on ? "bg-accent ring-2 ring-primary hover:brightness-[0.98]" : "hover:bg-muted",
                   )}
                 >
-                  <CategoryIcon category={t.category} size="xs" />
+                  <HabitEmoji category={t.category} emoji={t.emoji} size="xs" />
                   <span className="flex min-w-0 flex-col">
                     <span className="line-clamp-3 text-[0.9375rem] leading-snug font-bold">{t.title}</span>
                     <span className="text-xs text-muted-foreground">{describeSchedule(t.targetCount, t.period)}</span>
@@ -83,7 +83,7 @@ export function PickHabits({ templates }: { templates: HabitTemplate[] }) {
         </section>
       ))}
 
-      {/* Stays in reach under a long list (family/friends adds 11 more cards). */}
+      {/* Stays in reach under a long list (family/friends adds 12 more cards). */}
       <div className="sticky bottom-0 -mx-4 flex flex-col gap-2 bg-background/95 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur">
         <p role="status" className="min-h-5 text-center text-sm font-semibold text-muted-foreground">
           {atLimit ? `Pick up to ${MAX_STARTER_HABITS}` : n > 0 ? `${n} of ${MAX_STARTER_HABITS} picked` : ""}

@@ -49,7 +49,7 @@ Soft tones; always paired with an icon.
 
 ### Categories
 
-Pastel chip background with a deeper icon color, always with the icon.
+Pastel chip background with a deeper icon color. Category tabs and pickers show the icon; a habit shows its own emoji in the same chip (see below).
 
 | Category | Chip | Icon color | Icon |
 |---|---|---|---|
@@ -59,10 +59,10 @@ Pastel chip background with a deeper icon color, always with the icon.
 | Learning | `#FBF3D9` | `#B08A1E` | book-open |
 | People | `#FBE6E8` | `#C2505F` | users |
 | Home | `#E0F3EF` | `#3A8C7E` | house |
-| Money | `#F1EADF` | `#8A6B45` | wallet |
+| Work & money | `#F1EADF` | `#8A6B45` | briefcase-business |
 | Break a habit | `#F0ECE8` | `#8A7F76` | shield-ban |
 
-Icons come from `lucide-react` (rounded line style). **Kid habits** use picture emoji a child recognizes (🪥 brush teeth, 🧸 tidy toys, 📖 read, 🛁 bath, 🥦 eat veggies, 😴 bedtime), chosen from a curated kid set, shown large in a pastel circle. Emoji only in copy (🔥 in the streak count) and in avatars, never as UI icons.
+Icons come from `lucide-react` (rounded line style). **Kid habits** use picture emoji a child recognizes (🪥 brush teeth, 🧸 tidy toys, 📖 read, 🛁 bath, 🥦 eat veggies, 😴 bedtime), chosen from a curated kid set, shown large in a pastel circle. **Habit emoji:** every habit has one emoji (templates bring theirs; "Create your own" picks one, or gets the category default: 🍎 health, 👟 fitness, 🌿 mind, 📚 learning, 💛 people, 🏠 home, 💼 work & money, 🚫 break a habit). It sits inside the category-coloured chip wherever the habit appears (Today, the habit page, Progress), so the colour tells the category and the emoji tells the habit. Otherwise emoji only in copy (🔥 in the streak count) and in avatars, never as UI icons.
 
 ## Typography
 

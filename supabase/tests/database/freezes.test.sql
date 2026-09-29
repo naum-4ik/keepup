@@ -6,8 +6,8 @@ select tests.create_user('00000000-0000-0000-0000-0000000000a3', 'frz-a@example.
 select tests.create_user('00000000-0000-0000-0000-0000000000b3', 'frz-b@example.com');
 update public.profiles set timezone = 'Europe/Rome' where id = '00000000-0000-0000-0000-0000000000a3';
 set local session_replication_role = replica;
-insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at)
-values ('00000000-0000-0000-0000-00000000f001', '00000000-0000-0000-0000-0000000000a3', 'Walk', 'fitness', 1, 'day', '2026-09-01', '2026-09-01T08:00:00Z');
+insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, emoji)
+values ('00000000-0000-0000-0000-00000000f001', '00000000-0000-0000-0000-0000000000a3', 'Walk', 'fitness', 1, 'day', '2026-09-01', '2026-09-01T08:00:00Z', '⭐');
 set local session_replication_role = origin;
 
 -- "Today" is Monday 5 Oct 2026 in Rome.
@@ -44,11 +44,11 @@ select is((select count(*)::int from public.habit_freezes where starts_on = '202
 
 -- I1: on a weekly habit (Monday weeks) a pause blocks only paused days, never the rest of the week.
 set local session_replication_role = replica;
-insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, week_start) values
-  ('00000000-0000-0000-0000-00000000f011', '00000000-0000-0000-0000-0000000000a3', 'Resume', 'fitness', 3, 'week', '2026-09-28', '2026-09-28T08:00:00Z', 1),
-  ('00000000-0000-0000-0000-00000000f012', '00000000-0000-0000-0000-0000000000a3', 'Saturday pause', 'fitness', 3, 'week', '2026-09-28', '2026-09-28T08:00:00Z', 1),
-  ('00000000-0000-0000-0000-00000000f013', '00000000-0000-0000-0000-0000000000a3', 'Done then pause', 'fitness', 3, 'week', '2026-09-28', '2026-09-28T08:00:00Z', 1),
-  ('00000000-0000-0000-0000-00000000f014', '00000000-0000-0000-0000-0000000000a3', 'Api pause', 'fitness', 1, 'day', '2026-09-01', '2026-09-01T08:00:00Z', 1);
+insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, week_start, emoji) values
+  ('00000000-0000-0000-0000-00000000f011', '00000000-0000-0000-0000-0000000000a3', 'Resume', 'fitness', 3, 'week', '2026-09-28', '2026-09-28T08:00:00Z', 1, '⭐'),
+  ('00000000-0000-0000-0000-00000000f012', '00000000-0000-0000-0000-0000000000a3', 'Saturday pause', 'fitness', 3, 'week', '2026-09-28', '2026-09-28T08:00:00Z', 1, '⭐'),
+  ('00000000-0000-0000-0000-00000000f013', '00000000-0000-0000-0000-0000000000a3', 'Done then pause', 'fitness', 3, 'week', '2026-09-28', '2026-09-28T08:00:00Z', 1, '⭐'),
+  ('00000000-0000-0000-0000-00000000f014', '00000000-0000-0000-0000-0000000000a3', 'Api pause', 'fitness', 1, 'day', '2026-09-01', '2026-09-01T08:00:00Z', 1, '⭐');
 set local session_replication_role = origin;
 
 -- Resume mid-week: paused Monday 5 Oct, resumed Wednesday 7 Oct, checked in the same day.

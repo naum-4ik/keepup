@@ -69,13 +69,13 @@ isOneToOne: false
                   ]
                 },"habits": {
                   Row: {
-                    "archived_at": string | null,"category": Database["public"]['Enums']["habit_category"],"created_at": string,"id": string,"owner_id": string,"period": Database["public"]['Enums']["habit_period"],"starts_on": string,"target_count": number,"title": string,"week_start": number
+                    "archived_at": string | null,"category": Database["public"]['Enums']["habit_category"],"created_at": string,"emoji": string,"id": string,"owner_id": string,"period": Database["public"]['Enums']["habit_period"],"starts_on": string,"target_count": number,"title": string,"week_start": number
                   }
                   Insert: {
-                    "archived_at"?: string | null,"category": Database["public"]['Enums']["habit_category"],"created_at"?: string,"id"?: string,"owner_id"?: string,"period": Database["public"]['Enums']["habit_period"],"starts_on": string,"target_count": number,"title": string,"week_start"?: number
+                    "archived_at"?: string | null,"category": Database["public"]['Enums']["habit_category"],"created_at"?: string,"emoji": string,"id"?: string,"owner_id"?: string,"period": Database["public"]['Enums']["habit_period"],"starts_on": string,"target_count": number,"title": string,"week_start"?: number
                   }
                   Update: {
-                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"],"created_at"?: string,"id"?: string,"owner_id"?: string,"period"?: Database["public"]['Enums']["habit_period"],"starts_on"?: string,"target_count"?: number,"title"?: string,"week_start"?: number
+                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"],"created_at"?: string,"emoji"?: string,"id"?: string,"owner_id"?: string,"period"?: Database["public"]['Enums']["habit_period"],"starts_on"?: string,"target_count"?: number,"title"?: string,"week_start"?: number
                   }
                   Relationships: [
                     {
@@ -164,7 +164,7 @@ isOneToOne: false
                            },
 "habit_summaries":
 { Args: Record<PropertyKey, never>; Returns: {
-              "archived_at": string,"best_streak": number,"category": Database["public"]['Enums']["habit_category"],"checked_in_today": boolean,"created_at": string,"current_streak": number,"days_left": number,"done_count": number,"frozen": boolean,"frozen_until": string,"habit_id": string,"not_started": boolean,"period": Database["public"]['Enums']["habit_period"],"period_start": string,"starts_on": string,"target_count": number,"title": string
+              "archived_at": string,"best_streak": number,"category": Database["public"]['Enums']["habit_category"],"checked_in_today": boolean,"created_at": string,"current_streak": number,"days_left": number,"done_count": number,"emoji": string,"frozen": boolean,"frozen_until": string,"habit_id": string,"not_started": boolean,"period": Database["public"]['Enums']["habit_period"],"period_start": string,"starts_on": string,"target_count": number,"title": string
             }[]
                            },
 "is_valid_timezone":
@@ -181,7 +181,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "habit_category": "health"|"fitness"|"mind"|"learning"|"people"|"home"|"money"|"break_habit","habit_period": "day"|"week"|"month"
+            "habit_category": "health"|"fitness"|"mind"|"learning"|"people"|"home"|"work_money"|"break_habit","habit_period": "day"|"week"|"month"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -301,7 +301,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "habit_category": ["health", "fitness", "mind", "learning", "people", "home", "money", "break_habit"],"habit_period": ["day", "week", "month"]
+            "habit_category": ["health", "fitness", "mind", "learning", "people", "home", "work_money", "break_habit"],"habit_period": ["day", "week", "month"]
           }
         }
 } as const

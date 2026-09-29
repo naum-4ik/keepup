@@ -1,3 +1,4 @@
+import { CATEGORIES } from "@/lib/categories";
 import type { Database } from "@/lib/database.types";
 
 export type HabitPeriod = Database["public"]["Enums"]["habit_period"];
@@ -5,15 +6,16 @@ export type HabitCategory = Database["public"]["Enums"]["habit_category"];
 
 export const HABIT_PERIODS = ["day", "week", "month"] as const satisfies readonly HabitPeriod[];
 export const HABIT_CATEGORIES = [
-  "health", "fitness", "mind", "learning", "people", "home", "money", "break_habit",
+  "health", "fitness", "mind", "learning", "people", "home", "work_money", "break_habit",
 ] as const satisfies readonly HabitCategory[];
 export const HABIT_TITLE_MAX = 60;
+export const HABIT_EMOJI_MAX = 16; // code points, the database bound (habits_emoji_check)
 export const TARGET_LIMITS: Record<HabitPeriod, number> = { day: 50, week: 7, month: 31 };
 
-export type HabitFormValues = { title: string; category: string; targetCount: string; period: string; startsOn: string };
+export type HabitFormValues = { title: string; emoji: string; category: string; targetCount: string; period: string; startsOn: string };
 // startsOn omitted = today, decided by the database in the owner's time zone. The client never
 // sends its own "today": it goes stale after local midnight and the insert would be refused.
-export type HabitInput = { title: string; category: HabitCategory; targetCount: number; period: HabitPeriod; startsOn?: string };
+export type HabitInput = { title: string; emoji: string; category: HabitCategory; targetCount: number; period: HabitPeriod; startsOn?: string };
 export type HabitErrors = Partial<Record<keyof HabitInput, string>>;
 export type HabitFormState =
   | { status: "idle" }
@@ -22,6 +24,7 @@ export type HabitFormState =
 export function readHabitForm(formData: FormData): HabitFormValues {
   return {
     title: String(formData.get("title") ?? ""),
+    emoji: String(formData.get("emoji") ?? ""),
     category: String(formData.get("category") ?? ""),
     targetCount: String(formData.get("targetCount") ?? ""),
     period: String(formData.get("period") ?? ""),
@@ -44,16 +47,35 @@ function titleError(title: string): string | undefined {
   return undefined;
 }
 
-export function parseHabitDetails(values: { title: string; category: string }):
-  | { ok: true; value: { title: string; category: HabitCategory } }
-  | { ok: false; errors: Pick<HabitErrors, "title" | "category"> } {
+const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+// Starts with an emoji (a pictograph, a flag's two regional indicators, or a keycap like 1️⃣), then
+// only emoji joiners/modifiers/pictographs, so "a⃣" or a lone "🇮" doesn't pass.
+const EMOJI =
+  /^(?:\p{Extended_Pictographic}|\p{Regional_Indicator}{2}|[0-9#*]\uFE0F?\u20E3)(?:[\uFE0F\u200D\u{1F3FB}-\u{1F3FF}\u{E0020}-\u{E007F}\u20E3]|\p{Extended_Pictographic})*$/u;
+
+// Exactly one emoji: one grapheme (so 🧘‍♀️ or a flag counts as one) that is an emoji, not a letter.
+export function isOneEmoji(value: string): boolean {
+  return (
+    [...segmenter.segment(value)].length === 1 && EMOJI.test(value) && [...value].length <= HABIT_EMOJI_MAX
+  );
+}
+
+type Details = { title: string; emoji: string; category: HabitCategory };
+type DetailErrors = Pick<HabitErrors, "title" | "emoji" | "category">;
+
+// An empty emoji means "none picked": the category's default.
+export function parseHabitDetails(values: { title: string; emoji: string; category: string }):
+  | { ok: true; value: Details }
+  | { ok: false; errors: DetailErrors } {
   const title = values.title.trim();
-  const errors: Pick<HabitErrors, "title" | "category"> = {};
+  const emoji = values.emoji.trim();
+  const errors: DetailErrors = {};
   const tError = titleError(title);
   if (tError) errors.title = tError;
+  if (emoji !== "" && !isOneEmoji(emoji)) errors.emoji = "Pick one emoji.";
   if (!isCategory(values.category)) errors.category = "Pick a category.";
   if (Object.keys(errors).length > 0 || !isCategory(values.category)) return { ok: false, errors };
-  return { ok: true, value: { title, category: values.category } };
+  return { ok: true, value: { title, emoji: emoji || CATEGORIES[values.category].defaultEmoji, category: values.category } };
 }
 
 export function parseHabit(values: HabitFormValues):

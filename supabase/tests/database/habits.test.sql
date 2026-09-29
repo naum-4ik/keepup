@@ -41,7 +41,7 @@ select throws_ok($$insert into public.habits (title, category, target_count, per
   '23514', null, 'a weekly habit can be at most 7 times a week');
 select lives_ok($$insert into public.habits (title, category, target_count, period) values ('Water', 'health', 50, 'day')$$,
   'a daily habit can be up to 50 times a day');
-select lives_ok($$insert into public.habits (title, category, target_count, period) values ('Budget', 'money', 31, 'month')$$,
+select lives_ok($$insert into public.habits (title, category, target_count, period) values ('Budget', 'work_money', 31, 'month')$$,
   'a monthly habit can be up to 31 times a month');
 select throws_ok($$update public.habits set target_count = 2 where title = 'Read'$$,
   '42501', null, 'target_count cannot be edited');

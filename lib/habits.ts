@@ -1,5 +1,6 @@
 import "server-only";
 import { requireUser } from "@/lib/auth";
+import { habitEmoji, normalizeCategory } from "@/lib/categories";
 import type { Database } from "@/lib/database.types";
 import { withTodayPending, type WeekOverview } from "@/lib/week-overview";
 
@@ -10,7 +11,12 @@ export async function getHabitSummaries(): Promise<HabitSummary[]> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("habit_summaries");
   if (error) throw new Error(`habit_summaries failed: ${error.message}`);
-  return data ?? [];
+  // Read defensively: previews (and the minutes after a merge) can run this code before the
+  // database has the emoji migration, so `emoji` may be missing and `category` still `money`.
+  return (data ?? []).map((row) => {
+    const category = normalizeCategory(row.category);
+    return { ...row, category, emoji: habitEmoji(category, row.emoji) };
+  });
 }
 
 // The overview is extra: if it fails (e.g. the app deployed a moment before its migration), the

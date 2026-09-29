@@ -91,9 +91,13 @@ export async function updateHabitDetails(habitId: string, _prev: FormActionState
   if (!isUuid(habitId)) return { status: "error", message: "That habit isn't available." };
   const parsed = parseHabitDetails({
     title: String(formData.get("title") ?? ""),
+    emoji: String(formData.get("emoji") ?? ""),
     category: String(formData.get("category") ?? ""),
   });
-  if (!parsed.ok) return { status: "error", message: parsed.errors.title ?? parsed.errors.category ?? "Check the details." };
+  if (!parsed.ok) {
+    const { title, emoji, category } = parsed.errors;
+    return { status: "error", message: title ?? emoji ?? category ?? "Check the details." };
+  }
   const startsOn = String(formData.get("startsOn") ?? "");
   if (startsOn !== "" && !LOCAL_DATE.test(startsOn)) return { status: "error", message: "Pick a start date." };
   const { supabase } = await requireUser();

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CategoryIcon } from "@/components/habits/category-icon";
+import { HabitEmoji } from "@/components/habits/category-icon";
 import { CheckInButton } from "@/components/habits/check-in-button";
 import { StreakBadge } from "@/components/habits/streak-badge";
 import type { HabitSummary } from "@/lib/habits";
@@ -24,7 +24,7 @@ export function HabitCard({ habit }: { habit: HabitSummary }) {
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-soft">
       <Link href={`/habits/${habit.habit_id}`} className="group flex min-w-0 flex-1 items-center gap-3">
-        <CategoryIcon category={habit.category} />
+        <HabitEmoji category={habit.category} emoji={habit.emoji} />
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="truncate font-bold group-hover:underline">{habit.title}</span>
           <span className={cn("text-sm", progress.atRisk ? "font-semibold text-[#9A6A10]" : "text-muted-foreground")}>

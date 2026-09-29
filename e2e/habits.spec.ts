@@ -47,10 +47,56 @@ test("category tabs show more templates and 'Create your own'", async ({ page })
   await expect(page.getByRole("button", { name: /^Floss/ })).toHaveCount(0);
   await page.getByRole("tab", { name: "Health" }).click();
   await expect(page.getByRole("button", { name: /^Floss/ })).toBeVisible();
-  await page.getByRole("tab", { name: "Money" }).click();
+  await page.getByRole("tab", { name: "Work & money" }).click();
+  await expect(page.getByRole("tabpanel").getByRole("button")).toHaveCount(6);
+  await expect(page.getByRole("button", { name: /^Plan tomorrow/ })).toBeVisible();
   await page.getByRole("button", { name: "Create your own" }).click();
-  await expect(page.getByLabel("Category")).toHaveValue("money");
+  await expect(page.getByLabel("Category")).toHaveValue("work_money");
   await expect(page.getByLabel("Title")).toBeFocused();
+  await expect(page.getByRole("button", { name: "Choose emoji (now 💼)" })).toBeVisible();
+});
+
+test("a custom habit gets the emoji picked for it, shown on Today", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: "Create your own" }).click();
+  const dialog = page.getByRole("dialog", { name: "Create your own" });
+  await dialog.getByLabel("Title").fill("Paint");
+
+  const emojiButton = dialog.getByRole("button", { name: /^Choose emoji/ });
+  await expect(emojiButton).toHaveAccessibleName("Choose emoji (now 🍎)");
+  await emojiButton.click();
+  await expect(emojiButton).toHaveAttribute("aria-expanded", "true");
+  await expect(dialog.getByRole("group", { name: "Suggested emoji" }).getByRole("button")).toHaveCount(30);
+  await dialog.getByRole("button", { name: "🎨", exact: true }).click();
+  await expect(emojiButton).toHaveAccessibleName("Choose emoji (now 🎨)");
+  await expect(emojiButton).toBeFocused();
+
+  // The phone's emoji keyboard: one emoji only; Escape closes just the panel, not the dialog.
+  await emojiButton.click();
+  const own = dialog.getByLabel("Or type your own");
+  await own.fill("🎨🖌️");
+  await expect(dialog.getByText("One emoji only.")).toBeVisible();
+  await own.fill("🖌️");
+  await expect(emojiButton).toHaveAccessibleName("Choose emoji (now 🖌️)");
+  await own.press("Escape");
+  await expect(own).toBeHidden();
+  await expect(dialog).toBeVisible();
+
+  await dialog.getByRole("button", { name: /^Add habit/ }).click();
+  await expect(page).toHaveURL(/\/today$/);
+  await expect(page.getByRole("link", { name: /Paint/ })).toContainText("🖌️");
+});
+
+test("a template brings its emoji, and templates outside Popular work too", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: /^Drink water/ }).click();
+  await expect(page.getByRole("dialog").getByRole("button", { name: /^Choose emoji/ })).toHaveAccessibleName("Choose emoji (now 💧)");
+  await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+
+  await createHabit(page, { template: "Plan tomorrow", tab: "Work & money" });
+  await expect(page.getByRole("link", { name: /Plan tomorrow/ })).toContainText("📝");
 });
 
 test("a template opens in a dialog that can be closed without adding", async ({ page }) => {
@@ -79,11 +125,17 @@ test("every template tab fits above the bottom nav on a small phone", async ({ p
   await signUpAndOnboard(page);
   await page.goto("/habits/new");
   const nav = await page.getByRole("navigation", { name: "Main" }).boundingBox();
-  for (const name of ["Popular", "Health", "Fitness", "Mind", "Learning", "People", "Home", "Money", "Break a habit"]) {
+  for (const name of ["Popular", "Health", "Fitness", "Mind", "Learning", "People", "Home", "Work & money", "Break a habit"]) {
     await page.getByRole("tab", { name }).click();
     const last = await page.getByRole("button", { name: "Create your own" }).boundingBox();
     expect(last!.y + last!.height, name).toBeLessThanOrEqual(nav!.y);
   }
+  // The emoji suggestions stay 44px targets at this width too.
+  await page.getByRole("button", { name: "Create your own" }).click();
+  await page.getByRole("button", { name: /^Choose emoji/ }).click();
+  const cell = await page.getByRole("group", { name: "Suggested emoji" }).getByRole("button").first().boundingBox();
+  expect(cell!.width).toBeGreaterThanOrEqual(44);
+  expect(cell!.height).toBeGreaterThanOrEqual(44);
 });
 
 test("the start date can be picked from quick choices or the calendar", async ({ page }) => {
@@ -255,9 +307,12 @@ test.describe("Habit detail", () => {
     await page.getByRole("link", { name: /Work out/ }).click();
     await openSection(page, "Edit details");
     await page.getByLabel("Title").fill("Work out at home");
+    await page.getByRole("button", { name: "Choose emoji (now 🏋️)" }).click();
+    await page.getByRole("button", { name: "💪", exact: true }).click();
     await page.getByRole("button", { name: "Save" }).click();
     await expect(page.getByRole("status")).toHaveText("Saved");
     await expect(page.getByRole("heading", { name: "Work out at home" })).toBeVisible();
+    await expect(page.locator("header").filter({ hasText: "Work out at home" })).toContainText("💪");
   });
 
   test("the page leads with today's check-in and offers a way back", async ({ page }) => {

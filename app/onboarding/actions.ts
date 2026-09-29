@@ -47,7 +47,7 @@ export async function startWithHabits(_prev: PickHabitsState, formData: FormData
   // user's time zone.
   const habits: HabitInput[] = [];
   for (const t of picked) {
-    const parsed = parseHabit({ title: t.title, category: t.category, targetCount: String(t.targetCount), period: t.period, startsOn: "" });
+    const parsed = parseHabit({ title: t.title, emoji: t.emoji, category: t.category, targetCount: String(t.targetCount), period: t.period, startsOn: "" });
     if (!parsed.ok) return { status: "error", message: "Couldn't add your habits. Try again." };
     habits.push(parsed.value);
   }

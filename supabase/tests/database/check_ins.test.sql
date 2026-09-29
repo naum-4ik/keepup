@@ -7,15 +7,15 @@ select tests.create_user('00000000-0000-0000-0000-0000000000b4', 'ci-b@example.c
 update public.profiles set timezone = 'Europe/Rome' where id = '00000000-0000-0000-0000-0000000000a4';
 
 set local session_replication_role = replica;
-insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, archived_at) values
-  ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000a4', 'Read', 'mind', 1, 'day', '2026-09-01', '2026-09-01T08:00:00Z', null),
-  ('00000000-0000-0000-0000-0000000000d8', '00000000-0000-0000-0000-0000000000a4', 'Water', 'health', 8, 'day', '2026-09-01', '2026-09-01T08:00:00Z', null),
-  ('00000000-0000-0000-0000-0000000000e3', '00000000-0000-0000-0000-0000000000a4', 'Gym', 'fitness', 3, 'week', '2026-09-01', '2026-09-01T08:00:00Z', null),
-  ('00000000-0000-0000-0000-0000000000aa', '00000000-0000-0000-0000-0000000000a4', 'Old', 'home', 1, 'day', '2026-09-01', '2026-09-01T08:00:00Z', '2026-09-10T08:00:00Z'),
-  ('00000000-0000-0000-0000-0000000000ff', '00000000-0000-0000-0000-0000000000a4', 'Paused', 'home', 1, 'day', '2026-09-01', '2026-09-01T08:00:00Z', null),
-  ('00000000-0000-0000-0000-0000000000dd', '00000000-0000-0000-0000-0000000000a4', 'Fresh', 'home', 1, 'day', '2026-09-01', '2026-09-01T08:00:00Z', null),
-  ('00000000-0000-0000-0000-0000000000de', '00000000-0000-0000-0000-0000000000a4', 'Api', 'home', 1, 'day', '2026-09-01', '2026-09-01T08:00:00Z', null),
-  ('00000000-0000-0000-0000-0000000000ee', '00000000-0000-0000-0000-0000000000a4', 'Later', 'home', 1, 'day', '2026-10-10', '2026-10-05T08:00:00Z', null);
+insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, archived_at, emoji) values
+  ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000a4', 'Read', 'mind', 1, 'day', '2026-09-01', '2026-09-01T08:00:00Z', null, '⭐'),
+  ('00000000-0000-0000-0000-0000000000d8', '00000000-0000-0000-0000-0000000000a4', 'Water', 'health', 8, 'day', '2026-09-01', '2026-09-01T08:00:00Z', null, '⭐'),
+  ('00000000-0000-0000-0000-0000000000e3', '00000000-0000-0000-0000-0000000000a4', 'Gym', 'fitness', 3, 'week', '2026-09-01', '2026-09-01T08:00:00Z', null, '⭐'),
+  ('00000000-0000-0000-0000-0000000000aa', '00000000-0000-0000-0000-0000000000a4', 'Old', 'home', 1, 'day', '2026-09-01', '2026-09-01T08:00:00Z', '2026-09-10T08:00:00Z', '⭐'),
+  ('00000000-0000-0000-0000-0000000000ff', '00000000-0000-0000-0000-0000000000a4', 'Paused', 'home', 1, 'day', '2026-09-01', '2026-09-01T08:00:00Z', null, '⭐'),
+  ('00000000-0000-0000-0000-0000000000dd', '00000000-0000-0000-0000-0000000000a4', 'Fresh', 'home', 1, 'day', '2026-09-01', '2026-09-01T08:00:00Z', null, '⭐'),
+  ('00000000-0000-0000-0000-0000000000de', '00000000-0000-0000-0000-0000000000a4', 'Api', 'home', 1, 'day', '2026-09-01', '2026-09-01T08:00:00Z', null, '⭐'),
+  ('00000000-0000-0000-0000-0000000000ee', '00000000-0000-0000-0000-0000000000a4', 'Later', 'home', 1, 'day', '2026-10-10', '2026-10-05T08:00:00Z', null, '⭐');
 set local session_replication_role = origin;
 insert into public.habit_freezes (habit_id, starts_on, ends_on)
 values ('00000000-0000-0000-0000-0000000000ff', '2026-10-01', '2026-10-31');
@@ -50,8 +50,8 @@ select is((select count(*)::int from public.check_ins where habit_id = '00000000
 
 -- Sunday weeks: a habit snapshots its own week_start at creation (C1), independent of the profile.
 set local session_replication_role = replica;
-insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, archived_at, week_start) values
-  ('00000000-0000-0000-0000-0000000000e4', '00000000-0000-0000-0000-0000000000a4', 'Sunday Gym', 'fitness', 3, 'week', '2026-09-01', '2026-09-01T08:00:00Z', null, 0);
+insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, archived_at, week_start, emoji) values
+  ('00000000-0000-0000-0000-0000000000e4', '00000000-0000-0000-0000-0000000000a4', 'Sunday Gym', 'fitness', 3, 'week', '2026-09-01', '2026-09-01T08:00:00Z', null, 0, '⭐');
 set local session_replication_role = origin;
 select is((private.check_in_impl('00000000-0000-0000-0000-0000000000e4', '00000000-0000-0000-0000-0000000000a4', '2026-10-11T08:00:00Z')).period_start,
   '2026-10-11'::date, 'a habit created with week_start=0 starts a new week on Sunday 11 Oct');
