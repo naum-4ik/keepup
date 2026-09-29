@@ -3,9 +3,9 @@
 create schema if not exists private;
 revoke all on schema private from public, anon, authenticated;
 
--- Supabase grants EXECUTE on new public functions to anon by default. Stop that for everything
--- created from here on; each RPC grants EXECUTE to `authenticated` explicitly.
-alter default privileges for role postgres in schema public revoke execute on functions from public, anon;
+-- Every new function in `public` must revoke EXECUTE from public/anon and grant it to
+-- `authenticated` explicitly: Postgres grants EXECUTE to PUBLIC on creation and default
+-- privileges can't prevent that. The guard test (supabase/tests/database/guards.test.sql) enforces it.
 
 -- First day of the week for weekly habits: 0 = Sunday, 1 = Monday.
 alter table public.profiles
