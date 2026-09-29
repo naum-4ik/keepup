@@ -23,7 +23,26 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "profiles": {
+            "habits": {
+                  Row: {
+                    "archived_at": string | null,"category": Database["public"]['Enums']["habit_category"],"created_at": string,"id": string,"owner_id": string,"period": Database["public"]['Enums']["habit_period"],"starts_on": string,"target_count": number,"title": string
+                  }
+                  Insert: {
+                    "archived_at"?: string | null,"category": Database["public"]['Enums']["habit_category"],"created_at"?: string,"id"?: string,"owner_id"?: string,"period": Database["public"]['Enums']["habit_period"],"starts_on": string,"target_count": number,"title": string
+                  }
+                  Update: {
+                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"],"created_at"?: string,"id"?: string,"owner_id"?: string,"period"?: Database["public"]['Enums']["habit_period"],"starts_on"?: string,"target_count"?: number,"title"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "habits_owner_id_fkey"
+      columns: ["owner_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"profiles": {
                   Row: {
                     "created_at": string,"display_name": string,"id": string,"onboarded_at": string | null,"reminder_hour": number,"timezone": string,"week_start": number
                   }
@@ -47,7 +66,7 @@ export type Database = {
                            }
           }
           Enums: {
-            "habit_period": "day"|"week"|"month"
+            "habit_category": "health"|"fitness"|"mind"|"learning"|"people"|"home"|"money"|"break_habit","habit_period": "day"|"week"|"month"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -167,7 +186,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "habit_period": ["day", "week", "month"]
+            "habit_category": ["health", "fitness", "mind", "learning", "people", "home", "money", "break_habit"],"habit_period": ["day", "week", "month"]
           }
         }
 } as const
