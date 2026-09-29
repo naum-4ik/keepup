@@ -21,6 +21,7 @@ export function SaveButton({
   const [seen, setSeen] = useState(state);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [flash, setFlash] = useState(false);
+  const [saves, setSaves] = useState(0);
 
   // A new state object means the action just finished; react to it during render.
   if (state !== seen) {
@@ -28,6 +29,7 @@ export function SaveButton({
     if (state.status === "saved") {
       setSavedAt(new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(new Date()));
       setFlash(true);
+      setSaves((n) => n + 1);
     }
   }
 
@@ -40,7 +42,8 @@ export function SaveButton({
   return (
     <div className="flex flex-col gap-2">
       {savedAt && (
-        <p role="status" className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        // Re-keyed on every save so the line pops in again even when the minute hasn't changed.
+        <p key={saves} role="status" className="flex items-center gap-1.5 text-sm text-muted-foreground animate-in fade-in-0 zoom-in-95 duration-300 motion-reduce:animate-none">
           <Check aria-hidden className="size-4 text-[#4F8A5B]" />
           Saved at {savedAt}
         </p>
