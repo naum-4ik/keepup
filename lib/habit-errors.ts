@@ -1,6 +1,15 @@
 export const GENERIC_ERROR = "Something went wrong. Try again.";
 
 const MESSAGES: Record<string, string> = {
+  group_not_found: "That group isn't available.",
+  not_admin: "Only a group admin can do that.",
+  not_an_adult: "Only adults can do that.",
+  invite_invalid: "This invite link has expired or was turned off. Ask for a new one.",
+  last_admin: "Make someone else an admin first.",
+  children_would_be_deleted: "The children's profiles and history would be deleted. Export or move them first.",
+  use_leave: "Use Leave group to remove yourself.",
+  member_not_found: "That person isn't in this group.",
+  invalid_role: "Pick admin or member.",
   target_reached: "Already done for this period.",
   already_checked_in_today: "Already checked in today. Come back tomorrow.",
   habit_frozen: "This habit is paused.",

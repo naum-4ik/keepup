@@ -8,6 +8,11 @@ describe("habitErrorMessage", () => {
     expect(habitErrorMessage({ message: "keepup:start_locked" })).toBe("The start date can't change after the first check-in.");
   });
 
+  it("maps group errors", () => {
+    expect(habitErrorMessage({ message: "keepup:last_admin" })).toBe("Make someone else an admin first.");
+    expect(habitErrorMessage({ message: "keepup:invite_invalid" })).toMatch(/expired/);
+  });
+
   it("falls back to a generic message", () => {
     expect(habitErrorMessage({ message: "connection reset" })).toBe(GENERIC_ERROR);
     expect(habitErrorMessage(null)).toBe(GENERIC_ERROR);
