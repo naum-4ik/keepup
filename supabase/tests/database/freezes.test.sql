@@ -54,11 +54,11 @@ set local session_replication_role = origin;
 -- Resume mid-week: paused Monday 5 Oct, resumed Wednesday 7 Oct, checked in the same day.
 select private.freeze_habit_impl('00000000-0000-0000-0000-00000000f011', '00000000-0000-0000-0000-0000000000a3',
   '2026-10-05', null, '2026-10-05T08:00:00Z');
-select is((select frozen from private.habit_summaries('00000000-0000-0000-0000-0000000000a3', '2026-10-06T08:00:00Z')
+select is((select frozen from private.subject_summaries('00000000-0000-0000-0000-0000000000a3', '2026-10-06T08:00:00Z')
             where habit_id = '00000000-0000-0000-0000-00000000f011'),
   true, 'a weekly habit is paused on a paused day');
 select private.unfreeze_habit_impl('00000000-0000-0000-0000-00000000f011', '00000000-0000-0000-0000-0000000000a3', '2026-10-07T08:00:00Z');
-select is((select row(frozen, frozen_until)::text from private.habit_summaries('00000000-0000-0000-0000-0000000000a3', '2026-10-07T08:00:00Z')
+select is((select row(frozen, frozen_until)::text from private.subject_summaries('00000000-0000-0000-0000-0000000000a3', '2026-10-07T08:00:00Z')
             where habit_id = '00000000-0000-0000-0000-00000000f011'),
   '(f,)', 'after resuming mid-week the summary is not paused and shows no past "until" date');
 select lives_ok(
@@ -68,13 +68,13 @@ select lives_ok(
 -- A pause scheduled for Saturday 10 Oct doesn't block Wednesday 7 Oct.
 select private.freeze_habit_impl('00000000-0000-0000-0000-00000000f012', '00000000-0000-0000-0000-0000000000a3',
   '2026-10-10', '2026-10-11', '2026-10-07T08:00:00Z');
-select is((select frozen from private.habit_summaries('00000000-0000-0000-0000-0000000000a3', '2026-10-07T08:00:00Z')
+select is((select frozen from private.subject_summaries('00000000-0000-0000-0000-0000000000a3', '2026-10-07T08:00:00Z')
             where habit_id = '00000000-0000-0000-0000-00000000f012'),
   false, 'a pause scheduled for Saturday does not show Wednesday as paused');
 select lives_ok(
   $$select private.check_in_impl('00000000-0000-0000-0000-00000000f012', '00000000-0000-0000-0000-0000000000a3', '2026-10-07T08:00:00Z')$$,
   'a pause scheduled for Saturday does not block a Wednesday check-in');
-select is((select row(frozen, frozen_until)::text from private.habit_summaries('00000000-0000-0000-0000-0000000000a3', '2026-10-10T08:00:00Z')
+select is((select row(frozen, frozen_until)::text from private.subject_summaries('00000000-0000-0000-0000-0000000000a3', '2026-10-10T08:00:00Z')
             where habit_id = '00000000-0000-0000-0000-00000000f012'),
   '(t,2026-10-11)', 'on Saturday it is paused until Sunday');
 select throws_ok(

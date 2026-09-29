@@ -15,7 +15,7 @@ export async function getHabitSummaries(): Promise<HabitSummary[]> {
   // database has the emoji migration, so `emoji` may be missing and `category` still `money`.
   return (data ?? []).map((row) => {
     const category = normalizeCategory(row.category);
-    return { ...row, category, emoji: habitEmoji(category, row.emoji) };
+    return { ...row, category, emoji: habitEmoji(category, row.emoji), members: row.members ?? null };
   });
 }
 
