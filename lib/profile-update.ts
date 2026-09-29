@@ -2,10 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { OnboardingInput, ProfileInput } from "@/lib/profile-schema";
 import type { Database } from "@/lib/database.types";
 
-// Each form writes only the columns it owns: Settings never touches the purpose, onboarding never
-// touches the reminder hour.
-type ProfileUpdate = Omit<ProfileInput, "reminderHour"> & Partial<Pick<ProfileInput, "reminderHour">> &
-  Partial<Pick<OnboardingInput, "purpose">>;
+// Each form writes only the columns it owns: Settings never touches the purpose.
+type ProfileUpdate = ProfileInput & Partial<Pick<OnboardingInput, "purpose">>;
 
 // Returns null when saved, otherwise a message to show the user.
 export async function saveProfile(
@@ -20,7 +18,6 @@ export async function saveProfile(
       display_name: input.displayName,
       timezone: input.timezone,
       week_start: input.weekStart,
-      ...(input.reminderHour !== undefined ? { reminder_hour: input.reminderHour } : {}),
       ...(input.purpose !== undefined ? { purpose: input.purpose } : {}),
       // The database stores its own now() (and sets terms_accepted_at alongside) the first time only.
       ...(opts.markOnboarded ? { onboarded_at: new Date().toISOString() } : {}),

@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { InfoHint } from "@/components/info-hint";
 import { SaveButton } from "@/components/save-button";
+import { TimezonePicker } from "@/components/timezone-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ProfileFormState, ProfileFormValues } from "@/lib/profile-schema";
@@ -23,6 +25,7 @@ export function ProfileForm({ action, timezones, defaults, submitLabel }: Props)
   // value below to force a remount (with the fresh defaultValue baked in) instead of remounting the form.
   const values = state.status === "error" && state.values ? state.values : defaults;
   const errors = state.status === "error" ? (state.errors ?? {}) : {};
+  const [timezone, setTimezone] = useState(defaults.timezone);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -45,62 +48,22 @@ export function ProfileForm({ action, timezones, defaults, submitLabel }: Props)
         )}
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="timezone" className="font-semibold">
-          Time zone
-        </Label>
-        <select
-          key={values.timezone}
-          id="timezone"
-          name="timezone"
-          defaultValue={values.timezone}
-          className={selectClass}
-          aria-invalid={Boolean(errors.timezone)}
-          aria-describedby={errors.timezone ? "timezone-error" : undefined}
-        >
-          {timezones.map((tz) => (
-            <option key={tz} value={tz}>
-              {tz.replaceAll("_", " ")}
-            </option>
-          ))}
-        </select>
-        {errors.timezone && (
-          <p id="timezone-error" className="text-sm text-destructive">
-            {errors.timezone}
-          </p>
-        )}
-      </div>
+      <TimezonePicker
+        name="timezone"
+        value={timezone}
+        onChange={setTimezone}
+        timezones={timezones}
+        error={errors.timezone}
+        showChangeNote
+      />
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="reminderHour" className="font-semibold">
-          Daily reminder
-        </Label>
-        <select
-          key={values.reminderHour}
-          id="reminderHour"
-          name="reminderHour"
-          defaultValue={values.reminderHour}
-          className={selectClass}
-          aria-invalid={Boolean(errors.reminderHour)}
-          aria-describedby={errors.reminderHour ? "reminderHour-error" : undefined}
-        >
-          {Array.from({ length: 24 }, (_, h) => (
-            <option key={h} value={String(h)}>
-              {String(h).padStart(2, "0")}:00
-            </option>
-          ))}
-        </select>
-        {errors.reminderHour && (
-          <p id="reminderHour-error" className="text-sm text-destructive">
-            {errors.reminderHour}
-          </p>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="weekStart" className="font-semibold">
-          Week starts on
-        </Label>
+        <div className="flex flex-wrap items-center gap-1">
+          <Label htmlFor="weekStart" className="font-semibold">
+            Week starts on
+          </Label>
+          <InfoHint text="Weekly habits reset on this day." />
+        </div>
         <select
           id="weekStart"
           name="weekStart"
