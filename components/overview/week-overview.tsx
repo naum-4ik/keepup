@@ -11,8 +11,17 @@ export function ProgressRing({ done, possible, size = 20 }: { done: number; poss
   const stroke = Math.max(2.5, size / 8);
   const r = (size - stroke) / 2;
   const { circumference, offset } = ringDash(done, possible, r);
+  const label = `${done} of ${possible} done this week`;
+  // A full ring would look like an empty outline, so a complete week becomes a filled sage check.
+  if (possible > 0 && done >= possible) {
+    return (
+      <span role="img" aria-label={label} style={{ width: size, height: size }} className="flex shrink-0 items-center justify-center rounded-full bg-[#4F8A5B] text-white">
+        <Check aria-hidden strokeWidth={3} style={{ width: size * 0.55, height: size * 0.55 }} />
+      </span>
+    );
+  }
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${done} of ${possible} done this week`} className="shrink-0 -rotate-90">
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={label} className="shrink-0 -rotate-90">
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={stroke} className="stroke-muted" />
       {done > 0 && (
         <circle
