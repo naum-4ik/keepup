@@ -9,6 +9,8 @@ import { groupForToday } from "@/lib/today";
 export default async function TodayPage() {
   const habits = (await getHabitSummaries()).filter((h) => !h.archived_at);
   const { todo, done, later } = groupForToday(habits);
+  // The first-check-in tip is for people who have never checked in (not for someone on a new device).
+  const isNewUser = habits.every((h) => h.done_count === 0 && h.best_streak === 0);
 
   return (
     <section className="flex flex-col gap-4 py-6">
@@ -26,7 +28,7 @@ export default async function TodayPage() {
       ) : (
         <>
           {todo.length > 0 ? (
-            <HabitList habits={todo} tipFor={todo[0].habit_id} />
+            <HabitList habits={todo} tipFor={isNewUser ? todo[0].habit_id : undefined} />
           ) : done.length > 0 ? (
             <p className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">All checked off. Nice work.</p>
           ) : null}

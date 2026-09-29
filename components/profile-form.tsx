@@ -13,7 +13,7 @@ type Props = {
   submitLabel: string;
 };
 
-const selectClass = "h-11 rounded-lg border border-input bg-transparent px-3 text-sm";
+const selectClass = "h-11 rounded-xl border border-input bg-transparent px-3 text-base";
 const initialState: ProfileFormState = { status: "idle" };
 
 export function ProfileForm({ action, timezones, defaults, submitLabel }: Props) {

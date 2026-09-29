@@ -64,7 +64,7 @@ export function PickHabits({ templates }: { templates: HabitTemplate[] }) {
                 >
                   <CategoryIcon category={t.category} size="xs" />
                   <span className="flex min-w-0 flex-col">
-                    <span className="line-clamp-2 text-[0.9375rem] leading-snug font-bold">{t.title}</span>
+                    <span className="line-clamp-3 text-[0.9375rem] leading-snug font-bold">{t.title}</span>
                     <span className="text-xs text-muted-foreground">{describeSchedule(t.targetCount, t.period)}</span>
                   </span>
                   <span
