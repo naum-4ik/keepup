@@ -13,9 +13,11 @@ export function ProgressRing({ done, possible, size = 20 }: { done: number; poss
   const { circumference, offset } = ringDash(done, possible, r);
   const label = `${done} of ${possible} done this week`;
   // A full ring would look like an empty outline, so a complete week becomes a filled sage check.
+  // The check means "all done so far": `possible` only counts periods that are due or finished, so
+  // it can show mid-week and give way to the ring again once the next day's habits come due.
   if (possible > 0 && done >= possible) {
     return (
-      <span role="img" aria-label={label} style={{ width: size, height: size }} className="flex shrink-0 items-center justify-center rounded-full bg-[#4F8A5B] text-white">
+      <span role="img" data-complete="" aria-label={label} style={{ width: size, height: size }} className="flex shrink-0 items-center justify-center rounded-full bg-[#4F8A5B] text-white">
         <Check aria-hidden strokeWidth={3} style={{ width: size * 0.55, height: size * 0.55 }} />
       </span>
     );

@@ -6,7 +6,11 @@ const week = (done: number, possible: number, prev_done: number, prev_possible: 
 describe("comparisonLine", () => {
   it("counts how many more than last week", () => {
     expect(comparisonLine(week(18, 22, 15, 21))).toBe("3 more than last week");
-    expect(comparisonLine(week(1, 1, 0, 0))).toBe("1 more than last week");
+    expect(comparisonLine(week(1, 1, 0, 3))).toBe("1 more than last week");
+  });
+
+  it("only compares with last week when there was one", () => {
+    expect(comparisonLine(week(1, 1, 0, 0))).toBe("1 done this week");
   });
 
   it("calls it the best week yet when as much got done with fewer chances", () => {
@@ -14,12 +18,13 @@ describe("comparisonLine", () => {
   });
 
   it("needs a last week to compare with before calling it the best", () => {
-    expect(comparisonLine(week(0, 0, 0, 0))).toBe("0 done this week");
+    expect(comparisonLine(week(0, 0, 0, 0))).toBe("A fresh start this week");
     expect(comparisonLine(week(5, 5, 5, 0))).toBe("5 done this week");
   });
 
   it("stays neutral otherwise, never negative", () => {
     expect(comparisonLine(week(4, 10, 12, 14))).toBe("4 done this week");
+    expect(comparisonLine(week(0, 3, 9, 12))).toBe("A fresh start this week");
     expect(comparisonLine(week(6, 8, 6, 8))).toBe("6 done this week");
     expect(comparisonLine(week(6, 9, 6, 8))).toBe("6 done this week");
   });

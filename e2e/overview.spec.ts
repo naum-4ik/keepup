@@ -14,16 +14,20 @@ test("the weekly overview shows on Today and Progress", async ({ page }) => {
   // Only finished periods count this week: Read is still open today, so it's 1 of 1.
   const strip = page.getByRole("link", { name: /^This week/ });
   await expect(strip).toContainText("1 of 1");
-  await expect(strip.getByRole("img", { name: "1 of 1 done this week" })).toBeVisible();
+  // All done so far: the ring is replaced by the filled check.
+  await expect(strip.getByRole("img", { name: "1 of 1 done this week" })).toHaveAttribute("data-complete", "");
+  await expect(strip.locator("[data-complete] svg.lucide-check")).toBeVisible();
   await strip.click();
   await expect(page).toHaveURL(/\/progress$/);
 
   const card = page.getByRole("region", { name: "Your week" });
   await expect(card).toContainText("1 of 1 done");
-  await expect(card).toContainText("1 more than last week");
-  const weekday = new Intl.DateTimeFormat("en-GB", { weekday: "long", timeZone: "Europe/Rome" }).format(new Date());
-  // Today's circle fills against both of today's daily habits.
-  await expect(card.getByRole("img", { name: `${weekday}: 1 of 2 done` })).toBeVisible();
+  // No last week to compare with yet.
+  await expect(card).toContainText("1 done this week");
+  await expect(card.getByRole("img", { name: "1 of 1 done this week" })).toHaveAttribute("data-complete", "");
+  // Today's circle fills against both of today's daily habits (the weekday comes from the server's
+  // clock in the user's time zone, so it isn't recomputed here).
+  await expect(card.getByRole("img", { name: /^\w+day: 1 of 2 done$/ })).toBeVisible();
   await expect(card.getByRole("listitem").filter({ hasText: "check-in" })).toHaveText("1check-in");
   await expect(card.getByRole("listitem").filter({ hasText: "active habits" })).toHaveText("2active habits");
 

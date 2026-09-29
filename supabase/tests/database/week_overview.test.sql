@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(26);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a7', 'wk-a@example.com');
 select tests.create_user('00000000-0000-0000-0000-0000000000b7', 'wk-b@example.com');
@@ -83,6 +83,48 @@ select is((select array_agg(c->>'status' order by c->>'period_start') from ov, j
 select is((select row((o->>'done')::int, (o->>'possible')::int, (o->>'prev_done')::int, (o->>'prev_possible')::int)::text
              from (select private.week_overview_impl('00000000-0000-0000-0000-0000000000a7', '2026-10-12T06:00:00Z') as o) x),
   '(0,0,5,16)', 'a new week starts empty and a finished month isn''t counted twice');
+
+-- Local midnight, not UTC midnight, starts the week: 22:30 UTC on Sunday 11 Oct is 00:30 Monday in Rome.
+select is((select o->>'week_start' from (select private.week_overview_impl('00000000-0000-0000-0000-0000000000a7', '2026-10-11T22:30:00Z') as o) x),
+  '2026-10-12', 'just after local midnight on Monday it is already the new week');
+select is((select row((o->>'done')::int, (o->>'prev_done')::int, (o->>'prev_possible')::int)::text
+             from (select private.week_overview_impl('00000000-0000-0000-0000-0000000000a7', '2026-10-11T22:30:00Z') as o) x),
+  '(0,5,16)', 'and last week holds the week that just ended');
+
+-- A Sunday-start profile.
+select tests.create_user('00000000-0000-0000-0000-0000000000c7', 'wk-c@example.com');
+update public.profiles set timezone = 'Europe/Rome', week_start = 0 where id = '00000000-0000-0000-0000-0000000000c7';
+select is((select row(o->>'week_start', o->'days'->0->>'local_date')::text
+             from (select private.week_overview_impl('00000000-0000-0000-0000-0000000000c7', '2026-10-08T10:00:00Z') as o) x),
+  '(2026-10-04,2026-10-04)', 'a Sunday-start week starts on Sunday, and so do its days');
+select is((select o->'days'->6->>'local_date'
+             from (select private.week_overview_impl('00000000-0000-0000-0000-0000000000c7', '2026-10-08T10:00:00Z') as o) x),
+  '2026-10-10', 'and ends on Saturday');
+
+-- The week of 19–25 Oct 2026 has 25 hours: Rome leaves summer time early on Sunday 25 Oct.
+select tests.create_user('00000000-0000-0000-0000-0000000000d7', 'wk-d@example.com');
+update public.profiles set timezone = 'Europe/Rome', week_start = 1 where id = '00000000-0000-0000-0000-0000000000d7';
+set local session_replication_role = replica;
+insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, week_start) values
+  ('00000000-0000-0000-0000-00000000d7d1', '00000000-0000-0000-0000-0000000000d7', 'Walk', 'fitness', 1, 'day', '2026-10-19', '2026-10-19T06:00:00Z', 1);
+set local session_replication_role = origin;
+-- Every day but Thursday 22 Oct; Sunday's check-in is at 00:30 local time (still summer time, 22:30 UTC Saturday).
+select private.check_in_impl('00000000-0000-0000-0000-00000000d7d1', '00000000-0000-0000-0000-0000000000d7', t)
+  from unnest(array['2026-10-19T08:00:00Z', '2026-10-20T08:00:00Z', '2026-10-21T08:00:00Z', '2026-10-23T08:00:00Z',
+                    '2026-10-24T08:00:00Z', '2026-10-24T22:30:00Z']::timestamptz[]) as t;
+-- Sunday 25 Oct, 22:30 in Rome (winter time, 21:30 UTC).
+create temp table dst as
+  select private.week_overview_impl('00000000-0000-0000-0000-0000000000d7', '2026-10-25T21:30:00Z') as o;
+select is((select array_agg(d->>'local_date' order by ord) from dst, jsonb_array_elements(o->'days') with ordinality as x(d, ord)),
+  array['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-24', '2026-10-25'],
+  'a week across the clock change still has 7 days');
+select is((select array_agg((d->>'daily_done') || '/' || (d->>'daily_possible') order by ord) from dst, jsonb_array_elements(o->'days') with ordinality as x(d, ord)),
+  array['1/1', '1/1', '1/1', '0/1', '1/1', '1/1', '1/1'], 'each check-in lands on its local day across the clock change');
+select is((select row((o->>'done')::int, (o->>'possible')::int, (o->>'check_ins')::int)::text from dst),
+  '(6,7,6)', 'the week across the clock change counts 6 of 7');
+select is((select row(o->>'week_start', (o->>'done')::int, (o->>'prev_done')::int, (o->>'prev_possible')::int)::text
+             from (select private.week_overview_impl('00000000-0000-0000-0000-0000000000d7', '2026-10-25T23:30:00Z') as o) x),
+  '(2026-10-26,0,6,7)', 'an hour after that it is Monday in Rome, and the week has moved on');
 
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000a7');
 select is((select (public.week_overview()->>'active_habits')::int), 5, 'the owner gets their overview through the API');

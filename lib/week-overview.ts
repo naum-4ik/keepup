@@ -23,12 +23,12 @@ export type WeekOverview = {
 // A brand-new user has nothing to show yet.
 export const hasWeekData = (o: Pick<WeekOverview, "done" | "possible">) => o.possible > 0 || o.done > 0;
 
-// Only positive or neutral. "Best week yet" means this week's share done beats last week's
-// (the only other week in the data), while having done at least as much.
+// Only positive or neutral. "More than last week" needs a last week to compare with. "Best week
+// yet" means this week's share done beats last week's (the only other week in the data), while
+// having done at least as much.
 export function comparisonLine(o: Pick<WeekOverview, "done" | "possible" | "prev_done" | "prev_possible">): string {
-  if (o.done > o.prev_done) {
-    const n = o.done - o.prev_done;
-    return `${n} more than last week`;
+  if (o.prev_possible > 0 && o.done > o.prev_done) {
+    return `${o.done - o.prev_done} more than last week`;
   }
   if (
     o.prev_possible > 0 &&
@@ -39,6 +39,7 @@ export function comparisonLine(o: Pick<WeekOverview, "done" | "possible" | "prev
   ) {
     return "Your best week yet";
   }
+  if (o.done === 0) return "A fresh start this week";
   return `${o.done} done this week`;
 }
 
