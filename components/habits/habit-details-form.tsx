@@ -1,0 +1,77 @@
+"use client";
+
+import { useActionState, useState } from "react";
+import { updateHabitDetails, type FormActionState } from "@/app/(app)/habits/actions";
+import { StartDatePicker } from "@/components/habits/start-date-picker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
+import type { HabitCategory } from "@/lib/habit-schema";
+import { cn } from "@/lib/utils";
+
+const initialState: FormActionState = { status: "idle" };
+// Matches the new-habit form: every control shares one 44px height.
+const fieldClass = "h-11 rounded-xl px-3 text-base";
+
+export function HabitDetailsForm({
+  habitId,
+  title,
+  category,
+  startsOn,
+  canEditStart,
+  today,
+  weekStart,
+}: {
+  habitId: string;
+  title: string;
+  category: HabitCategory;
+  startsOn: string;
+  canEditStart: boolean;
+  today: string;
+  weekStart: 0 | 1;
+}) {
+  const [state, formAction, pending] = useActionState(updateHabitDetails.bind(null, habitId), initialState);
+  const [start, setStart] = useState(startsOn);
+
+  return (
+    <form action={formAction} className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="title">Title</Label>
+        <Input id="title" name="title" defaultValue={title} key={title} className={fieldClass} />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="category">Category</Label>
+        <select
+          id="category"
+          name="category"
+          defaultValue={category}
+          key={category}
+          className={cn(fieldClass, "w-full border border-input bg-transparent")}
+        >
+          {CATEGORY_ORDER.map((c) => (
+            <option key={c} value={c}>
+              {CATEGORIES[c].label}
+            </option>
+          ))}
+        </select>
+      </div>
+      {canEditStart && (
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="text-sm font-semibold">Starts</legend>
+          <input type="hidden" name="startsOn" value={start} />
+          <StartDatePicker value={start} onChange={setStart} today={today} weekStart={weekStart} />
+        </fieldset>
+      )}
+      {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
+      {state.status === "saved" && (
+        <p role="status" className="text-sm text-muted-foreground">
+          Saved.
+        </p>
+      )}
+      <Button type="submit" variant="outline" className="h-11" disabled={pending}>
+        Save
+      </Button>
+    </form>
+  );
+}

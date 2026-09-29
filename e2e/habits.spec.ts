@@ -158,3 +158,67 @@ test.describe("Today check-ins", () => {
     await expect(page.getByRole("region", { name: "Later" })).toContainText("Read 20 min");
   });
 });
+
+test.describe("Habit detail", () => {
+  test("the habit page shows this period's check-ins and can undo them", async ({ page }) => {
+    await signUpAndOnboard(page);
+    await createHabit(page, { template: "Read 20 min" });
+    await page.getByRole("button", { name: "Check in: Read 20 min" }).click();
+    await expect(page.getByRole("button", { name: "Done: Read 20 min" })).toBeVisible();
+
+    await page.getByRole("link", { name: /Read 20 min/ }).click();
+    await expect(page.getByText("1 check-in this period")).toBeVisible();
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(page.getByText("No check-ins this period yet.")).toBeVisible();
+
+    await page.goto("/today");
+    await expect(page.getByText("Not done yet")).toBeVisible();
+  });
+
+  test("a habit can be paused from today and resumed", async ({ page }) => {
+    await signUpAndOnboard(page);
+    await createHabit(page, { template: "Meditate" });
+    await page.getByRole("link", { name: /Meditate/ }).click();
+
+    await page.getByRole("button", { name: "Pause habit" }).click();
+    await expect(page.getByText(/^Paused from /)).toBeVisible();
+    await page.goto("/today");
+    await expect(page.getByRole("button", { name: "Paused: Meditate" })).toBeDisabled();
+    await page.getByRole("link", { name: /Meditate/ }).click();
+    await page.getByRole("button", { name: "Resume" }).click();
+    await expect(page.getByRole("button", { name: "Pause habit" })).toBeVisible();
+  });
+
+  test("a habit without check-ins can be deleted; one with history is archived", async ({ page }) => {
+    await signUpAndOnboard(page);
+    await createHabit(page, { template: "Tidy up", tab: "Home" });
+    await page.getByRole("link", { name: /Tidy up/ }).click();
+    await page.getByRole("button", { name: "Delete habit" }).click();
+    const confirmDialog = page.getByRole("dialog");
+    await expect(confirmDialog).toBeVisible();
+    await confirmDialog.getByRole("button", { name: "Delete", exact: true }).click();
+    await expect(page).toHaveURL(/\/today$/);
+    await expect(page.getByText("Tidy up")).toHaveCount(0);
+
+    await createHabit(page, { template: "Make the bed", tab: "Home" });
+    await page.getByRole("button", { name: "Check in: Make the bed" }).click();
+    await expect(page.getByRole("button", { name: "Done: Make the bed" })).toBeVisible();
+    await page.getByRole("link", { name: /Make the bed/ }).click();
+    await expect(page.getByRole("button", { name: "Delete habit" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Archive habit" }).click();
+    await expect(page).toHaveURL(/\/progress\?view=archived$/);
+
+    await page.goto("/today");
+    await expect(page.getByText("Make the bed")).toHaveCount(0);
+  });
+
+  test("a habit's title can be edited", async ({ page }) => {
+    await signUpAndOnboard(page);
+    await createHabit(page, { template: "Work out" });
+    await page.getByRole("link", { name: /Work out/ }).click();
+    await page.getByLabel("Title").fill("Work out at home");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("status")).toHaveText("Saved.");
+    await expect(page.getByRole("heading", { name: "Work out at home" })).toBeVisible();
+  });
+});
