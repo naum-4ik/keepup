@@ -34,6 +34,10 @@ export function EmojiPicker({
   const ownId = useId();
   const shown = habitEmoji(category, value);
   const draftInvalid = draft.trim() !== "" && !isOneEmoji(draft.trim());
+  // Typed words are the common mistake (the field reads like a text box), so name that case.
+  const draftHint = /[\p{L}\p{N}]/u.test(draft)
+    ? "That's text, not an emoji. Pick one above or use your emoji keyboard."
+    : "Just one emoji, please.";
 
   const close = () => {
     setOpen(false);
@@ -94,11 +98,14 @@ export function EmojiPicker({
             ))}
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor={ownId} className="text-sm font-semibold">Or type your own</Label>
+            <Label htmlFor={ownId} className="text-sm font-semibold">Another emoji</Label>
+            <p id={`${ownId}-help`} className="text-sm text-muted-foreground">
+              Tap the box, then the 😀 key on your keyboard.
+            </p>
             <Input
               id={ownId}
               value={draft}
-              placeholder="One emoji"
+              placeholder="😀"
               autoComplete="off"
               enterKeyHint="done"
               onChange={(e) => {
@@ -114,10 +121,10 @@ export function EmojiPicker({
               }}
               className="h-11 rounded-xl px-3 text-base"
               aria-invalid={draftInvalid}
-              aria-describedby={draftInvalid ? `${ownId}-hint` : undefined}
+              aria-describedby={draftInvalid ? `${ownId}-help ${ownId}-hint` : `${ownId}-help`}
             />
             {draftInvalid && (
-              <p id={`${ownId}-hint`} className="text-sm text-destructive">One emoji only.</p>
+              <p id={`${ownId}-hint`} className="text-sm text-destructive">{draftHint}</p>
             )}
           </div>
         </div>
