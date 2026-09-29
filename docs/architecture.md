@@ -35,8 +35,6 @@ Configured by hand in the Supabase dashboard for the `keepup-staging` project (n
 - Site URL: `https://keepup-murex.vercel.app`
 - Redirect URLs: `https://keepup-murex.vercel.app/auth/callback`, `https://keepup-*-naum4ik-s-org.vercel.app/**`
 - Providers: email (magic link) and Google (the Google OAuth client is in Testing mode)
-- Passkeys (Face ID sign-in), under Authentication → Passkeys: enabled; Relying Party Display Name `Keepup`; Relying Party ID `keepup-murex.vercel.app` (bare host, no scheme or port); Relying Party Origins `https://keepup-murex.vercel.app`. Changing the RP ID invalidates every existing passkey. `deploy-staging-db.yml` only pushes migrations, so the local `[auth.webauthn]` values in `supabase/config.toml` never reach staging.
-- Vercel → keepup → Environment Variables: `NEXT_PUBLIC_PASSKEY_RP_ID=keepup-murex.vercel.app` for **Production only** (built from `develop`); leave it unset for Preview, where passkeys can't work and the UI hides. It is inlined at build time, so redeploy after changing it.
 
 ## Why no load balancer
 
@@ -50,7 +48,6 @@ Vercel's serverless functions are stateless and scale horizontally by request �
 | Least privilege | Column-level UPDATE grants on `profiles` (no blanket table grants) | Live |
 | Key exposure | No service-role key in the app anywhere — browser and server both use only the publishable key, under RLS. A service-role key will exist only in CI secrets / Edge Functions when a later feature needs it | Live |
 | Session verification | Google OAuth and magic link both use the PKCE code flow; server checks the session with `getClaims()`, never the unverified `getSession()` | Live |
-| Passkeys (Face ID sign-in) | Supabase Auth passkeys (WebAuthn, beta), added only after a Google or email-link sign-in; the RP ID is per environment (`NEXT_PUBLIC_PASSKEY_RP_ID` must match the Supabase setting) and changing it invalidates every passkey; the UI hides on any other host (Vercel previews) | Live |
 | Open-redirect protection | `safeNextPath` validates post-auth redirects; unit-tested | Live |
 | Input validation | Server actions validate input and give good error messages, but they're not the enforcement boundary: database constraints, RLS, column grants, triggers, and (from M2) `SECURITY DEFINER` RPCs enforce the rules underneath. Server-owned fields (streaks, XP, approvals, timestamps like `onboarded_at`) are written only by the database, never trusted from client input | Live |
 | Session response caching | Responses that refresh a Supabase session carry no-cache headers | Live |
