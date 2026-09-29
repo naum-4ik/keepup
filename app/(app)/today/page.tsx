@@ -2,12 +2,15 @@ import Link from "next/link";
 import { FirstCheckinTip } from "@/components/first-checkin-tip";
 import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard } from "@/components/habits/habit-card";
+import { WeekStrip } from "@/components/overview/week-overview";
 import { Button } from "@/components/ui/button";
-import { getHabitSummaries, type HabitSummary } from "@/lib/habits";
+import { getHabitSummaries, getWeekOverview, type HabitSummary } from "@/lib/habits";
 import { groupForToday } from "@/lib/today";
+import { hasWeekData } from "@/lib/week-overview";
 
 export default async function TodayPage() {
-  const habits = (await getHabitSummaries()).filter((h) => !h.archived_at);
+  const [summaries, overview] = await Promise.all([getHabitSummaries(), getWeekOverview()]);
+  const habits = summaries.filter((h) => !h.archived_at);
   const { todo, done, later } = groupForToday(habits);
   // The first-check-in tip is for people who have never checked in (not for someone on a new device).
   const isNewUser = habits.every((h) => h.done_count === 0 && h.best_streak === 0);
@@ -15,6 +18,7 @@ export default async function TodayPage() {
   return (
     <section className="flex flex-col gap-4 py-6">
       <h1 className="text-xl font-bold">Today</h1>
+      {overview && hasWeekData(overview) && <WeekStrip overview={overview} />}
       {habits.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">
           <div className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">

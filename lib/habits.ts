@@ -1,6 +1,7 @@
 import "server-only";
 import { requireUser } from "@/lib/auth";
 import type { Database } from "@/lib/database.types";
+import type { WeekOverview } from "@/lib/week-overview";
 
 export type HabitSummary = Database["public"]["Functions"]["habit_summaries"]["Returns"][number];
 export type HistoryCell = Database["public"]["Functions"]["habit_history"]["Returns"][number];
@@ -10,6 +11,18 @@ export async function getHabitSummaries(): Promise<HabitSummary[]> {
   const { data, error } = await supabase.rpc("habit_summaries");
   if (error) throw new Error(`habit_summaries failed: ${error.message}`);
   return data ?? [];
+}
+
+// The overview is extra: if it fails (e.g. the app deployed a moment before its migration), the
+// page still loads without it rather than showing the error screen.
+export async function getWeekOverview(): Promise<WeekOverview | null> {
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase.rpc("week_overview");
+  if (error || !data) {
+    console.error("week_overview failed", error?.message ?? "no data");
+    return null;
+  }
+  return data as unknown as WeekOverview;
 }
 
 export type HabitFreeze = { id: string; starts_on: string; ends_on: string | null };

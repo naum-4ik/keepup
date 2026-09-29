@@ -175,6 +175,9 @@ isOneToOne: false
                            },
 "unfreeze_habit":
 { Args: { "p_habit_id": string }; Returns: undefined
+                           },
+"week_overview":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            }
           }
           Enums: {
