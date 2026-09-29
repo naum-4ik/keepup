@@ -57,14 +57,14 @@ select is((select row(current_streak, best_streak)::text from private.habit_stre
   '(2,2)', 'today''s check-in counts immediately');
 
 select is((select row(done_count, checked_in_today, days_left)::text
-             from private.habit_summaries('00000000-0000-0000-0000-0000000000a5', '2026-10-05T14:00:00Z')
+             from private.subject_summaries('00000000-0000-0000-0000-0000000000a5', '2026-10-05T14:00:00Z')
             where habit_id = '00000000-0000-0000-0000-00000000005a'),
   '(1,t,1)', 'summary for a daily habit done today');
 select is((select row(done_count, days_left, current_streak)::text
-             from private.habit_summaries('00000000-0000-0000-0000-0000000000a5', '2026-10-08T10:00:00Z')
+             from private.subject_summaries('00000000-0000-0000-0000-0000000000a5', '2026-10-08T10:00:00Z')
             where habit_id = '00000000-0000-0000-0000-00000000005b'),
   '(0,4,0)', 'on Thursday a Monday-week habit has 4 days left (Thu–Sun)');
-select is((select not_started from private.habit_summaries('00000000-0000-0000-0000-0000000000a5', '2026-10-05T14:00:00Z')
+select is((select not_started from private.subject_summaries('00000000-0000-0000-0000-0000000000a5', '2026-10-05T14:00:00Z')
             where habit_id = '00000000-0000-0000-0000-00000000005d'),
   true, 'a habit starting next week shows as not started');
 
@@ -103,7 +103,7 @@ insert into public.habits (id, owner_id, title, category, target_count, period, 
 set local session_replication_role = origin;
 
 select is((select row(period_start, days_left)::text
-             from private.habit_summaries('00000000-0000-0000-0000-0000000000a5', '2026-10-08T10:00:00Z')
+             from private.subject_summaries('00000000-0000-0000-0000-0000000000a5', '2026-10-08T10:00:00Z')
             where habit_id = '00000000-0000-0000-0000-00000000005e'),
   '(2026-10-04,3)', 'a habit created with week_start=0 shifts its weekly period, Thursday has 3 days left');
 
@@ -162,7 +162,7 @@ insert into public.habits (id, owner_id, title, category, target_count, period, 
 set local session_replication_role = origin;
 insert into public.habit_freezes (habit_id, starts_on, ends_on) values ('00000000-0000-0000-0000-000000000062', '2026-10-05', null);
 
-select is((select frozen_until from private.habit_summaries('00000000-0000-0000-0000-0000000000a5', '2026-10-08T10:00:00Z')
+select is((select frozen_until from private.subject_summaries('00000000-0000-0000-0000-0000000000a5', '2026-10-08T10:00:00Z')
             where habit_id = '00000000-0000-0000-0000-000000000062'),
   null, 'an open-ended pause reports frozen_until as null');
 
