@@ -120,7 +120,9 @@ export function ProfileForm({ action, timezones, defaults, detectTimezone = fals
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="weekStart">Week starts on</Label>
+        <Label htmlFor="weekStart" className="font-semibold">
+          Week starts on
+        </Label>
         <select
           id="weekStart"
           name="weekStart"

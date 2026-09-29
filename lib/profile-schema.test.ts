@@ -63,7 +63,7 @@ describe("parseProfile", () => {
 });
 
 describe("readProfileForm", () => {
-  it("reads the three fields as strings, missing ones as empty", () => {
+  it("reads the four fields as strings, missing ones as empty", () => {
     const fd = new FormData();
     fd.set("displayName", "Ana");
     fd.set("timezone", "UTC");

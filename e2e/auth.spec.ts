@@ -65,11 +65,12 @@ test("the first day of the week can be changed in settings", async ({ page }) =>
   await signInWithMagicLink(page, uniqueEmail());
   await completeOnboarding(page);
   await page.goto("/profile/settings");
-  await page.getByLabel("Week starts on").selectOption("0");
+  await expect(page.getByLabel("Week starts on")).toHaveValue("0"); // detected from the browser locale (en-US)
+  await page.getByLabel("Week starts on").selectOption("1");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("status")).toHaveText("Saved.");
   await page.reload();
-  await expect(page.getByLabel("Week starts on")).toHaveValue("0");
+  await expect(page.getByLabel("Week starts on")).toHaveValue("1");
 });
 
 test("the profile shows the app version and links to what's new", async ({ page }) => {
