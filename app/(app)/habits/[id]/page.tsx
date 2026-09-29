@@ -94,7 +94,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
               <p className={isDone ? "font-bold text-[#4F8A5B]" : "font-bold"}>{progress.text}</p>
               {h.target_count > 1 && (
                 <div className="h-2 w-40 overflow-hidden rounded-full bg-muted" aria-hidden>
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, (h.done_count / h.target_count) * 100)}%` }} />
+                  <div className={`h-full rounded-full bg-current ${CATEGORIES[h.category].iconClass}`} style={{ width: `${Math.min(100, (h.done_count / h.target_count) * 100)}%` }} />
                 </div>
               )}
             </div>
