@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(25);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -60,6 +60,34 @@ select lives_ok($$select private.finalize_periods('2026-10-08T09:15:00Z')$$, 'fi
 select results_eq($$select (select status from public.check_ins where habit_id = '00000000-0000-0000-0000-0000000000d1' and local_date = '2026-10-07' and status in ('pending','expired')),
                           (select outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d1' and period_start = '2026-10-07')$$,
   $$values ('expired'::text, 'missed'::text)$$, 'a pending check-in expires and the day is finalized without it');
+
+-- "Approve all" (runs on the real clock): a check-in someone already reviewed, or one that no longer
+-- exists, is skipped; the count says how many this call reviewed.
+set local session_replication_role = replica;
+insert into public.check_ins (id, habit_id, user_id, local_date, period_start, status, reviewed_by, reviewed_at, logged_by) values
+  ('00000000-0000-0000-0000-00000000aa01', '00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000a1',
+   private.local_date(now(), 'Asia/Jerusalem'), private.local_date(now(), 'Asia/Jerusalem'), 'pending', null, null, '00000000-0000-0000-0000-0000000000a1'),
+  ('00000000-0000-0000-0000-00000000aa02', '00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000a1',
+   private.local_date(now(), 'Asia/Jerusalem'), private.local_date(now(), 'Asia/Jerusalem'), 'approved', '00000000-0000-0000-0000-0000000000b1', now(), '00000000-0000-0000-0000-0000000000a1');
+set local session_replication_role = origin;
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+select is(public.review_check_ins(array['00000000-0000-0000-0000-00000000aa02', '00000000-0000-0000-0000-00000000aa01',
+  '00000000-0000-0000-0000-00000000aa99']::uuid[], true), 1, 'approve all skips an already-reviewed or missing check-in and counts the rest');
+reset role;
+select is((select status from public.check_ins where id = '00000000-0000-0000-0000-00000000aa01'), 'approved', 'the pending one was approved');
+
+-- An archived approval habit: its pending check-in still expires once the review window has passed.
+select lives_ok($$select private.check_in_impl('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000b1', '2026-10-09T10:00:00Z')$$,
+  'Dan checks in Friday');
+set local session_replication_role = replica;
+update public.habits set archived_at = '2026-10-09T12:00:00Z' where id = '00000000-0000-0000-0000-0000000000d1';
+set local session_replication_role = origin;
+select lives_ok($$select private.finalize_periods('2026-10-10T08:00:00Z')$$, 'finalize during the window');
+select is((select status from public.check_ins where habit_id = '00000000-0000-0000-0000-0000000000d1' and local_date = '2026-10-09'),
+  'pending', 'within the window it stays pending');
+select lives_ok($$select private.finalize_periods('2026-10-10T09:30:00Z')$$, 'finalize after the window');
+select is((select status from public.check_ins where habit_id = '00000000-0000-0000-0000-0000000000d1' and local_date = '2026-10-09'),
+  'expired', 'after the window it expires, though the habit is archived');
 
 select * from finish();
 rollback;

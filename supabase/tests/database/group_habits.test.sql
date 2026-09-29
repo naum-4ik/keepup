@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(30);
+select plan(37);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -108,9 +108,32 @@ select lives_ok($$select private.check_in_impl('00000000-0000-0000-0000-00000000
 select throws_ok($$select private.freeze_habit_impl('00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000b1', null, null, '2026-10-12T08:00:00Z')$$,
   'P0002', 'keepup:habit_not_found', 'a member cannot pause the whole group habit');
 
--- An empty group habit (everyone paused) is skipped, not missed
+-- Outcomes of a group period
 select is(private.period_outcome(h, '2026-10-19'), 'missed', 'a normal week with no check-ins is missed')
   from public.habits h where h.id = '00000000-0000-0000-0000-0000000000d3';
+
+-- Week of 12 Oct: Anna (Thu) and Eve (Wed) checked in, Dan is paused, and a whole-habit pause on Saturday touches the week.
+select lives_ok($$select private.check_in_impl('00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000e1', '2026-10-14T18:00:00Z')$$,
+  'Eve checks in Wednesday');
+select lives_ok($$select private.freeze_habit_impl('00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000a1', '2026-10-17', '2026-10-17', '2026-10-14T19:00:00Z')$$,
+  'the admin pauses the whole habit on Saturday');
+select is(private.period_outcome(h, '2026-10-12'), 'done', 'a group period done while a pause touched it is done')
+  from public.habits h where h.id = '00000000-0000-0000-0000-0000000000d3';
+
+-- Week of 26 Oct: every required member is paused.
+select lives_ok($$
+  select private.freeze_member_impl('00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000a1', '2026-10-26', '2026-10-26', '2026-10-19T08:00:00Z');
+  select private.freeze_member_impl('00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000b1', '2026-10-26', '2026-10-26', '2026-10-19T08:00:00Z');
+  select private.freeze_member_impl('00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000e1', '00000000-0000-0000-0000-0000000000e1', '2026-10-26', '2026-10-26', '2026-10-19T08:00:00Z')
+$$, 'everyone pauses a day in the week of 26 Oct');
+select is(private.period_outcome(h, '2026-10-26'), 'skipped', 'a group period where every required member is paused is skipped')
+  from public.habits h where h.id = '00000000-0000-0000-0000-0000000000d3';
+
+-- A whole-habit pause on a daily group habit.
+select lives_ok($$select private.freeze_habit_impl('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000a1', '2026-10-20', '2026-10-20', '2026-10-19T08:00:00Z')$$,
+  'the admin pauses the family dinner on 20 Oct');
+select is(private.period_outcome(h, '2026-10-20'), 'skipped', 'a whole-habit pause on a group habit makes the period skipped')
+  from public.habits h where h.id = '00000000-0000-0000-0000-0000000000d1';
 
 select * from finish();
 rollback;

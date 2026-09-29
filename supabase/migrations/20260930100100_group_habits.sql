@@ -11,7 +11,11 @@ alter table public.habits
   add constraint habits_owner_or_group_check check (num_nonnulls(owner_id, group_id) = 1),
   add constraint habits_approval_group_check check (not requires_approval or group_id is not null);
 
-create index habits_group_active_idx on public.habits (group_id) where archived_at is null;
+-- Summaries list archived habits too, so the lookups by owner and by group use full indexes (the M2
+-- owner index covered active habits only).
+create index habits_group_idx on public.habits (group_id);
+drop index public.habits_owner_active_idx;
+create index habits_owner_idx on public.habits (owner_id);
 update public.habits set created_by = owner_id where created_by is null;
 
 -- Children who take part in a group habit (decision 1). Chosen at creation, never changed.
@@ -20,6 +24,7 @@ create table public.group_habit_participants (
   profile_id uuid not null references public.profiles (id) on delete cascade,
   primary key (habit_id, profile_id)
 );
+create index group_habit_participants_profile_idx on public.group_habit_participants (profile_id);
 
 -- 2. Member pauses: user_id null = the whole habit (existing rows), else that member only.
 alter table public.habit_freezes
@@ -359,6 +364,13 @@ begin
     get diagnostics v_inserted = row_count;
     v_total := v_total + v_inserted;
   end loop;
+
+  -- Archived habits aren't finalized, but a pending check-in on one still expires once its review
+  -- window has passed (it can no longer be reviewed).
+  update public.check_ins c set status = 'expired'
+    from public.habits h
+   where h.id = c.habit_id and h.archived_at is not null
+     and c.status = 'pending' and p_now >= private.review_deadline(h, c.period_start);
   return v_total;
 end;
 $$;
@@ -802,7 +814,8 @@ as $$
          (select f.ends_on from public.habit_freezes f
            where f.habit_id = h.id and (f.user_id is null or f.user_id = p_subject)
              and f.starts_on <= ctx.today and coalesce(f.ends_on, 'infinity'::date) >= ctx.today
-           order by f.ends_on nulls first
+           -- An open-ended or later-ending pause wins when a whole-habit and a member pause both cover today.
+           order by f.ends_on desc nulls first
            limit 1),
          (cur.finish - ctx.today),
          st.current_streak, st.best_streak,
@@ -815,17 +828,21 @@ as $$
            select coalesce(jsonb_agg(jsonb_build_object(
                     'profile_id', p.id, 'name', p.display_name, 'avatar_emoji', p.avatar_emoji,
                     'avatar_color', p.avatar_color, 'kind', p.kind,
-                    'required', p.id in (select private.required_members(h, cur.start)),
+                    'required', p.id = any(req.ids),
                     'done_count', (select count(*)::int from public.check_ins c
                                     where c.habit_id = h.id and c.user_id = p.id and c.period_start = cur.start and c.status = 'approved'),
                     'pending_count', (select count(*)::int from public.check_ins c
                                        where c.habit_id = h.id and c.user_id = p.id and c.period_start = cur.start and c.status = 'pending'),
                     'paused', private.is_member_frozen(h.id, p.id, ctx.today, ctx.today + 1))
                   order by p.kind, p.display_name), '[]'::jsonb)
-             from public.profiles p
-            where private.takes_part(h, p.id)
-              and (p.id in (select m.user_id from public.group_members m where m.group_id = h.group_id and m.left_at is null)
-                   or p.id in (select gp.profile_id from public.group_habit_participants gp where gp.habit_id = h.id)))
+             -- Same people as takes_part: current adult members, plus included children still in the group.
+             from (select m.user_id as id from public.group_members m
+                    where m.group_id = h.group_id and m.left_at is null
+                   union
+                   select gp.profile_id from public.group_habit_participants gp
+                     join public.profiles c on c.id = gp.profile_id
+                    where gp.habit_id = h.id and c.group_id = h.group_id) x
+             join public.profiles p on p.id = x.id)
          end
     from public.habits h
     left join public.groups g on g.id = h.group_id
@@ -833,7 +850,21 @@ as $$
     cross join lateral (select private.habit_period_start(h, ctx.today) as start) s0
     cross join lateral (select s0.start, private.period_end(h.period, s0.start) as finish) cur
     cross join lateral private.habit_streaks(h.id, p_now) st
-   where h.owner_id = p_subject or (h.group_id is not null and private.takes_part(h, p_subject))
+    -- Required members once per habit, not once per member row.
+    cross join lateral (select case when h.group_id is null then '{}'::uuid[]
+                                    else array(select private.required_members(h, cur.start)) end as ids) req
+   -- The habits p_subject takes part in (same rule as takes_part), as index-friendly branches.
+   where h.id in (
+           select o.id from public.habits o where o.owner_id = p_subject
+           union all
+           select gh.id from public.group_members m
+             join public.habits gh on gh.group_id = m.group_id
+            where m.user_id = p_subject and m.left_at is null
+           union all
+           select gp.habit_id from public.group_habit_participants gp
+             join public.profiles c on c.id = gp.profile_id
+             join public.habits ph on ph.id = gp.habit_id and ph.group_id = c.group_id
+            where gp.profile_id = p_subject)
    order by h.archived_at nulls first, h.group_id nulls first, h.created_at;
 $$;
 
@@ -891,7 +922,7 @@ create function public.check_in_for(p_habit_id uuid, p_child_id uuid, p_by_child
 returns public.check_ins language plpgsql security definer set search_path = '' as $$
 begin
   if auth.uid() is null then raise exception 'keepup:not_authenticated' using errcode = '42501'; end if;
-  if p_child_id = auth.uid() then raise exception 'keepup:not_a_child' using errcode = 'P0001'; end if;
+  if p_child_id is null or p_child_id = auth.uid() then raise exception 'keepup:not_a_child' using errcode = 'P0001'; end if;
   return private.check_in_impl(p_habit_id, auth.uid(), now(), p_child_id, p_by_child);
 end;
 $$;
@@ -904,8 +935,9 @@ begin
 end;
 $$;
 
--- "Approve all": reviews what it can; ones someone else just reviewed (or whose window closed) are
--- skipped, not errors. Returns how many this call reviewed.
+-- "Approve all": reviews what it can; ones someone else just reviewed, whose window closed, or that
+-- were undone meanwhile are skipped, not errors. Returns how many this call reviewed. Ids are taken
+-- in a fixed order so two reviewers approving overlapping sets can't deadlock on the row locks.
 create function public.review_check_ins(p_check_in_ids uuid[], p_approve boolean)
 returns int language plpgsql security definer set search_path = '' as $$
 declare
@@ -913,12 +945,15 @@ declare
   v_done int := 0;
 begin
   if auth.uid() is null then raise exception 'keepup:not_authenticated' using errcode = '42501'; end if;
-  foreach v_id in array coalesce(p_check_in_ids, '{}') loop
+  for v_id in select distinct x.id from unnest(coalesce(p_check_in_ids, '{}')) x(id) where x.id is not null order by 1 loop
     begin
       perform private.review_check_in_impl(v_id, auth.uid(), p_approve, now());
       v_done := v_done + 1;
-    exception when others then
-      if sqlerrm not in ('keepup:already_reviewed', 'keepup:review_closed') then raise; end if;
+    exception
+      when sqlstate 'P0001' then
+        if sqlerrm not in ('keepup:already_reviewed', 'keepup:review_closed') then raise; end if;
+      when sqlstate 'P0002' then
+        if sqlerrm <> 'keepup:check_in_not_found' then raise; end if;
     end;
   end loop;
   return v_done;
