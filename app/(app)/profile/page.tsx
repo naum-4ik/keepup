@@ -2,6 +2,7 @@ import Link from "next/link";
 import { signOut } from "@/app/auth/actions";
 import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
+import { cityOf } from "@/lib/timezones";
 import { appVersion } from "@/lib/version";
 
 function initial(name: string) {
@@ -10,7 +11,6 @@ function initial(name: string) {
 
 export default async function ProfilePage() {
   const { profile } = await getProfile();
-  const hour = String(profile.reminder_hour).padStart(2, "0");
 
   return (
     <section className="flex flex-col gap-6 py-6">
@@ -21,7 +21,7 @@ export default async function ProfilePage() {
         <div>
           <h1 className="text-xl font-bold">{profile.display_name}</h1>
           <p className="text-sm text-muted-foreground">
-            {profile.timezone.replaceAll("_", " ")} · reminders at {hour}:00
+            {cityOf(profile.timezone)} · weeks start {profile.week_start === 0 ? "Sunday" : "Monday"}
           </p>
         </div>
       </div>

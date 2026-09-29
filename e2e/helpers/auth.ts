@@ -13,7 +13,15 @@ export async function signInWithMagicLink(page: Page, email: string): Promise<vo
   await page.goto(await latestMagicLink(email));
 }
 
-// Step 1 with the detected values (optionally a different time zone via "Change") and no purpose,
+// Opens the time zone picker, searches for the city and picks it.
+export async function chooseTimezone(page: Page, city: string): Promise<void> {
+  await page.getByRole("button", { name: "Change time zone" }).click();
+  await page.getByLabel("Search time zones").fill(city);
+  await page.getByRole("list", { name: "Time zones" }).getByRole("button", { name: new RegExp(`^${city}`) }).click();
+  await expect(page.getByRole("group", { name: "Time zone" })).toContainText(city);
+}
+
+// Step 1 with the detected values (optionally a different time zone city via "Change") and no purpose,
 // then "Skip for now" on step 2, so the user lands on an empty Today.
 export async function completeOnboarding(
   page: Page,
@@ -22,8 +30,8 @@ export async function completeOnboarding(
   await expect(page).toHaveURL(/\/onboarding$/);
   await page.getByLabel("Display name").fill(name);
   if (timezone) {
-    await page.getByRole("button", { name: "Change" }).click();
-    await page.getByLabel("Time zone").selectOption(timezone);
+    await page.getByRole("button", { name: "Change", exact: true }).click();
+    await chooseTimezone(page, timezone);
   }
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page).toHaveURL(/\/onboarding\/habits$/);
