@@ -13,10 +13,15 @@ export async function getHabitSummaries(): Promise<HabitSummary[]> {
   return data ?? [];
 }
 
-export async function getWeekOverview(): Promise<WeekOverview> {
+// The overview is extra: if it fails (e.g. the app deployed a moment before its migration), the
+// page still loads without it rather than showing the error screen.
+export async function getWeekOverview(): Promise<WeekOverview | null> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("week_overview");
-  if (error || !data) throw new Error(`week_overview failed: ${error?.message ?? "no data"}`);
+  if (error || !data) {
+    console.error("week_overview failed", error?.message ?? "no data");
+    return null;
+  }
   return data as unknown as WeekOverview;
 }
 

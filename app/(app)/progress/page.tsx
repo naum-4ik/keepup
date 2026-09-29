@@ -14,12 +14,12 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
   const showArchived = view === "archived";
   const [summaries, overview] = await Promise.all([getHabitSummaries(), getWeekOverview()]);
   const habits = summaries.filter((h) => Boolean(h.archived_at) === showArchived);
-  const cellsFor = new Map(overview.per_habit.map((p) => [p.habit_id, p.cells]));
+  const cellsFor = new Map((overview?.per_habit ?? []).map((p) => [p.habit_id, p.cells]));
 
   return (
     <section className="flex flex-col gap-5 py-6">
       <h1 className="text-xl font-bold">Progress</h1>
-      {!showArchived && hasWeekData(overview) && <WeekCard overview={overview} />}
+      {!showArchived && overview && hasWeekData(overview) && <WeekCard overview={overview} />}
 
       <nav aria-label="Habit list" className="flex gap-2">
         {[

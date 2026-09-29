@@ -18,7 +18,7 @@ export default async function TodayPage() {
   return (
     <section className="flex flex-col gap-4 py-6">
       <h1 className="text-xl font-bold">Today</h1>
-      {hasWeekData(overview) && <WeekStrip overview={overview} />}
+      {overview && hasWeekData(overview) && <WeekStrip overview={overview} />}
       {habits.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">
           <div className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">
