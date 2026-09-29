@@ -104,6 +104,7 @@ test("the start date can be picked from quick choices or the calendar", async ({
 
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
   await expect(page).toHaveURL(/\/today$/);
+});
 
 test.describe("Today check-ins", () => {
   test("checking in on a several-times-a-day habit counts up", async ({ page }) => {
