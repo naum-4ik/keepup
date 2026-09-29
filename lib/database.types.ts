@@ -86,6 +86,25 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"period_results": {
+                  Row: {
+                    "finalized_at": string,"habit_id": string,"outcome": string,"period_start": string
+                  }
+                  Insert: {
+                    "finalized_at"?: string,"habit_id": string,"outcome": string,"period_start": string
+                  }
+                  Update: {
+                    "finalized_at"?: string,"habit_id"?: string,"outcome"?: string,"period_start"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "period_results_habit_id_fkey"
+      columns: ["habit_id"]
+isOneToOne: false
+      referencedRelation: "habits"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"profiles": {
                   Row: {
                     "created_at": string,"display_name": string,"id": string,"onboarded_at": string | null,"reminder_hour": number,"timezone": string,"week_start": number
@@ -138,6 +157,16 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"habit_history":
+{ Args: { "p_habit_id": string,"p_limit"?: number }; Returns: {
+              "outcome": string,"period_start": string
+            }[]
+                           },
+"habit_summaries":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "archived_at": string,"best_streak": number,"category": Database["public"]['Enums']["habit_category"],"checked_in_today": boolean,"created_at": string,"current_streak": number,"days_left": number,"done_count": number,"frozen": boolean,"frozen_until": string,"habit_id": string,"not_started": boolean,"period": Database["public"]['Enums']["habit_period"],"period_start": string,"starts_on": string,"target_count": number,"title": string
+            }[]
+                           },
 "is_valid_timezone":
 { Args: { "tz": string }; Returns: boolean
                            },
