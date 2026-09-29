@@ -1,20 +1,25 @@
 import Link from "next/link";
 import { CategoryIcon } from "@/components/habits/category-icon";
 import { StreakBadge } from "@/components/habits/streak-badge";
+import { HabitDots, WeekCard } from "@/components/overview/week-overview";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
-import { getHabitSummaries } from "@/lib/habits";
+import { getHabitSummaries, getWeekOverview } from "@/lib/habits";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
+import { hasWeekData } from "@/lib/week-overview";
 
 export default async function ProgressPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const { view } = await searchParams;
   const showArchived = view === "archived";
-  const habits = (await getHabitSummaries()).filter((h) => Boolean(h.archived_at) === showArchived);
+  const [summaries, overview] = await Promise.all([getHabitSummaries(), getWeekOverview()]);
+  const habits = summaries.filter((h) => Boolean(h.archived_at) === showArchived);
+  const cellsFor = new Map(overview.per_habit.map((p) => [p.habit_id, p.cells]));
 
   return (
     <section className="flex flex-col gap-5 py-6">
       <h1 className="text-xl font-bold">Progress</h1>
+      {!showArchived && hasWeekData(overview) && <WeekCard overview={overview} />}
 
       <nav aria-label="Habit list" className="flex gap-2">
         {[
@@ -62,6 +67,11 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                         <span className="text-sm text-muted-foreground">
                           {describeSchedule(h.target_count, h.period)} · best {h.best_streak}
                         </span>
+                        {cellsFor.has(h.habit_id) && (
+                          <span className="pt-1.5">
+                            <HabitDots cells={cellsFor.get(h.habit_id)!} category={h.category} period={h.period} />
+                          </span>
+                        )}
                       </span>
                       <StreakBadge count={h.current_streak} />
                     </Link>

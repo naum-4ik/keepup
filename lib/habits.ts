@@ -1,6 +1,7 @@
 import "server-only";
 import { requireUser } from "@/lib/auth";
 import type { Database } from "@/lib/database.types";
+import type { WeekOverview } from "@/lib/week-overview";
 
 export type HabitSummary = Database["public"]["Functions"]["habit_summaries"]["Returns"][number];
 export type HistoryCell = Database["public"]["Functions"]["habit_history"]["Returns"][number];
@@ -10,6 +11,13 @@ export async function getHabitSummaries(): Promise<HabitSummary[]> {
   const { data, error } = await supabase.rpc("habit_summaries");
   if (error) throw new Error(`habit_summaries failed: ${error.message}`);
   return data ?? [];
+}
+
+export async function getWeekOverview(): Promise<WeekOverview> {
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase.rpc("week_overview");
+  if (error || !data) throw new Error(`week_overview failed: ${error?.message ?? "no data"}`);
+  return data as unknown as WeekOverview;
 }
 
 export type HabitFreeze = { id: string; starts_on: string; ends_on: string | null };
