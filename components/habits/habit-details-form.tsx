@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { updateHabitDetails, type FormActionState } from "@/app/(app)/habits/actions";
 import { StartDatePicker } from "@/components/habits/start-date-picker";
-import { Button } from "@/components/ui/button";
+import { SaveButton } from "@/components/save-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
@@ -86,14 +86,7 @@ export function HabitDetailsForm({
         </fieldset>
       )}
       {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
-      {state.status === "saved" && (
-        <p role="status" className="text-sm text-muted-foreground">
-          Saved.
-        </p>
-      )}
-      <Button type="submit" variant="outline" className="h-11" disabled={pending}>
-        Save
-      </Button>
+      <SaveButton state={state} pending={pending} variant="outline" />
     </form>
   );
 }

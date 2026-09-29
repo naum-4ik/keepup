@@ -255,7 +255,7 @@ test.describe("Habit detail", () => {
     await openSection(page, "Edit details");
     await page.getByLabel("Title").fill("Work out at home");
     await page.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByRole("status")).toHaveText("Saved.");
+    await expect(page.getByRole("status")).toHaveText(/^Saved at \d\d:\d\d$/);
     await expect(page.getByRole("heading", { name: "Work out at home" })).toBeVisible();
   });
 
