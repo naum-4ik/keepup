@@ -3,7 +3,8 @@ import { CategoryIcon } from "@/components/habits/category-icon";
 import { CheckInButton } from "@/components/habits/check-in-button";
 import { StreakBadge } from "@/components/habits/streak-badge";
 import type { HabitSummary } from "@/lib/habits";
-import { checkInState, describeProgress } from "@/lib/schedule";
+import { describeProgress } from "@/lib/schedule";
+import { stateOf } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
 export function HabitCard({ habit }: { habit: HabitSummary }) {
@@ -43,14 +44,7 @@ export function HabitCard({ habit }: { habit: HabitSummary }) {
         habitId={habit.habit_id}
         title={habit.title}
         multi={habit.target_count > 1}
-        state={checkInState({
-          targetCount: habit.target_count,
-          period: habit.period,
-          doneCount: habit.done_count,
-          checkedInToday: habit.checked_in_today,
-          frozen: habit.frozen,
-          notStarted: habit.not_started,
-        })}
+        state={stateOf(habit)}
       />
     </div>
   );
