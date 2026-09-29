@@ -56,10 +56,15 @@ jobs:
           BACKUPS_TOKEN: ${{ secrets.BACKUPS_TOKEN }}
         run: |
           set -euo pipefail
-          # First run: the repo is empty and has no main branch, so fall back to a fresh init.
-          if ! git clone -q --depth 1 --branch main "https://x-access-token:${BACKUPS_TOKEN}@github.com/naum-4ik/keepup-backups.git" backups 2>/dev/null; then
+          url="https://x-access-token:${BACKUPS_TOKEN}@github.com/naum-4ik/keepup-backups.git"
+          # ls-remote failing aborts the job (set -e). Only an empty listing (no main yet, i.e. the
+          # first run) may start a fresh repo; any other clone failure must fail, never wipe history.
+          heads=$(git ls-remote --heads "$url" main)
+          if [ -n "$heads" ]; then
+            git clone -q --depth 1 --branch main "$url" backups
+          else
             git init -q -b main backups
-            git -C backups remote add origin "https://x-access-token:${BACKUPS_TOKEN}@github.com/naum-4ik/keepup-backups.git"
+            git -C backups remote add origin "$url"
           fi
           mkdir -p backups/staging
           mv "$FILE" backups/staging/
