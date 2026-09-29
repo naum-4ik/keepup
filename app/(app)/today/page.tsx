@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sprout } from "lucide-react";
+import { SproutIcon } from "@/components/sprout-icon";
 import { CategoryIcon } from "@/components/habits/category-icon";
 import { Button } from "@/components/ui/button";
 import { getHabitSummaries } from "@/lib/habits";
@@ -14,7 +14,7 @@ export default async function TodayPage() {
       {habits.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">
           <div className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">
-            <Sprout className="size-6" aria-hidden />
+            <SproutIcon className="size-6" aria-hidden />
           </div>
           <p className="text-sm text-muted-foreground">Nothing to do yet. Add a habit to get started.</p>
           <Button asChild>

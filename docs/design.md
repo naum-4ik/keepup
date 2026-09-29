@@ -89,7 +89,7 @@ Icons come from `lucide-react` (rounded line style). **Kid habits** use picture 
 
 ## App icon
 
-A filled terracotta sprout on a peach square. It's the same sprout as the empty state, drawn bold enough to read at 16 px.
+A filled terracotta sprout on a peach square, drawn bold enough to read at 16 px. In-app sprouts (the Today empty state) use the same drawing via `components/sprout-icon.tsx`, never lucide's `Sprout`.
 
 | Element | Color |
 |---|---|
