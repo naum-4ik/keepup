@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FirstCheckinTip } from "@/components/first-checkin-tip";
+import { PasskeyPromptCard } from "@/components/passkey-prompt-card";
 import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard } from "@/components/habits/habit-card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ export default async function TodayPage() {
   return (
     <section className="flex flex-col gap-4 py-6">
       <h1 className="text-xl font-bold">Today</h1>
+      <PasskeyPromptCard tipEligible={isNewUser && todo.length > 0} />
       {habits.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">
           <div className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">

@@ -48,6 +48,7 @@ Vercel's serverless functions are stateless and scale horizontally by request â€
 | Least privilege | Column-level UPDATE grants on `profiles` (no blanket table grants) | Live |
 | Key exposure | No service-role key in the app anywhere â€” browser and server both use only the publishable key, under RLS. A service-role key will exist only in CI secrets / Edge Functions when a later feature needs it | Live |
 | Session verification | Google OAuth and magic link both use the PKCE code flow; server checks the session with `getClaims()`, never the unverified `getSession()` | Live |
+| Passkeys (Face ID sign-in) | Supabase Auth passkeys (WebAuthn, beta), added only after a Google or email-link sign-in; the RP ID is per environment (`NEXT_PUBLIC_PASSKEY_RP_ID` must match the Supabase setting) and changing it invalidates every passkey; the UI hides on any other host (Vercel previews) | Live |
 | Open-redirect protection | `safeNextPath` validates post-auth redirects; unit-tested | Live |
 | Input validation | Server actions validate input and give good error messages, but they're not the enforcement boundary: database constraints, RLS, column grants, triggers, and (from M2) `SECURITY DEFINER` RPCs enforce the rules underneath. Server-owned fields (streaks, XP, approvals, timestamps like `onboarded_at`) are written only by the database, never trusted from client input | Live |
 | Session response caching | Responses that refresh a Supabase session carry no-cache headers | Live |

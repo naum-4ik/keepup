@@ -7,6 +7,8 @@ import { X } from "lucide-react";
 // check-in, and remembered in localStorage. Without storage (private mode, blocked site data) it
 // is remembered for this page session only, so it shows once per session.
 const KEY = "keepup:tip-first-checkin";
+// The local day the tip went away, so other Today hints wait until tomorrow (one hint at a time).
+const DAY_KEY = "keepup:tip-first-checkin-day";
 let dismissedThisSession = false;
 const listeners = new Set<() => void>();
 
@@ -29,10 +31,24 @@ export function dismissFirstCheckinTip() {
   dismissedThisSession = true;
   try {
     window.localStorage.setItem(KEY, "1");
+    window.localStorage.setItem(DAY_KEY, localDay());
   } catch {
     // Storage unavailable: the in-memory flag covers this session.
   }
   listeners.forEach((l) => l());
+}
+
+function localDay(): string {
+  return new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD in the device's time zone
+}
+
+export function firstCheckinTipGoneToday(): boolean {
+  if (dismissedThisSession) return true;
+  try {
+    return window.localStorage.getItem(DAY_KEY) === localDay();
+  } catch {
+    return false;
+  }
 }
 
 export function FirstCheckinTip() {
