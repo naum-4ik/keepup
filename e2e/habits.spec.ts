@@ -138,4 +138,23 @@ test.describe("Today check-ins", () => {
     await expect(habitRow.getByRole("alert")).toHaveCount(0);
     await expect(page.getByText("Done for today")).toBeVisible();
   });
+
+  test("habits left to do come first, then done, then ones that start later", async ({ page }) => {
+    await signUpAndOnboard(page);
+    await page.goto("/habits/new");
+    await page.getByRole("button", { name: /^Read 20 min/ }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Tomorrow" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: /^Add habit/ }).click();
+    await expect(page).toHaveURL(/\/today$/);
+    await createHabit(page, { template: "Meditate" });
+    await createHabit(page, { template: "Walk 10,000 steps" });
+
+    await page.getByRole("button", { name: "Check in: Meditate" }).click();
+    await expect(page.getByRole("button", { name: "Done: Meditate" })).toBeVisible();
+
+    const rows = await page.locator('li:has(a[href^="/habits/"]:not([href="/habits/new"]))').allInnerTexts();
+    expect(rows).toHaveLength(3);
+    ["Walk 10,000 steps", "Meditate", "Read 20 min"].forEach((title, i) => expect(rows[i]).toContain(title));
+    await expect(page.getByRole("region", { name: "Later" })).toContainText("Read 20 min");
+  });
 });
