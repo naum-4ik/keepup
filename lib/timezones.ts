@@ -63,20 +63,39 @@ function parseOffset(raw: string): number | null {
   return m[1] === "-" ? -minutes : minutes;
 }
 
-const normalize = (s: string) => s.toLowerCase().replaceAll("_", " ").replace(/\s+/g, " ").trim();
+// Big, recognisable cities, most familiar first. Each time row saves one of these unless the saved or
+// device zone shares that time, so a row follows a real city's clock changes.
+const WELL_KNOWN = [
+  "Pacific/Honolulu", "America/Anchorage", "America/Los_Angeles", "America/Denver", "America/Phoenix",
+  "America/Chicago", "America/Mexico_City", "America/New_York", "America/Toronto", "America/Halifax",
+  "America/Sao_Paulo", "America/Argentina/Buenos_Aires", "America/St_Johns", "Atlantic/Azores",
+  "Europe/London", "Europe/Lisbon", "UTC", "Europe/Paris", "Europe/Berlin", "Europe/Rome", "Europe/Madrid",
+  "Africa/Lagos", "Asia/Jerusalem", "Europe/Athens", "Africa/Cairo", "Africa/Johannesburg", "Europe/Kiev",
+  "Europe/Moscow", "Europe/Istanbul", "Asia/Riyadh", "Asia/Dubai", "Asia/Tehran", "Asia/Kabul", "Asia/Karachi",
+  "Asia/Calcutta", "Asia/Katmandu", "Asia/Dhaka", "Asia/Rangoon", "Asia/Bangkok", "Asia/Jakarta",
+  "Asia/Singapore", "Asia/Shanghai", "Asia/Hong_Kong", "Asia/Tokyo", "Asia/Seoul", "Australia/Adelaide",
+  "Australia/Darwin", "Australia/Sydney", "Australia/Brisbane", "Pacific/Noumea", "Pacific/Auckland",
+  "Pacific/Fiji", "Pacific/Tongatapu", "Pacific/Kiritimati", "Pacific/Pago_Pago",
+];
 
-// Matches the city or region by text, or an exact offset ("+9", "GMT+5:30", "-5"). Cities with a word
-// starting with the query come first; then by offset, then city.
-export function searchZones(zones: readonly string[], query: string, now: Date): ZoneInfo[] {
-  const q = normalize(query).replace("−", "-");
-  const offsetQuery = /^(gmt|utc)?\s*[+-]/.test(q) ? parseOffset(q.replace(/^(gmt|utc)\s*/, "")) : null;
-  const startsWord = (z: ZoneInfo) => (q !== "" && normalize(z.city).split(/[\s-]/).some((w) => w.startsWith(q)) ? 0 : 1);
-  return zones
-    .map((tz) => describeZone(tz, now))
-    .filter((z) => {
-      if (q === "") return true;
-      if (offsetQuery !== null) return z.offsetMinutes === offsetQuery;
-      return normalize(z.city).includes(q) || normalize(z.region).includes(q);
-    })
-    .sort((a, b) => startsWord(a) - startsWord(b) || a.offsetMinutes - b.offsetMinutes || a.city.localeCompare(b.city));
+// One row per local time right now (about 38), sorted by offset. `preferred` (the saved zone, then the
+// device's) wins its row; otherwise the most familiar city with that time; otherwise the first by name.
+export function timeChoices(zones: readonly string[], now: Date, preferred: readonly string[]): ZoneInfo[] {
+  const byOffset = new Map<number, ZoneInfo[]>();
+  for (const tz of zones) {
+    const z = describeZone(tz, now);
+    byOffset.set(z.offsetMinutes, [...(byOffset.get(z.offsetMinutes) ?? []), z]);
+  }
+  const rank = (id: string) => {
+    const p = preferred.indexOf(id);
+    if (p !== -1) return p;
+    const w = WELL_KNOWN.indexOf(id);
+    return w !== -1 ? preferred.length + w : Infinity;
+  };
+  return [...byOffset.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([, group]) => group.reduce((best, z) => {
+      const d = rank(z.id) - rank(best.id);
+      return d < 0 || (d === 0 && z.id < best.id) ? z : best;
+    }));
 }
