@@ -127,7 +127,12 @@ test.describe("Today check-ins", () => {
     await createHabit(page, { template: "Read 20 min" });
     const habitRow = page.getByRole("listitem").filter({ hasText: "Read 20 min" });
     await habitRow.getByRole("button", { name: "Check in: Read 20 min" }).dblclick();
-    await expect(habitRow.getByRole("button", { name: "Done: Read 20 min" })).toBeVisible();
+    const button = habitRow.getByRole("button", { name: "Done: Read 20 min" });
+    await expect(button).toBeVisible();
+    await expect(button).toBeDisabled();
+    // Wait for the request to fully settle (not just dimmed while pending) before checking for an
+    // error, so a second, rejected check-in wouldn't slip past the assertion below.
+    await expect(button).not.toHaveClass(/opacity-60/);
     // Scoped to the habit row: the App Router's route announcer also has role="alert" on the page.
     await expect(habitRow.getByRole("alert")).toHaveCount(0);
     await expect(page.getByText("Done for today")).toBeVisible();
