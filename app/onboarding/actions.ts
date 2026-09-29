@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getProfile, requireUser } from "@/lib/auth";
-import { todayIn } from "@/lib/dates";
 import { insertHabits } from "@/lib/habit-create";
 import { habitErrorMessage } from "@/lib/habit-errors";
 import { parseHabit, type HabitInput } from "@/lib/habit-schema";
@@ -44,11 +43,11 @@ export async function startWithHabits(_prev: PickHabitsState, formData: FormData
     return { status: "error", message: `Pick 1–${MAX_STARTER_HABITS} habits.` };
   }
 
-  // Same validation as the new-habit screen, each starting today in the user's time zone.
-  const startsOn = todayIn(profile.timezone);
+  // Same validation as the new-habit screen. No start date: the database starts each today in the
+  // user's time zone.
   const habits: HabitInput[] = [];
   for (const t of picked) {
-    const parsed = parseHabit({ title: t.title, category: t.category, targetCount: String(t.targetCount), period: t.period, startsOn });
+    const parsed = parseHabit({ title: t.title, category: t.category, targetCount: String(t.targetCount), period: t.period, startsOn: "" });
     if (!parsed.ok) return { status: "error", message: "Couldn't add your habits. Try again." };
     habits.push(parsed.value);
   }

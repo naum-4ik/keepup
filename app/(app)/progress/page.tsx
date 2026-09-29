@@ -55,7 +55,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                 .filter((h) => h.category === c)
                 .map((h) => (
                   <li key={h.habit_id}>
-                    <Link href={`/habits/${h.habit_id}`} className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-soft">
+                    <Link href={`/habits/${h.habit_id}`} className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-soft hover:bg-muted/60">
                       <CategoryIcon category={h.category} />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate font-bold">{h.title}</span>

@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(31);
+select plan(35);
 
 -- finalize_periods scans every habit, so leftover local data (e.g. from e2e runs) would change the
 -- counts below. Start from an empty habits table; the rollback at the end restores it.
@@ -79,8 +79,17 @@ select tests.authenticate_as('00000000-0000-0000-0000-0000000000a5');
 select is((select count(*)::int from public.habit_summaries()), 5, 'the owner gets summaries for all their habits');
 select throws_ok($$select private.finalize_periods(now())$$, '42501', null, 'API users cannot run finalization');
 
+select ok((select count(*) from public.period_results where habit_id = '00000000-0000-0000-0000-00000000005f') > 0
+       and (select count(*) from public.check_ins where habit_id = '00000000-0000-0000-0000-00000000005f') > 0,
+  'the owner can read their period results and check-ins');
+
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000b5');
 select is((select count(*)::int from public.habit_summaries()), 0, 'others get nothing');
+select is((select count(*)::int from public.period_results where habit_id = '00000000-0000-0000-0000-00000000005f'), 0,
+  'others cannot read someone else''s period results');
+select is((select count(*)::int from public.check_ins where habit_id = '00000000-0000-0000-0000-00000000005f'), 0,
+  'others cannot read someone else''s check-ins');
+select is((select count(*)::int from public.period_results), 0, 'others see no period results at all');
 
 reset role;
 set local role anon;

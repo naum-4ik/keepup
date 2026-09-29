@@ -54,7 +54,12 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const { summary: h, history, freezes, checkIns, totalCheckIns } = detail;
   const today = todayIn(profile.timezone);
   const weekStart = profile.week_start === 0 ? 0 : 1;
-  const activeFreeze = freezes.find((f) => !f.ends_on || f.ends_on >= today) ?? null;
+  // "Paused now" comes from the summary (the same rule that gates check-ins); otherwise show the
+  // next scheduled pause, if any.
+  const activeFreeze =
+    (h.frozen
+      ? freezes.find((f) => f.starts_on <= today && (!f.ends_on || f.ends_on >= today))
+      : freezes.find((f) => f.starts_on > today)) ?? null;
   const archived = Boolean(h.archived_at);
   const progress = describeProgress({
     targetCount: h.target_count,
@@ -142,10 +147,10 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
       {!archived && (
         <section aria-label="Manage habit" className="overflow-hidden rounded-2xl bg-card shadow-soft">
           <Manage
-            title={activeFreeze ? (activeFreeze.starts_on > today ? "Pause scheduled" : "Paused") : "Pause"}
+            title={h.frozen ? "Paused" : activeFreeze ? "Pause scheduled" : "Pause"}
             hint={activeFreeze ? "Resume or cancel the pause" : "Going away? Your streak waits for you"}
           >
-            <FreezeForm habitId={h.habit_id} today={today} weekStart={weekStart} activeFreeze={activeFreeze} />
+            <FreezeForm habitId={h.habit_id} today={today} weekStart={weekStart} activeFreeze={activeFreeze} paused={h.frozen} />
           </Manage>
           <Manage title="Edit details" hint={totalCheckIns === 0 ? "Title, category and start date" : "Title and category"}>
             <HabitDetailsForm

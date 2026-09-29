@@ -11,7 +11,9 @@ export const HABIT_TITLE_MAX = 60;
 export const TARGET_LIMITS: Record<HabitPeriod, number> = { day: 50, week: 7, month: 31 };
 
 export type HabitFormValues = { title: string; category: string; targetCount: string; period: string; startsOn: string };
-export type HabitInput = { title: string; category: HabitCategory; targetCount: number; period: HabitPeriod; startsOn: string };
+// startsOn omitted = today, decided by the database in the owner's time zone. The client never
+// sends its own "today": it goes stale after local midnight and the insert would be refused.
+export type HabitInput = { title: string; category: HabitCategory; targetCount: number; period: HabitPeriod; startsOn?: string };
 export type HabitErrors = Partial<Record<keyof HabitInput, string>>;
 export type HabitFormState =
   | { status: "idle" }
@@ -70,13 +72,19 @@ export function parseHabit(values: HabitFormValues):
     }
   }
 
-  // Format only; "not in the past / within a year" is enforced by the database in the owner's time zone.
-  if (!LOCAL_DATE.test(values.startsOn)) errors.startsOn = "Pick a start date.";
+  // Empty means today. Format only; "not in the past / within a year" is enforced by the database
+  // in the owner's time zone.
+  if (values.startsOn !== "" && !LOCAL_DATE.test(values.startsOn)) errors.startsOn = "Pick a start date.";
 
   if (!details.ok || Object.keys(errors).length > 0 || !isPeriod(values.period)) return { ok: false, errors };
   return {
     ok: true,
-    value: { ...details.value, targetCount: Number(values.targetCount), period: values.period, startsOn: values.startsOn },
+    value: {
+      ...details.value,
+      targetCount: Number(values.targetCount),
+      period: values.period,
+      ...(values.startsOn ? { startsOn: values.startsOn } : {}),
+    },
   };
 }
 

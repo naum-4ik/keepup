@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(22);
+select plan(24);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'hab-a@example.com');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'hab-b@example.com');
@@ -62,6 +62,19 @@ select isnt((select archived_at from public.habits where title = 'Budget'), null
 
 select throws_ok($$delete from public.habits where title = 'Water'$$,
   '42501', null, 'habits cannot be deleted directly');
+
+-- The week start is snapshotted from the profile on insert and cannot be set by the client.
+reset role;
+update public.profiles set week_start = 0 where id = '00000000-0000-0000-0000-0000000000a1';
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
+insert into public.habits (title, category, target_count, period) values ('Sunday run', 'fitness', 2, 'week');
+select throws_ok(
+  $$insert into public.habits (title, category, target_count, period, week_start) values ('Monday run', 'fitness', 2, 'week', 1)$$,
+  '42501', null, 'the client cannot set week_start');
+reset role;
+select is((select week_start from public.habits where title = 'Sunday run'), 0::smallint,
+  'a habit created through the API snapshots the owner''s week start (Sunday)');
+update public.profiles set week_start = 1 where id = '00000000-0000-0000-0000-0000000000a1';
 
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
 select is((select count(*)::int from public.habits), 0, 'a user sees only their own habits');

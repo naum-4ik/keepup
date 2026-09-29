@@ -11,8 +11,15 @@ describe("parseHabit", () => {
     });
   });
 
-  it("needs a start date", () => {
-    expect(parseHabit({ ...valid, startsOn: "" })).toEqual({ ok: false, errors: { startsOn: "Pick a start date." } });
+  it("leaves the start date to the database when it's empty (today)", () => {
+    expect(parseHabit({ ...valid, startsOn: "" })).toEqual({
+      ok: true,
+      value: { title: "Read", category: "mind", targetCount: 1, period: "day" },
+    });
+  });
+
+  it("rejects a malformed start date", () => {
+    expect(parseHabit({ ...valid, startsOn: "5 Oct" })).toEqual({ ok: false, errors: { startsOn: "Pick a start date." } });
   });
 
   it("rejects a blank title", () => {

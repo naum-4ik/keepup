@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(29);
+select plan(31);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a4', 'ci-a@example.com');
 select tests.create_user('00000000-0000-0000-0000-0000000000b4', 'ci-b@example.com');
@@ -124,6 +124,13 @@ select throws_ok(
 select throws_ok(
   $$select private.check_in_impl('00000000-0000-0000-0000-0000000000de', '00000000-0000-0000-0000-0000000000a4', '2020-01-01T00:00:00Z')$$,
   '42501', null, 'API users cannot pass their own time');
+
+select ok((select count(*) from public.check_ins where habit_id = '00000000-0000-0000-0000-0000000000d1') > 0,
+  'the owner can read their check-ins');
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b4');
+select is((select count(*)::int from public.check_ins where habit_id = '00000000-0000-0000-0000-0000000000d1'), 0,
+  'others cannot read someone else''s check-ins');
+reset role;
 
 reset role;
 set local role anon;
