@@ -74,9 +74,12 @@ test("a custom habit gets the emoji picked for it, shown on Today", async ({ pag
 
   // The phone's emoji keyboard: one emoji only; Escape closes just the panel, not the dialog.
   await emojiButton.click();
-  const own = dialog.getByLabel("Or type your own");
+  const own = dialog.getByLabel("Another emoji");
+  await expect(own).toHaveAccessibleDescription("Tap the box, then the 😀 key on your keyboard.");
+  await own.fill("paint");
+  await expect(dialog.getByText("That's text, not an emoji. Pick one above or use your emoji keyboard.")).toBeVisible();
   await own.fill("🎨🖌️");
-  await expect(dialog.getByText("One emoji only.")).toBeVisible();
+  await expect(dialog.getByText("Just one emoji, please.")).toBeVisible();
   await own.fill("🖌️");
   await expect(emojiButton).toHaveAccessibleName("Choose emoji (now 🖌️)");
   await own.press("Escape");
