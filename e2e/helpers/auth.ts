@@ -13,15 +13,21 @@ export async function signInWithMagicLink(page: Page, email: string): Promise<vo
   await page.goto(await latestMagicLink(email));
 }
 
+// Step 1 with the detected values (optionally a different time zone via "Change") and no purpose,
+// then "Skip for now" on step 2, so the user lands on an empty Today.
 export async function completeOnboarding(
   page: Page,
-  { name = "Ana", timezone = "Europe/Rome", hour = "21" }: { name?: string; timezone?: string; hour?: string } = {},
+  { name = "Ana", timezone }: { name?: string; timezone?: string } = {},
 ): Promise<void> {
   await expect(page).toHaveURL(/\/onboarding$/);
   await page.getByLabel("Display name").fill(name);
-  await page.getByLabel("Time zone").selectOption(timezone);
-  await page.getByLabel("Daily reminder").selectOption(hour);
+  if (timezone) {
+    await page.getByRole("button", { name: "Change" }).click();
+    await page.getByLabel("Time zone").selectOption(timezone);
+  }
   await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page).toHaveURL(/\/onboarding\/habits$/);
+  await page.getByRole("link", { name: "Skip for now" }).click();
   await expect(page).toHaveURL(/\/today$/);
 }
 

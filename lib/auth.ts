@@ -6,7 +6,7 @@ import type { Database } from "@/lib/database.types";
 
 export type Profile = Pick<
   Database["public"]["Tables"]["profiles"]["Row"],
-  "id" | "display_name" | "timezone" | "reminder_hour" | "week_start" | "onboarded_at"
+  "id" | "display_name" | "timezone" | "reminder_hour" | "week_start" | "onboarded_at" | "purpose"
 >;
 
 export async function requireUser() {
@@ -21,7 +21,7 @@ export const getProfile = cache(async () => {
   const { supabase, userId } = await requireUser();
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, display_name, timezone, reminder_hour, week_start, onboarded_at")
+    .select("id, display_name, timezone, reminder_hour, week_start, onboarded_at, purpose")
     .eq("id", userId)
     .single<Profile>();
   if (error || !data) throw new Error(`Profile missing for ${userId}: ${error?.message ?? "no row"}`);

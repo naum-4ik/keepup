@@ -11,6 +11,7 @@ test("a new user signs in, onboards and lands on Today", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/onboarding$/);
   await expect(page.getByLabel("Time zone")).toHaveValue("Europe/Rome"); // detected from the browser
+  await expect(page.getByText("Rome", { exact: true })).toBeVisible();
 
   await completeOnboarding(page, { name: "Ana" });
   await expect(page.getByText("Nothing to do yet")).toBeVisible();
@@ -40,6 +41,7 @@ test("invalid input keeps what the user typed", async ({ page }) => {
   await expect(page).toHaveURL(/\/onboarding$/);
 
   await page.getByLabel("Display name").fill("x".repeat(41));
+  await page.getByRole("button", { name: "Change" }).click();
   await page.getByLabel("Time zone").selectOption("Asia/Tokyo");
   await page.getByRole("button", { name: "Continue" }).click();
 
@@ -50,7 +52,7 @@ test("invalid input keeps what the user typed", async ({ page }) => {
 
 test("settings changes show on the profile", async ({ page }) => {
   await signInWithMagicLink(page, uniqueEmail());
-  await completeOnboarding(page, { hour: "21" });
+  await completeOnboarding(page);
 
   await page.goto("/profile/settings");
   await page.getByLabel("Daily reminder").selectOption("7");

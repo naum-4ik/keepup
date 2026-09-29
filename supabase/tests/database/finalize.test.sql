@@ -2,6 +2,10 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(31);
 
+-- finalize_periods scans every habit, so leftover local data (e.g. from e2e runs) would change the
+-- counts below. Start from an empty habits table; the rollback at the end restores it.
+delete from public.habits;
+
 select tests.create_user('00000000-0000-0000-0000-0000000000a5', 'fin-a@example.com');
 select tests.create_user('00000000-0000-0000-0000-0000000000b5', 'fin-b@example.com');
 update public.profiles set timezone = 'Europe/Rome' where id = '00000000-0000-0000-0000-0000000000a5';

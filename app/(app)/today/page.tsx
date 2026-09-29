@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FirstCheckinTip } from "@/components/first-checkin-tip";
 import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard } from "@/components/habits/habit-card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,8 @@ import { groupForToday } from "@/lib/today";
 export default async function TodayPage() {
   const habits = (await getHabitSummaries()).filter((h) => !h.archived_at);
   const { todo, done, later } = groupForToday(habits);
+  // The first-check-in tip is for people who have never checked in (not for someone on a new device).
+  const isNewUser = habits.every((h) => h.done_count === 0 && h.best_streak === 0);
 
   return (
     <section className="flex flex-col gap-4 py-6">
@@ -25,7 +28,7 @@ export default async function TodayPage() {
       ) : (
         <>
           {todo.length > 0 ? (
-            <HabitList habits={todo} />
+            <HabitList habits={todo} tipFor={isNewUser ? todo[0].habit_id : undefined} />
           ) : done.length > 0 ? (
             <p className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">All checked off. Nice work.</p>
           ) : null}
@@ -37,13 +40,14 @@ export default async function TodayPage() {
   );
 }
 
-function HabitList({ title, habits }: { title?: string; habits: HabitSummary[] }) {
+function HabitList({ title, habits, tipFor }: { title?: string; habits: HabitSummary[]; tipFor?: string }) {
   if (habits.length === 0) return null;
   const list = (
     <ul className="flex flex-col gap-3">
       {habits.map((h) => (
         <li key={h.habit_id}>
           <HabitCard habit={h} />
+          {h.habit_id === tipFor && <FirstCheckinTip />}
         </li>
       ))}
     </ul>
