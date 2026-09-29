@@ -69,13 +69,13 @@ isOneToOne: false
                   ]
                 },"habits": {
                   Row: {
-                    "archived_at": string | null,"category": Database["public"]['Enums']["habit_category"],"created_at": string,"id": string,"owner_id": string,"period": Database["public"]['Enums']["habit_period"],"starts_on": string,"target_count": number,"title": string
+                    "archived_at": string | null,"category": Database["public"]['Enums']["habit_category"],"created_at": string,"id": string,"owner_id": string,"period": Database["public"]['Enums']["habit_period"],"starts_on": string,"target_count": number,"title": string,"week_start": number
                   }
                   Insert: {
-                    "archived_at"?: string | null,"category": Database["public"]['Enums']["habit_category"],"created_at"?: string,"id"?: string,"owner_id"?: string,"period": Database["public"]['Enums']["habit_period"],"starts_on": string,"target_count": number,"title": string
+                    "archived_at"?: string | null,"category": Database["public"]['Enums']["habit_category"],"created_at"?: string,"id"?: string,"owner_id"?: string,"period": Database["public"]['Enums']["habit_period"],"starts_on": string,"target_count": number,"title": string,"week_start"?: number
                   }
                   Update: {
-                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"],"created_at"?: string,"id"?: string,"owner_id"?: string,"period"?: Database["public"]['Enums']["habit_period"],"starts_on"?: string,"target_count"?: number,"title"?: string
+                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"],"created_at"?: string,"id"?: string,"owner_id"?: string,"period"?: Database["public"]['Enums']["habit_period"],"starts_on"?: string,"target_count"?: number,"title"?: string,"week_start"?: number
                   }
                   Relationships: [
                     {
