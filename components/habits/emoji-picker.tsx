@@ -71,7 +71,7 @@ export function EmojiPicker({
         <div
           id={panelId}
           {...{ [EMOJI_PANEL_ATTR]: "" }}
-          className="flex flex-col gap-3 rounded-2xl border border-input p-3"
+          className="flex flex-col gap-3 rounded-2xl border border-input p-2"
           onKeyDown={(e) => {
             if (e.key === "Escape") {
               e.preventDefault();

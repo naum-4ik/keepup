@@ -130,6 +130,12 @@ test("every template tab fits above the bottom nav on a small phone", async ({ p
     const last = await page.getByRole("button", { name: "Create your own" }).boundingBox();
     expect(last!.y + last!.height, name).toBeLessThanOrEqual(nav!.y);
   }
+  // The emoji suggestions stay 44px targets at this width too.
+  await page.getByRole("button", { name: "Create your own" }).click();
+  await page.getByRole("button", { name: /^Choose emoji/ }).click();
+  const cell = await page.getByRole("group", { name: "Suggested emoji" }).getByRole("button").first().boundingBox();
+  expect(cell!.width).toBeGreaterThanOrEqual(44);
+  expect(cell!.height).toBeGreaterThanOrEqual(44);
 });
 
 test("the start date can be picked from quick choices or the calendar", async ({ page }) => {
