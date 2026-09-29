@@ -105,3 +105,37 @@ test("the start date can be picked from quick choices or the calendar", async ({
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
   await expect(page).toHaveURL(/\/today$/);
 });
+
+test.describe("Today check-ins", () => {
+  test("checking in on a several-times-a-day habit counts up", async ({ page }) => {
+    await signUpAndOnboard(page);
+    await createHabit(page, { template: "Drink water" });
+    await expect(page.getByText("0 / 8 today")).toBeVisible();
+    await page.getByRole("button", { name: "Check in: Drink water" }).click();
+    await expect(page.getByText("1 / 8 today")).toBeVisible();
+  });
+
+  test("a weekly habit allows one check-in per day", async ({ page }) => {
+    await signUpAndOnboard(page);
+    await createHabit(page, { template: "Work out" });
+    await page.getByRole("button", { name: "Check in: Work out" }).click();
+    await expect(page.getByRole("button", { name: "Checked in today: Work out" })).toBeDisabled();
+    await expect(page.getByText(/1 of 3 this week/)).toBeVisible();
+  });
+
+  test("a double tap checks in only once", async ({ page }) => {
+    await signUpAndOnboard(page);
+    await createHabit(page, { template: "Read 20 min" });
+    const habitRow = page.getByRole("listitem").filter({ hasText: "Read 20 min" });
+    await habitRow.getByRole("button", { name: "Check in: Read 20 min" }).dblclick();
+    const button = habitRow.getByRole("button", { name: "Done: Read 20 min" });
+    await expect(button).toBeVisible();
+    await expect(button).toBeDisabled();
+    // Wait for the request to fully settle (not just dimmed while pending) before checking for an
+    // error, so a second, rejected check-in wouldn't slip past the assertion below.
+    await expect(button).not.toHaveClass(/opacity-60/);
+    // Scoped to the habit row: the App Router's route announcer also has role="alert" on the page.
+    await expect(habitRow.getByRole("alert")).toHaveCount(0);
+    await expect(page.getByText("Done for today")).toBeVisible();
+  });
+});
