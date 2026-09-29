@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0](https://github.com/naum-4ik/keepup/compare/v0.1.0...v0.2.0) (2026-09-29)
+
+
+### Features
+
+* center and polish the sign-in page ([#21](https://github.com/naum-4ik/keepup/issues/21)) ([6e9fe82](https://github.com/naum-4ik/keepup/commit/6e9fe82e520e6f5e10cc96140ba299de88218854))
+* move sign out to the profile page ([#19](https://github.com/naum-4ik/keepup/issues/19)) ([803a57e](https://github.com/naum-4ik/keepup/commit/803a57e208b2e85968e61554f2770f9ffca71c6f))
+* show the Google logo on the Google sign-in button ([#20](https://github.com/naum-4ik/keepup/issues/20)) ([0b33e87](https://github.com/naum-4ik/keepup/commit/0b33e87f6690d83ff5da1cb795e2e06b1d849168))
+
+
+### Bug Fixes
+
+* harden the M1 foundation before habits ([#17](https://github.com/naum-4ik/keepup/issues/17)) ([c132503](https://github.com/naum-4ik/keepup/commit/c1325032ac56f24adf7e3c7e35fa39ddd91a5b66))
+
 ## 0.1.0 (2026-09-28)
 
 
