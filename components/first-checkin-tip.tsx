@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { X } from "lucide-react";
 
 // One-time hint under the first check-in button on Today. Dismissed by tapping it or by any
@@ -10,6 +10,10 @@ const KEY = "keepup:tip-first-checkin";
 // The local day the tip went away, so other Today hints wait until tomorrow (one hint at a time).
 const DAY_KEY = "keepup:tip-first-checkin-day";
 let dismissedThisSession = false;
+// True while the tip is on screen, so a check-in by someone who never saw it doesn't count as
+// "the tip went away today".
+let tipOnScreen = false;
+let goneThisSession = false;
 const listeners = new Set<() => void>();
 
 function isDismissed(): boolean {
@@ -28,12 +32,14 @@ function subscribe(listener: () => void) {
 
 export function dismissFirstCheckinTip() {
   if (dismissedThisSession) return;
+  const wasShowing = tipOnScreen;
   dismissedThisSession = true;
+  if (wasShowing) goneThisSession = true;
   try {
     window.localStorage.setItem(KEY, "1");
-    window.localStorage.setItem(DAY_KEY, localDay());
+    if (wasShowing) window.localStorage.setItem(DAY_KEY, localDay());
   } catch {
-    // Storage unavailable: the in-memory flag covers this session.
+    // Storage unavailable: the in-memory flags cover this session.
   }
   listeners.forEach((l) => l());
 }
@@ -43,7 +49,7 @@ function localDay(): string {
 }
 
 export function firstCheckinTipGoneToday(): boolean {
-  if (dismissedThisSession) return true;
+  if (goneThisSession) return true;
   try {
     return window.localStorage.getItem(DAY_KEY) === localDay();
   } catch {
@@ -54,6 +60,13 @@ export function firstCheckinTipGoneToday(): boolean {
 export function FirstCheckinTip() {
   // The server snapshot says "dismissed", so the tip only appears after hydration reads storage.
   const dismissed = useSyncExternalStore(subscribe, isDismissed, () => true);
+  useEffect(() => {
+    if (dismissed) return;
+    tipOnScreen = true;
+    return () => {
+      tipOnScreen = false;
+    };
+  }, [dismissed]);
   if (dismissed) return null;
 
   return (

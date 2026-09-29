@@ -36,13 +36,8 @@ describe("passkeyErrorKind", () => {
     expect(passkeyErrorKind(notAllowed)).toBe("cancelled");
   });
 
-  it("recognises a project without passkeys switched on", () => {
-    expect(passkeyErrorKind({ code: "passkey_disabled", message: "Passkeys are disabled" })).toBe("disabled");
-  });
-
   it("recognises an authenticator that is already registered", () => {
     expect(passkeyErrorKind({ code: "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED" })).toBe("exists");
-    expect(passkeyErrorKind({ code: "webauthn_credential_exists" })).toBe("exists");
   });
 
   it("recognises a browser without WebAuthn", () => {
@@ -69,8 +64,10 @@ describe("passkeyErrorMessage", () => {
   });
 
   it("explains set-up failures without blame", () => {
-    expect(passkeyErrorMessage({ code: "webauthn_credential_exists" }, "setUp")).toBe("Face ID is already set up on this device.");
-    expect(passkeyErrorMessage({ code: "passkey_disabled" }, "setUp")).toBe("Face ID sign-in isn't switched on yet.");
+    expect(passkeyErrorMessage({ code: "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED" }, "setUp")).toBe(
+      "Face ID is already set up on this device.",
+    );
+    expect(passkeyErrorMessage({ code: "webauthn_challenge_expired" }, "setUp")).toBe("Couldn't set up Face ID. Try again in a moment.");
   });
 });
 

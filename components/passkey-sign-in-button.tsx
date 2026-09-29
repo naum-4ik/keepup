@@ -13,19 +13,24 @@ export function PasskeySignInButton({ next, withDivider }: { next: string; withD
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hint, setHint] = useState(false);
 
   if (!available) return null;
 
   async function signIn() {
     setPending(true);
     setError(null);
+    setHint(false);
     const result = await signInWithPasskey();
     if (result.ok) {
       router.replace(next);
       router.refresh();
       return;
     }
-    setError(passkeyErrorMessage(result.error, "signIn"));
+    const message = passkeyErrorMessage(result.error, "signIn");
+    setError(message);
+    // Closing the sheet and having no passkey on this device look the same; offer the way in.
+    setHint(message === null);
     setPending(false);
   }
 
@@ -45,6 +50,11 @@ export function PasskeySignInButton({ next, withDivider }: { next: string; withD
         <p className="text-center text-xs text-muted-foreground">or Touch ID, or your device PIN</p>
         <div aria-live="polite">
           {error && <p className="pt-1 text-sm text-destructive">{error}</p>}
+          {hint && (
+            <p className="pt-1 text-center text-sm text-muted-foreground">
+              No Face ID set up on this device? Sign in with Google or email, then add it in Settings.
+            </p>
+          )}
         </div>
       </div>
       {withDivider && (

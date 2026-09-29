@@ -33,17 +33,21 @@ function PasskeySettingsCard() {
   const [adding, setAdding] = useState(false);
   const [flash, setFlash] = useState(0);
   const [removing, setRemoving] = useState<Passkey | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   const apply = useCallback((result: Awaited<ReturnType<typeof listPasskeys>>) => {
-    if (result.ok) {
-      setPasskeys(result.data);
-    } else {
-      setPasskeys([]);
-      setError("Couldn't load your Face ID devices. Try again in a moment.");
-    }
+    setLoadFailed(!result.ok);
+    if (result.ok) setPasskeys(result.data);
   }, []);
 
   const load = useCallback(async () => apply(await listPasskeys()), [apply]);
+
+  async function retry() {
+    setRetrying(true);
+    await load();
+    setRetrying(false);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -119,7 +123,16 @@ function PasskeySettingsCard() {
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      {passkeys !== null && (
+      {loadFailed && (
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-destructive">Couldn&apos;t load your Face ID devices.</p>
+          <Button type="button" variant="outline" className="h-11" onClick={retry} disabled={retrying}>
+            {retrying ? "Trying again…" : "Retry"}
+          </Button>
+        </div>
+      )}
+
+      {passkeys !== null && !loadFailed && (
         <Button
           type="button"
           variant={flash ? "default" : empty ? "default" : "outline"}

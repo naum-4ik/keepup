@@ -35,6 +35,8 @@ Configured by hand in the Supabase dashboard for the `keepup-staging` project (n
 - Site URL: `https://keepup-murex.vercel.app`
 - Redirect URLs: `https://keepup-murex.vercel.app/auth/callback`, `https://keepup-*-naum4ik-s-org.vercel.app/**`
 - Providers: email (magic link) and Google (the Google OAuth client is in Testing mode)
+- Passkeys (Face ID sign-in), under Authentication → Passkeys: enabled; Relying Party Display Name `Keepup`; Relying Party ID `keepup-murex.vercel.app` (bare host, no scheme or port); Relying Party Origins `https://keepup-murex.vercel.app`. Changing the RP ID invalidates every existing passkey. `deploy-staging-db.yml` only pushes migrations, so the local `[auth.webauthn]` values in `supabase/config.toml` never reach staging.
+- Vercel → keepup → Environment Variables: `NEXT_PUBLIC_PASSKEY_RP_ID=keepup-murex.vercel.app` for **Production only** (built from `develop`); leave it unset for Preview, where passkeys can't work and the UI hides. It is inlined at build time, so redeploy after changing it.
 
 ## Why no load balancer
 

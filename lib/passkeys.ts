@@ -25,7 +25,7 @@ export function passkeysAvailableHere(): boolean {
   });
 }
 
-export type PasskeyErrorKind = "cancelled" | "unsupported" | "disabled" | "exists" | "other";
+export type PasskeyErrorKind = "cancelled" | "unsupported" | "exists" | "other";
 
 type ErrorLike = { code?: unknown; name?: unknown; message?: unknown; cause?: { name?: unknown } };
 
@@ -38,8 +38,7 @@ export function passkeyErrorKind(error: unknown): PasskeyErrorKind {
   if (e.code === "ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY" && (causeName === "NotAllowedError" || causeName === "AbortError")) {
     return "cancelled";
   }
-  if (e.code === "passkey_disabled") return "disabled";
-  if (e.code === "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED" || e.code === "webauthn_credential_exists") return "exists";
+  if (e.code === "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED") return "exists";
   if (typeof e.message === "string" && /does not support WebAuthn/i.test(e.message)) return "unsupported";
   return "other";
 }
@@ -47,13 +46,11 @@ export function passkeyErrorKind(error: unknown): PasskeyErrorKind {
 const COPY: Record<"signIn" | "setUp", Record<Exclude<PasskeyErrorKind, "cancelled">, string>> = {
   signIn: {
     unsupported: "This browser can't use Face ID here. Use Google or email instead.",
-    disabled: "Face ID sign-in isn't switched on yet. Use Google or email instead.",
     exists: "Couldn't sign in with Face ID. Use Google or email instead.",
     other: "Couldn't sign in with Face ID. Use Google or email instead.",
   },
   setUp: {
     unsupported: "This browser can't set up Face ID.",
-    disabled: "Face ID sign-in isn't switched on yet.",
     exists: "Face ID is already set up on this device.",
     other: "Couldn't set up Face ID. Try again in a moment.",
   },
@@ -107,7 +104,12 @@ type Result<T> = { ok: true; data: T } | { ok: false; error: unknown };
 async function attempt<T>(run: () => Promise<{ data: T | null; error: unknown }>): Promise<Result<T>> {
   try {
     const { data, error } = await run();
-    if (error) return { ok: false, error };
+    if (error) {
+      // Cancel and "no passkey here" look the same to the browser (NotAllowedError), and the UI
+      // stays quiet about it, so leave a trace for debugging.
+      if (passkeyErrorKind(error) === "cancelled") console.warn("Passkey ceremony ended without a credential", error);
+      return { ok: false, error };
+    }
     return { ok: true, data: data as T };
   } catch (error) {
     return { ok: false, error };

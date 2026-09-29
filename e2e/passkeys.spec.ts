@@ -1,5 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-import { signUpAndOnboard } from "./helpers/auth";
+import { devices, expect, test, type Page } from "@playwright/test";
+import { completeOnboarding, signInWithMagicLink, signUpAndOnboard, uniqueEmail } from "./helpers/auth";
 import { createHabit } from "./helpers/habits";
 
 // A CDP virtual authenticator stands in for Face ID: it answers every WebAuthn prompt with a
@@ -89,4 +89,48 @@ test("Face ID sign-in hides on a host that isn't the passkey RP ID", async ({ pa
   await page.goto("http://127.0.0.1:3000/login");
   await expect(page.getByRole("button", { name: "Email me a link" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Sign in with Face ID" })).toHaveCount(0);
+});
+
+test("Face ID sign-in with no passkey on this device shows no error, just a hint", async ({ page }) => {
+  await addVirtualAuthenticator(page); // an authenticator with no Keepup credential on it
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Sign in with Face ID" }).click();
+  await expect(page.getByText("No Face ID set up on this device?")).toBeVisible();
+  await expect(page.getByText("Couldn't sign in with Face ID")).toHaveCount(0);
+  await expect(page).toHaveURL(/\/login/);
+});
+
+test("a failed Face ID list load offers a retry instead of set-up", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await page.route("**/auth/v1/passkeys", (route) => route.abort("failed"));
+  await page.goto("/profile/settings");
+  const card = page.getByRole("region", { name: "Face ID sign-in" });
+  await expect(card.getByRole("button", { name: "Retry" })).toBeVisible();
+  await expect(card.getByRole("button", { name: "Set up Face ID" })).toHaveCount(0);
+
+  await page.unroute("**/auth/v1/passkeys");
+  await card.getByRole("button", { name: "Retry" }).click();
+  await expect(card.getByRole("button", { name: "Set up Face ID" })).toBeVisible();
+});
+
+test("a returning user's check-in doesn't hide the Face ID prompt", async ({ page, browser }) => {
+  // First device: the new user sees the tip and checks in, so the tip is behind them.
+  const email = uniqueEmail();
+  await signInWithMagicLink(page, email);
+  await completeOnboarding(page);
+  await createHabit(page, { title: "Drink water", count: 3, period: "day" });
+  await page.getByRole("button", { name: "Check in: Drink water" }).click();
+  await expect(page.getByText("1 / 3 today")).toBeVisible();
+
+  // Second device: no tip (they've checked in before); a check-in there leaves the prompt alone.
+  const context = await browser.newContext({ ...devices["Pixel 7"], baseURL: "http://localhost:3000", timezoneId: "Europe/Rome" });
+  const other = await context.newPage();
+  await signInWithMagicLink(other, email);
+  await expect(other).toHaveURL(/\/today$/);
+  await expect(other.getByText("Tap when you've done it")).toHaveCount(0);
+  await other.getByRole("button", { name: "Check in: Drink water" }).click();
+  await expect(other.getByText("2 / 3 today")).toBeVisible();
+  await other.reload();
+  await expect(other.getByRole("region", { name: "Sign in faster with Face ID" })).toBeVisible();
+  await context.close();
 });
