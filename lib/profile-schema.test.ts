@@ -2,13 +2,18 @@ import { describe, expect, it } from "vitest";
 import { parseProfile, readProfileForm, type ProfileFormValues } from "./profile-schema";
 
 const zones = new Set(["UTC", "Europe/Rome", "Asia/Tokyo"]);
-const valid: ProfileFormValues = { displayName: "  Ana  ", timezone: "Europe/Rome", reminderHour: "21" };
+const valid: ProfileFormValues = {
+  displayName: "  Ana  ",
+  timezone: "Europe/Rome",
+  reminderHour: "21",
+  weekStart: "1",
+};
 
 describe("parseProfile", () => {
   it("accepts valid input and trims the name", () => {
     expect(parseProfile(valid, zones)).toEqual({
       ok: true,
-      value: { displayName: "Ana", timezone: "Europe/Rome", reminderHour: 21 },
+      value: { displayName: "Ana", timezone: "Europe/Rome", reminderHour: 21, weekStart: 1 },
     });
   });
 
@@ -47,13 +52,21 @@ describe("parseProfile", () => {
   it("accepts midnight", () => {
     expect(parseProfile({ ...valid, reminderHour: "0" }, zones).ok).toBe(true);
   });
+
+  it("accepts Sunday or Monday as the first day of the week", () => {
+    expect(parseProfile({ ...valid, weekStart: "0" }, zones)).toMatchObject({ ok: true, value: { weekStart: 0 } });
+    expect(parseProfile({ ...valid, weekStart: "3" }, zones)).toEqual({
+      ok: false,
+      errors: { weekStart: "Pick Sunday or Monday." },
+    });
+  });
 });
 
 describe("readProfileForm", () => {
-  it("reads the three fields as strings, missing ones as empty", () => {
+  it("reads the four fields as strings, missing ones as empty", () => {
     const fd = new FormData();
     fd.set("displayName", "Ana");
     fd.set("timezone", "UTC");
-    expect(readProfileForm(fd)).toEqual({ displayName: "Ana", timezone: "UTC", reminderHour: "" });
+    expect(readProfileForm(fd)).toEqual({ displayName: "Ana", timezone: "UTC", reminderHour: "", weekStart: "" });
   });
 });

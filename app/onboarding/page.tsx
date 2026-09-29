@@ -20,6 +20,7 @@ export default async function OnboardingPage() {
             displayName: profile.display_name,
             timezone: profile.timezone,
             reminderHour: String(profile.reminder_hour),
+            weekStart: String(profile.week_start),
           }}
           detectTimezone
           submitLabel="Continue"

@@ -21,10 +21,21 @@ const initialState: ProfileFormState = { status: "idle" };
 export function ProfileForm({ action, timezones, defaults, detectTimezone = false, submitLabel }: Props) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const timezoneRef = useRef<HTMLSelectElement>(null);
+  const weekStartRef = useRef<HTMLSelectElement>(null);
 
   useEffect(() => {
     if (detectTimezone && timezoneRef.current) {
       timezoneRef.current.value = pickTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone, timezones);
+    }
+    if (detectTimezone) {
+      const locale = new Intl.Locale(navigator.language) as Intl.Locale & {
+        getWeekInfo?: () => { firstDay: number };
+        weekInfo?: { firstDay: number };
+      };
+      const firstDay = locale.getWeekInfo?.().firstDay ?? locale.weekInfo?.firstDay;
+      if (weekStartRef.current && firstDay !== undefined) {
+        weekStartRef.current.value = firstDay === 7 ? "0" : "1";
+      }
     }
   }, [detectTimezone, timezones]);
 
@@ -104,6 +115,31 @@ export function ProfileForm({ action, timezones, defaults, detectTimezone = fals
         {errors.reminderHour && (
           <p id="reminderHour-error" className="text-sm text-destructive">
             {errors.reminderHour}
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="weekStart" className="font-semibold">
+          Week starts on
+        </Label>
+        <select
+          id="weekStart"
+          name="weekStart"
+          ref={weekStartRef}
+          key={values.weekStart}
+          defaultValue={values.weekStart}
+          className={selectClass}
+          aria-invalid={Boolean(errors.weekStart)}
+          aria-describedby={errors.weekStart ? "weekStart-error" : undefined}
+        >
+          <option value="1">Monday</option>
+          <option value="0">Sunday</option>
+        </select>
+        <p className="text-xs text-muted-foreground">Applies to weekly habits you create from now on.</p>
+        {errors.weekStart && (
+          <p id="weekStart-error" className="text-sm text-destructive">
+            {errors.weekStart}
           </p>
         )}
       </div>
