@@ -27,7 +27,7 @@ export default async function TodayPage() {
           {todo.length > 0 ? (
             <HabitList habits={todo} />
           ) : done.length > 0 ? (
-            <p className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">Everything's checked off. Nice work.</p>
+            <p className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">All checked off. Nice work.</p>
           ) : null}
           {done.length > 0 && <HabitList title="Done" habits={done} />}
           {later.length > 0 && <HabitList title="Later" habits={later} />}
