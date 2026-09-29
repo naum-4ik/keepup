@@ -54,6 +54,7 @@ export function EmojiPicker({
           type="button"
           aria-label={`Choose emoji (now ${shown})`}
           aria-expanded={open}
+          aria-describedby={error ? `${ownId}-error` : undefined}
           aria-controls={open ? panelId : undefined}
           onClick={() => (open ? close() : setOpen(true))}
           className={cn(
@@ -121,7 +122,7 @@ export function EmojiPicker({
           </div>
         </div>
       )}
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p id={`${ownId}-error`} role="alert" className="text-sm text-destructive">{error}</p>}
     </div>
   );
 }

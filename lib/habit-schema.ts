@@ -48,7 +48,10 @@ function titleError(title: string): string | undefined {
 }
 
 const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
-const EMOJI = /\p{Extended_Pictographic}|\p{Regional_Indicator}|\u20E3/u;
+// Starts with an emoji (a pictograph, a flag's two regional indicators, or a keycap like 1️⃣), then
+// only emoji joiners/modifiers/pictographs, so "a⃣" or a lone "🇮" doesn't pass.
+const EMOJI =
+  /^(?:\p{Extended_Pictographic}|\p{Regional_Indicator}{2}|[0-9#*]\uFE0F?\u20E3)(?:[\uFE0F\u200D\u{1F3FB}-\u{1F3FF}\u{E0020}-\u{E007F}\u20E3]|\p{Extended_Pictographic})*$/u;
 
 // Exactly one emoji: one grapheme (so 🧘‍♀️ or a flag counts as one) that is an emoji, not a letter.
 export function isOneEmoji(value: string): boolean {

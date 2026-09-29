@@ -87,7 +87,7 @@ alter table public.habits add column emoji text;
 update public.habits set emoji = private.backfill_emoji(title, category);
 alter table public.habits alter column emoji set not null;
 -- One emoji is one grapheme, checked by the app (Intl.Segmenter); the database only bounds it.
-alter table public.habits add constraint habits_emoji_check check (char_length(emoji) between 1 and 16);
+alter table public.habits add constraint habits_emoji_check check (char_length(emoji) between 1 and 16 and btrim(emoji) <> '');
 
 grant insert (emoji) on public.habits to authenticated;
 grant update (emoji) on public.habits to authenticated;

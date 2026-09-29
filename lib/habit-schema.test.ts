@@ -59,7 +59,7 @@ describe("parseHabit", () => {
 });
 
 describe("parseHabitDetails", () => {
-  it("validates only title and category", () => {
+  it("validates title, emoji and category", () => {
     expect(parseHabitDetails({ title: " Walk ", emoji: " 🚶 ", category: "fitness" })).toEqual({
       ok: true,
       value: { title: "Walk", emoji: "🚶", category: "fitness" },
@@ -85,7 +85,7 @@ describe("emoji", () => {
     expect(parseHabitDetails({ title: "Walk", emoji: e, category: "fitness" })).toMatchObject({ ok: true, value: { emoji: e } });
   });
 
-  it.each(["😀😀", "a", "ab", "1", "😀 ", "é"])("rejects anything but one emoji: %j", (e) => {
+  it.each(["😀😀", "a", "ab", "1", "😀 ", "é", "a\u20E3", "🇮", "😀\u0301"])("rejects anything but one emoji: %j", (e) => {
     expect(isOneEmoji(e)).toBe(false);
   });
 
