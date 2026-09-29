@@ -25,13 +25,13 @@ export type Database = {
           Tables: {
             "profiles": {
                   Row: {
-                    "created_at": string,"display_name": string,"id": string,"onboarded_at": string | null,"reminder_hour": number,"timezone": string
+                    "created_at": string,"display_name": string,"id": string,"onboarded_at": string | null,"reminder_hour": number,"timezone": string,"week_start": number
                   }
                   Insert: {
-                    "created_at"?: string,"display_name": string,"id": string,"onboarded_at"?: string | null,"reminder_hour"?: number,"timezone"?: string
+                    "created_at"?: string,"display_name": string,"id": string,"onboarded_at"?: string | null,"reminder_hour"?: number,"timezone"?: string,"week_start"?: number
                   }
                   Update: {
-                    "created_at"?: string,"display_name"?: string,"id"?: string,"onboarded_at"?: string | null,"reminder_hour"?: number,"timezone"?: string
+                    "created_at"?: string,"display_name"?: string,"id"?: string,"onboarded_at"?: string | null,"reminder_hour"?: number,"timezone"?: string,"week_start"?: number
                   }
                   Relationships: [
                     
@@ -47,7 +47,7 @@ export type Database = {
                            }
           }
           Enums: {
-            [_ in never]: never
+            "habit_period": "day"|"week"|"month"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -167,7 +167,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            
+            "habit_period": ["day", "week", "month"]
           }
         }
 } as const
