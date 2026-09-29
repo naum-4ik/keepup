@@ -1,14 +1,20 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(3);
+select plan(4);
 
+-- invite_preview is the one exception: the invite landing page shows the group name to signed-out
+-- visitors (decision 0010).
 select is(
   (select count(*)::int
      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public'
       and p.prorettype <> 'trigger'::regtype
+      and p.proname <> 'invite_preview'
       and has_function_privilege('anon', p.oid, 'execute')),
-  0, 'anonymous visitors cannot call any public function');
+  0, 'anonymous visitors cannot call any public function except invite_preview');
+
+select ok(has_function_privilege('anon', 'public.invite_preview(text)', 'execute'),
+  'anonymous visitors can preview an invite');
 
 select is(
   (select count(*)::int

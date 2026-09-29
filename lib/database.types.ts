@@ -48,6 +48,75 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"group_invites": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"expires_at": string,"group_id": string,"id": string,"revoked_at": string | null,"token": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"expires_at": string,"group_id": string,"id"?: string,"revoked_at"?: string | null,"token"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"expires_at"?: string,"group_id"?: string,"id"?: string,"revoked_at"?: string | null,"token"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "group_invites_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_invites_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"group_members": {
+                  Row: {
+                    "group_id": string,"joined_at": string,"left_at": string | null,"role": string,"user_id": string
+                  }
+                  Insert: {
+                    "group_id": string,"joined_at"?: string,"left_at"?: string | null,"role"?: string,"user_id": string
+                  }
+                  Update: {
+                    "group_id"?: string,"joined_at"?: string,"left_at"?: string | null,"role"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "group_members_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_members_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"groups": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"id": string,"kind": string,"name": string,"timezone": string,"week_start": number
+                  }
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"kind"?: string,"name": string,"timezone": string,"week_start": number
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"kind"?: string,"name"?: string,"timezone"?: string,"week_start"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "groups_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"habit_freezes": {
                   Row: {
                     "created_at": string,"ends_on": string | null,"habit_id": string,"id": string,"starts_on": string
@@ -107,16 +176,22 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "created_at": string,"display_name": string,"id": string,"onboarded_at": string | null,"purpose": string | null,"reminder_hour": number,"terms_accepted_at": string | null,"timezone": string,"week_start": number
+                    "avatar_color": string | null,"avatar_emoji": string | null,"created_at": string,"display_name": string,"group_id": string | null,"id": string,"kind": string,"onboarded_at": string | null,"purpose": string | null,"reminder_hour": number,"terms_accepted_at": string | null,"timezone": string,"week_start": number
                   }
                   Insert: {
-                    "created_at"?: string,"display_name": string,"id": string,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
+                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"created_at"?: string,"display_name": string,"group_id"?: string | null,"id": string,"kind"?: string,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
                   }
                   Update: {
-                    "created_at"?: string,"display_name"?: string,"id"?: string,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
+                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"created_at"?: string,"display_name"?: string,"group_id"?: string | null,"id"?: string,"kind"?: string,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
                   }
                   Relationships: [
-                    
+                    {
+      foreignKeyName: "profiles_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
                   ]
                 }
           }
@@ -124,7 +199,10 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "check_in":
+            "accept_invite":
+{ Args: { "p_token": string }; Returns: string
+                           },
+"check_in":
 { Args: { "p_habit_id": string }; Returns: {
               "created_at": string,
 "habit_id": string,
@@ -140,6 +218,41 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"create_group":
+{ Args: { "p_kind"?: string,"p_name": string }; Returns: {
+              "created_at": string,
+"created_by": string | null,
+"id": string,
+"kind": string,
+"name": string,
+"timezone": string,
+"week_start": number
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "groups"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"create_invite":
+{ Args: { "p_group_id": string }; Returns: {
+              "created_at": string,
+"created_by": string | null,
+"expires_at": string,
+"group_id": string,
+"id": string,
+"revoked_at": string | null,
+"token": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "group_invites"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"delete_group":
+{ Args: { "p_confirm_children"?: boolean,"p_group_id": string }; Returns: undefined
+                           },
 "delete_habit":
 { Args: { "p_habit_id": string }; Returns: undefined
                            },
@@ -157,6 +270,9 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"group_detail":
+{ Args: { "p_group_id": string }; Returns: Json
+                           },
 "habit_history":
 { Args: { "p_habit_id": string,"p_limit"?: number }; Returns: {
               "outcome": string,"period_start": string
@@ -167,8 +283,36 @@ isOneToOne: false
               "archived_at": string,"best_streak": number,"category": Database["public"]['Enums']["habit_category"],"checked_in_today": boolean,"created_at": string,"current_streak": number,"days_left": number,"done_count": number,"emoji": string,"frozen": boolean,"frozen_until": string,"habit_id": string,"not_started": boolean,"period": Database["public"]['Enums']["habit_period"],"period_start": string,"starts_on": string,"target_count": number,"title": string
             }[]
                            },
+"invite_preview":
+{ Args: { "p_token": string }; Returns: {
+              "group_kind": string,"group_name": string,"inviter_name": string,"member_count": number
+            }[]
+                           },
+"is_group_admin":
+{ Args: { "p_group_id": string }; Returns: boolean
+                           },
+"is_group_member":
+{ Args: { "p_group_id": string }; Returns: boolean
+                           },
 "is_valid_timezone":
 { Args: { "tz": string }; Returns: boolean
+                           },
+"leave_group":
+{ Args: { "p_confirm_children"?: boolean,"p_group_id": string }; Returns: undefined
+                           },
+"my_groups":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "child_count": number,"group_id": string,"joined_at": string,"kind": string,"member_count": number,"name": string,"role": string
+            }[]
+                           },
+"remove_member":
+{ Args: { "p_group_id": string,"p_user_id": string }; Returns: undefined
+                           },
+"revoke_invites":
+{ Args: { "p_group_id": string }; Returns: undefined
+                           },
+"set_member_role":
+{ Args: { "p_group_id": string,"p_role": string,"p_user_id": string }; Returns: undefined
                            },
 "undo_check_in":
 { Args: { "p_check_in_id": string }; Returns: undefined
@@ -176,6 +320,22 @@ isOneToOne: false
 "unfreeze_habit":
 { Args: { "p_habit_id": string }; Returns: undefined
                            },
+"update_group":
+{ Args: { "p_group_id": string,"p_kind"?: string,"p_name"?: string,"p_timezone"?: string,"p_week_start"?: number }; Returns: {
+              "created_at": string,
+"created_by": string | null,
+"id": string,
+"kind": string,
+"name": string,
+"timezone": string,
+"week_start": number
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "groups"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "week_overview":
 { Args: Record<PropertyKey, never>; Returns: Json
                            }
