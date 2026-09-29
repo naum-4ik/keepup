@@ -25,6 +25,8 @@ writeFileSync(
     `NEXT_PUBLIC_SUPABASE_URL=${url}`,
     `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${key}`,
     "NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=false",
+    // Must match [auth.webauthn] rp_id in supabase/config.toml; passkey UI hides on any other host.
+    "NEXT_PUBLIC_PASSKEY_RP_ID=localhost",
     "",
   ].join("\n"),
 );

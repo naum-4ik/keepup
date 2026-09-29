@@ -1,13 +1,19 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { X } from "lucide-react";
 
 // One-time hint under the first check-in button on Today. Dismissed by tapping it or by any
 // check-in, and remembered in localStorage. Without storage (private mode, blocked site data) it
 // is remembered for this page session only, so it shows once per session.
 const KEY = "keepup:tip-first-checkin";
+// The local day the tip went away, so other Today hints wait until tomorrow (one hint at a time).
+const DAY_KEY = "keepup:tip-first-checkin-day";
 let dismissedThisSession = false;
+// True while the tip is on screen, so a check-in by someone who never saw it doesn't count as
+// "the tip went away today".
+let tipOnScreen = false;
+let goneThisSession = false;
 const listeners = new Set<() => void>();
 
 function isDismissed(): boolean {
@@ -26,18 +32,41 @@ function subscribe(listener: () => void) {
 
 export function dismissFirstCheckinTip() {
   if (dismissedThisSession) return;
+  const wasShowing = tipOnScreen;
   dismissedThisSession = true;
+  if (wasShowing) goneThisSession = true;
   try {
     window.localStorage.setItem(KEY, "1");
+    if (wasShowing) window.localStorage.setItem(DAY_KEY, localDay());
   } catch {
-    // Storage unavailable: the in-memory flag covers this session.
+    // Storage unavailable: the in-memory flags cover this session.
   }
   listeners.forEach((l) => l());
+}
+
+function localDay(): string {
+  return new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD in the device's time zone
+}
+
+export function firstCheckinTipGoneToday(): boolean {
+  if (goneThisSession) return true;
+  try {
+    return window.localStorage.getItem(DAY_KEY) === localDay();
+  } catch {
+    return false;
+  }
 }
 
 export function FirstCheckinTip() {
   // The server snapshot says "dismissed", so the tip only appears after hydration reads storage.
   const dismissed = useSyncExternalStore(subscribe, isDismissed, () => true);
+  useEffect(() => {
+    if (dismissed) return;
+    tipOnScreen = true;
+    return () => {
+      tipOnScreen = false;
+    };
+  }, [dismissed]);
   if (dismissed) return null;
 
   return (
