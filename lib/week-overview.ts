@@ -20,8 +20,18 @@ export type WeekOverview = {
   per_habit: HabitCells[];
 };
 
-// A brand-new user has nothing to show yet.
-export const hasWeekData = (o: Pick<WeekOverview, "done" | "possible">) => o.possible > 0 || o.done > 0;
+// Show the overview as soon as there's an active habit, so a new user sees "0 of 3" on day one.
+export const hasWeekData = (o: Pick<WeekOverview, "done" | "possible" | "active_habits">) =>
+  o.active_habits > 0 || o.possible > 0 || o.done > 0;
+
+// The database counts only finished periods, plus anything already done today. For display,
+// today's daily habits that are still to do also count as possible, so the week reads
+// "2 of 5" in the morning instead of "0 of 0".
+export function withTodayPending(o: WeekOverview): WeekOverview {
+  const today = o.days.find((d) => d.local_date === o.today);
+  const pending = today ? Math.max(0, today.daily_possible - today.daily_done) : 0;
+  return { ...o, possible: o.possible + pending };
+}
 
 // Only positive or neutral. "More than last week" needs a last week to compare with. "Best week
 // yet" means this week's share done beats last week's (the only other week in the data), while

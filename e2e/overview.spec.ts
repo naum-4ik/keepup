@@ -8,30 +8,35 @@ test("the weekly overview shows on Today and Progress", async ({ page }) => {
 
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
   await createHabit(page, { title: "Read", count: 1, period: "day" });
+  const strip = page.getByRole("link", { name: /^This week/ });
+  // Day one: today's daily habits count as possible right away, so the strip shows 0 of 2.
+  await expect(strip).toContainText("0 of 2");
+
   await page.getByRole("button", { name: "Check in: Walk" }).click();
   await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await expect(strip).toContainText("1 of 2");
+  await expect(strip.getByRole("img", { name: "1 of 2 done this week" })).not.toHaveAttribute("data-complete", "");
 
-  // Only finished periods count this week: Read is still open today, so it's 1 of 1.
-  const strip = page.getByRole("link", { name: /^This week/ });
-  await expect(strip).toContainText("1 of 1");
+  await page.getByRole("button", { name: "Check in: Read" }).click();
+  await expect(page.getByRole("button", { name: "Done: Read" })).toBeVisible();
   // All done so far: the ring is replaced by the filled check.
-  await expect(strip.getByRole("img", { name: "1 of 1 done this week" })).toHaveAttribute("data-complete", "");
+  await expect(strip.getByRole("img", { name: "2 of 2 done this week" })).toHaveAttribute("data-complete", "");
   await expect(strip.locator("[data-complete] svg.lucide-check")).toBeVisible();
   await strip.click();
   await expect(page).toHaveURL(/\/progress$/);
 
   const card = page.getByRole("region", { name: "Your week" });
-  await expect(card).toContainText("1 of 1 done");
+  await expect(card).toContainText("2 of 2 done");
   // No last week to compare with yet.
-  await expect(card).toContainText("1 done this week");
-  await expect(card.getByRole("img", { name: "1 of 1 done this week" })).toHaveAttribute("data-complete", "");
+  await expect(card).toContainText("2 done this week");
+  await expect(card.getByRole("img", { name: "2 of 2 done this week" })).toHaveAttribute("data-complete", "");
   // Today's circle fills against both of today's daily habits (the weekday comes from the server's
   // clock in the user's time zone, so it isn't recomputed here).
-  await expect(card.getByRole("img", { name: /^\w+day: 1 of 2 done$/ })).toBeVisible();
-  await expect(card.getByRole("listitem").filter({ hasText: "check-in" })).toHaveText("1check-in");
+  await expect(card.getByRole("img", { name: /^\w+day: 2 of 2 done$/ })).toBeVisible();
+  await expect(card.getByRole("listitem").filter({ hasText: "check-in" })).toHaveText("2check-ins");
   await expect(card.getByRole("listitem").filter({ hasText: "active habits" })).toHaveText("2active habits");
 
   await expect(page.getByRole("link", { name: /Walk/ }).getByRole("img", { name: "Last 7 days: 6 not started, 1 done" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Read/ }).getByRole("img", { name: "Last 7 days: 6 not started, 1 in progress" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Read/ }).getByRole("img", { name: "Last 7 days: 6 not started, 1 done" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("%");
 });

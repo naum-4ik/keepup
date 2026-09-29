@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { comparisonLine, hasWeekData, ringDash, ringFraction, streakUnit } from "./week-overview";
+import { comparisonLine, hasWeekData, ringDash, ringFraction, streakUnit, withTodayPending, type WeekOverview } from "./week-overview";
 
 const week = (done: number, possible: number, prev_done: number, prev_possible: number) => ({ done, possible, prev_done, prev_possible });
 
@@ -54,9 +54,10 @@ describe("ring maths", () => {
 
 describe("hasWeekData", () => {
   it("is false only for a brand-new user", () => {
-    expect(hasWeekData({ done: 0, possible: 0 })).toBe(false);
-    expect(hasWeekData({ done: 0, possible: 2 })).toBe(true);
-    expect(hasWeekData({ done: 1, possible: 1 })).toBe(true);
+    expect(hasWeekData({ done: 0, possible: 0, active_habits: 0 })).toBe(false);
+    expect(hasWeekData({ done: 0, possible: 0, active_habits: 3 })).toBe(true);
+    expect(hasWeekData({ done: 0, possible: 2, active_habits: 0 })).toBe(true);
+    expect(hasWeekData({ done: 1, possible: 1, active_habits: 0 })).toBe(true);
   });
 });
 
@@ -65,5 +66,22 @@ describe("streakUnit", () => {
     expect(streakUnit(12, "day")).toBe("days");
     expect(streakUnit(1, "week")).toBe("week");
     expect(streakUnit(3, "month")).toBe("months");
+  });
+});
+
+describe("withTodayPending", () => {
+  const base = {
+    today: "2026-09-29", week_start: "2026-09-27", done: 2, possible: 2, prev_done: 0, prev_possible: 0,
+    days: [{ local_date: "2026-09-29", daily_done: 1, daily_possible: 4 }],
+    best_current_streak: 0, best_current_streak_title: null, best_current_streak_period: null,
+    check_ins: 0, active_habits: 4, per_habit: [],
+  } satisfies WeekOverview;
+
+  it("adds today's daily habits still to do to possible, not to done", () => {
+    expect(withTodayPending(base)).toMatchObject({ done: 2, possible: 5 });
+  });
+
+  it("changes nothing when today has no row", () => {
+    expect(withTodayPending({ ...base, days: [] })).toMatchObject({ done: 2, possible: 2 });
   });
 });

@@ -1,7 +1,7 @@
 import "server-only";
 import { requireUser } from "@/lib/auth";
 import type { Database } from "@/lib/database.types";
-import type { WeekOverview } from "@/lib/week-overview";
+import { withTodayPending, type WeekOverview } from "@/lib/week-overview";
 
 export type HabitSummary = Database["public"]["Functions"]["habit_summaries"]["Returns"][number];
 export type HistoryCell = Database["public"]["Functions"]["habit_history"]["Returns"][number];
@@ -22,7 +22,7 @@ export async function getWeekOverview(): Promise<WeekOverview | null> {
     console.error("week_overview failed", error?.message ?? "no data");
     return null;
   }
-  return data as unknown as WeekOverview;
+  return withTodayPending(data as unknown as WeekOverview);
 }
 
 export type HabitFreeze = { id: string; starts_on: string; ends_on: string | null };
