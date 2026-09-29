@@ -14,6 +14,7 @@ export async function insertHabits(supabase: SupabaseClient<Database>, habits: H
       (h) =>
         ({
           title: h.title,
+          emoji: h.emoji,
           category: h.category,
           target_count: h.targetCount,
           period: h.period,

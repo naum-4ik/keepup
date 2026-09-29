@@ -11,12 +11,12 @@ select tests.create_user('00000000-0000-0000-0000-0000000000b5', 'fin-b@example.
 update public.profiles set timezone = 'Europe/Rome' where id = '00000000-0000-0000-0000-0000000000a5';
 
 set local session_replication_role = replica;
-insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, archived_at) values
-  ('00000000-0000-0000-0000-00000000005a', '00000000-0000-0000-0000-0000000000a5', 'Streak', 'mind', 1, 'day', '2026-10-01', '2026-10-01T08:00:00Z', null),
-  ('00000000-0000-0000-0000-00000000005f', '00000000-0000-0000-0000-0000000000a5', 'Frozen', 'mind', 1, 'day', '2026-10-01', '2026-10-01T08:00:00Z', null),
-  ('00000000-0000-0000-0000-00000000005b', '00000000-0000-0000-0000-0000000000a5', 'Late week', 'fitness', 3, 'week', '2026-10-03', '2026-10-03T08:00:00Z', null),
-  ('00000000-0000-0000-0000-00000000005c', '00000000-0000-0000-0000-0000000000a5', 'Archived', 'home', 1, 'day', '2026-10-01', '2026-10-01T08:00:00Z', '2026-10-02T10:00:00Z'),
-  ('00000000-0000-0000-0000-00000000005d', '00000000-0000-0000-0000-0000000000a5', 'Next week', 'home', 1, 'day', '2026-10-12', '2026-10-05T08:00:00Z', null);
+insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, archived_at, emoji) values
+  ('00000000-0000-0000-0000-00000000005a', '00000000-0000-0000-0000-0000000000a5', 'Streak', 'mind', 1, 'day', '2026-10-01', '2026-10-01T08:00:00Z', null, '⭐'),
+  ('00000000-0000-0000-0000-00000000005f', '00000000-0000-0000-0000-0000000000a5', 'Frozen', 'mind', 1, 'day', '2026-10-01', '2026-10-01T08:00:00Z', null, '⭐'),
+  ('00000000-0000-0000-0000-00000000005b', '00000000-0000-0000-0000-0000000000a5', 'Late week', 'fitness', 3, 'week', '2026-10-03', '2026-10-03T08:00:00Z', null, '⭐'),
+  ('00000000-0000-0000-0000-00000000005c', '00000000-0000-0000-0000-0000000000a5', 'Archived', 'home', 1, 'day', '2026-10-01', '2026-10-01T08:00:00Z', '2026-10-02T10:00:00Z', '⭐'),
+  ('00000000-0000-0000-0000-00000000005d', '00000000-0000-0000-0000-0000000000a5', 'Next week', 'home', 1, 'day', '2026-10-12', '2026-10-05T08:00:00Z', null, '⭐');
 set local session_replication_role = origin;
 insert into public.habit_freezes (habit_id, starts_on, ends_on)
 values ('00000000-0000-0000-0000-00000000005f', '2026-10-03', '2026-10-03');
@@ -98,8 +98,8 @@ reset role;
 
 -- C1: week start is snapshotted per habit at creation, not read live from the profile.
 set local session_replication_role = replica;
-insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, archived_at, week_start) values
-  ('00000000-0000-0000-0000-00000000005e', '00000000-0000-0000-0000-0000000000a5', 'Sunday week', 'fitness', 3, 'week', '2026-10-03', '2026-10-03T08:00:00Z', null, 0);
+insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, archived_at, week_start, emoji) values
+  ('00000000-0000-0000-0000-00000000005e', '00000000-0000-0000-0000-0000000000a5', 'Sunday week', 'fitness', 3, 'week', '2026-10-03', '2026-10-03T08:00:00Z', null, 0, '⭐');
 set local session_replication_role = origin;
 
 select is((select row(period_start, days_left)::text
@@ -134,8 +134,8 @@ update public.profiles set timezone = 'Europe/Rome' where id = '00000000-0000-00
 
 -- I2: an archived habit's streak/history freeze at the archive date.
 set local session_replication_role = replica;
-insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, archived_at, week_start) values
-  ('00000000-0000-0000-0000-000000000061', '00000000-0000-0000-0000-0000000000a5', 'Archived cap', 'mind', 1, 'day', '2026-10-01', '2026-10-01T08:00:00Z', null, 1);
+insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, archived_at, week_start, emoji) values
+  ('00000000-0000-0000-0000-000000000061', '00000000-0000-0000-0000-0000000000a5', 'Archived cap', 'mind', 1, 'day', '2026-10-01', '2026-10-01T08:00:00Z', null, 1, '⭐');
 set local session_replication_role = origin;
 
 select private.check_in_impl(h, '00000000-0000-0000-0000-0000000000a5', t)
@@ -157,8 +157,8 @@ select is((select count(*)::int from private.habit_history('00000000-0000-0000-0
 
 -- M1: an open-ended pause reports frozen_until as null, not a bogus max(ends_on).
 set local session_replication_role = replica;
-insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, archived_at, week_start) values
-  ('00000000-0000-0000-0000-000000000062', '00000000-0000-0000-0000-0000000000a5', 'Open pause', 'mind', 1, 'day', '2026-10-01', '2026-10-01T08:00:00Z', null, 1);
+insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, archived_at, week_start, emoji) values
+  ('00000000-0000-0000-0000-000000000062', '00000000-0000-0000-0000-0000000000a5', 'Open pause', 'mind', 1, 'day', '2026-10-01', '2026-10-01T08:00:00Z', null, 1, '⭐');
 set local session_replication_role = origin;
 insert into public.habit_freezes (habit_id, starts_on, ends_on) values ('00000000-0000-0000-0000-000000000062', '2026-10-05', null);
 
@@ -168,8 +168,8 @@ select is((select frozen_until from private.habit_summaries('00000000-0000-0000-
 
 -- A monthly habit starting mid-month (31 Jan): its partial first period is never missed.
 set local session_replication_role = replica;
-insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, archived_at, week_start) values
-  ('00000000-0000-0000-0000-000000000063', '00000000-0000-0000-0000-0000000000a5', 'Monthly', 'learning', 1, 'month', '2026-01-31', '2026-01-31T08:00:00Z', null, 1);
+insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, archived_at, week_start, emoji) values
+  ('00000000-0000-0000-0000-000000000063', '00000000-0000-0000-0000-0000000000a5', 'Monthly', 'learning', 1, 'month', '2026-01-31', '2026-01-31T08:00:00Z', null, 1, '⭐');
 set local session_replication_role = origin;
 select private.check_in_impl('00000000-0000-0000-0000-000000000063', '00000000-0000-0000-0000-0000000000a5', '2026-01-31T09:00:00Z');
 

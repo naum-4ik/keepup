@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronDown, ChevronLeft, Flame, Trophy } from "lucide-react";
 import { ArchiveHabitButton } from "@/components/habits/archive-habit-button";
-import { CategoryIcon } from "@/components/habits/category-icon";
+import { HabitEmoji } from "@/components/habits/category-icon";
 import { CheckInButton } from "@/components/habits/check-in-button";
 import { CheckInList } from "@/components/habits/check-in-list";
 import { DeleteHabitButton } from "@/components/habits/delete-habit-button";
@@ -82,7 +82,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
       </Link>
 
       <header className="flex items-center gap-4">
-        <CategoryIcon category={h.category} size="lg" />
+        <HabitEmoji category={h.category} emoji={h.emoji} size="lg" />
         <div className="flex min-w-0 flex-col">
           <h1 className="truncate text-xl font-bold">{h.title}</h1>
           <p className="text-sm text-muted-foreground">
@@ -152,10 +152,11 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
           >
             <FreezeForm habitId={h.habit_id} today={today} weekStart={weekStart} activeFreeze={activeFreeze} paused={h.frozen} />
           </Manage>
-          <Manage title="Edit details" hint={totalCheckIns === 0 ? "Title, category and start date" : "Title and category"}>
+          <Manage title="Edit details" hint={totalCheckIns === 0 ? "Title, emoji, category and start date" : "Title, emoji and category"}>
             <HabitDetailsForm
               habitId={h.habit_id}
               title={h.title}
+              emoji={h.emoji}
               category={h.category}
               startsOn={h.starts_on}
               canEditStart={totalCheckIns === 0}

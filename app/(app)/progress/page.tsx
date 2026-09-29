@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CategoryIcon } from "@/components/habits/category-icon";
+import { HabitEmoji } from "@/components/habits/category-icon";
 import { StreakBadge } from "@/components/habits/streak-badge";
 import { HabitDots, WeekCard } from "@/components/overview/week-overview";
 import { Button } from "@/components/ui/button";
@@ -61,7 +61,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                 .map((h) => (
                   <li key={h.habit_id}>
                     <Link href={`/habits/${h.habit_id}`} className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-soft hover:bg-muted/60">
-                      <CategoryIcon category={h.category} />
+                      <HabitEmoji category={h.category} emoji={h.emoji} />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate font-bold">{h.title}</span>
                         <span className="text-sm text-muted-foreground">

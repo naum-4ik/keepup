@@ -3,13 +3,14 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { Minus, Plus, Star } from "lucide-react";
 import { createHabit } from "@/app/(app)/habits/actions";
-import { CategoryIcon } from "@/components/habits/category-icon";
+import { CategoryIcon, HabitEmoji } from "@/components/habits/category-icon";
+import { EMOJI_PANEL_ATTR, EmojiPicker } from "@/components/habits/emoji-picker";
 import { StartDatePicker } from "@/components/habits/start-date-picker";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
+import { CATEGORIES, CATEGORY_ORDER, normalizeCategory } from "@/lib/categories";
 import { formatLocalDate } from "@/lib/dates";
 import { HABIT_TEMPLATES, type HabitTemplate } from "@/lib/habit-templates";
 import {
@@ -36,9 +37,9 @@ export function HabitForm({ today, weekStart }: { today: string; weekStart: 0 | 
   const open = (custom: boolean, values: Omit<HabitFormValues, "startsOn">) =>
     setDraft((d) => ({ key: (d?.key ?? 0) + 1, custom, values: { ...values, startsOn: today } }));
   const pickTemplate = (t: HabitTemplate) =>
-    open(false, { title: t.title, category: t.category, targetCount: String(t.targetCount), period: t.period });
+    open(false, { title: t.title, emoji: t.emoji, category: t.category, targetCount: String(t.targetCount), period: t.period });
   const createOwn = () =>
-    open(true, { title: "", category: tab === "popular" ? "health" : tab, targetCount: "1", period: "day" });
+    open(true, { title: "", emoji: "", category: tab === "popular" ? "health" : tab, targetCount: "1", period: "day" });
 
   return (
     <div className="flex flex-col gap-4">
@@ -67,7 +68,7 @@ export function HabitForm({ today, weekStart }: { today: string; weekStart: 0 | 
         ))}
       </div>
 
-      {/* Fixed 2×3 grid (no tab has more than 6 templates) with same-size cards, so switching
+      {/* Fixed 2×3 grid (every tab has exactly 6 templates) with same-size cards, so switching
           tabs never moves anything and "Create your own" always sits in the same place. */}
       <div role="tabpanel" className="grid grid-cols-2 grid-rows-[repeat(3,4.75rem)] gap-2.5">
         {templates.map((t) => (
@@ -77,18 +78,13 @@ export function HabitForm({ today, weekStart }: { today: string; weekStart: 0 | 
             onClick={() => pickTemplate(t)}
             className="flex h-full items-center gap-2.5 rounded-2xl bg-card px-3 text-left shadow-soft hover:bg-muted"
           >
-            <CategoryIcon category={t.category} size="xs" />
+            <HabitEmoji category={t.category} emoji={t.emoji} size="xs" />
             <span className="flex min-w-0 flex-col">
               <span className="line-clamp-2 text-[0.9375rem] leading-snug font-bold">{t.title}</span>
               <span className="text-xs text-muted-foreground">{describeSchedule(t.targetCount, t.period)}</span>
             </span>
           </button>
         ))}
-        {templates.length === 0 && (
-          <p className="col-span-2 row-span-3 flex items-center justify-center rounded-2xl bg-card/60 px-6 text-center text-sm text-muted-foreground">
-            No templates here yet. Create your own below.
-          </p>
-        )}
       </div>
 
       <button
@@ -101,8 +97,16 @@ export function HabitForm({ today, weekStart }: { today: string; weekStart: 0 | 
       </button>
 
       <Dialog open={draft !== null} onOpenChange={(isOpen) => !isOpen && !pending && setDraft(null)}>
-        {/* Templates open without focusing a field, so the phone keyboard doesn't cover the form. */}
-        <DialogContent onOpenAutoFocus={(e) => !draft?.custom && e.preventDefault()}>
+        {/* Templates open without focusing a field, so the phone keyboard doesn't cover the form;
+            "Create your own" focuses the title (not the emoji button before it). Escape inside the
+            open emoji panel closes only the panel. */}
+        <DialogContent
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            if (draft?.custom) document.getElementById("title")?.focus();
+          }}
+          onEscapeKeyDown={(e) => (e.target as Element | null)?.closest?.(`[${EMOJI_PANEL_ATTR}]`) && e.preventDefault()}
+        >
           <div className="flex flex-col gap-1 pr-10">
             <DialogTitle>{draft?.custom ? "Create your own" : "Add habit"}</DialogTitle>
             <DialogDescription>You can change anything before adding it.</DialogDescription>
@@ -154,16 +158,23 @@ function HabitFields({
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="title" className="font-semibold">Title</Label>
-        <Input
-          id="title"
-          name="title"
-          value={values.title}
-          onChange={set("title")}
-          maxLength={HABIT_TITLE_MAX}
-          className={fieldClass}
-          aria-invalid={Boolean(errors.title)}
-          aria-describedby={errors.title ? "title-error" : undefined}
-        />
+        <EmojiPicker
+          value={values.emoji}
+          category={normalizeCategory(values.category)}
+          onChange={(emoji) => setValues((v) => ({ ...v, emoji }))}
+          error={errors.emoji}
+        >
+          <Input
+            id="title"
+            name="title"
+            value={values.title}
+            onChange={set("title")}
+            maxLength={HABIT_TITLE_MAX}
+            className={fieldClass}
+            aria-invalid={Boolean(errors.title)}
+            aria-describedby={errors.title ? "title-error" : undefined}
+          />
+        </EmojiPicker>
         {errors.title && <p id="title-error" className="text-sm text-destructive">{errors.title}</p>}
       </div>
 

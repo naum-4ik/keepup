@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { updateHabitDetails, type FormActionState } from "@/app/(app)/habits/actions";
+import { EmojiPicker } from "@/components/habits/emoji-picker";
 import { StartDatePicker } from "@/components/habits/start-date-picker";
 import { SaveButton } from "@/components/save-button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ const fieldClass = "h-11 rounded-xl px-3 text-base";
 export function HabitDetailsForm({
   habitId,
   title,
+  emoji,
   category,
   startsOn,
   canEditStart,
@@ -25,6 +27,7 @@ export function HabitDetailsForm({
 }: {
   habitId: string;
   title: string;
+  emoji: string;
   category: HabitCategory;
   startsOn: string;
   canEditStart: boolean;
@@ -35,7 +38,7 @@ export function HabitDetailsForm({
   // Controlled, like the new-habit form's HabitFields: a failed save must keep what the user
   // typed rather than reverting to the original values (the browser resets uncontrolled
   // <form> fields to their mount-time defaultValue once the action returns).
-  const [values, setValues] = useState({ title, category, startsOn });
+  const [values, setValues] = useState({ title, emoji, category, startsOn });
   const categoryRef = useRef<HTMLSelectElement>(null);
 
   // <select> doesn't reliably resync from its `value` prop after that same reset, so force it
@@ -48,13 +51,15 @@ export function HabitDetailsForm({
     <form action={formAction} className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="title">Title</Label>
-        <Input
-          id="title"
-          name="title"
-          value={values.title}
-          onChange={(e) => setValues((v) => ({ ...v, title: e.target.value }))}
-          className={fieldClass}
-        />
+        <EmojiPicker value={values.emoji} category={values.category} onChange={(e) => setValues((v) => ({ ...v, emoji: e }))}>
+          <Input
+            id="title"
+            name="title"
+            value={values.title}
+            onChange={(e) => setValues((v) => ({ ...v, title: e.target.value }))}
+            className={fieldClass}
+          />
+        </EmojiPicker>
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="category">Category</Label>

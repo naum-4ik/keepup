@@ -8,13 +8,13 @@ update public.profiles set timezone = 'Europe/Rome', week_start = 1 where id = '
 
 -- "Now" is Thursday 8 Oct 2026, 12:00 in Rome. This week: Mon 5 – Sun 11 Oct. Last week: 28 Sep – 4 Oct.
 set local session_replication_role = replica;
-insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, week_start, archived_at) values
-  ('00000000-0000-0000-0000-00000000d701', '00000000-0000-0000-0000-0000000000a7', 'Walk', 'fitness', 1, 'day', '2026-09-28', '2026-09-28T08:00:00Z', 1, null),
-  ('00000000-0000-0000-0000-00000000d702', '00000000-0000-0000-0000-0000000000a7', 'Gym', 'fitness', 2, 'week', '2026-09-21', '2026-09-21T08:00:00Z', 1, null),
-  ('00000000-0000-0000-0000-00000000d703', '00000000-0000-0000-0000-0000000000a7', 'Read', 'learning', 1, 'day', '2026-10-06', '2026-10-06T08:00:00Z', 1, null),
-  ('00000000-0000-0000-0000-00000000d704', '00000000-0000-0000-0000-0000000000a7', 'Stretch', 'health', 1, 'day', '2026-10-08', '2026-10-08T07:00:00Z', 1, null),
-  ('00000000-0000-0000-0000-00000000d705', '00000000-0000-0000-0000-0000000000a7', 'Budget', 'money', 1, 'month', '2026-09-01', '2026-09-01T08:00:00Z', 1, null),
-  ('00000000-0000-0000-0000-00000000d706', '00000000-0000-0000-0000-0000000000a7', 'Old', 'home', 1, 'day', '2026-09-28', '2026-09-28T08:00:00Z', 1, null);
+insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, week_start, archived_at, emoji) values
+  ('00000000-0000-0000-0000-00000000d701', '00000000-0000-0000-0000-0000000000a7', 'Walk', 'fitness', 1, 'day', '2026-09-28', '2026-09-28T08:00:00Z', 1, null, '⭐'),
+  ('00000000-0000-0000-0000-00000000d702', '00000000-0000-0000-0000-0000000000a7', 'Gym', 'fitness', 2, 'week', '2026-09-21', '2026-09-21T08:00:00Z', 1, null, '⭐'),
+  ('00000000-0000-0000-0000-00000000d703', '00000000-0000-0000-0000-0000000000a7', 'Read', 'learning', 1, 'day', '2026-10-06', '2026-10-06T08:00:00Z', 1, null, '⭐'),
+  ('00000000-0000-0000-0000-00000000d704', '00000000-0000-0000-0000-0000000000a7', 'Stretch', 'health', 1, 'day', '2026-10-08', '2026-10-08T07:00:00Z', 1, null, '⭐'),
+  ('00000000-0000-0000-0000-00000000d705', '00000000-0000-0000-0000-0000000000a7', 'Budget', 'work_money', 1, 'month', '2026-09-01', '2026-09-01T08:00:00Z', 1, null, '⭐'),
+  ('00000000-0000-0000-0000-00000000d706', '00000000-0000-0000-0000-0000000000a7', 'Old', 'home', 1, 'day', '2026-09-28', '2026-09-28T08:00:00Z', 1, null, '⭐');
 set local session_replication_role = origin;
 
 -- Walk is paused on Wednesday 7 Oct.
@@ -105,8 +105,8 @@ select is((select o->'days'->6->>'local_date'
 select tests.create_user('00000000-0000-0000-0000-0000000000d7', 'wk-d@example.com');
 update public.profiles set timezone = 'Europe/Rome', week_start = 1 where id = '00000000-0000-0000-0000-0000000000d7';
 set local session_replication_role = replica;
-insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, week_start) values
-  ('00000000-0000-0000-0000-00000000d7d1', '00000000-0000-0000-0000-0000000000d7', 'Walk', 'fitness', 1, 'day', '2026-10-19', '2026-10-19T06:00:00Z', 1);
+insert into public.habits (id, owner_id, title, category, target_count, period, starts_on, created_at, week_start, emoji) values
+  ('00000000-0000-0000-0000-00000000d7d1', '00000000-0000-0000-0000-0000000000d7', 'Walk', 'fitness', 1, 'day', '2026-10-19', '2026-10-19T06:00:00Z', 1, '⭐');
 set local session_replication_role = origin;
 -- Every day but Thursday 22 Oct; Sunday's check-in is at 00:30 local time (still summer time, 22:30 UTC Saturday).
 select private.check_in_impl('00000000-0000-0000-0000-00000000d7d1', '00000000-0000-0000-0000-0000000000d7', t)
