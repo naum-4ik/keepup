@@ -87,6 +87,31 @@ Icons come from `lucide-react` (rounded line style). **Kid habits** use picture 
 - **Confetti:** only for level-up and achievement unlocked, once each.
 - **Reduced motion:** with `prefers-reduced-motion`, keep the state change and drop the animation.
 
+## App icon
+
+A filled terracotta sprout on a peach square. It's the same sprout as the empty state, drawn bold enough to read at 16 px.
+
+| Element | Color |
+|---|---|
+| Square | peach `#FDE3D3`, edge `#F6D2BE` |
+| Sprout, stem, ground | terracotta `#B84F33` |
+
+Master artwork (`app/icon.svg`):
+
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#FDE3D3" stroke="#F6D2BE" stroke-width="1.5"/>
+  <path d="M20 51 L44 51" fill="none" stroke="#B84F33" stroke-width="5" stroke-linecap="round"/>
+  <path d="M31 51 C33 44 31 38 33 29" fill="none" stroke="#B84F33" stroke-width="5" stroke-linecap="round"/>
+  <path d="M31 38 C22 38 16 32 14 23 C23 22 30 28 31 38 Z" fill="#B84F33"/>
+  <path d="M33 31 C33 21 39 14 50 13 C51 23 44 30 33 31 Z" fill="#B84F33"/>
+</svg>
+```
+
+- **Every size comes from the master.** `app/favicon.ico` (16, 32, 48), `app/apple-icon.png` (180), and `public/icons/` (192, 512, maskable 512) are rendered from it by a script, never drawn by hand.
+- **The iOS icon is full-bleed; the OS rounds it.** `apple-icon.png` has no rounded corners and no edge.
+- **Maskable:** full-bleed peach, with the sprout at about 70% so it stays inside the safe zone.
+
 ## Voice
 
 Short, warm, direct. Second person. No exclamation-mark spam.
