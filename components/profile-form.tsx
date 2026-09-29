@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
+import { SaveButton } from "@/components/save-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ProfileFormState, ProfileFormValues } from "@/lib/profile-schema";
@@ -149,15 +149,8 @@ export function ProfileForm({ action, timezones, defaults, detectTimezone = fals
           {state.message}
         </p>
       )}
-      {state.status === "saved" && (
-        <p role="status" className="text-sm text-muted-foreground">
-          Saved.
-        </p>
-      )}
 
-      <Button type="submit" disabled={pending} className="h-11">
-        {pending ? "Saving…" : submitLabel}
-      </Button>
+      <SaveButton state={state} pending={pending} label={submitLabel} />
     </form>
   );
 }

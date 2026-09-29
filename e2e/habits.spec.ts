@@ -159,6 +159,10 @@ test.describe("Today check-ins", () => {
   });
 });
 
+// Pause, Edit details and Delete/Archive sit behind rows that open (<details>).
+const openSection = (page: import("@playwright/test").Page, name: string) =>
+  page.locator("summary").filter({ hasText: new RegExp(`^${name}`) }).click();
+
 test.describe("Habit detail", () => {
   test("the habit page shows this period's check-ins and can undo them", async ({ page }) => {
     await signUpAndOnboard(page);
@@ -180,11 +184,13 @@ test.describe("Habit detail", () => {
     await createHabit(page, { template: "Meditate" });
     await page.getByRole("link", { name: /Meditate/ }).click();
 
+    await openSection(page, "Pause");
     await page.getByRole("button", { name: "Pause habit" }).click();
     await expect(page.getByText(/^Paused from /)).toBeVisible();
     await page.goto("/today");
     await expect(page.getByRole("button", { name: "Paused: Meditate" })).toBeDisabled();
     await page.getByRole("link", { name: /Meditate/ }).click();
+    await openSection(page, "Paused");
     await page.getByRole("button", { name: "Resume" }).click();
     await expect(page.getByRole("button", { name: "Pause habit" })).toBeVisible();
   });
@@ -193,6 +199,7 @@ test.describe("Habit detail", () => {
     await signUpAndOnboard(page);
     await createHabit(page, { template: "Tidy up", tab: "Home" });
     await page.getByRole("link", { name: /Tidy up/ }).click();
+    await openSection(page, "Delete");
     await page.getByRole("button", { name: "Delete habit" }).click();
     const confirmDialog = page.getByRole("dialog");
     await expect(confirmDialog).toBeVisible();
@@ -204,7 +211,8 @@ test.describe("Habit detail", () => {
     await page.getByRole("button", { name: "Check in: Make the bed" }).click();
     await expect(page.getByRole("button", { name: "Done: Make the bed" })).toBeVisible();
     await page.getByRole("link", { name: /Make the bed/ }).click();
-    await expect(page.getByRole("button", { name: "Delete habit" })).toHaveCount(0);
+    await expect(page.locator("summary").filter({ hasText: /^Delete/ })).toHaveCount(0);
+    await openSection(page, "Archive");
     await page.getByRole("button", { name: "Archive habit" }).click();
     const archiveDialog = page.getByRole("dialog");
     await expect(archiveDialog).toBeVisible();
@@ -219,6 +227,7 @@ test.describe("Habit detail", () => {
     await signUpAndOnboard(page);
     await createHabit(page, { template: "Tidy up", tab: "Home" });
     await page.getByRole("link", { name: /Tidy up/ }).click();
+    await openSection(page, "Delete");
     await page.getByRole("button", { name: "Delete habit" }).click();
     const confirmDialog = page.getByRole("dialog");
     await expect(confirmDialog).toBeVisible();
@@ -232,6 +241,7 @@ test.describe("Habit detail", () => {
     await createHabit(page, { template: "Meditate" });
     await page.getByRole("link", { name: /Meditate/ }).click();
 
+    await openSection(page, "Pause");
     await page.getByRole("button", { name: "Set an end date" }).click();
     await page.getByRole("button", { name: "2 weeks" }).click();
     await page.getByRole("button", { name: "Pause habit" }).click();
@@ -242,9 +252,20 @@ test.describe("Habit detail", () => {
     await signUpAndOnboard(page);
     await createHabit(page, { template: "Work out" });
     await page.getByRole("link", { name: /Work out/ }).click();
+    await openSection(page, "Edit details");
     await page.getByLabel("Title").fill("Work out at home");
     await page.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByRole("status")).toHaveText("Saved.");
+    await expect(page.getByRole("status")).toHaveText("Saved");
     await expect(page.getByRole("heading", { name: "Work out at home" })).toBeVisible();
+  });
+
+  test("the page leads with today's check-in and offers a way back", async ({ page }) => {
+    await signUpAndOnboard(page);
+    await createHabit(page, { template: "Drink water" });
+    await page.getByRole("link", { name: /Drink water/ }).click();
+    await expect(page.getByRole("region", { name: "Today" })).toContainText("0 / 8 today");
+    await expect(page.getByRole("button", { name: "Pause habit" })).toBeHidden();
+    await page.getByRole("link", { name: "Today" }).first().click();
+    await expect(page).toHaveURL(/\/today$/);
   });
 });

@@ -131,4 +131,16 @@
   html {
     @apply font-sans;
   }
+  /* Tailwind 4 no longer gives buttons a pointer cursor; every tappable thing should show one. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary {
+    cursor: pointer;
+  }
+  /* One visible keyboard focus style for custom buttons, links and summaries. */
+  button:focus-visible,
+  a:focus-visible,
+  summary:focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
 }

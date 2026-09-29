@@ -5,6 +5,7 @@ import { StreakBadge } from "@/components/habits/streak-badge";
 import type { HabitSummary } from "@/lib/habits";
 import { describeProgress } from "@/lib/schedule";
 import { stateOf } from "@/lib/today";
+import { CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 
 export function HabitCard({ habit }: { habit: HabitSummary }) {
@@ -32,7 +33,7 @@ export function HabitCard({ habit }: { habit: HabitSummary }) {
           {showBar && (
             <span className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
               <span
-                className="block h-full rounded-full bg-[#3B82B8]"
+                className={cn("block h-full rounded-full bg-current", CATEGORIES[habit.category].iconClass)}
                 style={{ width: `${Math.min(100, (habit.done_count / habit.target_count) * 100)}%` }}
               />
             </span>

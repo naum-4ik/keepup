@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, signInWithMagicLink, uniqueEmail } from "./helpers/auth";
+import { completeOnboarding, signInWithMagicLink, signUpAndOnboard, uniqueEmail } from "./helpers/auth";
 
 test("signed-out visitors are sent to sign in", async ({ page }) => {
   await page.goto("/today");
@@ -55,7 +55,7 @@ test("settings changes show on the profile", async ({ page }) => {
   await page.goto("/profile/settings");
   await page.getByLabel("Daily reminder").selectOption("7");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status")).toHaveText("Saved.");
+  await expect(page.getByRole("status")).toHaveText("Saved");
 
   await page.goto("/profile");
   await expect(page.getByText("reminders at 07:00")).toBeVisible();
@@ -68,7 +68,7 @@ test("the first day of the week can be changed in settings", async ({ page }) =>
   await expect(page.getByLabel("Week starts on")).toHaveValue("0"); // detected from the browser locale (en-US)
   await page.getByLabel("Week starts on").selectOption("1");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status")).toHaveText("Saved.");
+  await expect(page.getByRole("status")).toHaveText("Saved");
   await page.reload();
   await expect(page.getByLabel("Week starts on")).toHaveValue("1");
 });
@@ -123,4 +123,18 @@ test("a signed-in user clicking a stale link still lands on Today", async ({ pag
 
   await page.goto("/?error=access_denied&error_code=otp_expired");
   await expect(page).toHaveURL(/\/today$/);
+});
+
+test("saving settings twice confirms both saves", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await page.goto("/profile/settings");
+  await page.getByLabel("Display name").fill("Bea");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("button", { name: "Saved" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeVisible({ timeout: 5000 });
+
+  await page.getByLabel("Display name").fill("Bee");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("button", { name: "Saved" })).toBeVisible();
+  await expect(page.getByRole("status")).toHaveText("Saved");
 });

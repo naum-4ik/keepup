@@ -19,11 +19,11 @@ const LABEL: Record<string, string> = {
 export function HistoryGrid({ cells, period }: { cells: HistoryCell[]; period: HabitPeriod }) {
   return (
     <div className="flex flex-col gap-3">
-      <ol className={cn("grid gap-1.5", period === "day" ? "grid-cols-7" : "grid-cols-6")}>
+      <ol className="flex flex-wrap gap-1.5">
         {cells.map((c) => {
           const text = `${formatLocalDate(c.period_start)}: ${LABEL[c.outcome]}`;
           return (
-            <li key={c.period_start} title={text} className={cn("aspect-square rounded-md", STYLE[c.outcome])}>
+            <li key={c.period_start} title={text} className={cn(period === "day" ? "size-7" : "size-9", "rounded-md", STYLE[c.outcome])}>
               <span className="sr-only">{text}</span>
             </li>
           );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Undo2 } from "lucide-react";
 import { undoCheckIn } from "@/app/(app)/habits/actions";
 import { Button } from "@/components/ui/button";
 import type { HabitPeriod } from "@/lib/habit-schema";
@@ -38,12 +39,13 @@ export function CheckInList({
       </p>
       <ul className="flex flex-col gap-2">
         {checkIns.map((c) => (
-          <li key={c.id} className="flex items-center justify-between rounded-xl bg-muted px-3 py-2 text-sm">
+          <li key={c.id} className="flex min-h-14 items-center justify-between rounded-xl bg-muted py-1.5 pr-1.5 pl-4 text-sm">
             <span>{time.format(new Date(c.created_at))}</span>
             <Button
               type="button"
-              variant="ghost"
-              className="h-11 px-4"
+              variant="outline"
+              className="h-11 gap-1.5 rounded-full px-4 text-sm hover:border-primary/60 hover:bg-accent hover:text-foreground"
+              aria-label={`Undo check-in at ${time.format(new Date(c.created_at))}`}
               disabled={pending}
               onClick={() =>
                 startTransition(async () => {
@@ -52,6 +54,7 @@ export function CheckInList({
                 })
               }
             >
+              <Undo2 aria-hidden className="size-4" />
               Undo
             </Button>
           </li>

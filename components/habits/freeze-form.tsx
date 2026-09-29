@@ -67,8 +67,7 @@ export function FreezeForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
-      <p className="text-sm text-muted-foreground">Going away? Pause it and your streak waits for you.</p>
-      <input type="hidden" name="startsOn" value={startsOn} />
+            <input type="hidden" name="startsOn" value={startsOn} />
       <input type="hidden" name="endsOn" value={endsOn ?? ""} />
 
       <fieldset className="flex flex-col gap-1.5">
@@ -110,8 +109,8 @@ export function FreezeForm({
       )}
 
       {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
-      <Button type="submit" variant="outline" className="h-11" disabled={pending}>
-        Pause habit
+      <Button type="submit" className="h-11" disabled={pending}>
+        {pending ? "Pausing…" : "Pause habit"}
       </Button>
     </form>
   );
