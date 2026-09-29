@@ -6,7 +6,6 @@ import { safeNextPath } from "@/lib/paths";
 import { signInWithGoogle } from "./actions";
 import { LoginForm } from "./login-form";
 import { GoogleIcon } from "@/components/google-icon";
-import { PasskeySignInButton } from "@/components/passkey-sign-in-button";
 
 export default async function LoginPage({
   searchParams,
@@ -35,7 +34,6 @@ export default async function LoginPage({
         <p className="text-sm text-muted-foreground">Habits, together.</p>
       </div>
       <div className="flex w-full max-w-sm flex-col gap-4 self-stretch rounded-2xl bg-card p-6 shadow-soft">
-        <PasskeySignInButton next={nextPath} withDivider={!googleEnabled} />
         {googleEnabled && (
           <>
             <form action={signInWithGoogle}>

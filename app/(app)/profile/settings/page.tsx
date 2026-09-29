@@ -1,4 +1,3 @@
-import { PasskeySettings } from "@/components/passkey-settings";
 import { ProfileForm } from "@/components/profile-form";
 import { getProfile } from "@/lib/auth";
 import { listTimezones } from "@/lib/timezones";
@@ -23,7 +22,6 @@ export default async function SettingsPage() {
           submitLabel="Save"
         />
       </div>
-      <PasskeySettings />
     </section>
   );
 }
