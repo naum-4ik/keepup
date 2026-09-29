@@ -17,7 +17,7 @@ export function AppHeader({ displayName }: { displayName: string }) {
       <Link
         href="/profile"
         aria-label="Profile"
-        className="flex size-8 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-foreground"
+        className="flex size-11 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-foreground hover:brightness-95"
       >
         {initial(displayName)}
       </Link>

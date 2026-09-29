@@ -218,6 +218,7 @@ test.describe("Habit detail", () => {
     await expect(archiveDialog).toBeVisible();
     await archiveDialog.getByRole("button", { name: "Archive", exact: true }).click();
     await expect(page).toHaveURL(/\/progress\?view=archived$/);
+    await expect(page.getByRole("link", { name: /Make the bed/ })).toBeVisible();
 
     await page.goto("/today");
     await expect(page.getByText("Make the bed")).toHaveCount(0);
@@ -268,4 +269,29 @@ test.describe("Habit detail", () => {
     await page.getByRole("link", { name: "Today" }).first().click();
     await expect(page).toHaveURL(/\/today$/);
   });
+});
+
+test("progress groups habits by category and lists archived ones", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createHabit(page, { template: "Read 20 min" });
+  await createHabit(page, { template: "Work out" });
+
+  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Progress" }).click();
+  await expect(page).toHaveURL(/\/progress$/);
+  await expect(page.getByRole("heading", { name: "Learning" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Fitness" })).toBeVisible();
+
+  await page.goto("/today");
+  await page.getByRole("button", { name: "Check in: Read 20 min" }).click();
+  await expect(page.getByRole("button", { name: "Done: Read 20 min" })).toBeVisible();
+  await page.getByRole("link", { name: /Read 20 min/ }).click();
+  await openSection(page, "Archive");
+  await page.getByRole("button", { name: "Archive habit" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Archive", exact: true }).click();
+
+  await expect(page).toHaveURL(/\/progress\?view=archived$/);
+  await expect(page.getByRole("link", { name: /Read 20 min/ })).toBeVisible();
+  await page.getByRole("link", { name: "Active" }).click();
+  await expect(page.getByRole("link", { name: /Read 20 min/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Work out/ })).toBeVisible();
 });
