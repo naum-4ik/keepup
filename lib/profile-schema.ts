@@ -1,7 +1,7 @@
 export const DISPLAY_NAME_MAX = 40;
 
-export type ProfileFormValues = { displayName: string; timezone: string; reminderHour: string };
-export type ProfileInput = { displayName: string; timezone: string; reminderHour: number };
+export type ProfileFormValues = { displayName: string; timezone: string; reminderHour: string; weekStart: string };
+export type ProfileInput = { displayName: string; timezone: string; reminderHour: number; weekStart: 0 | 1 };
 export type ProfileErrors = Partial<Record<keyof ProfileInput, string>>;
 export type ProfileFormState =
   | { status: "idle" }
@@ -13,6 +13,7 @@ export function readProfileForm(formData: FormData): ProfileFormValues {
     displayName: String(formData.get("displayName") ?? ""),
     timezone: String(formData.get("timezone") ?? ""),
     reminderHour: String(formData.get("reminderHour") ?? ""),
+    weekStart: String(formData.get("weekStart") ?? ""),
   };
 }
 
@@ -34,6 +35,11 @@ export function parseProfile(
     errors.reminderHour = "Pick an hour between 00:00 and 23:00.";
   }
 
+  if (values.weekStart !== "0" && values.weekStart !== "1") errors.weekStart = "Pick Sunday or Monday.";
+
   if (Object.keys(errors).length > 0) return { ok: false, errors };
-  return { ok: true, value: { displayName, timezone: values.timezone, reminderHour } };
+  return {
+    ok: true,
+    value: { displayName, timezone: values.timezone, reminderHour, weekStart: Number(values.weekStart) as 0 | 1 },
+  };
 }

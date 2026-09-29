@@ -15,6 +15,7 @@ export async function saveProfile(
       display_name: input.displayName,
       timezone: input.timezone,
       reminder_hour: input.reminderHour,
+      week_start: input.weekStart,
       ...(opts.markOnboarded ? { onboarded_at: new Date().toISOString() } : {}),
     })
     .eq("id", userId);
