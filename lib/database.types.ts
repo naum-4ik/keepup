@@ -23,7 +23,26 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "habits": {
+            "habit_freezes": {
+                  Row: {
+                    "created_at": string,"ends_on": string | null,"habit_id": string,"id": string,"starts_on": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"ends_on"?: string | null,"habit_id": string,"id"?: string,"starts_on": string
+                  }
+                  Update: {
+                    "created_at"?: string,"ends_on"?: string | null,"habit_id"?: string,"id"?: string,"starts_on"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "habit_freezes_habit_id_fkey"
+      columns: ["habit_id"]
+isOneToOne: false
+      referencedRelation: "habits"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"habits": {
                   Row: {
                     "archived_at": string | null,"category": Database["public"]['Enums']["habit_category"],"created_at": string,"id": string,"owner_id": string,"period": Database["public"]['Enums']["habit_period"],"starts_on": string,"target_count": number,"title": string
                   }
@@ -61,8 +80,25 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "is_valid_timezone":
+            "freeze_habit":
+{ Args: { "p_ends_on"?: string,"p_habit_id": string,"p_starts_on": string }; Returns: {
+              "created_at": string,
+"ends_on": string | null,
+"habit_id": string,
+"id": string,
+"starts_on": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "habit_freezes"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"is_valid_timezone":
 { Args: { "tz": string }; Returns: boolean
+                           },
+"unfreeze_habit":
+{ Args: { "p_habit_id": string }; Returns: undefined
                            }
           }
           Enums: {
