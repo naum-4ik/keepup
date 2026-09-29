@@ -50,7 +50,7 @@ update public.habits set emoji = '💀' where title = 'Paint';
 reset role;
 select is((select emoji from public.habits where title = 'Paint'), '🖌️', 'another user cannot change the emoji');
 select is(
-  (select emoji from private.habit_summaries('00000000-0000-0000-0000-0000000000e1', now()) where title = 'Budget'),
+  (select emoji from private.subject_summaries('00000000-0000-0000-0000-0000000000e1', now()) where title = 'Budget'),
   '💼', 'the private summaries carry the emoji too');
 
 select * from finish();
