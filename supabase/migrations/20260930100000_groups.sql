@@ -229,8 +229,8 @@ as $$
 declare
   v_row public.group_invites;
 begin
-  perform private.require_admin(p_group_id, p_user_id);
   perform 1 from public.groups g where g.id = p_group_id for update;
+  perform private.require_admin(p_group_id, p_user_id);
   select i.* into v_row from public.group_invites i
    where i.group_id = p_group_id and i.revoked_at is null and i.expires_at > p_now
    order by i.expires_at desc
@@ -333,9 +333,17 @@ language plpgsql
 set search_path = ''
 as $$
 begin
+  -- Serialise membership changes of one group (two admins removing each other at once).
+  perform 1 from public.groups g where g.id = p_group_id for update;
   perform private.require_admin(p_group_id, p_user_id);
   if p_target_id = p_user_id then
     raise exception 'keepup:use_leave' using errcode = 'P0001';
+  end if;
+  -- The group always keeps an admin.
+  if private.is_admin(p_group_id, p_target_id) and not exists (
+    select 1 from public.group_members m
+     where m.group_id = p_group_id and m.left_at is null and m.role = 'admin' and m.user_id <> p_target_id) then
+    raise exception 'keepup:last_admin' using errcode = 'P0001';
   end if;
   update public.group_members set left_at = p_now
    where group_id = p_group_id and user_id = p_target_id and left_at is null;
@@ -351,8 +359,8 @@ language plpgsql
 set search_path = ''
 as $$
 begin
-  perform private.require_admin(p_group_id, p_user_id);
   perform 1 from public.groups g where g.id = p_group_id for update;
+  perform private.require_admin(p_group_id, p_user_id);
   if not private.is_member(p_group_id, p_target_id) then
     raise exception 'keepup:member_not_found' using errcode = 'P0002';
   end if;
@@ -509,7 +517,7 @@ create function public.set_member_role(p_group_id uuid, p_user_id uuid, p_role t
 returns void language plpgsql security definer set search_path = '' as $$
 begin
   if auth.uid() is null then raise exception 'keepup:not_authenticated' using errcode = '42501'; end if;
-  if p_role not in ('admin', 'member') then raise exception 'keepup:invalid_role' using errcode = 'P0001'; end if;
+  if p_role is null or p_role not in ('admin', 'member') then raise exception 'keepup:invalid_role' using errcode = 'P0001'; end if;
   perform private.set_member_role_impl(auth.uid(), p_group_id, p_user_id, p_role);
 end;
 $$;

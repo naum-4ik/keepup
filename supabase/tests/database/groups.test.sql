@@ -1,10 +1,11 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(38);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna Levi"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000c1', 'carol@example.com', '{"full_name":"Carol"}');
+select tests.create_user('00000000-0000-0000-0000-0000000000f1', 'fay@example.com', '{"full_name":"Fay"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000e1', 'eve@example.com', '{"full_name":"Eve"}');
 update public.profiles set timezone = 'Asia/Jerusalem', week_start = 0 where id = '00000000-0000-0000-0000-0000000000a1';
 
@@ -88,6 +89,10 @@ select tests.authenticate_as('00000000-0000-0000-0000-0000000000e1');
 select is((select count(*)::int from public.group_members), 3, 'a member reads the member list');
 select is_empty($$select * from public.group_invites$$, 'a member who is not an admin cannot read invite tokens');
 reset role;
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
+select throws_ok($$select public.set_member_role((select v::uuid from t where k = 'g'), '00000000-0000-0000-0000-0000000000e1', null)$$,
+  'P0001', 'keepup:invalid_role', 'a null role is refused');
+reset role;
 
 -- Deleting: the last adult with children must confirm
 set local session_replication_role = replica;
@@ -96,6 +101,19 @@ values ('00000000-0000-0000-0000-00000000c0de', 'Mary', 'child', (select v::uuid
 set local session_replication_role = origin;
 select throws_ok($$select private.delete_group_impl('00000000-0000-0000-0000-0000000000b1', (select v::uuid from t where k = 'g'), false)$$,
   'P0001', 'keepup:children_would_be_deleted', 'deleting a group with children needs confirmation');
+
+-- Deleting an auth user deletes the adult's profile and, through it, their habits and check-ins.
+insert into public.habits (owner_id, title, category, target_count, period, starts_on)
+values ('00000000-0000-0000-0000-0000000000f1', 'Read', 'learning', 1, 'day', current_date);
+insert into public.check_ins (habit_id, user_id, local_date, period_start)
+select id, owner_id, current_date, current_date from public.habits where owner_id = '00000000-0000-0000-0000-0000000000f1';
+delete from auth.users where id = '00000000-0000-0000-0000-0000000000f1';
+select is((select count(*)::int from public.profiles where id = '00000000-0000-0000-0000-0000000000f1'), 0,
+  'deleting an auth user deletes the profile');
+select is((select count(*)::int from public.habits where owner_id = '00000000-0000-0000-0000-0000000000f1'), 0,
+  'and their habits');
+select is((select count(*)::int from public.check_ins where user_id = '00000000-0000-0000-0000-0000000000f1'), 0,
+  'and their check-ins');
 
 select * from finish();
 rollback;
