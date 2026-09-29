@@ -26,8 +26,10 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
             href={t.href}
             aria-current={t.current ? "page" : undefined}
             className={cn(
-              "rounded-full px-4 py-2 text-sm font-semibold",
-              t.current ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground shadow-soft",
+              "flex h-11 items-center rounded-full px-4 text-sm font-semibold",
+              t.current
+                ? "bg-primary text-primary-foreground"
+                : "bg-card text-muted-foreground shadow-soft hover:bg-muted hover:text-foreground",
             )}
           >
             {t.label}
@@ -39,7 +41,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">
           <p className="text-sm text-muted-foreground">{showArchived ? "No archived habits." : "No habits yet."}</p>
           {!showArchived && (
-            <Button asChild>
+            <Button asChild className="h-11">
               <Link href="/habits/new">Add a habit</Link>
             </Button>
           )}

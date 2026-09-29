@@ -2,27 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarCheck, ChartColumn, Plus, User, type LucideIcon } from "lucide-react";
+import { CalendarCheck, ChartColumn, Plus, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
 const TODAY: NavItem = { href: "/today", label: "Today", icon: CalendarCheck };
-const PROGRESS: NavItem = { href: "/progress", label: "Progress", icon: ChartColumn };
 const PRIMARY: NavItem = { href: "/habits/new", label: "New habit", icon: Plus };
-// Profile is pinned to the corner (not part of the centred trio) so Today/＋/Progress keep an
-// even flex-1/flex-1 split either side of the ＋. M3 adds Groups.
-const PROFILE: NavItem = { href: "/profile", label: "Profile", icon: User };
+const PROGRESS: NavItem = { href: "/progress", label: "Progress", icon: ChartColumn };
+// Three equal flex-1 slots: Today, ＋, Progress. Profile lives in the header avatar instead.
+// M3 turns this into five slots: Today, Progress, ＋, Groups, Profile.
 
-function NavLink({ href, label, icon: Icon, active, className }: NavItem & { active: boolean; className?: string }) {
+function NavLink({ href, label, icon: Icon, active }: NavItem & { active: boolean }) {
   return (
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex min-h-11 flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-semibold",
-        active ? "text-primary" : "text-muted-foreground",
-        className,
+        "flex min-h-11 w-full flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-xs font-semibold",
+        active ? "text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >
       <Icon className="size-5" aria-hidden />
@@ -41,25 +39,22 @@ export function BottomNav() {
       className="fixed inset-x-0 bottom-0 rounded-t-[24px] bg-card shadow-[0_-1px_2px_rgb(61_44_34_/_0.06),0_-4px_12px_rgb(61_44_34_/_0.05)]"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <ul className="relative mx-auto flex max-w-md items-center">
+      <ul className="mx-auto flex max-w-md items-center">
         <li className="flex flex-1 justify-center">
-          <NavLink {...TODAY} active={isActive(TODAY.href)} className="w-full" />
+          <NavLink {...TODAY} active={isActive(TODAY.href)} />
         </li>
-        <li className="flex shrink-0 justify-center">
+        <li className="flex flex-1 justify-center">
           <Link
             href={PRIMARY.href}
             aria-label={PRIMARY.label}
             aria-current={isActive(PRIMARY.href) ? "page" : undefined}
-            className="my-1.5 flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft"
+            className="my-1.5 flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-soft hover:brightness-90"
           >
             <PRIMARY.icon className="size-6" strokeWidth={2.5} aria-hidden />
           </Link>
         </li>
         <li className="flex flex-1 justify-center">
-          <NavLink {...PROGRESS} active={isActive(PROGRESS.href)} className="px-4" />
-        </li>
-        <li className="absolute top-1/2 right-1 -translate-y-1/2">
-          <NavLink {...PROFILE} active={isActive(PROFILE.href)} className="min-w-11 px-1" />
+          <NavLink {...PROGRESS} active={isActive(PROGRESS.href)} />
         </li>
       </ul>
     </nav>
