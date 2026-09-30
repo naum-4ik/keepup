@@ -23,7 +23,7 @@ export default async function LoginPage({
 
   return (
     <AuthCard
-      title="Welcome to Keepup"
+      title="Welcome back"
       subtitle="Keep up your habits, and do the ones that matter with your family."
       next={nextPath}
       googleEnabled={googleEnabled}

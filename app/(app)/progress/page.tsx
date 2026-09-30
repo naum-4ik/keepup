@@ -7,9 +7,12 @@ import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
 import { dayDetail } from "@/lib/day-detail";
 import { getFinishedIds, getHabitSummaries, getMyCheckIns, getWeekOverview } from "@/lib/habits";
 import { StartAgainButton } from "@/components/habits/start-again-button";
+import type { HabitPeriod } from "@/lib/habit-schema";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { hasWeekData } from "@/lib/week-overview";
+
+const UNIT: Record<HabitPeriod, [string, string]> = { day: ["day", "days"], week: ["week", "weeks"], month: ["month", "months"] };
 
 export default async function ProgressPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const { view } = await searchParams;
@@ -36,7 +39,8 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
       <h1 className="text-xl font-bold">Progress</h1>
       {!showArchived && overview && hasWeekData(overview) && <WeekCard overview={overview} days={days} />}
 
-      <nav aria-label="Habit list" className="flex gap-2">
+      {/* The same segmented look as Inbox's tabs: filled pills read as primary buttons. */}
+      <nav aria-label="Habit list" className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
         {[
           { href: "/progress", label: "Active", current: !showArchived },
           { href: "/progress?view=finished", label: "Finished", current: showFinished },
@@ -47,10 +51,8 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
             href={t.href}
             aria-current={t.current ? "page" : undefined}
             className={cn(
-              "flex h-11 items-center rounded-full px-4 text-sm font-semibold",
-              t.current
-                ? "bg-primary text-primary-foreground"
-                : "bg-card text-muted-foreground shadow-soft hover:bg-muted hover:text-foreground",
+              "flex min-h-11 items-center justify-center rounded-lg text-sm font-semibold",
+              t.current ? "bg-card text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground",
             )}
           >
             {t.label}
@@ -72,13 +74,13 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
       ) : (
         CATEGORY_ORDER.filter((c) => habits.some((h) => h.category === c)).map((c) => (
           <section key={c} className="flex flex-col gap-2">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">{CATEGORIES[c].label}</h2>
+            <h2 className="text-sm font-bold text-muted-foreground">{CATEGORIES[c].label}</h2>
             <ul className="flex flex-col gap-2">
               {habits
                 .filter((h) => h.category === c)
                 .map((h) => (
-                  <li key={h.habit_id}>
-                    <Link href={`/habits/${h.habit_id}`} className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-soft hover:bg-muted/60">
+                  <li key={h.habit_id} className="flex items-center rounded-2xl bg-card shadow-soft">
+                    <Link href={`/habits/${h.habit_id}`} className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-3.5 hover:bg-muted/60">
                       <HabitEmoji category={h.category} emoji={h.emoji} />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="flex min-w-0 items-center gap-2">
@@ -90,7 +92,8 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                           )}
                         </span>
                         <span className="text-sm text-muted-foreground">
-                          {describeSchedule(h.target_count, h.period)} · best {h.best_streak}
+                          {describeSchedule(h.target_count, h.period)}
+                          {h.best_streak > 0 && ` · best ${h.best_streak} ${UNIT[h.period][h.best_streak === 1 ? 0 : 1]}`}
                         </span>
                         {cellsFor.has(h.habit_id) && (
                           <span className="pt-1.5">
@@ -100,7 +103,11 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                       </span>
                       <StreakBadge count={h.current_streak} />
                     </Link>
-                    {showFinished && <StartAgainButton habitId={h.habit_id} title={h.title} />}
+                    {showFinished && (
+                      <span className="shrink-0 pr-2">
+                        <StartAgainButton habitId={h.habit_id} title={h.title} />
+                      </span>
+                    )}
                   </li>
                 ))}
             </ul>

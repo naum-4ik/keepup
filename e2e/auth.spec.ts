@@ -85,6 +85,7 @@ test("sign-up explains mistakes and links to sign-in for an existing email", asy
   await page.getByLabel("Password", { exact: true }).fill("short");
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page.locator("#signup-error")).toHaveText("Use at least 8 characters.");
+  await expect(page.getByLabel("Password", { exact: true })).toHaveValue("short"); // kept, to fix in place
 
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(TEST_PASSWORD);
@@ -96,7 +97,7 @@ test("sign-up explains mistakes and links to sign-in for an existing email", asy
 
 test("sign-in and sign-up link to each other, and the password can be shown", async ({ page }) => {
   await page.goto("/login");
-  await expect(page.getByRole("heading", { name: "Welcome to Keepup" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
   await page.getByRole("link", { name: "Sign up" }).click();
   await expect(page).toHaveURL(/\/signup$/);
   await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();

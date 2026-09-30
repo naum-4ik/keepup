@@ -248,7 +248,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                   <DeleteHabitButton habitId={h.habit_id} title={h.title} />
                 </Manage>
               ) : (
-                <Manage title="Archive" hint="Keeps its history, leaves Today" danger>
+                <Manage title="Archive" hint="Keeps its history, leaves Today">
                   <ArchiveHabitButton habitId={h.habit_id} title={h.title} />
                 </Manage>
               )}

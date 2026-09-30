@@ -56,7 +56,8 @@ export function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; kid?: 
           <span
             className={cn(
               "text-sm",
-              everyone ? "font-semibold text-[#4F8A5B]" : progress.atRisk ? "font-semibold text-[#9A6A10]" : "text-muted-foreground",
+              // "1 day left" stays muted: honey means "waiting for approval" (docs/design.md), and no countdown pressure.
+              everyone ? "font-semibold text-[#4F8A5B]" : "text-muted-foreground",
             )}
           >
             {everyone ? "Everyone did it ✓" : progress.text}
