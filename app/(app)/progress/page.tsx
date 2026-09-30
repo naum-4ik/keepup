@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
 import { dayDetail } from "@/lib/day-detail";
 import { getFinishedIds, getHabitSummaries, getMyCheckIns, getWeekOverview } from "@/lib/habits";
+import { RestoreHabitButton } from "@/components/habits/restore-habit-button";
 import { StartAgainButton } from "@/components/habits/start-again-button";
 import type { HabitPeriod } from "@/lib/habit-schema";
 import { describeSchedule } from "@/lib/schedule";
@@ -106,6 +107,11 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                     {showFinished && (
                       <span className="shrink-0 pr-2">
                         <StartAgainButton habitId={h.habit_id} title={h.title} />
+                      </span>
+                    )}
+                    {showArchived && !showFinished && (!h.group_id || h.my_role === "admin") && (
+                      <span className="shrink-0 pr-2">
+                        <RestoreHabitButton habitId={h.habit_id} title={h.title} />
                       </span>
                     )}
                   </li>

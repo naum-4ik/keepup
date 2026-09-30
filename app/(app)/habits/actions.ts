@@ -157,6 +157,17 @@ export async function archiveHabit(habitId: string): Promise<FormActionState> {
   redirect("/progress?view=archived");
 }
 
+// Restore from Archived (not Finished): back on Today with its history; the archived days count as
+// skipped, never missed (the RPC settles them).
+export async function restoreHabit(habitId: string): Promise<ActionResult> {
+  if (!isUuid(habitId)) return NOT_FOUND;
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("restore_habit", { p_habit_id: habitId });
+  if (error) return { ok: false, message: habitErrorMessage(error) };
+  refresh(habitId);
+  redirect("/today");
+}
+
 export async function deleteHabit(habitId: string): Promise<FormActionState> {
   if (!isUuid(habitId)) return { status: "error", message: "That habit isn't available." };
   const { supabase } = await requireUser();

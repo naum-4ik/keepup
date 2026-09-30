@@ -19,7 +19,8 @@ import { CATEGORIES } from "@/lib/categories";
 import { todayIn } from "@/lib/dates";
 import { isUuid, type HabitPeriod } from "@/lib/habit-schema";
 import { getGroupDetail } from "@/lib/groups";
-import { getHabitDetail, getHabitEnds, type HabitFreeze } from "@/lib/habits";
+import { getFinishedIds, getHabitDetail, getHabitEnds, type HabitFreeze } from "@/lib/habits";
+import { RestoreHabitButton } from "@/components/habits/restore-habit-button";
 import { EndControl } from "@/components/habits/end-control";
 import { endLabel, endProgress } from "@/lib/habit-end";
 import { formatLocalDate } from "@/lib/dates";
@@ -87,6 +88,8 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const endsOn = (await getHabitEnds([h.habit_id])).get(h.habit_id) ?? null;
   const endNow = endsOn ? endProgress(h.starts_on, endsOn, today, h.period) : null;
   const archived = Boolean(h.archived_at);
+  // Finished habits use Start again (Progress → Finished); only plain archived ones restore.
+  const restorable = archived && canManage && !(await getFinishedIds()).has(h.habit_id);
   const progress = describeProgress({
     targetCount: h.target_count,
     period: h.period,
@@ -133,6 +136,13 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
           </p>
         </div>
       </header>
+
+      {restorable && (
+        <Card title="Archived">
+          <p className="text-sm text-muted-foreground">Restore it to put it back on Today. The days it was archived don&apos;t count against you.</p>
+          <RestoreHabitButton habitId={h.habit_id} title={h.title} />
+        </Card>
+      )}
 
       {!archived && (
         <Card title={PERIOD_TITLE[h.period]}>
