@@ -15,6 +15,15 @@ describe("habitErrorMessage", () => {
     expect(habitErrorMessage({ message: "keepup:invite_invalid" })).toMatch(/expired/);
   });
 
+  it("maps end and range rules", () => {
+    expect(habitErrorMessage({ message: "keepup:end_passed" })).toMatch(/has ended, so its end can't change/);
+    expect(habitErrorMessage({ message: "keepup:bad_range" })).toBe("Pick a valid date range (up to two months).");
+    expect(
+      habitErrorMessage({ code: "23514", message: 'new row for relation "habits" violates check constraint "habits_ends_after_start_check"' }),
+    ).toBe("The last day can't be before the first day.");
+    expect(habitErrorMessage({ code: "23514", message: 'violates check constraint "something_else"' })).toBe(GENERIC_ERROR);
+  });
+
   it("falls back to a generic message", () => {
     expect(habitErrorMessage({ message: "connection reset" })).toBe(GENERIC_ERROR);
     expect(habitErrorMessage(null)).toBe(GENERIC_ERROR);

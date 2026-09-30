@@ -41,6 +41,8 @@ const MESSAGES: Record<string, string> = {
   end_too_early: "The end can move later or be removed, not earlier.",
   habit_ended: "This habit has ended. Keep going or finish it from Today.",
   habit_not_ended: "This habit hasn't ended yet.",
+  end_passed: "This habit has ended, so its end can't change. Keep going or finish it from Today.",
+  bad_range: "Pick a valid date range (up to two months).",
   not_archived: "This habit is already active.",
   habit_finished: "This habit is finished. Use Start again instead.",
   already_nudged: "You've already nudged them about this today.",
@@ -53,7 +55,16 @@ export function errorCode(error: { message?: string } | null | undefined): strin
   return error?.message?.match(/keepup:([a-z_]+)/)?.[1];
 }
 
-export function habitErrorMessage(error: { message?: string } | null | undefined): string {
+// Check constraints (23514) aren't keepup: codes; the ones a person can hit get their own copy.
+const CONSTRAINTS: Record<string, string> = {
+  habits_ends_after_start_check: "The last day can't be before the first day.",
+};
+
+export function habitErrorMessage(error: { message?: string; code?: string } | null | undefined): string {
+  if (error?.code === "23514" || error?.message?.includes("violates check constraint")) {
+    const name = Object.keys(CONSTRAINTS).find((c) => error.message?.includes(c));
+    if (name) return CONSTRAINTS[name];
+  }
   const code = errorCode(error);
   return (code && MESSAGES[code]) || GENERIC_ERROR;
 }
