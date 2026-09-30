@@ -9,12 +9,18 @@ import { DeleteHabitButton } from "@/components/habits/delete-habit-button";
 import { FreezeForm } from "@/components/habits/freeze-form";
 import { HabitDetailsForm } from "@/components/habits/habit-details-form";
 import { HistoryGrid } from "@/components/habits/history-grid";
+import { LiveRefresh } from "@/components/habits/live-refresh";
+import { MEMBER_STATUS_LABEL, MemberAvatar } from "@/components/habits/member-status-row";
+import { PauseMeForm } from "@/components/habits/pause-me-form";
 import { getProfile } from "@/lib/auth";
 import { CATEGORIES } from "@/lib/categories";
 import { todayIn } from "@/lib/dates";
 import { isUuid, type HabitPeriod } from "@/lib/habit-schema";
-import { getHabitDetail } from "@/lib/habits";
-import { checkInState, describeProgress, describeSchedule } from "@/lib/schedule";
+import { getGroupDetail } from "@/lib/groups";
+import { getHabitDetail, type HabitFreeze } from "@/lib/habits";
+import { describeProgress, describeSchedule } from "@/lib/schedule";
+import { memberStatus, membersOf } from "@/lib/today-sections";
+import { stateOf } from "@/lib/today";
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -45,21 +51,34 @@ const UNIT: Record<HabitPeriod, [string, string]> = { day: ["day", "days"], week
 const unit = (n: number, period: HabitPeriod) => UNIT[period][n === 1 ? 0 : 1];
 const PERIOD_TITLE: Record<HabitPeriod, string> = { day: "Today", week: "This week", month: "This month" };
 
+const covers = (f: HabitFreeze, day: string) => f.starts_on <= day && (!f.ends_on || f.ends_on >= day);
+// The pause to show: the current one (when paused now), else the next scheduled one.
+const shownFreeze = (freezes: HabitFreeze[], today: string, pausedNow: boolean) =>
+  (pausedNow ? freezes.find((f) => covers(f, today)) : freezes.find((f) => f.starts_on > today)) ?? null;
+
 export default async function HabitPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [{ profile }, detail] = await Promise.all([getProfile(), getHabitDetail(id)]);
+  const [{ profile, userId }, detail] = await Promise.all([getProfile(), getHabitDetail(id)]);
   if (!detail) notFound();
 
   const { summary: h, history, freezes, checkIns, totalCheckIns } = detail;
-  const today = todayIn(profile.timezone);
-  const weekStart = profile.week_start === 0 ? 0 : 1;
-  // "Paused now" comes from the summary (the same rule that gates check-ins); otherwise show the
-  // next scheduled pause, if any.
-  const activeFreeze =
-    (h.frozen
-      ? freezes.find((f) => f.starts_on <= today && (!f.ends_on || f.ends_on >= today))
-      : freezes.find((f) => f.starts_on > today)) ?? null;
+  const members = membersOf(h);
+  // A group habit runs on its group's calendar (time zone and week start).
+  const group = h.group_id ? await getGroupDetail(h.group_id) : null;
+  const today = todayIn(group?.timezone ?? profile.timezone);
+  const weekStart = (group?.week_start ?? profile.week_start) === 0 ? 0 : 1;
+  const wholeFreezes = freezes.filter((f) => !f.user_id);
+  const myFreezes = freezes.filter((f) => f.user_id === userId);
+  const me = members?.find((m) => m.profile_id === userId);
+  // "Paused now" comes from the summary (the same rule that gates check-ins); for a group habit the
+  // summary's `frozen` also covers the viewer's own pause, so the whole-habit one is read from its rows.
+  const wholePaused = members ? wholeFreezes.some((f) => covers(f, today)) : h.frozen;
+  const activeFreeze = shownFreeze(wholeFreezes, today, wholePaused);
+  const myFreeze = shownFreeze(myFreezes, today, Boolean(me?.paused));
+  // Only the owner of a private habit, or an admin of a group habit, edits, pauses it for everyone,
+  // archives or deletes it (RLS and the RPCs enforce the same).
+  const canManage = !h.group_id || h.my_role === "admin";
   const archived = Boolean(h.archived_at);
   const progress = describeProgress({
     targetCount: h.target_count,
@@ -72,7 +91,8 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
     startsOn: h.starts_on,
   });
 
-  const isDone = h.done_count >= h.target_count;
+  const everyone = Boolean(members && h.group_done);
+  const isDone = h.done_count >= h.target_count || everyone;
 
   return (
     <section className="flex flex-col gap-4 pt-2 pb-6">
@@ -86,7 +106,9 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
         <div className="flex min-w-0 flex-col">
           <h1 className="truncate text-xl font-bold">{h.title}</h1>
           <p className="text-sm text-muted-foreground">
-            {describeSchedule(h.target_count, h.period)} · {CATEGORIES[h.category].label}
+            {h.group_id
+              ? `${h.group_name} · ${describeSchedule(h.target_count, h.period)}${h.requires_approval ? " · needs approval" : ""}`
+              : `${describeSchedule(h.target_count, h.period)} · ${CATEGORIES[h.category].label}`}
             {archived && " · Archived"}
           </p>
         </div>
@@ -96,7 +118,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
         <Card title={PERIOD_TITLE[h.period]}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 flex-col gap-1.5">
-              <p className={isDone ? "font-bold text-[#4F8A5B]" : "font-bold"}>{progress.text}</p>
+              <p className={isDone ? "font-bold text-[#4F8A5B]" : "font-bold"}>{everyone ? "Everyone did it ✓" : progress.text}</p>
               {h.target_count > 1 && (
                 <div className="h-2 w-40 overflow-hidden rounded-full bg-muted" aria-hidden>
                   <div className={`h-full rounded-full bg-current ${CATEGORIES[h.category].iconClass}`} style={{ width: `${Math.min(100, (h.done_count / h.target_count) * 100)}%` }} />
@@ -107,17 +129,32 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
               habitId={h.habit_id}
               title={h.title}
               multi={h.target_count > 1}
-              state={checkInState({
-                targetCount: h.target_count,
-                period: h.period,
-                doneCount: h.done_count,
-                checkedInToday: h.checked_in_today,
-                frozen: h.frozen,
-                notStarted: h.not_started,
-              })}
+              state={stateOf(h)}
             />
           </div>
           <CheckInList habitId={h.habit_id} checkIns={checkIns} timeZone={profile.timezone} period={h.period} />
+        </Card>
+      )}
+
+      {members && !archived && (
+        <Card title="Together">
+          <ul className="flex flex-col gap-2">
+            {members.map((m) => {
+              const status = memberStatus(m, h.target_count);
+              return (
+                <li key={m.profile_id} className="flex min-h-11 items-center gap-3">
+                  <MemberAvatar member={m} status={status} size="md" />
+                  <span className="min-w-0 flex-1 truncate font-semibold">
+                    {m.name}
+                    {m.profile_id === userId && <span className="font-normal text-muted-foreground"> (you)</span>}
+                  </span>
+                  <span className="text-sm text-muted-foreground">{MEMBER_STATUS_LABEL[status]}</span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="text-sm font-semibold">Group streak 🔥 {h.current_streak}</p>
+          {/* Nudge and Cheer arrive with Task 9. */}
         </Card>
       )}
 
@@ -146,35 +183,55 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
 
       {!archived && (
         <section aria-label="Manage habit" className="overflow-hidden rounded-2xl bg-card shadow-soft">
-          <Manage
-            title={h.frozen ? "Paused" : activeFreeze ? "Pause scheduled" : "Pause"}
-            hint={activeFreeze ? "Resume or cancel the pause" : "Going away? Your streak waits for you"}
-          >
-            <FreezeForm habitId={h.habit_id} today={today} weekStart={weekStart} activeFreeze={activeFreeze} paused={h.frozen} />
-          </Manage>
-          <Manage title="Edit details" hint={totalCheckIns === 0 ? "Title, emoji, category and start date" : "Title, emoji and category"}>
-            <HabitDetailsForm
-              habitId={h.habit_id}
-              title={h.title}
-              emoji={h.emoji}
-              category={h.category}
-              startsOn={h.starts_on}
-              canEditStart={totalCheckIns === 0}
-              today={today}
-              weekStart={weekStart}
-            />
-          </Manage>
-          {totalCheckIns === 0 ? (
-            <Manage title="Delete" hint="It has no check-ins yet, so nothing is lost" danger>
-              <DeleteHabitButton habitId={h.habit_id} title={h.title} />
+          {members && (
+            <Manage
+              title="Pause just me"
+              hint={myFreeze ? (me?.paused ? "You're paused. Resume any time" : "Your pause is scheduled") : "Away for a while? The others carry on"}
+            >
+              <PauseMeForm habitId={h.habit_id} today={today} weekStart={weekStart} activeFreeze={myFreeze} paused={Boolean(me?.paused)} />
             </Manage>
-          ) : (
-            <Manage title="Archive" hint="Keeps its history, leaves Today" danger>
-              <ArchiveHabitButton habitId={h.habit_id} title={h.title} />
-            </Manage>
+          )}
+          {canManage && (
+            <>
+              <Manage
+                title={members ? "Pause for everyone" : wholePaused ? "Paused" : activeFreeze ? "Pause scheduled" : "Pause"}
+                hint={activeFreeze ? "Resume or cancel the pause" : "Going away? Your streak waits for you"}
+              >
+                <FreezeForm
+                  habitId={h.habit_id}
+                  today={today}
+                  weekStart={weekStart}
+                  activeFreeze={activeFreeze}
+                  paused={wholePaused}
+                  submitLabel={members ? "Pause for everyone" : undefined}
+                />
+              </Manage>
+              <Manage title="Edit details" hint={totalCheckIns === 0 ? "Title, emoji, category and start date" : "Title, emoji and category"}>
+                <HabitDetailsForm
+                  habitId={h.habit_id}
+                  title={h.title}
+                  emoji={h.emoji}
+                  category={h.category}
+                  startsOn={h.starts_on}
+                  canEditStart={totalCheckIns === 0}
+                  today={today}
+                  weekStart={weekStart}
+                />
+              </Manage>
+              {totalCheckIns === 0 ? (
+                <Manage title="Delete" hint="It has no check-ins yet, so nothing is lost" danger>
+                  <DeleteHabitButton habitId={h.habit_id} title={h.title} />
+                </Manage>
+              ) : (
+                <Manage title="Archive" hint="Keeps its history, leaves Today" danger>
+                  <ArchiveHabitButton habitId={h.habit_id} title={h.title} />
+                </Manage>
+              )}
+            </>
           )}
         </section>
       )}
+      {h.group_id && <LiveRefresh table="check_ins" filter={`habit_id=eq.${h.habit_id}`} />}
     </section>
   );
 }

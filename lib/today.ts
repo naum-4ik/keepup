@@ -8,6 +8,7 @@ type TodayHabit = {
   checked_in_today: boolean;
   frozen: boolean;
   not_started: boolean;
+  pending_count?: number | null;
 };
 
 export const stateOf = (h: TodayHabit): CheckInState =>
@@ -18,6 +19,7 @@ export const stateOf = (h: TodayHabit): CheckInState =>
     checkedInToday: h.checked_in_today,
     frozen: h.frozen,
     notStarted: h.not_started,
+    pendingCount: h.pending_count ?? 0,
   });
 
 // Today reads top to bottom as: what's left to do, what's done, what isn't active yet
@@ -26,7 +28,7 @@ export function groupForToday<T extends TodayHabit>(habits: T[]): { todo: T[]; d
   const groups = { todo: [] as T[], done: [] as T[], later: [] as T[] };
   for (const h of habits) {
     const s = stateOf(h);
-    groups[s === "open" ? "todo" : s === "done" || s === "checked-today" ? "done" : "later"].push(h);
+    groups[s === "open" ? "todo" : s === "done" || s === "pending" || s === "checked-today" ? "done" : "later"].push(h);
   }
   return groups;
 }

@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 const LABEL: Record<CheckInState, string> = {
   open: "Check in",
   done: "Done",
+  pending: "Waiting for approval",
   "checked-today": "Checked in today",
   frozen: "Paused",
   "not-started": "Starts later",
@@ -33,7 +34,7 @@ export function CheckInButton({
   // multi-count habit remounts the node and replays the bounce, even if the previous one is still playing.
   const [burst, setBurst] = useState(0);
   const celebrateTimeout = useRef<number | null>(null);
-  const Icon = state === "frozen" ? Snowflake : state === "not-started" ? Clock : state === "open" && multi ? Plus : Check;
+  const Icon = state === "frozen" ? Snowflake : state === "not-started" || state === "pending" ? Clock : state === "open" && multi ? Plus : Check;
 
   useEffect(() => {
     return () => {
@@ -73,6 +74,7 @@ export function CheckInButton({
           celebrating && "animate-checkin",
           // Finishing check-in: the target was just reached.
           celebrating && state === "done" && "motion-safe:shadow-[0_0_0_6px_rgb(79_138_91_/_0.18)]",
+          state === "pending" && "border-[#D4A017] text-[#9A6A10]",
           state === "checked-today" && "border-[#4F8A5B] text-[#4F8A5B]",
           state === "frozen" && "border-border text-[#5B8DB8]",
           state === "not-started" && "border-border text-muted-foreground",

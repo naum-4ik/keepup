@@ -63,7 +63,14 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                     <Link href={`/habits/${h.habit_id}`} className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-soft hover:bg-muted/60">
                       <HabitEmoji category={h.category} emoji={h.emoji} />
                       <span className="flex min-w-0 flex-1 flex-col">
-                        <span className="truncate font-bold">{h.title}</span>
+                        <span className="flex min-w-0 items-center gap-2">
+                          <span className="truncate font-bold">{h.title}</span>
+                          {h.group_name && (
+                            <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">
+                              {h.group_name}
+                            </span>
+                          )}
+                        </span>
                         <span className="text-sm text-muted-foreground">
                           {describeSchedule(h.target_count, h.period)} · best {h.best_streak}
                         </span>

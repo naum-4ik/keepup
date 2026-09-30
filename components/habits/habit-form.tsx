@@ -1,8 +1,9 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Minus, Plus, Star } from "lucide-react";
-import { createHabit } from "@/app/(app)/habits/actions";
+import { Minus, Plus, Star, Users } from "lucide-react";
+import { createGroupHabit, createHabit } from "@/app/(app)/habits/actions";
+import { Avatar } from "@/components/avatar";
 import { CategoryIcon, HabitEmoji } from "@/components/habits/category-icon";
 import { EMOJI_PANEL_ATTR, EmojiPicker } from "@/components/habits/emoji-picker";
 import { StartDatePicker } from "@/components/habits/start-date-picker";
@@ -12,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CATEGORIES, CATEGORY_ORDER, normalizeCategory } from "@/lib/categories";
 import { formatLocalDate } from "@/lib/dates";
+import { GROUP_TEMPLATES } from "@/lib/group-templates";
 import { HABIT_TEMPLATES, type HabitTemplate } from "@/lib/habit-templates";
 import {
   HABIT_TITLE_MAX, TARGET_LIMITS, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod,
@@ -22,29 +24,55 @@ import { cn } from "@/lib/utils";
 // Every control in the dialog shares one height so the fields line up.
 const fieldClass = "h-11 rounded-xl px-3 text-base";
 const selectClass = cn(fieldClass, "w-full border border-input bg-transparent");
+const chipClass =
+  "relative flex h-11 cursor-pointer items-center rounded-full border border-border px-4 text-sm font-semibold has-checked:border-primary has-checked:bg-accent has-checked:text-accent-foreground has-focus-visible:ring-2 has-focus-visible:ring-ring";
 const initialState: HabitFormState = { status: "idle" };
-type Tab = "popular" | HabitCategory;
-type Draft = { key: number; custom: boolean; values: HabitFormValues };
+type Tab = "together" | "popular" | HabitCategory;
+type Draft = { key: number; custom: boolean; values: HabitFormValues; groupId: string };
+export type FormGroup = { id: string; name: string; children: { id: string; name: string; avatar_emoji: string | null; avatar_color: string | null }[] };
 
-export function HabitForm({ today, weekStart }: { today: string; weekStart: 0 | 1 }) {
-  const [tab, setTab] = useState<Tab>("popular");
+// One form, two creates: a group picked in "Who's it for" makes a group habit.
+const submitHabit = (prev: HabitFormState, formData: FormData) =>
+  formData.get("groupId") ? createGroupHabit(prev, formData) : createHabit(prev, formData);
+
+export function HabitForm({
+  today,
+  weekStart,
+  groups = [],
+  initialGroupId,
+}: {
+  today: string;
+  weekStart: 0 | 1;
+  // The groups the user admins (only admins create group habits).
+  groups?: FormGroup[];
+  // ?group=<id>: the group page's "Add a group habit" link.
+  initialGroupId?: string;
+}) {
+  const canGroup = groups.length > 0;
+  const [tab, setTab] = useState<Tab>(initialGroupId ? "together" : "popular");
   const [draft, setDraft] = useState<Draft | null>(null);
   // While the create is in flight the dialog stays open (Esc, outside click and Close are ignored).
   const [pending, setPending] = useState(false);
-  const templates = HABIT_TEMPLATES.filter((t) => (tab === "popular" ? t.popular : t.category === tab));
+  const templates =
+    tab === "together" ? GROUP_TEMPLATES : HABIT_TEMPLATES.filter((t) => (tab === "popular" ? t.popular : t.category === tab));
 
   // Each open gets a new key, so the dialog's form starts fresh (no errors from a previous try).
-  const open = (custom: boolean, values: Omit<HabitFormValues, "startsOn">) =>
-    setDraft((d) => ({ key: (d?.key ?? 0) + 1, custom, values: { ...values, startsOn: today } }));
+  const open = (custom: boolean, values: Omit<HabitFormValues, "startsOn">, groupId = initialGroupId ?? "") =>
+    setDraft((d) => ({ key: (d?.key ?? 0) + 1, custom, values: { ...values, startsOn: today }, groupId }));
   const pickTemplate = (t: HabitTemplate) =>
-    open(false, { title: t.title, emoji: t.emoji, category: t.category, targetCount: String(t.targetCount), period: t.period });
+    open(
+      false,
+      { title: t.title, emoji: t.emoji, category: t.category, targetCount: String(t.targetCount), period: t.period },
+      // A Together template pre-selects a group (the one from the link, else the first).
+      tab === "together" ? (initialGroupId ?? groups[0].id) : undefined,
+    );
   const createOwn = () =>
-    open(true, { title: "", emoji: "", category: tab === "popular" ? "health" : tab, targetCount: "1", period: "day" });
+    open(true, { title: "", emoji: "", category: tab === "popular" || tab === "together" ? "health" : tab, targetCount: "1", period: "day" });
 
   return (
     <div className="flex flex-col gap-4">
       <div role="tablist" aria-label="Template categories" className="grid grid-cols-3 gap-2">
-        {(["popular", ...CATEGORY_ORDER] as Tab[]).map((key) => (
+        {([...(canGroup ? ["together"] : []), "popular", ...CATEGORY_ORDER] as Tab[]).map((key) => (
           <button
             key={key}
             type="button"
@@ -56,20 +84,20 @@ export function HabitForm({ today, weekStart }: { today: string; weekStart: 0 | 
               tab === key ? "bg-accent text-foreground ring-2 ring-primary" : "text-muted-foreground hover:bg-muted",
             )}
           >
-            {key === "popular" ? (
+            {key === "popular" || key === "together" ? (
               <span aria-hidden className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent">
-                <Star className="size-4 text-primary" />
+                {key === "popular" ? <Star className="size-4 text-primary" /> : <Users className="size-4 text-primary" />}
               </span>
             ) : (
               <CategoryIcon category={key} size="xs" />
             )}
-            {key === "popular" ? "Popular" : CATEGORIES[key].label}
+            {key === "popular" ? "Popular" : key === "together" ? "Together" : CATEGORIES[key].label}
           </button>
         ))}
       </div>
 
-      {/* Fixed 2×3 grid (every tab has exactly 6 templates) with same-size cards, so switching
-          tabs never moves anything and "Create your own" always sits in the same place. */}
+      {/* Fixed 2×3 grid (every category tab has exactly 6 templates, Together has 4) with same-size
+          cards, so switching tabs never moves anything and "Create your own" always sits in the same place. */}
       <div role="tabpanel" className="grid grid-cols-2 grid-rows-[repeat(3,4.75rem)] gap-2.5">
         {templates.map((t) => (
           <button
@@ -112,7 +140,15 @@ export function HabitForm({ today, weekStart }: { today: string; weekStart: 0 | 
             <DialogDescription>You can change anything before adding it.</DialogDescription>
           </div>
           {draft && (
-            <HabitFields key={draft.key} initial={draft.values} today={today} weekStart={weekStart} onPendingChange={setPending} />
+            <HabitFields
+              key={draft.key}
+              initial={draft.values}
+              initialGroupId={draft.groupId}
+              groups={groups}
+              today={today}
+              weekStart={weekStart}
+              onPendingChange={setPending}
+            />
           )}
         </DialogContent>
       </Dialog>
@@ -122,16 +158,23 @@ export function HabitForm({ today, weekStart }: { today: string; weekStart: 0 | 
 
 function HabitFields({
   initial,
+  initialGroupId,
+  groups,
   today,
   weekStart,
   onPendingChange,
 }: {
   initial: HabitFormValues;
+  initialGroupId: string;
+  groups: FormGroup[];
   today: string;
   weekStart: 0 | 1;
   onPendingChange: (pending: boolean) => void;
 }) {
-  const [state, formAction, pending] = useActionState(createHabit, initialState);
+  const [state, formAction, pending] = useActionState(submitHabit, initialState);
+  const [groupId, setGroupId] = useState(initialGroupId);
+  const group = groups.find((g) => g.id === groupId) ?? null;
+  const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => onPendingChange(pending), [pending, onPendingChange]);
   const [values, setValues] = useState(initial);
   const categoryRef = useRef<HTMLSelectElement>(null);
@@ -149,13 +192,17 @@ function HabitFields({
 
   // The browser resets <form> fields after a server action runs. Inputs re-sync from their
   // `value` prop automatically, but <select> doesn't, so force it back to our state here.
+  // The same for radios and checkboxes: they fall back to unticked, so re-apply what was picked
+  // (the toggles are uncontrolled; their state before the reset is kept in data-on).
   useEffect(() => {
     if (categoryRef.current) categoryRef.current.value = values.category;
     if (periodRef.current) periodRef.current.value = values.period;
-  }, [state, values.category, values.period]);
+    formRef.current?.querySelectorAll<HTMLInputElement>('input[name="groupId"]').forEach((r) => (r.checked = r.value === groupId));
+    formRef.current?.querySelectorAll<HTMLInputElement>('input[role="switch"]').forEach((c) => (c.checked = c.dataset.on === "1"));
+  }, [state, values.category, values.period, groupId]);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form ref={formRef} action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="title" className="font-semibold">Title</Label>
         <EmojiPicker
@@ -226,6 +273,44 @@ function HabitFields({
         {errors.period && <p className="text-sm text-destructive">{errors.period}</p>}
       </fieldset>
 
+      {groups.length > 0 && (
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="mb-1.5 text-sm font-semibold">Who&apos;s it for</legend>
+          <div className="flex flex-wrap gap-2">
+            {[{ id: "", name: "Just me" }, ...groups].map((g) => (
+              <label key={g.id || "me"} className={chipClass}>
+                <input
+                  type="radio"
+                  name="groupId"
+                  value={g.id}
+                  checked={groupId === g.id}
+                  onChange={() => setGroupId(g.id)}
+                  className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0"
+                />
+                {g.name}
+              </label>
+            ))}
+          </div>
+          {group && (
+            <div className="flex flex-col gap-3 pt-2">
+              <p className="text-sm text-muted-foreground">
+                Everyone in {group.name} does this together. It&apos;s done when everyone&apos;s checked in.
+              </p>
+              <Toggle name="requiresApproval" label="Needs approval" hint={`Someone else in ${group.name} confirms each check-in.`} />
+              {group.children.map((c) => (
+                <Toggle
+                  key={c.id}
+                  name="children"
+                  value={c.id}
+                  label={`Include ${c.name}`}
+                  icon={<Avatar name={c.name} emoji={c.avatar_emoji} color={c.avatar_color} size="sm" />}
+                />
+              ))}
+            </div>
+          )}
+        </fieldset>
+      )}
+
       <fieldset className="flex flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold">Starts</legend>
         {/* Today is sent as empty, so the server uses its own today (this page's may be stale after midnight). */}
@@ -250,5 +335,26 @@ function HabitFields({
         {pending ? "Adding…" : validCount ? `Add habit · ${describeSchedule(count, period)}` : "Add habit"}
       </Button>
     </form>
+  );
+}
+
+// An on/off row (a checkbox shown as a switch); off by default, sent as "on" or the value when ticked.
+function Toggle({ name, value, label, hint, icon }: { name: string; value?: string; label: string; hint?: string; icon?: React.ReactNode }) {
+  return (
+    <label className="flex min-h-11 cursor-pointer items-center gap-3">
+      {icon}
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="text-sm font-semibold">{label}</span>
+        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+      </span>
+      <input
+        type="checkbox"
+        role="switch"
+        name={name}
+        value={value}
+        onChange={(e) => (e.currentTarget.dataset.on = e.currentTarget.checked ? "1" : "0")}
+        className="relative h-7 w-12 shrink-0 cursor-pointer appearance-none rounded-full bg-muted transition-colors before:absolute before:top-0.5 before:left-0.5 before:size-6 before:rounded-full before:bg-white before:shadow-sm before:transition-transform checked:bg-primary checked:before:translate-x-5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      />
+    </label>
   );
 }

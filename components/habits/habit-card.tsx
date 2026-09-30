@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { CheckInButton } from "@/components/habits/check-in-button";
+import { MemberStatusRow } from "@/components/habits/member-status-row";
 import { StreakBadge } from "@/components/habits/streak-badge";
 import type { HabitSummary } from "@/lib/habits";
 import { describeProgress } from "@/lib/schedule";
+import { membersOf } from "@/lib/today-sections";
 import { stateOf } from "@/lib/today";
 import { CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
@@ -20,6 +22,9 @@ export function HabitCard({ habit }: { habit: HabitSummary }) {
     startsOn: habit.starts_on,
   });
   const showBar = habit.period === "day" && habit.target_count > 1 && !habit.frozen;
+  const members = membersOf(habit);
+  // A group habit is done when everyone required is; that wins over the user's own count.
+  const everyone = Boolean(members && habit.group_done);
 
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-soft">
@@ -27,8 +32,13 @@ export function HabitCard({ habit }: { habit: HabitSummary }) {
         <HabitEmoji category={habit.category} emoji={habit.emoji} />
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="truncate font-bold group-hover:underline">{habit.title}</span>
-          <span className={cn("text-sm", progress.atRisk ? "font-semibold text-[#9A6A10]" : "text-muted-foreground")}>
-            {progress.text}
+          <span
+            className={cn(
+              "text-sm",
+              everyone ? "font-semibold text-[#4F8A5B]" : progress.atRisk ? "font-semibold text-[#9A6A10]" : "text-muted-foreground",
+            )}
+          >
+            {everyone ? "Everyone did it ✓" : progress.text}
           </span>
           {showBar && (
             <span className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
@@ -38,6 +48,7 @@ export function HabitCard({ habit }: { habit: HabitSummary }) {
               />
             </span>
           )}
+          {members && members.length > 0 && <MemberStatusRow members={members} target={habit.target_count} />}
         </span>
       </Link>
       <StreakBadge count={habit.current_streak} />

@@ -70,4 +70,9 @@ describe("checkInState", () => {
     expect(checkInState({ ...base, targetCount: 8, doneCount: 3, checkedInToday: true })).toBe("open");
     expect(checkInState({ ...base, period: "week", targetCount: 3, doneCount: 1, checkedInToday: true })).toBe("checked-today");
   });
+  it("is pending while the check-ins that would finish it await approval", () => {
+    expect(checkInState({ ...base, doneCount: 0, pendingCount: 1, targetCount: 1 })).toBe("pending");
+    // Room for another check-in: still open.
+    expect(checkInState({ ...base, doneCount: 0, pendingCount: 1, targetCount: 2 })).toBe("open");
+  });
 });

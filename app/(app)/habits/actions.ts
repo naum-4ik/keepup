@@ -129,3 +129,57 @@ export async function deleteHabit(habitId: string): Promise<FormActionState> {
   refresh();
   redirect("/today");
 }
+
+// A group habit (admins only; the RPC enforces it). Children take part only when ticked.
+export async function createGroupHabit(_prev: HabitFormState, formData: FormData): Promise<HabitFormState> {
+  const values = readHabitForm(formData);
+  const parsed = parseHabit(values);
+  if (!parsed.ok) return { status: "error", errors: parsed.errors, values };
+  const groupId = String(formData.get("groupId") ?? "");
+  if (!isUuid(groupId)) return { status: "error", message: "Pick a group.", values };
+  const children = formData.getAll("children").map(String).filter(isUuid);
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("create_group_habit", {
+    p_group_id: groupId,
+    p_title: parsed.value.title,
+    p_emoji: parsed.value.emoji,
+    p_category: parsed.value.category,
+    p_target_count: parsed.value.targetCount,
+    p_period: parsed.value.period,
+    ...(parsed.value.startsOn ? { p_starts_on: parsed.value.startsOn } : {}),
+    p_requires_approval: formData.get("requiresApproval") === "on",
+    p_children: children,
+  });
+  if (error) return { status: "error", message: habitErrorMessage(error), values };
+  refresh();
+  revalidatePath(`/groups/${groupId}`);
+  redirect("/today");
+}
+
+// A member pause: the same dates rules as freezeHabit; p_profile_id omitted means "me".
+export async function pauseMe(habitId: string, _prev: FormActionState, formData: FormData): Promise<FormActionState> {
+  if (!isUuid(habitId)) return { status: "error", message: "That habit isn't available." };
+  const startsOn = String(formData.get("startsOn") ?? "");
+  const endsOn = String(formData.get("endsOn") ?? "");
+  if ((startsOn !== "" && !LOCAL_DATE.test(startsOn)) || (endsOn !== "" && !LOCAL_DATE.test(endsOn))) {
+    return { status: "error", message: "Pick valid dates." };
+  }
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("freeze_member", {
+    p_habit_id: habitId,
+    ...(startsOn ? { p_starts_on: startsOn } : {}),
+    ...(endsOn ? { p_ends_on: endsOn } : {}),
+  });
+  if (error) return { status: "error", message: habitErrorMessage(error) };
+  refresh(habitId);
+  return { status: "saved" };
+}
+
+export async function resumeMe(habitId: string): Promise<ActionResult> {
+  if (!isUuid(habitId)) return NOT_FOUND;
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("unfreeze_member", { p_habit_id: habitId });
+  if (error) return { ok: false, message: habitErrorMessage(error) };
+  refresh(habitId);
+  return { ok: true };
+}

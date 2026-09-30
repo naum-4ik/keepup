@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
+import { completeOnboarding, signUp, uniqueEmail } from "./auth";
 
 export async function createGroup(page: Page, name: string, kind = "Family"): Promise<void> {
   await page.goto("/groups/new");
@@ -38,4 +39,30 @@ export async function addChild(groupId: string, name: string): Promise<void> {
     body: JSON.stringify({ id: randomUUID(), display_name: name, kind: "child", group_id: groupId }),
   });
   expect(res.ok, await res.text()).toBe(true);
+}
+
+// The invited flow from Task 7, from a fresh browser context: email sign-up from the invite, back
+// to the invite, one tap on Join, then the invited onboarding.
+export async function joinByLink(page: Page, url: string, name: string): Promise<void> {
+  await page.goto(url);
+  // "Continue with email" while Google is off (local stack); "Use email instead" next to Google.
+  await page.getByRole("link", { name: /^(Continue with email|Use email instead)$/ }).click();
+  await expect(page).toHaveURL(/\/login\?next=%2Finvite%2F/);
+  await page.getByRole("link", { name: "Sign up" }).click();
+  // Wait for the sign-up page itself, so the form isn't filled on the page being left.
+  await expect(page).toHaveURL(/\/signup\?next=%2Finvite%2F/);
+  await signUp(page, uniqueEmail(name.toLowerCase()), { startOnSignupPage: true });
+  await expect(page).toHaveURL(/\/invite\//);
+  await page.getByRole("button", { name: /^Join / }).click();
+  await completeOnboarding(page, { name, invited: true });
+}
+
+export async function createGroupHabitVia(page: Page, group: string, title: string): Promise<void> {
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: "Create your own" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Title").fill(title);
+  await dialog.getByRole("radio", { name: group }).check();
+  await dialog.getByRole("button", { name: /^Add habit/ }).click();
+  await expect(page).toHaveURL(/\/today$/);
 }
