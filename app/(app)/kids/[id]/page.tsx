@@ -11,6 +11,8 @@ import { ChildDangerZone } from "@/components/kids/child-danger-zone";
 import { EditChildButton } from "@/components/kids/edit-child-form";
 import { Garden } from "@/components/kids/garden";
 import { ThemePicker } from "@/components/kids/theme-picker";
+import { NewWeekCard } from "@/components/kids/new-week-card";
+import { lastWeek } from "@/lib/garden";
 import { GardenAlbum } from "@/components/kids/garden-album";
 import { KidCheckInButton, UndoForChildButton } from "@/components/kids/kid-check-in-button";
 import { TreatGoal } from "@/components/kids/treat-goal";
@@ -83,7 +85,16 @@ export default async function KidPage({
         Open {child.name}&apos;s view
       </Link>
 
-      {rewards && <Garden stars={rewards.stars_this_week} theme={child.kid_theme} />}
+      {rewards && lastWeek(rewards.week_start, rewards.album) && (
+        <NewWeekCard
+          childId={id}
+          weekStart={rewards.week_start}
+          lastStars={lastWeek(rewards.week_start, rewards.album)!.stars}
+          theme={child.kid_theme}
+          albumHref="#album"
+        />
+      )}
+      {rewards && <Garden stars={rewards.stars_this_week} theme={child.kid_theme} weekStart={rewards.week_start} />}
       <ThemePicker childId={id} childName={child.name} theme={child.kid_theme} />
       {rewards && <GardenAlbum weeks={rewards.album} theme={child.kid_theme} />}
       {rewards && <TreatGoal childId={id} childName={child.name} goal={rewards.goal} />}

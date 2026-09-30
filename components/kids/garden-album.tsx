@@ -7,7 +7,7 @@ const WEEK = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", 
 export function GardenAlbum({ weeks, theme }: { weeks: { week_start: string; stars: number }[]; theme?: string | null }) {
   if (weeks.length === 0) return null;
   return (
-    <section aria-label="Garden album" className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
+    <section id="album" aria-label="Garden album" className="flex scroll-mt-20 flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
       <h2 className="text-sm font-bold text-muted-foreground">Garden album</h2>
       <ul className="-mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-1">
         {weeks.map((w) => (

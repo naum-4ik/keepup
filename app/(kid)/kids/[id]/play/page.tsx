@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { KidPlay } from "@/components/kids/kid-play";
+import { lastWeek } from "@/lib/garden";
 import { isUuid } from "@/lib/habit-schema";
 import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { stateOf } from "@/lib/today";
@@ -22,6 +23,8 @@ export default async function KidViewPage({ params }: { params: Promise<{ id: st
       child={{ id, name: child.name, emoji: child.avatar_emoji, color: child.avatar_color, theme: child.kid_theme }}
       habits={habits}
       stars={rewards?.stars_this_week ?? 0}
+      weekStart={rewards?.week_start}
+      lastStars={rewards ? lastWeek(rewards.week_start, rewards.album)?.stars : undefined}
     />
   );
 }

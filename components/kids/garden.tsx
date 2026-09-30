@@ -1,4 +1,4 @@
-import { kidTheme, nextStep, stageFor, starsToNext } from "@/lib/garden";
+import { kidTheme, nextStep, restartDay, restartLine, stageFor, starsToNext } from "@/lib/garden";
 import { cn } from "@/lib/utils";
 
 // The week's garden: the stage's emoji layers composed on soil in a soft rounded card. The stage
@@ -58,7 +58,7 @@ export function GardenPicture({
   );
 }
 
-export function Garden({ stars, theme }: { stars: number; theme?: string | null }) {
+export function Garden({ stars, theme, weekStart }: { stars: number; theme?: string | null; weekStart?: string }) {
   const t = kidTheme(theme);
   const stage = t.stages[stageFor(stars)];
   const next = starsToNext(stars);
@@ -74,39 +74,48 @@ export function Garden({ stars, theme }: { stars: number; theme?: string | null 
       <p className="text-sm text-muted-foreground">
         {next === null ? `${stage.label}! ${stage.icon}` : `${next} more ${next === 1 ? "star" : "stars"} to the next picture`}
       </p>
+      {weekStart && <p className="text-sm text-muted-foreground">{restartLine(t.id, restartDay(weekStart), false)}</p>}
     </section>
   );
 }
 
 // The kid view (ideas/kid-view-next.md §1): a star path from this picture to the next one, which a
 // child who can't read yet can follow; a grown-up can read the label out.
-export function NextStep({ stars, theme }: { stars: number; theme?: string | null }) {
+export function NextStep({ stars, theme, weekStart }: { stars: number; theme?: string | null; weekStart?: string }) {
   const step = nextStep(stars, theme);
+  const day = weekStart ? restartDay(weekStart) : null;
   if (!step) {
     const t = kidTheme(theme);
     const full = t.stages[t.stages.length - 1];
-    return <p className="text-xl font-bold text-[#4F8A5B]">{t.id === "garden" ? "Full garden! 🌻" : `${full.label}! ${full.icon}`}</p>;
+    return (
+      <p className="text-center text-xl font-bold text-[#4F8A5B]">
+        {day ? restartLine(theme, day, true) : t.id === "garden" ? "Full garden! 🌻" : `${full.label}! ${full.icon}`}
+      </p>
+    );
   }
   const label = `${step.left} more ${step.left === 1 ? "star" : "stars"} to ${step.label.toLowerCase()}`;
   return (
-    <div role="img" aria-label={label} className="flex flex-col items-center gap-1.5">
-      <div className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 shadow-soft">
-        <span aria-hidden className="flex items-center gap-1">
-          {Array.from({ length: step.need }, (_, i) => (
-            <span key={i} className={cn("text-3xl leading-none", i < step.have ? "" : "opacity-25 grayscale")}>
-              ⭐
-            </span>
-          ))}
-        </span>
-        <span aria-hidden className="text-xl text-muted-foreground">→</span>
-        <span aria-hidden className="flex size-12 items-center justify-center rounded-full bg-accent text-3xl leading-none">
-          {step.icon}
-        </span>
+    <div className="flex flex-col items-center gap-1.5">
+      <div role="img" aria-label={label} className="flex flex-col items-center gap-1.5">
+        <div className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 shadow-soft">
+          <span aria-hidden className="flex items-center gap-1">
+            {Array.from({ length: step.need }, (_, i) => (
+              <span key={i} className={cn("text-3xl leading-none", i < step.have ? "" : "opacity-25 grayscale")}>
+                ⭐
+              </span>
+            ))}
+          </span>
+          <span aria-hidden className="text-xl text-muted-foreground">→</span>
+          <span aria-hidden className="flex size-12 items-center justify-center rounded-full bg-accent text-3xl leading-none">
+            {step.icon}
+          </span>
+        </div>
+        {/* For the grown-up reading along; the child counts the stars. */}
+        <p aria-hidden className="text-base font-bold">
+          {step.left} more ⭐ to {step.icon}
+        </p>
       </div>
-      {/* For the grown-up reading along; the child counts the stars. */}
-      <p aria-hidden className="text-base font-bold">
-        {step.left} more ⭐ to {step.icon}
-      </p>
+      {day && <p className="text-sm text-muted-foreground">{restartLine(theme, day, false)}</p>}
     </div>
   );
 }

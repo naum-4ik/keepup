@@ -54,6 +54,7 @@ test("the kid view: big buttons, a tap counts at once, and hold to exit", async 
   await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
   await expect(page.getByRole("img", { name: "3 more stars to a sprout" })).toBeVisible();
   await expect(page.getByText("3 more ⭐ to 🌱")).toBeVisible(); // written out for the grown-up
+  await expect(page.getByText(/^A new garden starts on \w+day 🌱$/)).toBeVisible(); // the family's first day of the week
   await page.getByRole("button", { name: /Brush teeth/ }).click();
   await expect(page.getByText("⭐ 1")).toBeVisible();
   await expect(page.getByRole("img", { name: "2 more stars to a sprout" })).toBeVisible(); // the path fills
