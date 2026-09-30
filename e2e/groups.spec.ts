@@ -155,14 +155,26 @@ test("a member pauses just themselves; the habit carries on for the others", asy
   await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeEnabled();
 });
 
-test("Together templates are for groups only; other templates keep Just me", async ({ page }) => {
+test("Together templates show only when adding from a group, and never offer Just me", async ({ page }) => {
   await signUpAndOnboard(page);
   await createGroup(page, "Levi family");
-  await page.goto("/habits/new");
-  await expect(page.getByRole("tab", { name: "Popular" })).toHaveAttribute("aria-selected", "true");
+  const groupUrl = page.url();
+  const groupId = groupUrl.match(/\/groups\/([0-9a-f-]{36})/)![1];
   const dialog = page.getByRole("dialog");
 
-  await page.getByRole("tab", { name: "Together" }).click();
+  // From the plus button: no Together tab, Popular first, Just me stays.
+  await page.goto("/habits/new");
+  await expect(page.getByRole("tab", { name: "Together" })).toHaveCount(0);
+  await expect(page.getByRole("tab", { name: "Popular" })).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("button", { name: /Drink water/ }).click();
+  await expect(dialog.getByRole("radio", { name: "Just me" })).toBeChecked();
+  await expect(dialog.getByRole("radio", { name: "Levi family" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+
+  // From the group: Together is there and selected; its templates are group-only.
+  await page.goto(`/habits/new?group=${groupId}`);
+  await expect(page.getByRole("tab", { name: "Together" })).toHaveAttribute("aria-selected", "true");
   await page.getByRole("button", { name: /Family dinner/ }).click();
   await expect(dialog.getByRole("radio", { name: "Just me" })).toHaveCount(0);
   await expect(dialog.getByRole("radio", { name: "Levi family" })).toBeChecked();
@@ -172,8 +184,9 @@ test("Together templates are for groups only; other templates keep Just me", asy
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
 
+  // A Popular template from the group screen keeps Just me and preselects the group.
   await page.getByRole("tab", { name: "Popular" }).click();
   await page.getByRole("button", { name: /Drink water/ }).click();
-  await expect(dialog.getByRole("radio", { name: "Just me" })).toBeChecked();
-  await expect(dialog.getByRole("radio", { name: "Levi family" })).toBeVisible();
+  await expect(dialog.getByRole("radio", { name: "Just me" })).toBeVisible();
+  await expect(dialog.getByRole("radio", { name: "Levi family" })).toBeChecked();
 });

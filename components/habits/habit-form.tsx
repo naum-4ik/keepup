@@ -48,7 +48,8 @@ export function HabitForm({
   // ?group=<id>: the group page's "Add a group habit" link.
   initialGroupId?: string;
 }) {
-  const canGroup = groups.length > 0;
+  // Together is offered only when adding from a group (?group=<id> of a group the user admins).
+  const showTogether = Boolean(initialGroupId);
   const [tab, setTab] = useState<Tab>(initialGroupId ? "together" : "popular");
   const [draft, setDraft] = useState<Draft | null>(null);
   // While the create is in flight the dialog stays open (Esc, outside click and Close are ignored).
@@ -74,7 +75,7 @@ export function HabitForm({
   return (
     <div className="flex flex-col gap-4">
       <div role="tablist" aria-label="Template categories" className="grid grid-cols-3 gap-2">
-        {([...(canGroup ? ["together"] : []), "popular", ...CATEGORY_ORDER] as Tab[]).map((key) => (
+        {([...(showTogether ? ["together"] : []), "popular", ...CATEGORY_ORDER] as Tab[]).map((key) => (
           <button
             key={key}
             type="button"
