@@ -85,6 +85,25 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"dismissed_cards": {
+                  Row: {
+                    "card": string,"dismissed_at": string,"user_id": string
+                  }
+                  Insert: {
+                    "card": string,"dismissed_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "card"?: string,"dismissed_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "dismissed_cards_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"group_habit_participants": {
                   Row: {
                     "habit_id": string,"profile_id": string
@@ -465,6 +484,9 @@ isOneToOne: false
 "cheer":
 { Args: { "p_check_in_id": string }; Returns: undefined
                            },
+"child_rewards":
+{ Args: { "p_child_id": string }; Returns: Json
+                           },
 "child_summaries":
 { Args: { "p_child_id": string }; Returns: {
               "archived_at": string,"best_streak": number,"category": Database["public"]['Enums']["habit_category"],"checked_in_today": boolean,"created_at": string,"current_streak": number,"days_left": number,"done_count": number,"emoji": string,"frozen": boolean,"frozen_until": string,"group_done": boolean,"group_id": string,"group_name": string,"habit_id": string,"members": Json,"my_role": string,"not_started": boolean,"pending_count": number,"period": Database["public"]['Enums']["habit_period"],"period_start": string,"requires_approval": boolean,"starts_on": string,"target_count": number,"title": string
@@ -560,8 +582,16 @@ isOneToOne: false
 "delete_habit":
 { Args: { "p_habit_id": string }; Returns: undefined
                            },
+"dismiss_card":
+{ Args: { "p_card": string }; Returns: undefined
+                           },
 "export_child":
 { Args: { "p_child_id": string }; Returns: Json
+                           },
+"family_recaps":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "best_emoji": string,"best_period": Database["public"]['Enums']["habit_period"],"best_streak": number,"best_title": string,"check_ins": number,"group_id": string,"group_name": string,"week_start": string
+            }[]
                            },
 "freeze_habit":
 { Args: { "p_ends_on"?: string,"p_habit_id": string,"p_starts_on"?: string }; Returns: {
