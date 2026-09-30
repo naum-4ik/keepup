@@ -181,13 +181,13 @@ isOneToOne: false
                   ]
                 },"groups": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"id": string,"kind": string,"name": string,"timezone": string,"week_start": number
+                    "avatar_color": string | null,"avatar_emoji": string | null,"created_at": string,"created_by": string | null,"id": string,"kind": string,"name": string,"timezone": string,"week_start": number
                   }
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"kind"?: string,"name": string,"timezone": string,"week_start": number
+                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"kind"?: string,"name": string,"timezone": string,"week_start": number
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"kind"?: string,"name"?: string,"timezone"?: string,"week_start"?: number
+                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"created_at"?: string,"created_by"?: string | null,"id"?: string,"kind"?: string,"name"?: string,"timezone"?: string,"week_start"?: number
                   }
                   Relationships: [
                     {
@@ -520,7 +520,9 @@ isOneToOne: false
       } },
 "create_group":
 { Args: { "p_kind"?: string,"p_name": string }; Returns: {
-              "created_at": string,
+              "avatar_color": string | null,
+"avatar_emoji": string | null,
+"created_at": string,
 "created_by": string | null,
 "id": string,
 "kind": string,
@@ -679,7 +681,7 @@ isOneToOne: false
                            },
 "my_groups":
 { Args: Record<PropertyKey, never>; Returns: {
-              "child_count": number,"group_id": string,"joined_at": string,"kind": string,"member_count": number,"name": string,"role": string
+              "avatar_color": string,"avatar_emoji": string,"child_count": number,"group_id": string,"joined_at": string,"kind": string,"member_count": number,"name": string,"role": string
             }[]
                            },
 "nudge":
@@ -718,6 +720,24 @@ isOneToOne: false
 "revoke_invites":
 { Args: { "p_group_id": string }; Returns: undefined
                            },
+"set_group_avatar":
+{ Args: { "p_color": string,"p_emoji": string,"p_group_id": string }; Returns: {
+              "avatar_color": string | null,
+"avatar_emoji": string | null,
+"created_at": string,
+"created_by": string | null,
+"id": string,
+"kind": string,
+"name": string,
+"timezone": string,
+"week_start": number
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "groups"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "set_member_role":
 { Args: { "p_group_id": string,"p_role": string,"p_user_id": string }; Returns: undefined
                            },
@@ -753,7 +773,9 @@ isOneToOne: false
                            },
 "update_group":
 { Args: { "p_group_id": string,"p_kind"?: string,"p_name"?: string,"p_timezone"?: string,"p_week_start"?: number }; Returns: {
-              "created_at": string,
+              "avatar_color": string | null,
+"avatar_emoji": string | null,
+"created_at": string,
 "created_by": string | null,
 "id": string,
 "kind": string,
