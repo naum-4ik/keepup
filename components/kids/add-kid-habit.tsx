@@ -3,13 +3,13 @@
 import { useActionState, useEffect, useState } from "react";
 import { PenLine, Plus } from "lucide-react";
 import { addChildHabit, type KidFormState } from "@/app/(app)/kids/actions";
-import { KidTemplateTile } from "@/components/kids/add-child-form";
+import { KidTemplateGroups, KidTemplateTile } from "@/components/kids/add-child-form";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HABIT_TITLE_MAX } from "@/lib/habit-schema";
-import { KID_TEMPLATES, kidTemplatesByGroup } from "@/lib/kid-templates";
+import { KID_TEMPLATES } from "@/lib/kid-templates";
 import { keepFormValues } from "@/lib/keep-form-values";
 
 const initialState: KidFormState = { status: "idle" };
@@ -63,7 +63,7 @@ function TemplatePicker({
   const [state, formAction, pending] = useActionState(addChildHabit.bind(null, childId), initialState);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
   const have = new Set(existingTitles);
-  const groups = kidTemplatesByGroup(KID_TEMPLATES.filter((t) => !have.has(t.title)));
+  const left = KID_TEMPLATES.filter((t) => !have.has(t.title));
 
   return (
     <>
@@ -80,26 +80,23 @@ function TemplatePicker({
         {state.status === "saved" && lastAdded ? `Added ${lastAdded} ✓` : ""}
       </p>
       <form action={formAction} className="flex flex-col gap-4">
-        {groups.map((g) => (
-          <section key={g.group} aria-label={g.group} className="flex flex-col gap-2">
-            <h3 className="text-xs font-bold tracking-wide text-muted-foreground uppercase">{g.group}</h3>
-            {g.templates.map((t) => (
-              <button
-                key={t.id}
-                type="submit"
-                name="templateId"
-                value={t.id}
-                disabled={pending}
-                onClick={() => setLastAdded(t.title)}
-                aria-label={`Add ${t.title}`}
-                className="flex min-h-16 w-full items-center gap-3 rounded-2xl border-2 border-transparent bg-muted/60 p-3 hover:border-primary/30"
-              >
-                <KidTemplateTile template={t} />
-              </button>
-            ))}
-          </section>
-        ))}
-        {groups.length === 0 && <p className="text-sm text-muted-foreground">{childName} has all the suggested habits.</p>}
+        <KidTemplateGroups
+          templates={left}
+          item={(t) => (
+            <button
+              type="submit"
+              name="templateId"
+              value={t.id}
+              disabled={pending}
+              onClick={() => setLastAdded(t.title)}
+              aria-label={`Add ${t.title}`}
+              className="flex min-h-16 w-full items-center gap-3 rounded-2xl border-2 border-transparent bg-muted/60 p-3 hover:border-primary/30"
+            >
+              <KidTemplateTile template={t} />
+            </button>
+          )}
+        />
+        {left.length === 0 && <p className="text-sm text-muted-foreground">{childName} has all the suggested habits.</p>}
       </form>
     </>
   );
