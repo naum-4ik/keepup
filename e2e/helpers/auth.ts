@@ -31,12 +31,13 @@ export async function chooseTimezone(page: Page, zone: string): Promise<void> {
   await expect(page.getByLabel("Time zone")).toHaveValue(zone);
 }
 
-// Step 1 with the detected values (optionally a different time zone via "Change") and no purpose,
+// Step 1 with the detected values (optionally a different time zone via "Change") and no purpose
+// (or the `purpose` chip, e.g. "My family"),
 // then "Skip for now" on step 2, so the user lands on an empty Today. `invited`: the user came from
 // an invite, so the URLs carry ?joined=<group> and step 2's button is "Skip".
 export async function completeOnboarding(
   page: Page,
-  { name = "Ana", timezone, invited = false }: { name?: string; timezone?: string; invited?: boolean } = {},
+  { name = "Ana", timezone, invited = false, purpose }: { name?: string; timezone?: string; invited?: boolean; purpose?: string } = {},
 ): Promise<void> {
   const joined = invited ? "\\?joined=[0-9a-f-]{36}" : "";
   await expect(page).toHaveURL(new RegExp(`/onboarding${joined}$`));
@@ -44,6 +45,11 @@ export async function completeOnboarding(
   if (timezone) {
     await page.getByRole("button", { name: "Change", exact: true }).click();
     await chooseTimezone(page, timezone);
+  }
+  if (purpose) {
+    const chip = page.getByRole("button", { name: purpose, exact: true });
+    await chip.click();
+    await expect(chip).toHaveAttribute("aria-pressed", "true");
   }
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/onboarding/habits${joined}$`));

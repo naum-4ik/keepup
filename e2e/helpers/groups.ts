@@ -66,3 +66,22 @@ export async function createGroupHabitVia(page: Page, group: string, title: stri
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
   await expect(page).toHaveURL(/\/today$/);
 }
+
+// A group streak milestone only arrives when a period closes (cron, days in); seed the feed row the
+// database would write, for every current member (local stack only).
+export async function seedGroupMilestone(groupId: string, habitId: string, streak: number, period: "day" | "week" | "month"): Promise<void> {
+  const { url, key } = localAdmin();
+  const headers = { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
+  const members = await fetch(`${url}/rest/v1/group_members?group_id=eq.${groupId}&left_at=is.null&select=user_id`, { headers });
+  expect(members.ok, await members.clone().text()).toBe(true);
+  const rows = ((await members.json()) as { user_id: string }[]).map((m) => ({
+    user_id: m.user_id,
+    kind: "group_milestone",
+    group_id: groupId,
+    habit_id: habitId,
+    payload: { streak, period },
+    dedupe_key: `group_milestone:${habitId}:e2e-${streak}:${m.user_id}`,
+  }));
+  const res = await fetch(`${url}/rest/v1/notifications`, { method: "POST", headers, body: JSON.stringify(rows) });
+  expect(res.ok, await res.text()).toBe(true);
+}
