@@ -4,30 +4,43 @@ import { FirstCheckinTip } from "@/components/first-checkin-tip";
 import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard } from "@/components/habits/habit-card";
 import { LiveRefresh } from "@/components/habits/live-refresh";
+import { KidSection } from "@/components/kids/kid-section";
 import { WeekStrip } from "@/components/overview/week-overview";
 import { Button } from "@/components/ui/button";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
 import { getHabitSummaries, getWeekOverview, type HabitSummary } from "@/lib/habits";
 import { getPendingApprovals } from "@/lib/inbox";
+import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { groupForToday } from "@/lib/today";
 import { sectionsForToday } from "@/lib/today-sections";
 import { hasWeekData } from "@/lib/week-overview";
 
 export default async function TodayPage({ searchParams }: { searchParams: Promise<{ joined?: string }> }) {
   const { joined } = await searchParams;
-  const [summaries, overview, groups, approvals] = await Promise.all([
+  const [summaries, overview, groups, approvals, children] = await Promise.all([
     getHabitSummaries(),
     getWeekOverview(),
     joined && isUuid(joined) ? getMyGroups() : Promise.resolve([]),
     getPendingApprovals(),
+    getMyChildren(),
   ]);
+  // A section per child: her active habits and this week's stars (both fail soft).
+  const kids = await Promise.all(
+    children.map(async (child) => {
+      const [kidHabits, rewards] = await Promise.all([getChildSummaries(child.child_id), getChildRewards(child.child_id)]);
+      return { child, habits: kidHabits.filter((h) => !h.archived_at), stars: rewards?.stars_this_week ?? null };
+    }),
+  );
   const joinedGroup = groups.find((g) => g.group_id === joined);
   const habits = summaries.filter((h) => !h.archived_at);
   const sections = sectionsForToday(habits);
   // A solo user's Today looks as before: the "Mine" heading shows only next to a group section.
-  const withHeadings = sections.some((s) => s.key !== "mine");
-  const groupHabitIds = habits.filter((h) => h.group_id).map((h) => h.habit_id);
+  const withHeadings = sections.some((s) => s.key !== "mine") || kids.length > 0;
+  // Check-ins by other members (and other adults logging for a child) refresh these cards.
+  const liveHabitIds = [
+    ...new Set([...habits.filter((h) => h.group_id).map((h) => h.habit_id), ...kids.flatMap((k) => k.habits.map((h) => h.habit_id))]),
+  ];
   const tipFor = sections.map((s) => groupForToday(s.habits).todo[0]).find(Boolean)?.habit_id;
   // The first-check-in tip is for people who have never checked in (not for someone on a new device).
   const isNewUser = habits.every((h) => h.done_count === 0 && h.best_streak === 0);
@@ -52,7 +65,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         </Link>
       )}
       {overview && hasWeekData(overview) && <WeekStrip overview={overview} />}
-      {habits.length === 0 ? (
+      {habits.length === 0 && kids.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">
           <div className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">
             <SproutIcon className="size-6" aria-hidden />
@@ -74,8 +87,11 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           ),
         )
       )}
+      {kids.map((k) => (
+        <KidSection key={k.child.child_id} child={k.child} habits={k.habits} stars={k.stars} />
+      ))}
       {/* Other members' check-ins change group cards; Realtime (RLS applies) triggers a refresh. */}
-      {groupHabitIds.length > 0 && <LiveRefresh table="check_ins" filter={`habit_id=in.(${groupHabitIds.join(",")})`} />}
+      {liveHabitIds.length > 0 && <LiveRefresh table="check_ins" filter={`habit_id=in.(${liveHabitIds.join(",")})`} />}
     </section>
   );
 }

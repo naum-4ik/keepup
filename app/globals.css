@@ -49,6 +49,27 @@
   --radius-4xl: calc(var(--radius) * 2.6);
   --shadow-soft: 0 1px 2px rgb(61 44 34 / 0.06), 0 4px 12px rgb(61 44 34 / 0.05);
   --animate-checkin: checkin 220ms ease-out;
+  --animate-star: star-bounce 250ms ease-out;
+  --animate-star-fly: star-fly 700ms ease-in forwards;
+  --animate-hold-ring: hold-ring 1500ms linear forwards;
+}
+
+/* Kids: a star bounces on a check-in (1 → 1.3 → 1) and, in the kid view, flies up to the garden. */
+@keyframes star-bounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+@keyframes star-fly {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--fly-x, 0px), var(--fly-y, -240px)) scale(0.6); opacity: 0; }
+}
+
+/* Hold to exit: the ring's stroke fills over 1.5s. */
+@keyframes hold-ring {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
 }
 
 @keyframes checkin {
@@ -58,7 +79,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-checkin { animation: none; }
+  .animate-checkin, .animate-star, .animate-star-fly { animation: none; }
 }
 
 :root {

@@ -2,12 +2,18 @@ import "server-only";
 import { requireUser } from "@/lib/auth";
 import { habitEmoji, normalizeCategory } from "@/lib/categories";
 import type { Database } from "@/lib/database.types";
+import type { HabitCategory } from "@/lib/habit-schema";
 import { withTodayPending, type WeekOverview } from "@/lib/week-overview";
 
-export type HabitSummary = Database["public"]["Functions"]["habit_summaries"]["Returns"][number];
+// Kid habits (child_summaries) have no category; adult habits always have one.
+export type HabitSummary = Omit<Database["public"]["Functions"]["habit_summaries"]["Returns"][number], "category"> & {
+  category: HabitCategory | null;
+};
+// The signed-in adult's own and group habits: always categorised.
+export type AdultHabitSummary = HabitSummary & { category: HabitCategory };
 export type HistoryCell = Database["public"]["Functions"]["habit_history"]["Returns"][number];
 
-export async function getHabitSummaries(): Promise<HabitSummary[]> {
+export async function getHabitSummaries(): Promise<AdultHabitSummary[]> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("habit_summaries");
   if (error) throw new Error(`habit_summaries failed: ${error.message}`);
@@ -38,7 +44,7 @@ export type HabitCheckIn = { id: string; local_date: string; created_at: string 
 export type MemberCheckIn = { id: string; user_id: string; local_date: string; status: string };
 
 export type HabitDetail = {
-  summary: HabitSummary;
+  summary: AdultHabitSummary;
   history: HistoryCell[];
   freezes: HabitFreeze[];
   checkIns: HabitCheckIn[];

@@ -3,15 +3,18 @@ import { HabitEmoji } from "@/components/habits/category-icon";
 import { CheckInButton } from "@/components/habits/check-in-button";
 import { MemberStatusRow } from "@/components/habits/member-status-row";
 import { StreakBadge } from "@/components/habits/streak-badge";
+import { KidCheckInButton } from "@/components/kids/kid-check-in-button";
 import type { HabitSummary } from "@/lib/habits";
 import { describeProgress } from "@/lib/schedule";
-import { membersOf } from "@/lib/today-sections";
+import { memberStatus, membersOf } from "@/lib/today-sections";
 import { stateOf } from "@/lib/today";
 import { CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 
-export function HabitCard({ habit }: { habit: HabitSummary }) {
-  const progress = describeProgress({
+type Kid = { id: string; name: string };
+
+function progressOf(habit: HabitSummary) {
+  return describeProgress({
     targetCount: habit.target_count,
     period: habit.period,
     doneCount: habit.done_count,
@@ -21,10 +24,27 @@ export function HabitCard({ habit }: { habit: HabitSummary }) {
     notStarted: habit.not_started,
     startsOn: habit.starts_on,
   });
+}
+
+// A kid's daily habit reads "1 of 2 today" (spec: Kid profiles); other periods as for adults.
+export function kidProgressText(habit: HabitSummary): string {
+  if (habit.period !== "day" || habit.frozen || habit.not_started) return progressOf(habit).text;
+  return `${Math.min(habit.done_count, habit.target_count)} of ${habit.target_count} today`;
+}
+
+// `kid`: the row is the child's (Today's kid section): big emoji, no link to the adult habit page,
+// and the check-in is for her. Group copy ("Everyone did it") stays on the group card.
+export function HabitCard({ habit, kid }: { habit: HabitSummary; kid?: Kid }) {
+  if (kid) return <KidHabitCard habit={habit} kid={kid} />;
+  const progress = progressOf(habit);
   const showBar = habit.period === "day" && habit.target_count > 1 && !habit.frozen;
   const members = membersOf(habit);
   // A group habit is done when everyone required is; that wins over the user's own count.
   const everyone = Boolean(members && habit.group_done);
+  // "Me + Mary": children in this habit who still have it open.
+  const openChildren = (members ?? [])
+    .filter((m) => m.kind === "child" && memberStatus(m, habit.target_count) === "open")
+    .map((m) => ({ id: m.profile_id, name: m.name }));
 
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-soft">
@@ -43,7 +63,7 @@ export function HabitCard({ habit }: { habit: HabitSummary }) {
           {showBar && (
             <span className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
               <span
-                className={cn("block h-full rounded-full bg-current", CATEGORIES[habit.category].iconClass)}
+                className={cn("block h-full rounded-full bg-current", habit.category ? CATEGORIES[habit.category].iconClass : "text-primary")}
                 style={{ width: `${Math.min(100, (habit.done_count / habit.target_count) * 100)}%` }}
               />
             </span>
@@ -57,6 +77,31 @@ export function HabitCard({ habit }: { habit: HabitSummary }) {
         title={habit.title}
         multi={habit.target_count > 1}
         state={stateOf(habit)}
+        withChildren={openChildren}
+      />
+    </div>
+  );
+}
+
+function KidHabitCard({ habit, kid }: { habit: HabitSummary; kid: Kid }) {
+  const state = stateOf(habit);
+  return (
+    <div className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-soft">
+      <HabitEmoji category={habit.category} emoji={habit.emoji} size="lg" />
+      <span className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="truncate font-bold">{habit.title}</span>
+        <span className={cn("text-sm", state === "done" ? "font-semibold text-[#4F8A5B]" : "text-muted-foreground")}>
+          {kidProgressText(habit)}
+        </span>
+      </span>
+      <StreakBadge count={habit.current_streak} />
+      <KidCheckInButton
+        habitId={habit.habit_id}
+        title={habit.title}
+        childId={kid.id}
+        childName={kid.name}
+        multi={habit.target_count > 1}
+        state={state}
       />
     </div>
   );

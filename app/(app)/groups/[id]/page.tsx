@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronDown, ChevronLeft, Plus } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { AvatarEdit } from "@/components/avatar-edit";
 import { ConfirmGroupAction } from "@/components/groups/confirm-group-action";
@@ -13,7 +13,7 @@ import { RenameGroupForm } from "@/components/groups/rename-group-form";
 import { getProfile } from "@/lib/auth";
 import { GROUP_AVATAR_EMOJI } from "@/lib/avatars";
 import { childrenDeletionNotice, inviteUrl } from "@/lib/group-schema";
-import { getGroupDetail } from "@/lib/groups";
+import { getGroupDetail, getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
 import { getHabitSummaries } from "@/lib/habits";
 import { requestOrigin } from "@/lib/request-origin";
@@ -39,7 +39,12 @@ export default async function GroupPage({
 }) {
   const [{ id }, { invite }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
-  const [{ profile, userId }, group, summaries] = await Promise.all([getProfile(), getGroupDetail(id), getHabitSummaries()]);
+  const [{ profile, userId }, group, summaries, myGroups] = await Promise.all([
+    getProfile(),
+    getGroupDetail(id),
+    getHabitSummaries(),
+    getMyGroups(),
+  ]);
   if (!group) notFound();
   const habits = summaries.filter((h) => h.group_id === group.id && !h.archived_at);
 
@@ -50,6 +55,11 @@ export default async function GroupPage({
     : null;
   const childrenNotice = childrenDeletionNotice(group.children.map((c) => c.name));
   const alone = group.members.length === 1;
+  // Leave/Delete's children step: each child can be exported, or moved to another group I admin.
+  const children = group.children.map((c) => ({ id: c.id, name: c.name }));
+  const moveTargets = isAdmin
+    ? myGroups.filter((g) => g.role === "admin" && g.group_id !== group.id).map((g) => ({ id: g.group_id, name: g.name }))
+    : [];
 
   return (
     <section className="flex flex-col gap-4 pt-2 pb-6">
@@ -99,14 +109,28 @@ export default async function GroupPage({
               canManage={isAdmin && m.id !== userId}
             />
           ))}
-          {/* Task 10 links each child to /kids/[id]. */}
           {group.children.map((c) => (
-            <li key={c.id} className="flex min-h-11 items-center gap-3">
-              <Avatar name={c.name} emoji={c.avatar_emoji} color={c.avatar_color} size="md" />
-              <span className="min-w-0 flex-1 truncate font-semibold">{c.name}</span>
+            <li key={c.id}>
+              <Link href={`/kids/${c.id}`} className="-mx-2 flex min-h-11 items-center gap-3 rounded-xl px-2 hover:bg-muted/60">
+                <Avatar name={c.name} emoji={c.avatar_emoji} color={c.avatar_color} size="md" />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate font-semibold">{c.name}</span>
+                  <span className="text-xs text-muted-foreground">Child</span>
+                </span>
+                <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
+              </Link>
             </li>
           ))}
         </ul>
+        {isAdmin && (
+          <Link
+            href={`/kids/new?group=${group.id}`}
+            className="flex h-11 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 text-sm font-bold text-primary hover:bg-accent"
+          >
+            <Plus aria-hidden className="size-4" />
+            Add a child
+          </Link>
+        )}
       </Card>
 
       <Card title="Group habits">
@@ -173,6 +197,8 @@ export default async function GroupPage({
           confirmLabel="Leave group"
           pendingLabel="Leaving…"
           childrenNotice={childrenNotice}
+          groupChildren={children}
+          moveTargets={moveTargets}
           action={leaveGroup.bind(null, group.id)}
         />
         {isAdmin && (
@@ -183,6 +209,8 @@ export default async function GroupPage({
             confirmLabel="Delete group"
             pendingLabel="Deleting…"
             childrenNotice={childrenNotice}
+            groupChildren={children}
+            moveTargets={moveTargets}
             destructiveTrigger
             action={deleteGroup.bind(null, group.id)}
           />
