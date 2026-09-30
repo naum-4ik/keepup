@@ -7,6 +7,19 @@ export const GROUP_KIND_LABEL: Record<GroupKind, string> = {
   roommates: "Roommates",
   other: "Other",
 };
+// Invited users skip "Keepup is for…"; their purpose follows the group (ideas/onboarding.md).
+export const purposeForGroupKind = (kind: GroupKind): "family" | "friends" =>
+  kind === "family" || kind === "couple" ? "family" : "friends";
+
+// Content emoji for the invite heading (owner-chosen copy, not UI icons).
+export const GROUP_KIND_EMOJI: Record<GroupKind, string> = {
+  family: "👨‍👩‍👧",
+  couple: "💑",
+  friends: "👯",
+  roommates: "🏠",
+  other: "👋",
+};
+
 export const isGroupKind = (v: string): v is GroupKind => (GROUP_KINDS as readonly string[]).includes(v);
 
 // Postgres counts characters (code points), so count the same way (see profile-schema).

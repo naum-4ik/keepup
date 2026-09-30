@@ -7,8 +7,9 @@ export function uniqueEmail(prefix = "e2e"): string {
 export const TEST_PASSWORD = "correct-horse-42";
 
 // Creates the account with email + password (no email is sent; confirmation is off).
-export async function signUp(page: Page, email: string): Promise<void> {
-  await page.goto("/signup");
+// `startOnSignupPage`: the page is already on /signup (e.g. with ?next=), so don't navigate.
+export async function signUp(page: Page, email: string, { startOnSignupPage = false } = {}): Promise<void> {
+  if (!startOnSignupPage) await page.goto("/signup");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(TEST_PASSWORD);
   await page.getByRole("button", { name: "Create account" }).click();
@@ -31,21 +32,23 @@ export async function chooseTimezone(page: Page, zone: string): Promise<void> {
 }
 
 // Step 1 with the detected values (optionally a different time zone via "Change") and no purpose,
-// then "Skip for now" on step 2, so the user lands on an empty Today.
+// then "Skip for now" on step 2, so the user lands on an empty Today. `invited`: the user came from
+// an invite, so the URLs carry ?joined=<group> and step 2's button is "Skip".
 export async function completeOnboarding(
   page: Page,
-  { name = "Ana", timezone }: { name?: string; timezone?: string } = {},
+  { name = "Ana", timezone, invited = false }: { name?: string; timezone?: string; invited?: boolean } = {},
 ): Promise<void> {
-  await expect(page).toHaveURL(/\/onboarding$/);
+  const joined = invited ? "\\?joined=[0-9a-f-]{36}" : "";
+  await expect(page).toHaveURL(new RegExp(`/onboarding${joined}$`));
   await page.getByLabel("Display name").fill(name);
   if (timezone) {
     await page.getByRole("button", { name: "Change", exact: true }).click();
     await chooseTimezone(page, timezone);
   }
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await expect(page).toHaveURL(/\/onboarding\/habits$/);
-  await page.getByRole("link", { name: "Skip for now" }).click();
-  await expect(page).toHaveURL(/\/today$/);
+  await expect(page).toHaveURL(new RegExp(`/onboarding/habits${joined}$`));
+  await page.getByRole("link", { name: invited ? "Skip" : "Skip for now", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/today${joined}$`));
 }
 
 export async function signUpAndOnboard(page: Page): Promise<void> {
