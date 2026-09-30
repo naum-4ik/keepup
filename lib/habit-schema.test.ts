@@ -47,6 +47,9 @@ describe("parseHabit", () => {
     ["day", "0", "Pick 1–50 times a day."],
     ["week", "2.5", "Pick 1–7 times a week."],
     ["week", "", "Pick 1–7 times a week."],
+    ["day", "1e1", "Pick 1–50 times a day."],
+    ["day", "0x5", "Pick 1–50 times a day."],
+    ["day", "-1", "Pick 1–50 times a day."],
   ])("rejects %s × %s", (period, count, message) => {
     expect(parseHabit({ ...valid, period, targetCount: count })).toEqual({ ok: false, errors: { targetCount: message } });
   });

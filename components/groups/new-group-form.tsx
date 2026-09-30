@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GROUP_AVATAR_EMOJI } from "@/lib/avatars";
 import { GROUP_KIND_LABEL, GROUP_KINDS, type GroupKind } from "@/lib/group-schema";
+import { keepFormValues } from "@/lib/keep-form-values";
 
 const initialState: GroupActionState = { status: "idle" };
 const KIND_LABELS = new Set<string>(Object.values(GROUP_KIND_LABEL));
@@ -24,7 +25,7 @@ export function NewGroupForm({ city }: { city: string }) {
   };
 
   return (
-    <form action={formAction} className="flex flex-col gap-5 rounded-2xl bg-card p-5 shadow-soft">
+    <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-5 rounded-2xl bg-card p-5 shadow-soft">
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 text-sm font-semibold">Who is it for?</legend>
         <div className="flex flex-wrap gap-2">

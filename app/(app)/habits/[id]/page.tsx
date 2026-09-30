@@ -24,7 +24,7 @@ import { EndControl } from "@/components/habits/end-control";
 import { endLabel, endProgress } from "@/lib/habit-end";
 import { formatLocalDate } from "@/lib/dates";
 import { describeProgress, describeSchedule } from "@/lib/schedule";
-import { memberStatus, membersOf } from "@/lib/today-sections";
+import { everyoneDidIt, memberStatus, membersOf } from "@/lib/today-sections";
 import { stateOf } from "@/lib/today";
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
@@ -98,7 +98,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
     startsOn: h.starts_on,
   });
 
-  const everyone = Boolean(members && h.group_done);
+  const everyone = everyoneDidIt(h);
   // Nudge and Cheer are between adults only (M3 decision). Nudge: required, not there yet and no
   // check-in today (nudge()'s own rule). Cheer: today's counted check-in.
   const todays = (memberId: string) => memberCheckIns.filter((c) => c.user_id === memberId && c.local_date === today);

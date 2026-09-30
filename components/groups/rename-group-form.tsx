@@ -6,6 +6,8 @@ import type { GroupActionState } from "@/app/(app)/groups/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { GROUP_NAME_MAX } from "@/lib/group-schema";
+import { keepFormValues } from "@/lib/keep-form-values";
 
 const initialState: GroupActionState = { status: "idle" };
 
@@ -43,12 +45,13 @@ export function RenameGroupForm({
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-2">
+    <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-2">
       <Label htmlFor="group-name" className="font-semibold">Group name</Label>
       <Input
         id="group-name"
         name="name"
         defaultValue={name}
+        maxLength={GROUP_NAME_MAX}
         autoFocus
         required
         autoComplete="off"

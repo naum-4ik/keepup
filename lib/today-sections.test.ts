@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { memberStatus, sectionsForToday } from "@/lib/today-sections";
+import { everyoneDidIt, memberStatus, sectionsForToday } from "@/lib/today-sections";
 
 const h = (o: Record<string, unknown>) => ({ habit_id: crypto.randomUUID(), group_id: null, group_name: null, ...o }) as never;
 
@@ -21,5 +21,16 @@ describe("memberStatus", () => {
     expect(memberStatus(m({ paused: true }), 1)).toBe("paused");
     expect(memberStatus(m({}), 1)).toBe("open");
     expect(memberStatus(m({ required: false }), 1)).toBe("not_required");
+  });
+});
+
+describe("everyoneDidIt", () => {
+  const g = (o: Record<string, unknown>) => ({ members: [], group_done: true, done_count: 1, target_count: 1, frozen: false, ...o }) as never;
+  it("is true when the group is done and so am I", () => expect(everyoneDidIt(g({}))).toBe(true));
+  it("is true when the group is done and I'm paused", () => expect(everyoneDidIt(g({ done_count: 0, frozen: true }))).toBe(true));
+  it("is false for someone who joined mid-period and hasn't checked in", () => expect(everyoneDidIt(g({ done_count: 0 }))).toBe(false));
+  it("is false for private habits and unfinished groups", () => {
+    expect(everyoneDidIt(g({ members: null }))).toBe(false);
+    expect(everyoneDidIt(g({ group_done: false }))).toBe(false);
   });
 });

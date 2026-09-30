@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HABIT_TITLE_MAX } from "@/lib/habit-schema";
 import { KID_TEMPLATES, kidTemplatesByGroup } from "@/lib/kid-templates";
+import { keepFormValues } from "@/lib/keep-form-values";
 
 const initialState: KidFormState = { status: "idle" };
 // Picture emoji a child recognizes (docs/design.md: a curated kid set).
@@ -127,7 +128,7 @@ function CustomHabitForm({
         <DialogTitle>Your own habit for {childName}</DialogTitle>
         <DialogDescription>Give it a name {childName} understands, and a picture.</DialogDescription>
       </div>
-      <form action={formAction} className="flex flex-col gap-3">
+      <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="kid-habit-title" className="font-semibold">Title</Label>
           <Input

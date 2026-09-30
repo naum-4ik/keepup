@@ -22,11 +22,13 @@ export const GROUP_KIND_EMOJI: Record<GroupKind, string> = {
 
 export const isGroupKind = (v: string): v is GroupKind => (GROUP_KINDS as readonly string[]).includes(v);
 
+export const GROUP_NAME_MAX = 40;
+
 // Postgres counts characters (code points), so count the same way (see profile-schema).
 export function parseGroupName(raw: string): { ok: true; value: string } | { ok: false; error: string } {
   const value = raw.trim();
   if (value === "") return { ok: false, error: "Give the group a name." };
-  if ([...value].length > 40) return { ok: false, error: "Keep it to 40 characters." };
+  if ([...value].length > GROUP_NAME_MAX) return { ok: false, error: `Keep it to ${GROUP_NAME_MAX} characters.` };
   return { ok: true, value };
 }
 

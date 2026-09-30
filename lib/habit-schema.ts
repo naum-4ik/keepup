@@ -89,7 +89,8 @@ export function parseHabit(values: HabitFormValues):
   } else {
     const limit = TARGET_LIMITS[values.period];
     const count = Number(values.targetCount);
-    if (values.targetCount === "" || !Number.isInteger(count) || count < 1 || count > limit) {
+    // Digits only: Number() would also take "1e1" or "0x5".
+    if (!/^\s*\d+\s*$/.test(values.targetCount) || count < 1 || count > limit) {
       errors.targetCount = `Pick 1–${limit} times a ${values.period}.`;
     }
   }

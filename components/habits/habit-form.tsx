@@ -59,8 +59,12 @@ export function HabitForm({
     tab === "together" ? GROUP_TEMPLATES : HABIT_TEMPLATES.filter((t) => (tab === "popular" ? t.popular : t.category === tab));
 
   // Each open gets a new key, so the dialog's form starts fresh (no errors from a previous try).
-  const open = (custom: boolean, values: Omit<HabitFormValues, "startsOn">, groupId = initialGroupId ?? "", groupOnly = false) =>
+  // The button that opened the dialog gets focus back when it closes (there's no DialogTrigger).
+  const opener = useRef<HTMLElement | null>(null);
+  const open = (custom: boolean, values: Omit<HabitFormValues, "startsOn">, groupId = initialGroupId ?? "", groupOnly = false) => {
+    opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setDraft((d) => ({ key: (d?.key ?? 0) + 1, custom, values: { ...values, startsOn: today }, groupId, groupOnly }));
+  };
   const pickTemplate = (t: HabitTemplate) =>
     open(
       false,
@@ -136,6 +140,11 @@ export function HabitForm({
           onOpenAutoFocus={(e) => {
             e.preventDefault();
             if (draft?.custom) document.getElementById("title")?.focus();
+          }}
+          onCloseAutoFocus={(e) => {
+            if (!opener.current?.isConnected) return;
+            e.preventDefault();
+            opener.current.focus();
           }}
           onEscapeKeyDown={(e) => (e.target as Element | null)?.closest?.(`[${EMOJI_PANEL_ATTR}]`) && e.preventDefault()}
         >
