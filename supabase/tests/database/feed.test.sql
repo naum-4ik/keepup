@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(30);
+select plan(44);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -67,6 +67,22 @@ select lives_ok($$select private.cheer_impl('00000000-0000-0000-0000-0000000000b
   'cheering twice is harmless');
 select is((select count(*)::int from public.notifications where kind = 'cheer'), 1, 'and Anna hears it once');
 
+delete from public.notifications where kind = 'cheer';
+select private.cheer_impl('00000000-0000-0000-0000-0000000000b1', (select id from public.check_ins where habit_id = (select v from t where k = 'dinner') and user_id = '00000000-0000-0000-0000-0000000000a1'));
+select is((select count(*)::int from public.notifications where kind = 'cheer'), 0, 'a repeat cheer after the feed purge does not notify again');
+
+-- Pending approvals: the other member sees it; the author, an outsider and a closed window do not
+select private.check_in_impl('00000000-0000-0000-0000-0000000000d9', '00000000-0000-0000-0000-0000000000b1', now());
+select is((select count(*)::int from private.pending_approvals_impl('00000000-0000-0000-0000-0000000000a1', now())
+            where author_id = '00000000-0000-0000-0000-0000000000b1' and author_name = 'Dan' and group_name = 'Family'),
+  1, 'the other member sees the pending check-in, with names');
+select is((select count(*)::int from private.pending_approvals_impl('00000000-0000-0000-0000-0000000000b1', now())),
+  0, 'the author does not review their own check-in');
+select is((select count(*)::int from private.pending_approvals_impl('00000000-0000-0000-0000-0000000000e1', now())),
+  0, 'an outsider sees nothing');
+select is((select count(*)::int from private.pending_approvals_impl('00000000-0000-0000-0000-0000000000a1', now() + interval '3 days')),
+  0, 'a closed review window drops out');
+
 -- #9 and group milestones: from finalized periods, never naming anyone
 set local session_replication_role = replica;
 insert into public.period_results (habit_id, period_start, outcome) values
@@ -88,9 +104,21 @@ select is((select (payload ->> 'streak')::int from public.notifications where ki
 -- RLS and read state
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
 select ok((select bool_and(user_id = '00000000-0000-0000-0000-0000000000b1') from public.notifications), 'each person reads only their own feed');
+select ok((select count(*) from public.inbox_feed(200)) > 0, 'the inbox has rows');
+select is((select count(*) from public.inbox_feed(200)), (select count(*) from public.notifications),
+  'the inbox returns only the caller''s rows');
+select is((select actor_name || ' / ' || group_name || ' / ' || habit_title from public.inbox_feed(200) where kind = 'group_check_in' limit 1),
+  'Anna / Family / Family dinner', 'names, group and habit are joined in');
+select ok((select count(*) from public.inbox_feed(null)) > 0, 'a null limit falls back to the default');
+select is(public.mark_feed_seen(array(select id from public.notifications where kind = 'everyone_done')), 1, 'marking a celebration seen');
+select is(public.mark_feed_seen(array(select id from public.notifications where kind = 'everyone_done')), 0, 'only once');
 select ok(public.mark_feed_read() > 0, 'marking all read');
 select is((select count(*)::int from public.notifications where read_at is null), 0, 'leaves nothing unread');
 reset role;
+
+select ok(not has_function_privilege('anon', 'public.inbox_feed(int)', 'execute'), 'anon cannot read a feed');
+select ok(not has_function_privilege('anon', 'public.nudge(uuid, uuid, text)', 'execute'), 'anon cannot nudge');
+select ok(not has_function_privilege('anon', 'public.cheer(uuid)', 'execute'), 'anon cannot cheer');
 
 -- Pauses, a kid check-in, then deleting the whole group: no feed trigger may insert a row that
 -- references something the cascade is removing.

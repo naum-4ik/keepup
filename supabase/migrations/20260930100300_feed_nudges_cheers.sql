@@ -116,7 +116,15 @@ language plpgsql
 set search_path = ''
 as $$
 begin
-  if p_habit.group_id is not null and private.period_outcome(p_habit, p_period_start) = 'done' then
+  if p_habit.group_id is null then
+    return;
+  end if;
+  -- Serialize on the habit row: review_check_in_impl locks only the check-in, so two concurrent
+  -- final approvals (or a kid's auto-approved check-in landing during a final review) could each
+  -- see the other's row as pending and nobody would get "Everyone did it". Taking the habit lock
+  -- keeps the check-in -> habit order (check_in_impl already holds it), so no deadlock.
+  perform 1 from public.habits where id = p_habit.id for update;
+  if private.period_outcome(p_habit, p_period_start) = 'done' then
     perform private.notify(private.group_adults(p_habit.group_id, null), 'everyone_done',
       'everyone_done:' || p_habit.id || ':' || p_period_start, p_habit.group_id, p_habit.id, null, null, null,
       jsonb_build_object('period_start', p_period_start));
@@ -269,7 +277,7 @@ begin
       'member_joined:' || new.group_id || ':' || new.user_id || ':' || extract(epoch from new.joined_at)::bigint,
       new.group_id, null, null, new.user_id, null, '{}'::jsonb);
   elsif old.left_at is null and new.left_at is not null then
-    perform private.notify(private.group_admins(new.group_id, array[new.user_id]), 'member_left',
+    perform private.notify(private.group_admins(new.group_id, array[new.user_id, auth.uid()]), 'member_left',
       'member_left:' || new.group_id || ':' || new.user_id || ':' || extract(epoch from new.left_at)::bigint,
       new.group_id, null, null, new.user_id, null,
       jsonb_build_object('removed', auth.uid() is distinct from new.user_id));
@@ -435,6 +443,9 @@ begin
   end if;
 
   insert into public.cheers (check_in_id, user_id) values (p_check_in_id, p_user) on conflict do nothing;
+  if not found then
+    return; -- already cheered; a repeat must not notify again, even after the feed purge
+  end if;
   perform private.notify(array[v_check_in.user_id], 'cheer', 'cheer:' || p_check_in_id || ':' || p_user,
     v_habit.group_id, v_habit.id, p_check_in_id, p_user, null, '{}'::jsonb);
 end;
@@ -459,7 +470,7 @@ as $$
     left join public.profiles s on s.id = n.subject_id
    where n.user_id = p_user
    order by n.created_at desc
-   limit least(greatest(p_limit, 1), 200);
+   limit least(greatest(coalesce(p_limit, 50), 1), 200);
 $$;
 
 create function private.pending_approvals_impl(p_user uuid, p_now timestamptz)
@@ -560,4 +571,17 @@ select cron.schedule('keepup-feed-retention', '23 3 * * *',
   $$delete from public.notifications where created_at < now() - interval '60 days'$$);
 
 -- Live updates on Today, the habit page and the Inbox (spec: Data access). Realtime applies RLS.
-alter publication supabase_realtime add table public.check_ins, public.notifications;
+-- Re-runnable and safe where the publication is missing or FOR ALL TABLES.
+do $$
+declare
+  v_table text;
+begin
+  foreach v_table in array array['check_ins', 'notifications'] loop
+    if exists (select 1 from pg_catalog.pg_publication p where p.pubname = 'supabase_realtime' and not p.puballtables)
+       and not exists (select 1 from pg_catalog.pg_publication_tables t
+                        where t.pubname = 'supabase_realtime' and t.schemaname = 'public' and t.tablename = v_table) then
+      execute format('alter publication supabase_realtime add table public.%I', v_table);
+    end if;
+  end loop;
+end;
+$$;
