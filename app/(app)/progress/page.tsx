@@ -5,16 +5,21 @@ import { HabitDots, WeekCard } from "@/components/overview/week-overview";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
 import { dayDetail } from "@/lib/day-detail";
-import { getHabitSummaries, getMyCheckIns, getWeekOverview } from "@/lib/habits";
+import { getFinishedIds, getHabitSummaries, getMyCheckIns, getWeekOverview } from "@/lib/habits";
+import { StartAgainButton } from "@/components/habits/start-again-button";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { hasWeekData } from "@/lib/week-overview";
 
 export default async function ProgressPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const { view } = await searchParams;
-  const showArchived = view === "archived";
-  const [summaries, overview] = await Promise.all([getHabitSummaries(), getWeekOverview()]);
-  const habits = summaries.filter((h) => Boolean(h.archived_at) === showArchived);
+  const showFinished = view === "finished";
+  const showArchived = view === "archived" || showFinished;
+  const [summaries, overview, finishedIds] = await Promise.all([getHabitSummaries(), getWeekOverview(), getFinishedIds()]);
+  // Finished habits (ideas/habit-end-date.md) are archived too; they get their own tab.
+  const habits = summaries.filter(
+    (h) => Boolean(h.archived_at) === showArchived && (!showArchived || finishedIds.has(h.habit_id) === showFinished),
+  );
   const cellsFor = new Map((overview?.per_habit ?? []).map((p) => [p.habit_id, p.cells]));
   // Tap a day: each day up to today, from the overview's cells plus my check-ins that week.
   const week = overview?.days ?? [];
@@ -34,7 +39,8 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
       <nav aria-label="Habit list" className="flex gap-2">
         {[
           { href: "/progress", label: "Active", current: !showArchived },
-          { href: "/progress?view=archived", label: "Archived", current: showArchived },
+          { href: "/progress?view=finished", label: "Finished", current: showFinished },
+          { href: "/progress?view=archived", label: "Archived", current: showArchived && !showFinished },
         ].map((t) => (
           <Link
             key={t.label}
@@ -54,7 +60,9 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
 
       {habits.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">
-          <p className="text-sm text-muted-foreground">{showArchived ? "No archived habits." : "No habits yet."}</p>
+          <p className="text-sm text-muted-foreground">
+            {showFinished ? "No finished habits yet. Give a habit an end, like 30 days." : showArchived ? "No archived habits." : "No habits yet."}
+          </p>
           {!showArchived && (
             <Button asChild className="h-11">
               <Link href="/habits/new">Add a habit</Link>
@@ -92,6 +100,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                       </span>
                       <StreakBadge count={h.current_streak} />
                     </Link>
+                    {showFinished && <StartAgainButton habitId={h.habit_id} title={h.title} />}
                   </li>
                 ))}
             </ul>

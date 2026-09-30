@@ -68,6 +68,29 @@ export async function getHabitEnds(habitIds: string[]): Promise<Map<string, stri
   return new Map((data ?? []).map((r) => [r.id, r.ends_on as string]));
 }
 
+// Finished habits (ideas/habit-end-date.md) are archived with finished_at; the Finished tab lists them.
+export async function getFinishedIds(): Promise<Set<string>> {
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase.from("habits").select("id").not("finished_at", "is", null);
+  if (error) {
+    console.error("finished habits failed", error.message);
+    return new Set();
+  }
+  return new Set((data ?? []).map((r) => r.id));
+}
+
+export type FinishSummary = { done: number; total: number; best_streak: number };
+
+export async function getFinishSummary(habitId: string): Promise<FinishSummary | null> {
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase.rpc("habit_finish_summary", { p_habit_id: habitId });
+  if (error || !data?.[0]) {
+    if (error) console.error("habit_finish_summary failed", error.message);
+    return null;
+  }
+  return data[0];
+}
+
 // user_id null = the whole habit; otherwise the viewer's own member pause (group habits).
 export type HabitFreeze = { id: string; starts_on: string; ends_on: string | null; user_id?: string | null };
 export type HabitCheckIn = { id: string; local_date: string; created_at: string };
