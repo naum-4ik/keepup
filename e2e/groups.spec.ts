@@ -325,12 +325,15 @@ test("Everyone did it shows once, with confetti, then not again", async ({ page 
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await createGroupHabitVia(page, "Family", "Family dinner");
+  // After a second on screen, the card counts as seen: the markSeen action's POST, told apart from
+  // the check-in's own POST by its argument (a list of ids, not one id).
+  const seen = page.waitForResponse(
+    (r) => r.request().method() === "POST" && new URL(r.url()).pathname === "/today" && /^\[\["/.test(r.request().postData() ?? ""),
+    { timeout: 15_000 },
+  );
   await page.getByRole("button", { name: "Check in: Family dinner" }).click();
   const card = page.getByText("Everyone did it! Family dinner ✓");
   await expect(card).toBeVisible();
-  // After a second on screen, the card counts as seen (the markSeen action's POST; the check-in's
-  // own POST has finished by the time the card renders).
-  const seen = page.waitForResponse((r) => r.request().method() === "POST" && new URL(r.url()).pathname === "/today", { timeout: 10_000 });
   await expect(page.locator('[aria-hidden] > .animate-confetti')).toHaveCount(24);
   await seen;
   await page.reload();
@@ -355,9 +358,23 @@ test("a group milestone card shows the streak with avatars, keeps gentle cards a
   await expect(page.getByText("Add a child? 🐼")).toBeHidden();
   await page.getByRole("button", { name: "Dismiss", exact: true }).click();
   await expect(page.getByText("🔥 Family dinner: 7 days in a row, together")).toBeHidden();
+  // Dismissed, the milestone is gone for good, but it's still a milestone day: no gentle card.
   await expect(async () => {
     await page.reload();
-    await expect(page.getByText("Add a child? 🐼")).toBeVisible({ timeout: 2_000 });
+    await expect(page.getByRole("button", { name: "Done: Family dinner" })).toBeVisible({ timeout: 2_000 });
+    await expect(page.getByText("🔥 Family dinner: 7 days in a row, together")).toBeHidden({ timeout: 500 });
   }).toPass();
-  await expect(page.getByText("🔥 Family dinner: 7 days in a row, together")).toBeHidden();
+  await expect(page.getByText("Add a child? 🐼")).toBeHidden();
+});
+
+test("with reduced motion, Everyone did it shows without confetti", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await createGroupHabitVia(page, "Family", "Family dinner");
+  await page.getByRole("button", { name: "Check in: Family dinner" }).click();
+  await expect(page.getByText("Everyone did it! Family dinner ✓")).toBeVisible();
+  const confetti = page.locator('[aria-hidden] > .animate-confetti');
+  await expect(confetti).toHaveCount(24);
+  for (const piece of await confetti.all()) await expect(piece).toBeHidden();
 });

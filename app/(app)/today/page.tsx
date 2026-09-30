@@ -21,7 +21,7 @@ import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { parsePurpose } from "@/lib/profile-schema";
 import { groupForToday } from "@/lib/today";
 import { chooseGentleCard, milestoneToday, recapKey, recapLine, visibleRecaps } from "@/lib/today-cards";
-import { getDismissedCards, getFamilyRecaps, getUnseenCelebrations, hasCheckedIn } from "@/lib/today-cards-data";
+import { getCelebrations, getDismissedCards, getFamilyRecaps, hasCheckedIn } from "@/lib/today-cards-data";
 import { membersOf, sectionsForToday } from "@/lib/today-sections";
 import { hasWeekData } from "@/lib/week-overview";
 
@@ -34,7 +34,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     getPendingApprovals(),
     getMyChildren(),
     getProfile(),
-    getUnseenCelebrations(),
+    getCelebrations(),
     getFamilyRecaps(),
     getDismissedCards(),
     hasCheckedIn(),
@@ -69,9 +69,9 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     }
     return [...seen.values()];
   };
-  const everyone = celebrations.filter((n) => n.kind === "everyone_done");
+  const everyone = celebrations.filter((n) => n.kind === "everyone_done" && !n.seen_at);
   const everyoneHabits = [...new Map(everyone.map((n) => [n.habit_id ?? n.id, n.habit_title ?? "A habit"])).entries()];
-  const milestones = celebrations.filter((n) => n.kind === "group_milestone");
+  const milestones = celebrations.filter((n) => n.kind === "group_milestone" && !n.seen_at);
   const shownRecaps = visibleRecaps(recaps, dismissed);
   const purpose = parsePurpose(profile.purpose ?? "");
   const gentle = chooseGentleCard({
@@ -79,7 +79,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     hasCheckedIn: checkedIn,
     groups,
     dismissed,
-    milestoneToday: milestoneToday(milestones, profile.timezone),
+    milestoneToday: milestoneToday(celebrations, profile.timezone),
   });
 
   return (
@@ -114,7 +114,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       {shownRecaps.map((r) => (
         <FamilyRecapCard key={recapKey(r)} cardKey={recapKey(r)} group={r.group_name} line={recapLine(r)} />
       ))}
-      {gentle && <GentleCard card={gentle} />}
+      {gentle && <GentleCard key={gentle.key} card={gentle} />}
       {overview && hasWeekData(overview) && <WeekStrip overview={overview} />}
       {habits.length === 0 && kids.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">

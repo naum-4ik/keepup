@@ -35,13 +35,21 @@ describe("chooseGentleCard", () => {
 
 describe("milestoneToday", () => {
   const now = new Date("2026-10-05T21:30:00Z"); // 23:30 in Rome, 06:30 next day in Tokyo
-  it("is true for an unseen group milestone created on the user's local today", () => {
-    expect(milestoneToday([{ kind: "group_milestone", seen_at: null, created_at: "2026-10-05T06:00:00Z" }], "Europe/Rome", now)).toBe(true);
+  const m = (o: { seen_at?: string | null; created_at?: string; kind?: string } = {}) => ({
+    kind: "group_milestone", seen_at: null, created_at: "2026-10-05T06:00:00Z", ...o,
   });
-  it("ignores seen ones, other kinds and other days (in the user's time zone)", () => {
-    expect(milestoneToday([{ kind: "group_milestone", seen_at: "2026-10-05T07:00:00Z", created_at: "2026-10-05T06:00:00Z" }], "Europe/Rome", now)).toBe(false);
-    expect(milestoneToday([{ kind: "everyone_done", seen_at: null, created_at: "2026-10-05T06:00:00Z" }], "Europe/Rome", now)).toBe(false);
-    expect(milestoneToday([{ kind: "group_milestone", seen_at: null, created_at: "2026-10-05T06:00:00Z" }], "Asia/Tokyo", now)).toBe(false);
+  it("is true while a milestone card is showing, whatever day it arrived", () => {
+    expect(milestoneToday([m()], "Europe/Rome", now)).toBe(true);
+    expect(milestoneToday([m({ created_at: "2026-09-20T06:00:00Z" })], "Europe/Rome", now)).toBe(true);
+  });
+  it("stays true all day after the milestone was seen or dismissed", () => {
+    expect(milestoneToday([m({ seen_at: "2026-10-05T07:00:00Z" })], "Europe/Rome", now)).toBe(true);
+  });
+  it("is false for seen milestones from other days (in the user's time zone) and for other kinds", () => {
+    expect(milestoneToday([m({ seen_at: "2026-10-04T07:00:00Z", created_at: "2026-10-04T06:00:00Z" })], "Europe/Rome", now)).toBe(false);
+    expect(milestoneToday([m({ seen_at: "2026-10-05T07:00:00Z" })], "Asia/Tokyo", now)).toBe(false);
+    expect(milestoneToday([m({ kind: "everyone_done" })], "Europe/Rome", now)).toBe(false);
+    expect(milestoneToday([], "Europe/Rome", now)).toBe(false);
   });
 });
 

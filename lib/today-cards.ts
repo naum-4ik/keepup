@@ -24,14 +24,15 @@ export function chooseGentleCard(i: GentleCardInput): GentleCard | null {
   return g ? { key: `add_child:${g.group_id}`, groupId: g.group_id } : null;
 }
 
-// "Never on the same day as a milestone card": an unseen group milestone that arrived on the user's local today.
+// "Never on the same day as a milestone card": a milestone card is showing now (any unseen group
+// milestone, whatever day it arrived), or one arrived on the user's local today, seen or not.
 export function milestoneToday(
   feed: { kind: string; seen_at: string | null; created_at: string }[],
   timeZone: string,
   now: Date = new Date(),
 ): boolean {
   const today = todayIn(timeZone, now);
-  return feed.some((n) => n.kind === "group_milestone" && !n.seen_at && todayIn(timeZone, new Date(n.created_at)) === today);
+  return feed.some((n) => n.kind === "group_milestone" && (!n.seen_at || todayIn(timeZone, new Date(n.created_at)) === today));
 }
 
 // family_recaps(): the generated types say non-null, but best_* is null when no group streak is running.

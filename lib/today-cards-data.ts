@@ -6,8 +6,9 @@ import type { FamilyRecap } from "@/lib/today-cards";
 // Everything the cards at the top of Today read. Each is extra around the page, so each fails soft
 // (like getWeekOverview): on an error the card just doesn't show.
 
-// Unseen "Everyone did it" and group milestone rows (seen_at null = not shown yet).
-export async function getUnseenCelebrations(): Promise<FeedItem[]> {
+// Recent "Everyone did it" and group milestone rows, seen or not: unseen ones (seen_at null) are
+// the cards; seen milestones from today still keep the gentle card away (see milestoneToday).
+export async function getCelebrations(): Promise<FeedItem[]> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("inbox_feed", { p_limit: 200 });
   if (error) {
@@ -15,7 +16,7 @@ export async function getUnseenCelebrations(): Promise<FeedItem[]> {
     return [];
   }
   return (data ?? [])
-    .filter((row) => !row.seen_at && (row.kind === "everyone_done" || row.kind === "group_milestone"))
+    .filter((row) => row.kind === "everyone_done" || row.kind === "group_milestone")
     .map((row) => ({ ...row, payload: (row.payload ?? {}) as Record<string, unknown> }) as FeedItem);
 }
 
