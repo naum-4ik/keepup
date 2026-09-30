@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { isPublicPath, safeNextPath } from "./paths";
+import { isPublicPath, safeNextPath, withNext } from "./paths";
 
 describe("isPublicPath", () => {
-  it.each(["/", "/login", "/auth/callback", "/auth/error", "/whats-new"])("%s is public", (p) => {
+  it.each(["/", "/login", "/signup", "/auth/callback", "/auth/error", "/whats-new"])("%s is public", (p) => {
     expect(isPublicPath(p)).toBe(true);
   });
 
-  it.each(["/today", "/profile", "/profile/settings", "/onboarding", "/loginx", "/authx"])(
+  it.each(["/today", "/profile", "/profile/settings", "/onboarding", "/loginx", "/signupx", "/authx"])(
     "%s is private",
     (p) => {
       expect(isPublicPath(p)).toBe(false);
@@ -36,5 +36,12 @@ describe("safeNextPath", () => {
 
   it("uses a custom fallback", () => {
     expect(safeNextPath("//evil.com", "/")).toBe("/");
+  });
+});
+
+describe("withNext", () => {
+  it("adds next only when it isn't the default", () => {
+    expect(withNext("/signup", "/today")).toBe("/signup");
+    expect(withNext("/signup", "/progress")).toBe("/signup?next=%2Fprogress");
   });
 });

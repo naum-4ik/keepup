@@ -10,4 +10,4 @@ Remove passkeys (the feature was reverted). Sign-in stays **Google** and **email
 
 ## Consequences
 - A simpler sign-in, with fewer beta dependencies.
-- The email link needs a custom SMTP sender to reach anyone beyond the Supabase team. Until then, Google is the way in for the family.
+- The email link needs a custom SMTP sender to reach anyone beyond the Supabase team. Until then, Google is the way in for the family. (The email link was later replaced by email + password: [0008](0008-email-and-password-instead-of-an-email-link.md).)

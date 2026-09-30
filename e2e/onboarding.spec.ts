@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { signInWithMagicLink, uniqueEmail } from "./helpers/auth";
+import { signUp, uniqueEmail } from "./helpers/auth";
 
 async function finishStepOne(page: Page, purpose?: "Me" | "My family" | "Friends") {
   await expect(page).toHaveURL(/\/onboarding$/);
@@ -15,7 +15,7 @@ async function finishStepOne(page: Page, purpose?: "Me" | "My family" | "Friends
 const card = (page: Page, title: string) => page.getByRole("button", { name: new RegExp(`^${title}`) });
 
 test("step 1 pre-fills the name, shows the detected line, and has no reminder hour", async ({ page }) => {
-  await signInWithMagicLink(page, uniqueEmail("ana.lee"));
+  await signUp(page, uniqueEmail("ana.lee"));
   await expect(page).toHaveURL(/\/onboarding$/);
 
   await expect(page.getByLabel("Display name")).toHaveValue(/^Ana Lee-/);
@@ -38,7 +38,7 @@ test("step 1 pre-fills the name, shows the detected line, and has no reminder ho
 });
 
 test("purpose My family adds People and Home templates to step 2", async ({ page }) => {
-  await signInWithMagicLink(page, uniqueEmail());
+  await signUp(page, uniqueEmail());
   await finishStepOne(page, "My family");
   await expect(card(page, "Drink water")).toBeVisible();
   await expect(card(page, "Call family or a friend")).toBeVisible();
@@ -47,14 +47,14 @@ test("purpose My family adds People and Home templates to step 2", async ({ page
 });
 
 test("without a purpose step 2 shows only the Popular templates", async ({ page }) => {
-  await signInWithMagicLink(page, uniqueEmail());
+  await signUp(page, uniqueEmail());
   await finishStepOne(page);
   await expect(page.locator("button[aria-pressed]")).toHaveCount(6);
   await expect(card(page, "Call family or a friend")).toHaveCount(0);
 });
 
 test("picking 2 habits lands on Today with both, and a check-in clears the tip", async ({ page }) => {
-  await signInWithMagicLink(page, uniqueEmail());
+  await signUp(page, uniqueEmail());
   await finishStepOne(page);
 
   await expect(page.getByRole("button", { name: "Pick a habit to start" })).toBeDisabled();
@@ -85,7 +85,7 @@ test("picking 2 habits lands on Today with both, and a check-in clears the tip",
 });
 
 test("the first check-in tip shows once and not after a reload", async ({ page }) => {
-  await signInWithMagicLink(page, uniqueEmail());
+  await signUp(page, uniqueEmail());
   await finishStepOne(page);
   await card(page, "Walk 10,000 steps").click();
   await page.getByRole("button", { name: "Start with 1 habit" }).click();
@@ -102,7 +102,7 @@ test("the first check-in tip shows once and not after a reload", async ({ page }
 });
 
 test("step 2 needs a finished step 1", async ({ page }) => {
-  await signInWithMagicLink(page, uniqueEmail());
+  await signUp(page, uniqueEmail());
   await expect(page).toHaveURL(/\/onboarding$/);
   await page.goto("/onboarding/habits");
   await expect(page).toHaveURL(/\/onboarding$/);

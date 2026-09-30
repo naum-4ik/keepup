@@ -10,7 +10,7 @@ flowchart LR
     Edge --> Proxy["proxy.ts: refresh Supabase session, gate private routes"]
     Proxy --> Next["Next.js 16 serverless functions (App Router)"]
     Next -->|PostgREST over HTTP| PG["Supabase Postgres (eu-central-1)"]
-    Next --> Auth["Supabase Auth: Google OAuth + magic link, PKCE"]
+    Next --> Auth["Supabase Auth: Google OAuth (PKCE) + email and password"]
     Next -.->|planned, M3/M4| Realtime["Supabase Realtime"]
     Next -.->|planned, M3/M4| EdgeFn["Supabase Edge Functions"]
 ```
@@ -34,7 +34,7 @@ Configured by hand in the Supabase dashboard for the `keepup-staging` project (n
 
 - Site URL: `https://keepup-murex.vercel.app`
 - Redirect URLs: `https://keepup-murex.vercel.app/auth/callback`, `https://keepup-*-naum4ik-s-org.vercel.app/**`
-- Providers: email (magic link) and Google (the Google OAuth client is in Testing mode)
+- Providers: email + password (email confirmation off until an SMTP sender is set up) and Google (the Google OAuth client is in Testing mode)
 
 ## Why no load balancer
 
@@ -47,7 +47,7 @@ Vercel's serverless functions are stateless and scale horizontally by request â€
 | RLS on every table | Row-level security scoped to the authenticated user/family; guarded by a pgTAP test | Live |
 | Least privilege | Column-level UPDATE grants on `profiles` (no blanket table grants) | Live |
 | Key exposure | No service-role key in the app anywhere â€” browser and server both use only the publishable key, under RLS. A service-role key will exist only in CI secrets / Edge Functions when a later feature needs it | Live |
-| Session verification | Google OAuth and magic link both use the PKCE code flow; server checks the session with `getClaims()`, never the unverified `getSession()` | Live |
+| Session verification | Google OAuth uses the PKCE code flow; email + password signs in inside a server action; server checks the session with `getClaims()`, never the unverified `getSession()` | Live |
 | Open-redirect protection | `safeNextPath` validates post-auth redirects; unit-tested | Live |
 | Input validation | Server actions validate input and give good error messages, but they're not the enforcement boundary: database constraints, RLS, column grants, triggers, and (from M2) `SECURITY DEFINER` RPCs enforce the rules underneath. Server-owned fields (streaks, XP, approvals, timestamps like `onboarded_at`) are written only by the database, never trusted from client input | Live |
 | Session response caching | Responses that refresh a Supabase session carry no-cache headers | Live |
