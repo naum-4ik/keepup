@@ -298,8 +298,11 @@ test("after the first check-in, a family user gets one gentle Invite card, and c
   await page.reload();
   await expect(page.getByText("Invite your family")).toBeVisible();
   await expect(page.getByText("Invite a friend")).toBeHidden(); // one card at a time
+  // The card hides at once and the dismissal is saved in the background: wait for it before reloading.
+  const saved = page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes("/today"));
   await page.getByRole("button", { name: "Not now" }).click();
   await expect(page.getByText("Invite your family")).toBeHidden();
+  await saved;
   await page.reload();
   await expect(page.getByRole("link", { name: /Drink water 1 \/ 8 today/ })).toBeVisible();
   await expect(page.getByText("Invite your family")).toBeHidden();
