@@ -31,6 +31,10 @@ jobs:
   integration:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      # Pull the Supabase images from GitHub's registry: the default (public.ecr.aws) caps anonymous
+      # downloads and refused CI with "toomanyrequests: Data limit exceeded".
+      SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
