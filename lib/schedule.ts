@@ -48,7 +48,8 @@ export function describeProgress(p: ProgressInput): { text: string; atRisk: bool
   return { text: `${base} · ${left}`, atRisk: remaining >= p.daysLeft };
 }
 
-export type CheckInState = "open" | "done" | "checked-today" | "frozen" | "not-started";
+// "pending": checked in, and the check-ins that would finish the period await approval.
+export type CheckInState = "open" | "done" | "pending" | "checked-today" | "frozen" | "not-started";
 
 export function checkInState(p: {
   targetCount: number;
@@ -57,10 +58,12 @@ export function checkInState(p: {
   checkedInToday: boolean;
   frozen: boolean;
   notStarted?: boolean;
+  pendingCount?: number;
 }): CheckInState {
   if (p.notStarted) return "not-started";
   if (p.frozen) return "frozen";
   if (p.doneCount >= p.targetCount) return "done";
+  if (p.doneCount + (p.pendingCount ?? 0) >= p.targetCount) return "pending";
   if (p.period !== "day" && p.checkedInToday) return "checked-today";
   return "open";
 }

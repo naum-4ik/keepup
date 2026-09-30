@@ -31,7 +31,8 @@ export async function getWeekOverview(): Promise<WeekOverview | null> {
   return withTodayPending(data as unknown as WeekOverview);
 }
 
-export type HabitFreeze = { id: string; starts_on: string; ends_on: string | null };
+// user_id null = the whole habit; otherwise the viewer's own member pause (group habits).
+export type HabitFreeze = { id: string; starts_on: string; ends_on: string | null; user_id?: string | null };
 export type HabitCheckIn = { id: string; local_date: string; created_at: string };
 
 export type HabitDetail = {
@@ -43,19 +44,28 @@ export type HabitDetail = {
 };
 
 export async function getHabitDetail(habitId: string): Promise<HabitDetail | null> {
-  const { supabase } = await requireUser();
+  const { supabase, userId } = await requireUser();
   const summary = (await getHabitSummaries()).find((s) => s.habit_id === habitId);
   if (!summary) return null;
 
   const [history, freezes, checkIns, total] = await Promise.all([
     supabase.rpc("habit_history", { p_habit_id: habitId, p_limit: summary.period === "day" ? 84 : 12 }),
-    supabase.from("habit_freezes").select("id, starts_on, ends_on").eq("habit_id", habitId).order("starts_on"),
+    // Group members can read everyone's pauses and check-ins; this page shows only the whole-habit
+    // pauses and the viewer's own.
+    supabase
+      .from("habit_freezes")
+      .select("id, starts_on, ends_on, user_id")
+      .eq("habit_id", habitId)
+      .or(`user_id.is.null,user_id.eq.${userId}`)
+      .order("starts_on"),
     supabase
       .from("check_ins")
       .select("id, local_date, created_at")
       .eq("habit_id", habitId)
+      .eq("user_id", userId)
       .eq("period_start", summary.period_start)
       .order("created_at", { ascending: false }),
+    // Everyone's: a habit with any history can't be deleted (delete_habit's rule).
     supabase.from("check_ins").select("id", { count: "exact", head: true }).eq("habit_id", habitId),
   ]);
   for (const r of [history, freezes, checkIns, total]) {

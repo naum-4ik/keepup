@@ -8,19 +8,25 @@ export function Avatar({
   emoji,
   color,
   size = "sm",
+  label,
   className,
+  children,
 }: {
   name: string;
+  // The accessible name when it should say more than the name (e.g. "Anna: done").
+  label?: string;
   emoji?: string | null;
   color?: string | null;
   size?: keyof typeof SIZE;
   className?: string;
+  // Overlays such as a status badge.
+  children?: React.ReactNode;
 }) {
   const bg = color && isAvatarColor(color) ? AVATAR_COLORS[color] : "bg-accent";
   return (
     <span
       role="img"
-      aria-label={name}
+      aria-label={label ?? name}
       className={cn(
         "inline-flex shrink-0 items-center justify-center rounded-full leading-none font-semibold text-accent-foreground",
         SIZE[size],
@@ -29,6 +35,7 @@ export function Avatar({
       )}
     >
       <span aria-hidden>{emoji || initialOf(name)}</span>
+      {children}
     </span>
   );
 }

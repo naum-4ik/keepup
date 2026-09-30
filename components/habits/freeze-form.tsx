@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { CalendarPlus, X } from "lucide-react";
-import { freezeHabit, unfreezeHabit, type FormActionState } from "@/app/(app)/habits/actions";
+import { freezeHabit, unfreezeHabit, type ActionResult, type FormActionState } from "@/app/(app)/habits/actions";
 import { StartDatePicker } from "@/components/habits/start-date-picker";
 import { Button } from "@/components/ui/button";
 import { formatLocalDate } from "@/lib/dates";
@@ -11,12 +11,25 @@ import { pauseEndQuickPicks } from "@/lib/schedule";
 
 const initialState: FormActionState = { status: "idle" };
 
+// The pause actions and labels: the whole habit by default; PauseMeForm passes a member's own pause.
+export type PauseKind = {
+  freeze: (habitId: string, prev: FormActionState, formData: FormData) => Promise<FormActionState>;
+  unfreeze: (habitId: string) => Promise<ActionResult>;
+  submitLabel: string;
+  resumeLabel: string;
+  note?: string;
+};
+
+const WHOLE_HABIT: PauseKind = { freeze: freezeHabit, unfreeze: unfreezeHabit, submitLabel: "Pause habit", resumeLabel: "Resume" };
+
 export function FreezeForm({
   habitId,
   today,
   weekStart,
   activeFreeze,
   paused,
+  kind = WHOLE_HABIT,
+  submitLabel = kind.submitLabel,
 }: {
   habitId: string;
   today: string;
@@ -24,8 +37,10 @@ export function FreezeForm({
   // The current pause (when `paused`) or the next scheduled one.
   activeFreeze: HabitFreeze | null;
   paused: boolean;
+  kind?: PauseKind;
+  submitLabel?: string;
 }) {
-  const [state, formAction, pending] = useActionState(freezeHabit.bind(null, habitId), initialState);
+  const [state, formAction, pending] = useActionState(kind.freeze.bind(null, habitId), initialState);
   const [resuming, startResume] = useTransition();
   const [resumeError, setResumeError] = useState<string | null>(null);
   const [startsOn, setStartsOn] = useState(today);
@@ -56,12 +71,12 @@ export function FreezeForm({
           disabled={resuming}
           onClick={() =>
             startResume(async () => {
-              const r = await unfreezeHabit(habitId);
+              const r = await kind.unfreeze(habitId);
               setResumeError(r.ok ? null : r.message);
             })
           }
         >
-          {scheduled ? "Cancel pause" : "Resume"}
+          {scheduled ? "Cancel pause" : kind.resumeLabel}
         </Button>
         {resumeError && <p role="alert" className="text-sm text-destructive">{resumeError}</p>}
       </div>
@@ -70,6 +85,7 @@ export function FreezeForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
+      {kind.note && <p className="text-sm text-muted-foreground">{kind.note}</p>}
       {/* Today is sent as empty, so the server uses its own today (this page's may be stale after midnight). */}
       <input type="hidden" name="startsOn" value={startsOn === today ? "" : startsOn} />
       <input type="hidden" name="endsOn" value={endsOn ?? ""} />
@@ -114,7 +130,7 @@ export function FreezeForm({
 
       {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
       <Button type="submit" className="h-11" disabled={pending}>
-        {pending ? "Pausing…" : "Pause habit"}
+        {pending ? "Pausing…" : submitLabel}
       </Button>
     </form>
   );

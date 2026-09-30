@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { completeOnboarding, signUp, signUpAndOnboard, uniqueEmail } from "./helpers/auth";
-import { addChild, createGroup, inviteLink } from "./helpers/groups";
+import { addChild, createGroup, createGroupHabitVia, inviteLink, joinByLink } from "./helpers/groups";
 
 test("create a group, get an invite link, rename it, and see it in Groups", async ({ page }) => {
   await signUpAndOnboard(page);
@@ -108,4 +108,49 @@ test("an expired or revoked link explains itself", async ({ page }) => {
   await page.goto("/invite/not-a-real-token-at-all-xx");
   await expect(page.getByRole("heading", { name: "This invite link doesn't work anymore" })).toBeVisible();
   await expect(page.getByText("Ask the person who sent it for a new one.")).toBeVisible();
+});
+
+test("a group habit: both check in, both see Everyone did it, live", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const url = await inviteLink(page);
+  const guest = await (await browser.newContext()).newPage();
+  await joinByLink(guest, url, "Dan");
+
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: "Create your own" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Title").fill("Family dinner");
+  await dialog.getByRole("radio", { name: "Family" }).check();
+  await dialog.getByRole("button", { name: /^Add habit/ }).click();
+  await expect(page).toHaveURL(/\/today$/);
+  await expect(page.getByRole("region", { name: "Family" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Check in: Family dinner" }).click();
+  await expect(page.getByRole("button", { name: "Done: Family dinner" })).toBeVisible();
+  await guest.goto("/today");
+  await expect(guest.getByRole("img", { name: /: done$/ })).toBeVisible(); // Ana's avatar shows done, no names in text
+  await guest.getByRole("button", { name: "Check in: Family dinner" }).click();
+  await expect(guest.getByText("Everyone did it ✓")).toBeVisible();
+  // The first browser updates without a reload (Realtime → router.refresh()).
+  await expect(page.getByText("Everyone did it ✓")).toBeVisible({ timeout: 10_000 });
+});
+
+test("a member pauses just themselves; the habit carries on for the others", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const url = await inviteLink(page);
+  const guest = await (await browser.newContext()).newPage();
+  await joinByLink(guest, url, "Dan");
+  await createGroupHabitVia(page, "Family", "Walk");
+  await guest.goto("/today");
+  await guest.getByRole("link", { name: /Walk/ }).click();
+  // Members don't manage the habit itself.
+  await expect(guest.getByText("Pause for everyone")).toBeHidden();
+  await expect(guest.getByText("Edit details")).toBeHidden();
+  await guest.getByText("Pause just me").click();
+  await guest.getByRole("button", { name: "Pause" }).click();
+  await expect(guest.getByRole("button", { name: "Paused: Walk" })).toBeVisible();
+  await page.goto("/today");
+  await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeEnabled();
 });

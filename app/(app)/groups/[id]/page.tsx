@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronDown, ChevronLeft } from "lucide-react";
+import { ChevronDown, ChevronLeft, Plus } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { ConfirmGroupAction } from "@/components/groups/confirm-group-action";
 import { KindChip } from "@/components/groups/group-card";
+import { HabitEmoji } from "@/components/habits/category-icon";
 import { GroupSettingsForm } from "@/components/groups/group-settings-form";
 import { InviteLink } from "@/components/groups/invite-link";
 import { MemberRow } from "@/components/groups/member-row";
@@ -12,7 +13,9 @@ import { getProfile } from "@/lib/auth";
 import { childrenDeletionNotice, inviteUrl } from "@/lib/group-schema";
 import { getGroupDetail } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
+import { getHabitSummaries } from "@/lib/habits";
 import { requestOrigin } from "@/lib/request-origin";
+import { describeSchedule } from "@/lib/schedule";
 import { listTimezones } from "@/lib/timezones";
 import { deleteGroup, leaveGroup, renameGroup, updateGroupSettings } from "../actions";
 
@@ -34,8 +37,9 @@ export default async function GroupPage({
 }) {
   const [{ id }, { invite }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
-  const [{ profile, userId }, group] = await Promise.all([getProfile(), getGroupDetail(id)]);
+  const [{ profile, userId }, group, summaries] = await Promise.all([getProfile(), getGroupDetail(id), getHabitSummaries()]);
   if (!group) notFound();
+  const habits = summaries.filter((h) => h.group_id === group.id && !h.archived_at);
 
   const isAdmin = group.my_role === "admin";
   const url = group.invite ? inviteUrl(await requestOrigin(), group.invite.token) : null;
@@ -85,6 +89,38 @@ export default async function GroupPage({
             </li>
           ))}
         </ul>
+      </Card>
+
+      <Card title="Group habits">
+        {habits.length > 0 ? (
+          <ul className="flex flex-col gap-1">
+            {habits.map((h) => (
+              <li key={h.habit_id}>
+                <Link href={`/habits/${h.habit_id}`} className="-mx-2 flex min-h-11 items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-muted/60">
+                  <HabitEmoji category={h.category} emoji={h.emoji} size="xs" />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate font-semibold">{h.title}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {describeSchedule(h.target_count, h.period)}
+                      {h.requires_approval && " · needs approval"}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">No group habits yet.</p>
+        )}
+        {isAdmin && (
+          <Link
+            href={`/habits/new?group=${group.id}`}
+            className="flex h-11 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 text-sm font-bold text-primary hover:bg-accent"
+          >
+            <Plus aria-hidden className="size-4" />
+            Add a group habit
+          </Link>
+        )}
       </Card>
 
       {isAdmin && (
