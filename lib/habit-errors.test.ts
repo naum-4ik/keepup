@@ -6,6 +6,8 @@ describe("habitErrorMessage", () => {
     expect(habitErrorMessage({ message: "keepup:already_checked_in_today" })).toBe("Already checked in today. Come back tomorrow.");
     expect(habitErrorMessage({ message: "keepup:freeze_in_past" })).toBe("A pause can't start in the past.");
     expect(habitErrorMessage({ message: "keepup:start_locked" })).toBe("The start date can't change after the first check-in.");
+    expect(habitErrorMessage({ message: "keepup:end_too_early" })).toBe("The end can move later or be removed, not earlier.");
+    expect(habitErrorMessage({ message: "keepup:habit_ended" })).toBe("This habit has ended. Keep going or finish it from Today.");
   });
 
   it("maps group errors", () => {
