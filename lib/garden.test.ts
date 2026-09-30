@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GARDEN_STAGES, KID_THEMES, isKidTheme, nextStep, stageFor, starsToNext, themeStages } from "@/lib/garden";
+import { GARDEN_STAGES, KID_THEMES, isKidTheme, lastWeek, newWeekLine, nextStep, restartDay, restartLine, stageFor, starsToNext, themeStages } from "@/lib/garden";
 
 describe("garden", () => {
   it("grows at 0/3/7/12/18 stars (same as private.garden_stage)", () => {
@@ -33,6 +33,24 @@ describe("garden", () => {
     expect(nextStep(4, "unknown")).toMatchObject({ icon: "🌷" });
     expect(isKidTheme("space")).toBe(true);
     expect(isKidTheme("jungle")).toBe(false);
+  });
+  it("says which day the next one starts: the family's first day of the week", () => {
+    expect(restartDay("2026-09-27")).toBe("Sunday"); // a Sunday-start week -> next Sunday
+    expect(restartDay("2026-09-28")).toBe("Monday");
+  });
+  it("words the restart and the new week in the chosen theme", () => {
+    expect(restartLine("garden", "Sunday", false)).toBe("A new garden starts on Sunday 🌱");
+    expect(restartLine("garden", "Sunday", true)).toBe("Full garden! 🌻 A new one starts on Sunday");
+    expect(restartLine("space", "Monday", false)).toBe("A new galaxy starts on Monday 🚀");
+    expect(restartLine("aquarium", "Monday", true)).toBe("A full reef! 🐙 A new one starts on Monday");
+    expect(newWeekLine("garden")).toBe("Last week's garden is in the album 📸 A new seed is planted 🌱");
+    expect(newWeekLine("dino")).toBe("Last week's dino egg is in the album 📸 A new egg is waiting 🥚");
+  });
+  it("finds last week in the album (only if it had stars)", () => {
+    const album = [{ week_start: "2026-09-20", stars: 9, stage: 2 }, { week_start: "2026-09-13", stars: 3, stage: 1 }];
+    expect(lastWeek("2026-09-27", album)).toEqual(album[0]);
+    expect(lastWeek("2026-10-04", album)).toBeNull();
+    expect(lastWeek("2026-09-27", [{ week_start: "2026-09-20", stars: 0, stage: 0 }])).toBeNull();
   });
 });
 

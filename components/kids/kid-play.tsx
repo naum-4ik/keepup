@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import { checkInFor } from "@/app/(app)/kids/actions";
 import { Avatar } from "@/components/avatar";
 import { GardenPicture, NextStep } from "@/components/kids/garden";
+import { NewWeekCard } from "@/components/kids/new-week-card";
 import { HoldToExit } from "@/components/kids/hold-to-exit";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,20 @@ type Flying = { key: number; x: number; y: number; dx: number; dy: number };
 
 // The full-screen kid view: big buttons, a tap counts at once (logged as by the child), a ⭐ flies
 // to the garden and the count bumps. No numbers besides stars; no XP.
-export function KidPlay({ child, habits, stars }: { child: Child; habits: PlayHabit[]; stars: number }) {
+export function KidPlay({
+  child,
+  habits,
+  stars,
+  weekStart,
+  lastStars,
+}: {
+  child: Child;
+  habits: PlayHabit[];
+  stars: number;
+  weekStart?: string;
+  // Last week's stars, when it had any: the new-week card shows that picture going to the album.
+  lastStars?: number;
+}) {
   const [pending, startTransition] = useTransition();
   const [view, tap] = useOptimistic({ habits, stars }, (s, habitId: string) => ({
     stars: s.stars + 1,
@@ -49,10 +63,12 @@ export function KidPlay({ child, habits, stars }: { child: Child; habits: PlayHa
         <HoldToExit href={`/kids/${child.id}`} childName={child.name} />
       </header>
 
+      {weekStart && lastStars ? <NewWeekCard childId={child.id} weekStart={weekStart} lastStars={lastStars} theme={child.theme} /> : null}
+
       <div ref={garden} className="flex flex-col items-center gap-2">
         <GardenPicture stars={view.stars} size="lg" theme={child.theme} />
         <p className="text-3xl font-bold tabular-nums" aria-live="polite">⭐ {view.stars}</p>
-        <NextStep stars={view.stars} theme={child.theme} />
+        <NextStep stars={view.stars} theme={child.theme} weekStart={weekStart} />
       </div>
 
       {error && <p role="alert" className="text-center text-base text-destructive">{error}</p>}

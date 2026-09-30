@@ -111,3 +111,42 @@ export function nextStep(
   if (!next) return null;
   return { have: stars - now.min, need: next.min - now.min, left: next.min - stars, icon: next.icon, label: next.label };
 }
+
+// ideas/kid-view-next.md: when it starts over (the family group's first day of the week) and how the
+// new week is announced, in the child's theme.
+const THEME_WORDS: Record<KidThemeId, { noun: string; start: string; seed: string }> = {
+  garden: { noun: "garden", start: "🌱", seed: "A new seed is planted 🌱" },
+  aquarium: { noun: "aquarium", start: "💧", seed: "Fresh water is ready 💧" },
+  space: { noun: "galaxy", start: "🚀", seed: "A new launch pad is ready 🚀" },
+  dino: { noun: "dino egg", start: "🥚", seed: "A new egg is waiting 🥚" },
+  town: { noun: "town", start: "🏠", seed: "A new field is ready 🌾" },
+};
+
+const DAY = new Intl.DateTimeFormat("en-GB", { weekday: "long", timeZone: "UTC" });
+
+// This week started on weekStart, so the next one starts 7 days later, on the same weekday.
+export function restartDay(weekStart: string): string {
+  return DAY.format(new Date(`${weekStart}T00:00:00Z`));
+}
+
+export function restartLine(theme: string | null | undefined, day: string, full: boolean): string {
+  const t = kidTheme(theme);
+  const words = THEME_WORDS[t.id];
+  if (full) {
+    const last = t.stages[t.stages.length - 1];
+    const done = t.id === "garden" ? "Full garden! 🌻" : `${last.label}! ${last.icon}`;
+    return `${done} A new one starts on ${day}`;
+  }
+  return `A new ${words.noun} starts on ${day} ${words.start}`;
+}
+
+export function newWeekLine(theme: string | null | undefined): string {
+  const words = THEME_WORDS[kidTheme(theme).id];
+  return `Last week's ${words.noun} is in the album 📸 ${words.seed}`;
+}
+
+// Last week's entry in the album (the week just before weekStart), if it had any stars.
+export function lastWeek<T extends { week_start: string; stars: number }>(weekStart: string, album: T[]): T | null {
+  const prev = new Date(new Date(`${weekStart}T00:00:00Z`).getTime() - 7 * 86_400_000).toISOString().slice(0, 10);
+  return album.find((w) => w.week_start === prev && w.stars > 0) ?? null;
+}
