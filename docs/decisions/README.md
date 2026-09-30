@@ -11,3 +11,4 @@ Short records of the choices that shape Keepup: what was decided, why, and what 
 | [0005](0005-the-first-period-is-never-missed.md) | The first period is never missed | Accepted |
 | [0006](0006-pauses-block-only-paused-days.md) | Pauses block only paused days; done beats skipped | Accepted |
 | [0007](0007-no-face-id-sign-in-in-v1.md) | No Face ID sign-in in v1 | Accepted |
+| [0008](0008-email-and-password-instead-of-an-email-link.md) | Email and password instead of an email link | Accepted |

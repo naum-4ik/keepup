@@ -1,11 +1,8 @@
 import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { authErrorReason } from "@/lib/auth-errors";
 import { safeNextPath } from "@/lib/paths";
-import { signInWithGoogle } from "./actions";
 import { LoginForm } from "./login-form";
-import { GoogleIcon } from "@/components/google-icon";
 
 export default async function LoginPage({
   searchParams,
@@ -34,27 +31,7 @@ export default async function LoginPage({
         <p className="text-sm text-muted-foreground">Habits, together.</p>
       </div>
       <div className="flex w-full max-w-sm flex-col gap-4 self-stretch rounded-2xl bg-card p-6 shadow-soft">
-        {googleEnabled && (
-          <>
-            <form action={signInWithGoogle}>
-              <input type="hidden" name="next" value={nextPath} />
-              <Button
-                type="submit"
-                variant="outline"
-                className="h-12 w-full justify-center gap-3 bg-card hover:bg-muted"
-              >
-                <GoogleIcon className="size-5" />
-                Continue with Google
-              </Button>
-            </form>
-            <div className="flex items-center gap-3">
-              <div aria-hidden="true" className="h-px flex-1 bg-border" />
-              <span className="text-sm text-muted-foreground">or</span>
-              <div aria-hidden="true" className="h-px flex-1 bg-border" />
-            </div>
-          </>
-        )}
-        <LoginForm next={nextPath} />
+        <LoginForm next={nextPath} googleEnabled={googleEnabled} />
       </div>
     </main>
   );

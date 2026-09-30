@@ -16,10 +16,10 @@ export default async function AuthErrorPage({
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-4 px-4">
-      <h1 className="text-2xl font-bold">That sign-in link didn&apos;t work</h1>
+      <h1 className="text-2xl font-bold">Sign-in didn&apos;t work</h1>
       {reason === "expired" && (
         <p className="text-sm text-muted-foreground">
-          This link was already used or has expired. Request a new one.
+          This link was already used or has expired. Sign in again.
         </p>
       )}
       {reason === "denied" && (
