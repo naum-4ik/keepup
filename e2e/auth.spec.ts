@@ -6,10 +6,13 @@ test("signed-out visitors are sent to sign in", async ({ page }) => {
   await expect(page).toHaveURL(/\/login\?next=%2Ftoday$/);
 });
 
-test("the landing page offers sign-in and sign-up", async ({ page }) => {
+test("the landing page: one Get started button, and a Sign in link", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Keepup" })).toBeVisible();
-  await page.getByRole("link", { name: "Create account" }).click();
+  const start = page.getByRole("link", { name: "Get started" });
+  const width = (await start.boundingBox())?.width ?? 0;
+  expect(width).toBeGreaterThanOrEqual(340); // fills the column (max 384px minus 2 × 16px margins)
+  await start.click();
   await expect(page).toHaveURL(/\/signup$/);
   await page.goto("/");
   await page.getByRole("link", { name: "Sign in" }).click();
