@@ -717,6 +717,9 @@ isOneToOne: false
 "review_check_ins":
 { Args: { "p_approve": boolean,"p_check_in_ids": (string)[] }; Returns: number
                            },
+"reset_child":
+{ Args: { "p_child_id": string }; Returns: undefined
+                           },
 "revoke_invites":
 { Args: { "p_group_id": string }; Returns: undefined
                            },
