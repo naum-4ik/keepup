@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { signUpAndOnboard } from "./helpers/auth";
-import { createHabit } from "./helpers/habits";
+import { createHabit, endHabitYesterday } from "./helpers/habits";
 
 test("a new user adds a habit from a template", async ({ page }) => {
   await signUpAndOnboard(page);
@@ -378,5 +378,37 @@ test("a habit with an end: 30 days on create, Day 1 of 30, then extend and remov
   await expect(manage).toContainText("No end yet");
   await page.goto("/today");
   await expect(page.getByRole("link", { name: /Read/ })).not.toContainText("Day 1 of");
+});
+
+test("a habit that ended: the finish card, Keep going, Finish, and Start again", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createHabit(page, { title: "Read", count: 1, period: "day" });
+  await createHabit(page, { title: "Stretch", count: 1, period: "day" });
+  const idOf = async (title: string) => (await page.getByRole("link", { name: new RegExp(title) }).getAttribute("href"))!.split("/").pop()!;
+  const read = await idOf("Read");
+  const stretch = await idOf("Stretch");
+  endHabitYesterday(read);
+  endHabitYesterday(stretch);
+  await page.reload();
+
+  const readCard = page.getByRole("region", { name: "Read is finished" });
+  await expect(readCard).toContainText("Read reached its end 🎉");
+  await expect(readCard).toContainText(/You did 0 of \d days/);
+  await expect(page.getByRole("button", { name: "Check in: Read" })).toHaveCount(0); // no more check-ins
+
+  await readCard.getByRole("button", { name: "Keep going" }).click();
+  await expect(readCard).toBeHidden();
+  await expect(page.getByRole("button", { name: "Check in: Read" })).toBeVisible();
+
+  await page.getByRole("region", { name: "Stretch is finished" }).getByRole("button", { name: "Finish" }).click();
+  await expect(page.getByRole("region", { name: "Stretch is finished" })).toBeHidden();
+  await page.goto("/progress?view=finished");
+  await expect(page.getByRole("link", { name: /Stretch/ })).toBeVisible();
+  await page.goto("/progress?view=archived");
+  await expect(page.getByRole("link", { name: /Stretch/ })).toHaveCount(0); // finished, not just archived
+  await page.goto("/progress?view=finished");
+  await page.getByRole("button", { name: "Start Stretch again" }).click();
+  await expect(page).toHaveURL(/\/today$/);
+  await expect(page.getByRole("link", { name: /Stretch/ })).toContainText("Day 1 of 3");
 });
 

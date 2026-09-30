@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth";
+import { getProfile, requireUser } from "@/lib/auth";
 import { insertHabits, setHabitEnd } from "@/lib/habit-create";
+import { startAgainEnd } from "@/lib/habit-finish";
+import { todayIn } from "@/lib/dates";
 import { GENERIC_ERROR, habitErrorMessage } from "@/lib/habit-errors";
 import { isUuid, LOCAL_DATE, parseHabit, parseHabitDetails, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 
@@ -219,4 +221,59 @@ export async function changeHabitEnd(habitId: string, endsOn: string | null): Pr
   if (error) return { ok: false, message: habitErrorMessage(error) };
   refresh(habitId);
   return { ok: true };
+}
+
+// The finish card's two choices (ideas/habit-end-date.md). Owners, or admins for group habits.
+export async function keepGoing(habitId: string): Promise<ActionResult> {
+  if (!isUuid(habitId)) return { ok: false, message: "That habit isn't available." };
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("keep_going", { p_habit_id: habitId });
+  if (error) return { ok: false, message: habitErrorMessage(error) };
+  refresh(habitId);
+  return { ok: true };
+}
+
+export async function finishHabit(habitId: string): Promise<ActionResult> {
+  if (!isUuid(habitId)) return { ok: false, message: "That habit isn't available." };
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("finish_habit", { p_habit_id: habitId });
+  if (error) return { ok: false, message: habitErrorMessage(error) };
+  refresh(habitId);
+  return { ok: true };
+}
+
+// Start again from the Finished tab: a fresh copy with the same settings and length, from today.
+// The finished one keeps its history.
+export async function startAgain(habitId: string): Promise<ActionResult> {
+  if (!isUuid(habitId)) return { ok: false, message: "That habit isn't available." };
+  const { supabase, profile } = await getProfile();
+  const { data: h, error: readError } = await supabase.from("habits").select("*").eq("id", habitId).maybeSingle();
+  if (readError || !h || !h.finished_at || !h.category) return { ok: false, message: "That habit isn't available." };
+  let newId: string | undefined;
+  if (h.group_id) {
+    const { data, error } = await supabase.rpc("create_group_habit", {
+      p_group_id: h.group_id,
+      p_title: h.title,
+      p_emoji: h.emoji,
+      p_category: h.category,
+      p_target_count: h.target_count,
+      p_period: h.period,
+      p_requires_approval: h.requires_approval,
+      p_children: [],
+    });
+    if (error) return { ok: false, message: habitErrorMessage(error) };
+    newId = data?.id;
+  } else {
+    const { error, ids } = await insertHabits(supabase, [
+      { title: h.title, emoji: h.emoji, category: h.category, targetCount: h.target_count, period: h.period, startsOn: "" },
+    ]);
+    if (error) return { ok: false, message: habitErrorMessage(error) };
+    newId = ids[0];
+  }
+  if (newId && h.ends_on) {
+    const endError = await setHabitEnd(supabase, newId, startAgainEnd(h.starts_on, h.ends_on, todayIn(profile.timezone)));
+    if (endError) console.error("set_habit_end failed", endError.message);
+  }
+  refresh();
+  redirect("/today");
 }

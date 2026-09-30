@@ -56,25 +56,28 @@ export function TodayCard({
       )}
     >
       {celebrate && <Confetti />}
+      {/* Nothing due today (e.g. every habit is paused or has ended): only the week line shows. */}
+      {total > 0 && (
       <div className="flex items-center gap-4">
-        <span className="relative flex shrink-0 items-center justify-center">
-          <ProgressRing done={done} possible={total} size={64} label={`${done} of ${total} done today`} />
-          {!allDone && total > 0 && (
-            <span aria-hidden className="absolute text-sm font-bold tabular-nums">
-              {Math.round((done / total) * 100)}%
-            </span>
-          )}
-        </span>
-        <div className="flex min-w-0 flex-col">
-          <p className="text-sm font-semibold text-muted-foreground">{date}</p>
-          <p className="text-lg font-bold tabular-nums">
-            {done} of {total} done
-          </p>
-          <p role="status" className={cn("text-sm font-semibold", allDone ? "text-[#4F8A5B]" : "text-primary")}>
-            {todayLine(done, total)}
-          </p>
+          <span className="relative flex shrink-0 items-center justify-center">
+            <ProgressRing done={done} possible={total} size={64} label={`${done} of ${total} done today`} />
+            {!allDone && total > 0 && (
+              <span aria-hidden className="absolute text-sm font-bold tabular-nums">
+                {Math.round((done / total) * 100)}%
+              </span>
+            )}
+          </span>
+          <div className="flex min-w-0 flex-col">
+            <p className="text-sm font-semibold text-muted-foreground">{date}</p>
+            <p className="text-lg font-bold tabular-nums">
+              {done} of {total} done
+            </p>
+            <p role="status" className={cn("text-sm font-semibold", allDone ? "text-[#4F8A5B]" : "text-primary")}>
+              {todayLine(done, total)}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {items.length > 0 && (
         // One picture with one label: the habit cards below are the interactive part.

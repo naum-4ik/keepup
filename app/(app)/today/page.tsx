@@ -15,7 +15,9 @@ import { getProfile } from "@/lib/auth";
 import { feedCopy } from "@/lib/feed-copy";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
-import { getHabitEnds, getHabitSummaries, getWeekOverview, type HabitSummary } from "@/lib/habits";
+import { getFinishSummary, getHabitEnds, getHabitSummaries, getWeekOverview, type HabitSummary } from "@/lib/habits";
+import { finishLine } from "@/lib/habit-finish";
+import { FinishCard } from "@/components/today/finish-card";
 import { endLabel, endProgress } from "@/lib/habit-end";
 import { getPendingApprovals } from "@/lib/inbox";
 import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
@@ -49,7 +51,16 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     }),
   );
   const joinedGroup = joined && isUuid(joined) ? groups.find((g) => g.group_id === joined) : undefined;
-  const habits = summaries.filter((h) => !h.archived_at);
+  // Habits past their end (ideas/habit-end-date.md) leave the lists (no more check-ins) for a finish card.
+  const todayKey = new Intl.DateTimeFormat("en-CA", { timeZone: profile.timezone }).format(new Date());
+  const active = summaries.filter((h) => !h.archived_at);
+  const ends = await getHabitEnds(active.map((h) => h.habit_id));
+  const ended = active.filter((h) => {
+    const e = ends.get(h.habit_id);
+    return e !== undefined && e < todayKey;
+  });
+  const finishes = await Promise.all(ended.map(async (h) => ({ h, summary: await getFinishSummary(h.habit_id) })));
+  const habits = active.filter((h) => !ended.includes(h));
   const sections = sectionsForToday(habits);
   // A solo user's Today looks as before: the "Mine" heading shows only next to a group section.
   const withHeadings = sections.some((s) => s.key !== "mine") || kids.length > 0;
@@ -66,7 +77,6 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const date = new Intl.DateTimeFormat("en-GB", { timeZone: profile.timezone, weekday: "long", day: "numeric", month: "long" }).format(now);
   const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: profile.timezone }).format(now);
   // "Day 12 of 30" for habits with an end.
-  const ends = await getHabitEnds(habits.map((h) => h.habit_id));
   const endLines = new Map<string, string>();
   for (const h of habits) {
     const endsOn = ends.get(h.habit_id);
@@ -141,11 +151,22 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         <FamilyRecapCard key={recapKey(r)} cardKey={recapKey(r)} group={r.group_name} line={recapLine(r)} />
       ))}
       {gentle && <GentleCard key={gentle.key} card={gentle} />}
+      {finishes.map(({ h, summary }) => (
+        <FinishCard
+          key={h.habit_id}
+          habitId={h.habit_id}
+          title={h.title}
+          emoji={h.emoji}
+          category={h.category}
+          line={summary ? finishLine(summary, h.period, Boolean(h.group_id)) : "You reached the end 🎉"}
+          canDecide={!h.group_id || h.my_role === "admin"}
+        />
+      ))}
       {/* Nothing due today: the week still shows on its own. */}
       {progress.total === 0 && overview && hasWeekData(overview) && (
         <TodayCard date={date} dayKey={dayKey} done={0} total={0} items={[]} week={{ done: overview.done, possible: overview.possible, streak: overview.best_current_streak }} />
       )}
-      {habits.length === 0 && kids.length === 0 ? (
+      {habits.length === 0 && kids.length === 0 && finishes.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">
           <div className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">
             <SproutIcon className="size-6" aria-hidden />
