@@ -205,6 +205,13 @@ export async function deleteChild(childId: string): Promise<KidActionResult> {
   redirect("/groups");
 }
 
+// Reset (admins; the RPC enforces it): everything except the nickname and avatar is cleared.
+export async function resetChild(childId: string): Promise<KidActionResult> {
+  if (!isUuid(childId)) return NOT_FOUND;
+  const { supabase } = await requireUser();
+  return call(childId, () => supabase.rpc("reset_child", { p_child_id: childId }));
+}
+
 // The JSON for "Export {Mary}'s data"; the client saves it as a file.
 export async function exportChild(childId: string): Promise<{ ok: true; data: unknown } | { ok: false; message: string }> {
   if (!isUuid(childId)) return { ok: false, message: NO_CHILD };

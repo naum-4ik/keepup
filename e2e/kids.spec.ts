@@ -192,3 +192,22 @@ test("choose what grows with the child: the kid page and the kid view switch the
   await expect(page.getByRole("img", { name: "3 more stars to seaweed" })).toBeVisible();
 });
 
+test("reset a child's profile: export first is offered, and only the nickname and avatar stay", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await expect(page.getByText("Brush teeth")).toBeVisible();
+  const zone = page.getByRole("region", { name: "Danger zone" });
+  await zone.getByRole("button", { name: "Reset Mary's profile" }).click();
+  const dialog = page.getByRole("dialog", { name: "Reset Mary's profile?" });
+  await expect(dialog).toContainText("Everything except Mary's nickname and avatar is cleared");
+  const download = page.waitForEvent("download");
+  await dialog.getByRole("button", { name: "Export first" }).click();
+  expect((await download).suggestedFilename()).toMatch(/^keepup-Mary-\d{4}-\d{2}-\d{2}\.json$/);
+  await dialog.getByRole("button", { name: "Reset", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await expect(zone.getByRole("status")).toHaveText("Mary's profile is reset. A fresh start 🌱");
+  await expect(page.getByText("No habits yet.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mary" })).toBeVisible();
+});
+
