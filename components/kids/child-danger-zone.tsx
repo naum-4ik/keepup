@@ -41,7 +41,7 @@ export function ExportChildButton({ childId, childName, label, className }: { ch
           })
         }
       >
-        {pending ? "Exporting…" : (label ?? `Export ${childName}'s data`)}
+        <span className="truncate">{pending ? "Exporting…" : (label ?? `Export ${childName}'s data`)}</span>
       </Button>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </div>
@@ -134,7 +134,7 @@ function ResetChildButton({ childId, childName }: { childId: string; childName: 
           setOpen(true);
         }}
       >
-        Reset {childName}&apos;s profile
+        <span className="truncate">Reset {childName}&apos;s profile</span>
       </Button>
       {done && (
         <p role="status" className="text-sm font-semibold text-[#4F8A5B]">
@@ -186,7 +186,7 @@ function DeleteChildButton({ childId, childName }: { childId: string; childName:
   return (
     <>
       <Button type="button" variant="outline" className="h-11 text-destructive hover:text-destructive" onClick={() => setOpen(true)}>
-        Delete {childName}&apos;s profile
+        <span className="truncate">Delete {childName}&apos;s profile</span>
       </Button>
       <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
         <DialogContent>

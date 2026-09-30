@@ -1,7 +1,7 @@
 "use client";
 
 import { Pencil } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Avatar } from "@/components/avatar";
 import { AvatarForm } from "@/components/avatar-form";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -29,9 +29,11 @@ export function AvatarEdit({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   return (
     <>
       <button
+        ref={trigger}
         type="button"
         aria-label={title}
         onClick={() => setOpen(true)}
@@ -46,7 +48,13 @@ export function AvatarEdit({
         </span>
       </button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        {/* No DialogTrigger, so hand focus back to the avatar button on close. */}
+        <DialogContent
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            trigger.current?.focus();
+          }}
+        >
           <div className="flex flex-col gap-1 pr-10">
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>

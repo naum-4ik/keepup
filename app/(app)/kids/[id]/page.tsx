@@ -57,17 +57,17 @@ export default async function KidPage({
     <section className="flex flex-col gap-4 pt-2 pb-6">
       <Link
         href={`/groups/${child.group_id}`}
-        className="-ml-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+        className="-ml-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
       >
-        <ChevronLeft aria-hidden className="size-4" />
-        {child.group_name}
+        <ChevronLeft aria-hidden className="size-4 shrink-0" />
+        <span className="truncate">{child.group_name}</span>
       </Link>
 
       <header className="flex items-center gap-3">
         <Avatar name={child.name} emoji={child.avatar_emoji} color={child.avatar_color} size="lg" />
         <div className="flex min-w-0 flex-1 flex-col">
           <h1 className="truncate text-xl font-bold">{child.name}</h1>
-          <p className="text-sm text-muted-foreground">{child.group_name}</p>
+          <p className="truncate text-sm text-muted-foreground">{child.group_name}</p>
         </div>
         <EditChildButton childId={id} name={child.name} emoji={child.avatar_emoji} color={child.avatar_color} />
       </header>

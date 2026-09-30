@@ -6,7 +6,7 @@ import { StreakBadge } from "@/components/habits/streak-badge";
 import { KidCheckInButton } from "@/components/kids/kid-check-in-button";
 import type { HabitSummary } from "@/lib/habits";
 import { describeProgress } from "@/lib/schedule";
-import { memberStatus, membersOf } from "@/lib/today-sections";
+import { everyoneDidIt, memberStatus, membersOf } from "@/lib/today-sections";
 import { stateOf } from "@/lib/today";
 import { CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
@@ -40,8 +40,7 @@ export function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; kid?: 
   const progress = progressOf(habit);
   const showBar = habit.period === "day" && habit.target_count > 1 && !habit.frozen;
   const members = membersOf(habit);
-  // A group habit is done when everyone required is; that wins over the user's own count.
-  const everyone = Boolean(members && habit.group_done);
+  const everyone = everyoneDidIt(habit);
   // "Me + Mary": children in this habit who still have it open.
   const openChildren = (members ?? [])
     .filter((m) => m.kind === "child" && memberStatus(m, habit.target_count) === "open")

@@ -86,7 +86,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                         <span className="flex min-w-0 items-center gap-2">
                           <span className="truncate font-bold">{h.title}</span>
                           {h.group_name && (
-                            <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">
+                            <span className="max-w-[45%] shrink-0 truncate rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">
                               {h.group_name}
                             </span>
                           )}

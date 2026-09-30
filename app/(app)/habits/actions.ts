@@ -29,10 +29,21 @@ const readEndsOn = (formData: FormData) => {
   return LOCAL_DATE.test(v) ? v : "";
 };
 
+// The end is set after the habit is created, so an end before the start would be refused only then,
+// with the habit already saved without it. Check first. Empty start = today (in the user's zone).
+const END_BEFORE_START = "The last day can't be before the first day.";
+async function endBeforeStart(formData: FormData, startsOn: string | undefined): Promise<boolean> {
+  const endsOn = readEndsOn(formData);
+  if (!endsOn) return false;
+  const { profile } = await getProfile();
+  return endsOn < (startsOn ?? todayIn(profile.timezone));
+}
+
 export async function createHabit(_prev: HabitFormState, formData: FormData): Promise<HabitFormState> {
   const values = readHabitForm(formData);
   const parsed = parseHabit(values);
   if (!parsed.ok) return { status: "error", errors: parsed.errors, values };
+  if (await endBeforeStart(formData, parsed.value.startsOn)) return { status: "error", message: END_BEFORE_START, values };
 
   const { supabase } = await requireUser();
   const { error, ids } = await insertHabits(supabase, [parsed.value]);
@@ -162,6 +173,7 @@ export async function createGroupHabit(_prev: HabitFormState, formData: FormData
   if (!parsed.ok) return { status: "error", errors: parsed.errors, values };
   const groupId = String(formData.get("groupId") ?? "");
   if (!isUuid(groupId)) return { status: "error", message: "Pick a group.", values };
+  if (await endBeforeStart(formData, parsed.value.startsOn)) return { status: "error", message: END_BEFORE_START, values };
   const children = formData.getAll("children").map(String).filter(isUuid);
   const { supabase } = await requireUser();
   const { data: created, error } = await supabase.rpc("create_group_habit", {

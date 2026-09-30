@@ -11,7 +11,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-dvh flex-col">
       <AppHeader displayName={profile.display_name} avatarEmoji={profile.avatar_emoji} avatarColor={profile.avatar_color} unread={unread} />
-      <main className="mx-auto w-full max-w-md flex-1 px-4 pb-24">{children}</main>
+      {/* wrap-anywhere (inherited): a long name with no spaces wraps instead of widening the page. */}
+      <main className="mx-auto w-full max-w-md flex-1 px-4 pb-24 wrap-anywhere">{children}</main>
       <BottomNav />
     </div>
   );

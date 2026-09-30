@@ -22,7 +22,7 @@ export default async function ProfilePage() {
           title="Change your avatar"
           description="Shown to your groups."
         />
-        <div>
+        <div className="min-w-0">
           <h1 className="text-xl font-bold">{profile.display_name}</h1>
           <p className="text-sm text-muted-foreground">
             {cityOf(profile.timezone)} · weeks start {profile.week_start === 0 ? "Sunday" : "Monday"}

@@ -11,6 +11,7 @@ import { CHILD_NAME_MAX } from "@/lib/kid-schema";
 import { DEFAULT_KID_TEMPLATE_IDS, KID_TEMPLATES, kidTemplatesByGroup, type KidTemplate } from "@/lib/kid-templates";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
+import { keepFormValues } from "@/lib/keep-form-values";
 
 const initialState: KidFormState = { status: "idle" };
 
@@ -56,7 +57,7 @@ export function AddChildForm({ groupId }: { groupId: string }) {
     });
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-4">
       <input type="hidden" name="groupId" value={groupId} />
       {[...picked].map((id) => (
         <input key={id} type="hidden" name="templates" value={id} />
@@ -127,7 +128,7 @@ export function AddChildForm({ groupId }: { groupId: string }) {
       {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
 
       <Button type="submit" className="h-12 text-base" disabled={!guardian || pending}>
-        {pending ? "Adding…" : `Add ${nickname || "child"}`}
+        <span className="truncate">{pending ? "Adding…" : `Add ${nickname || "child"}`}</span>
       </Button>
     </form>
   );

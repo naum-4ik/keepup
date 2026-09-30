@@ -27,6 +27,12 @@ export function memberStatus(m: Member, target: number): MemberStatus {
 export const membersOf = (h: Pick<HabitSummary, "members">): Member[] | null =>
   Array.isArray(h.members) ? (h.members as unknown as Member[]) : null;
 
+// "Everyone did it ✓" on a group habit: the group's period is done, and so am I (or I'm paused).
+// Someone who joined mid-period isn't required yet, so the group can be done while their own
+// check-in is still open; they see their own progress instead.
+export const everyoneDidIt = (h: Pick<HabitSummary, "members" | "group_done" | "done_count" | "target_count" | "frozen">): boolean =>
+  Boolean(membersOf(h) && h.group_done && (h.done_count >= h.target_count || h.frozen));
+
 export type TodaySection = { key: string; title: string; habits: HabitSummary[] };
 
 // Today: "Mine" first, then one section per group by name; empty sections are dropped.
