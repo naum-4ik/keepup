@@ -73,7 +73,7 @@ export default async function KidPage({
       </header>
 
       {habitsFailed === "1" && (
-        <p role="status" className="rounded-2xl bg-[#FBF3D9] p-4 text-sm font-semibold text-[#6B4A0A]">
+        <p role="status" className="rounded-2xl bg-pending-soft p-4 text-sm font-semibold text-pending">
           Some habits couldn&apos;t be added. Add them from here.
         </p>
       )}

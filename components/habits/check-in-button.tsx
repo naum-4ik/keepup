@@ -82,13 +82,13 @@ export function CheckInButton({
         }}
         className={cn(
           "flex size-11 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-          state === "done" && "border-[#4F8A5B] bg-[#4F8A5B] text-white",
+          state === "done" && "border-done bg-done text-done-foreground",
           celebrating && "animate-checkin",
           // Finishing check-in: the target was just reached.
-          celebrating && state === "done" && "motion-safe:shadow-[0_0_0_6px_rgb(79_138_91_/_0.18)]",
-          state === "pending" && "border-[#D4A017] text-[#9A6A10]",
-          state === "checked-today" && "border-[#4F8A5B] text-[#4F8A5B]",
-          state === "frozen" && "border-border text-[#5B8DB8]",
+          celebrating && state === "done" && "motion-safe:shadow-[0_0_0_6px_color-mix(in_srgb,var(--done)_18%,transparent)]",
+          state === "pending" && "border-pending text-pending",
+          state === "checked-today" && "border-done text-done",
+          state === "frozen" && "border-border text-frozen",
           state === "not-started" && "border-border text-muted-foreground",
           state === "open" && "border-input text-primary hover:bg-accent",
           pending && "opacity-60",

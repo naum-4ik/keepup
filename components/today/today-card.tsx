@@ -52,7 +52,7 @@ export function TodayCard({
       aria-label="Today's progress"
       className={cn(
         "relative flex flex-col gap-3 overflow-hidden rounded-2xl p-4 shadow-soft transition-colors",
-        allDone ? "bg-[#E5F2E6] dark:bg-[#4F8A5B]/20" : "bg-card",
+        allDone ? "bg-done-soft" : "bg-card",
       )}
     >
       {celebrate && <Confetti />}
@@ -72,7 +72,7 @@ export function TodayCard({
             <p className="text-lg font-bold tabular-nums">
               {done} of {total} done
             </p>
-            <p role="status" className={cn("text-sm font-semibold", allDone ? "text-[#4F8A5B]" : "text-primary")}>
+            <p role="status" className={cn("text-sm font-semibold", allDone ? "text-done" : "text-primary")}>
               {todayLine(done, total)}
             </p>
           </div>
@@ -88,9 +88,9 @@ export function TodayCard({
         >
           {items.map((i) => (
             <span key={i.habitId} data-done={i.done || undefined} className="relative">
-              <HabitEmoji category={i.category} emoji={i.emoji} className={cn("size-9 transition", !i.done && "opacity-40 grayscale")} />
+              <HabitEmoji category={i.category} emoji={i.emoji} className={cn("size-9 transition", !i.done && "opacity-40 grayscale dark:opacity-60 dark:brightness-150")} />
               {i.done && (
-                <span aria-hidden className="absolute -right-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-[#4F8A5B] text-white ring-2 ring-card">
+                <span aria-hidden className="absolute -right-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-done text-done-foreground ring-2 ring-card">
                   <Check className="size-2.5" strokeWidth={4} />
                 </span>
               )}
@@ -114,7 +114,7 @@ export function TodayCard({
           {week.streak > 0 && (
             <>
               <span aria-hidden>·</span>
-              <span className="flex items-center gap-1 font-bold text-[#E8804F] tabular-nums">
+              <span className="flex items-center gap-1 font-bold text-flame tabular-nums">
                 <Flame className="size-4 fill-current" aria-hidden />
                 <span className="sr-only">Best streak:</span>
                 {week.streak}

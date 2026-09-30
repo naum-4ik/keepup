@@ -17,9 +17,9 @@ export const MEMBER_STATUS_LABEL: Record<MemberStatus, string> = {
 
 // docs/design.md status colours, each with an icon (colour is never the only signal).
 const BADGE: Partial<Record<MemberStatus, { Icon: typeof Check; className: string }>> = {
-  done: { Icon: Check, className: "bg-[#4F8A5B]" },
-  pending: { Icon: Clock, className: "bg-[#D4A017]" },
-  paused: { Icon: Snowflake, className: "bg-[#5B8DB8]" },
+  done: { Icon: Check, className: "bg-done" },
+  pending: { Icon: Clock, className: "bg-pending" },
+  paused: { Icon: Snowflake, className: "bg-frozen" },
 };
 
 export function MemberAvatar({ member, status, size = "sm" }: { member: Member; status: MemberStatus; size?: "sm" | "md" }) {
@@ -37,7 +37,7 @@ export function MemberAvatar({ member, status, size = "sm" }: { member: Member; 
         <span
           aria-hidden
           className={cn(
-            "absolute -right-1 -bottom-1 flex items-center justify-center rounded-full text-white ring-2 ring-card",
+            "absolute -right-1 -bottom-1 flex items-center justify-center rounded-full text-card ring-2 ring-card",
             size === "sm" ? "size-3.5" : "size-4.5",
             badge.className,
           )}

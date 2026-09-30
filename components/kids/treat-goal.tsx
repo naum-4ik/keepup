@@ -52,14 +52,14 @@ function ActiveGoal({ childId, childName, goal }: { childId: string; childName: 
           <span
             key={i}
             aria-hidden
-            className={cn("size-3 rounded-full", i < stars ? "bg-[#D4A017]" : "bg-muted ring-1 ring-border")}
+            className={cn("size-3 rounded-full", i < stars ? "bg-pending" : "bg-muted ring-1 ring-border")}
           />
         ))}
         <span aria-hidden className="ml-1 text-2xl leading-none">{goal.emoji}</span>
       </div>
       {reached ? (
         <>
-          <p className="font-semibold text-[#4F8A5B]">{childName} reached the goal ✓</p>
+          <p className="font-semibold text-done">{childName} reached the goal ✓</p>
           <Button type="button" className="h-11" disabled={pending} onClick={() => run(() => markReceived(goal.id, childId))}>
             Mark as received
           </Button>

@@ -37,7 +37,7 @@ export function FinishCard({
   return (
     <section
       aria-label={`${title} is finished`}
-      className="relative flex flex-col gap-3 overflow-hidden rounded-2xl bg-[#E5F2E6] p-4 shadow-soft dark:bg-[#4F8A5B]/20"
+      className="relative flex flex-col gap-3 overflow-hidden rounded-2xl bg-done-soft p-4 shadow-soft"
     >
       {celebrate && <Confetti />}
       {/* Above the confetti, so the pieces pass behind the text. */}
@@ -45,7 +45,7 @@ export function FinishCard({
         <HabitEmoji category={category} emoji={emoji} />
         <div className="flex min-w-0 flex-col">
           <p className="truncate font-bold">{title} reached its end{celebrate && " 🎉"}</p>
-          <p className="text-sm text-[#2F5E3A] dark:text-foreground">{line}</p>
+          <p className="text-sm text-done dark:text-foreground">{line}</p>
         </div>
       </div>
       {canDecide ? (

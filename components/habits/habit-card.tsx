@@ -56,7 +56,7 @@ export function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; kid?: 
             className={cn(
               "text-sm",
               // "1 day left" stays muted: honey means "waiting for approval" (docs/design.md), and no countdown pressure.
-              everyone ? "font-semibold text-[#4F8A5B]" : "text-muted-foreground",
+              everyone ? "font-semibold text-done" : "text-muted-foreground",
             )}
           >
             {everyone ? "Everyone did it ✓" : progress.text}
@@ -96,7 +96,7 @@ function KidHabitCard({ habit, kid }: { habit: HabitSummary; kid: Kid }) {
       <HabitEmoji category={habit.category} emoji={habit.emoji} size="lg" />
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="truncate font-bold">{habit.title}</span>
-        <span className={cn("text-sm", state === "done" ? "font-semibold text-[#4F8A5B]" : "text-muted-foreground")}>
+        <span className={cn("text-sm", state === "done" ? "font-semibold text-done" : "text-muted-foreground")}>
           {kidProgressText(habit)}
         </span>
       </span>

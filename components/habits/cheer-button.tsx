@@ -16,7 +16,7 @@ export function CheerButton({ checkInId, habitId, name, cheered }: { checkInId: 
         type="button"
         variant="outline"
         aria-pressed={done}
-        className="h-11 rounded-full px-4 aria-pressed:border-[#F6D2BE] aria-pressed:bg-accent aria-pressed:opacity-100"
+        className="h-11 rounded-full px-4 aria-pressed:border-flame/40 aria-pressed:bg-accent aria-pressed:opacity-100"
         disabled={done || pending}
         onClick={() =>
           startTransition(async () => {

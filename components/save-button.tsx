@@ -47,7 +47,7 @@ export function SaveButton({
         type="submit"
         variant={flash ? "default" : variant}
         disabled={pending}
-        className={cn("h-11 gap-1.5 transition-colors", flash && "bg-[#4F8A5B] text-white hover:brightness-95")}
+        className={cn("h-11 gap-1.5 transition-colors", flash && "bg-done text-done-foreground hover:brightness-95")}
       >
         {pending ? "Saving…" : flash ? (<><Check aria-hidden className="size-4" /> Saved</>) : label}
       </Button>

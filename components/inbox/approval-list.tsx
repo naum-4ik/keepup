@@ -83,7 +83,7 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {a.group_name} · {a.day}
-                    {a.reviewBy && <span className="font-semibold text-[#9A6A10]"> · {a.reviewBy}</span>}
+                    {a.reviewBy && <span className="font-semibold text-pending"> · {a.reviewBy}</span>}
                   </p>
                 </div>
               </div>

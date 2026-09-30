@@ -4,9 +4,9 @@ import type { HistoryCell } from "@/lib/habits";
 import { cn } from "@/lib/utils";
 
 const STYLE: Record<string, string> = {
-  done: "bg-[#4F8A5B]",
+  done: "bg-done",
   missed: "bg-muted",
-  skipped: "bg-[#5B8DB8]/40",
+  skipped: "bg-frozen/40",
   open: "border-2 border-dashed border-input",
 };
 const LABEL: Record<string, string> = {

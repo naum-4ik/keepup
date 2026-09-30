@@ -76,7 +76,7 @@ function TemplatePicker({
         Create your own
       </Button>
       {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
-      <p role="status" className="text-sm font-semibold text-[#4F8A5B]">
+      <p role="status" className="text-sm font-semibold text-done">
         {state.status === "saved" && lastAdded ? `Added ${lastAdded} ✓` : ""}
       </p>
       <form action={formAction} className="flex flex-col gap-4">

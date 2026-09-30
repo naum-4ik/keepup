@@ -68,11 +68,11 @@ export function DayCircle({ day, today, selected, label }: { day: WeekDay; today
 }
 
 const STATUS: Record<DayRow["status"], { text: string; className: string }> = {
-  done: { text: "Done", className: "text-[#4F8A5B]" },
-  checked_in: { text: "Checked in", className: "text-[#4F8A5B]" },
+  done: { text: "Done", className: "text-done" },
+  checked_in: { text: "Checked in", className: "text-done" },
   open: { text: "Not done yet", className: "text-muted-foreground" },
   missed: { text: "Not done", className: "text-muted-foreground" },
-  paused: { text: "Paused", className: "text-[#3B82B8]" },
+  paused: { text: "Paused", className: "text-frozen" },
 };
 
 function RowStatus({ row }: { row: DayRow }) {
@@ -152,7 +152,7 @@ export function DayPanel({ id, date, today, day, rows }: { id: string; date: str
                   <HabitEmoji category={r.category} emoji={r.emoji} size="xs" />
                   <span className="min-w-0 flex-1 truncate text-sm font-semibold">{r.title}</span>
                   {r.pending > 0 && (
-                    <span className="flex items-center gap-1 text-xs font-semibold text-[#9A6A10]">
+                    <span className="flex items-center gap-1 text-xs font-semibold text-pending">
                       <Clock aria-hidden className="size-3.5" />
                       {r.pending} waiting
                     </span>

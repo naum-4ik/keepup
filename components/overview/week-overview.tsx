@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import type { DayRow } from "@/lib/day-detail";
 import { WeekDays } from "@/components/overview/week-days";
 
-const STREAK = "text-[#E8804F]";
+const STREAK = "text-flame";
 
 export function ProgressRing({
   done,
@@ -28,7 +28,7 @@ export function ProgressRing({
   // it can show mid-week and give way to the ring again once the next day's habits come due.
   if (possible > 0 && done >= possible) {
     return (
-      <span role="img" data-complete="" aria-label={label} style={{ width: size, height: size }} className="flex shrink-0 items-center justify-center rounded-full bg-[#4F8A5B] text-white">
+      <span role="img" data-complete="" aria-label={label} style={{ width: size, height: size }} className="flex shrink-0 items-center justify-center rounded-full bg-done text-done-foreground">
         <Check aria-hidden strokeWidth={3} style={{ width: size * 0.55, height: size * 0.55 }} />
       </span>
     );
@@ -141,7 +141,7 @@ export function WeekCard({ overview: o, days }: { overview: WeekOverview; days?:
 const DOT: Record<HabitCells["cells"][number]["status"], string> = {
   done: "bg-current",
   missed: "bg-muted-foreground/30",
-  paused: "bg-[#5B8DB8]/40",
+  paused: "bg-frozen/40",
   not_started: "border border-input",
   open: "border border-input",
 };

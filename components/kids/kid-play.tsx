@@ -97,7 +97,7 @@ export function KidPlay({
                 }}
                 className={cn(
                   "flex min-h-24 w-full items-center gap-4 rounded-3xl border-2 p-4 text-left shadow-soft transition-colors",
-                  done ? "border-[#4F8A5B] bg-[#4F8A5B] text-white" : "border-transparent bg-card active:bg-accent",
+                  done ? "border-done bg-done text-done-foreground" : "border-transparent bg-card active:bg-accent",
                 )}
               >
                 <span aria-hidden className={cn("flex size-16 shrink-0 items-center justify-center rounded-full text-5xl leading-none", done ? "bg-white/20" : "bg-accent")}>
@@ -108,7 +108,7 @@ export function KidPlay({
                   {h.target > 1 && (
                     <span aria-hidden className="flex flex-wrap gap-1.5">
                       {Array.from({ length: h.target }, (_, i) => (
-                        <span key={i} className={cn("size-5 rounded-full", i < h.done ? (done ? "bg-white" : "bg-[#4F8A5B]") : done ? "bg-white/40" : "bg-muted ring-1 ring-border")} />
+                        <span key={i} className={cn("size-5 rounded-full", i < h.done ? (done ? "bg-done-foreground" : "bg-done") : done ? "bg-done-foreground/40" : "bg-muted ring-1 ring-border")} />
                       ))}
                     </span>
                   )}
