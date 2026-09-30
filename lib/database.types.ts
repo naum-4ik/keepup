@@ -695,6 +695,9 @@ isOneToOne: false
 "remove_member":
 { Args: { "p_group_id": string,"p_user_id": string }; Returns: undefined
                            },
+"reset_child":
+{ Args: { "p_child_id": string }; Returns: undefined
+                           },
 "review_check_in":
 { Args: { "p_approve": boolean,"p_check_in_id": string }; Returns: {
               "created_at": string,
@@ -716,9 +719,6 @@ isOneToOne: false
       } },
 "review_check_ins":
 { Args: { "p_approve": boolean,"p_check_in_ids": (string)[] }; Returns: number
-                           },
-"reset_child":
-{ Args: { "p_child_id": string }; Returns: undefined
                            },
 "revoke_invites":
 { Args: { "p_group_id": string }; Returns: undefined
