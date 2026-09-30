@@ -6,38 +6,41 @@
 
 A warm, mobile-first habit tracker for one person and for families. Pick a habit, check in with one tap, and watch your streaks grow. Next up: an installable app, offline check-ins and push reminders.
 
-**Status:** in development (v0.x). Try the staging build at **https://keepup-murex.vercel.app**. Sign-in is limited to test users for now.
+**Status:** in development (v0.x). Try the staging build at **https://keepup-murex.vercel.app**: sign up with an email and a password.
 
 <p align="center">
-  <img src="docs/screenshots/today.png" width="220" alt="Today: habits left to do, then Done, then Later">
-  <img src="docs/screenshots/new-habit.png" width="220" alt="New habit: categories and ready-made templates">
-  <img src="docs/screenshots/habit.png" width="220" alt="A habit's page: today's check-ins with undo, streaks, history">
+  <img src="docs/screenshots/today.png" width="220" alt="Today: a progress card, then habits left to do, then Done for today">
+  <img src="docs/screenshots/progress.png" width="220" alt="Progress: your week, streaks, and habits by category">
+  <img src="docs/screenshots/calendar.png" width="220" alt="Calendar: a month of days, tap one to see what you did">
 </p>
 
 ## What works today
 
-- **Today:** a "This week" strip (done so far, best streak), then a card per habit with its emoji, one-tap check-in, progress (e.g. `3 / 8 today`, `1 of 3 this week`) and a streak badge. It lists what's left to do first, then **Done**, then **Later** (habits that start later, or paused ones).
+- **Today:** a progress card (a ring of today's habits, what's left, and a small celebration when all are done), then a card per habit with its emoji, one-tap check-in, progress (e.g. `3 / 8 today`, `1 of 3 this week`) and a streak badge. It lists what's left to do first, then **Done for today**, then **Later** (habits that start later, or paused ones). Group and kid habits follow in their own sections.
 - **Ready-made habits:** 48 templates, 6 in each of 8 categories (Health, Fitness, Mind, Learning, People, Home, Work & money, Break a habit), or create your own with any emoji. Schedules are *X times a day, week or month*. Choose a start date (today, tomorrow, next week, or any day on the calendar).
 - **Habit page:**
   - this period's check-ins, with undo;
   - current and best streak, and history;
-  - pause (with an optional end date) and resume;
+  - pause (with an optional return date) and resume;
+  - an optional end (30 days, 8 weeks, a date…), shown as "Day 12 of 30"; at the end, keep going or finish it;
   - edit the habit; delete it (only if it has no check-ins) or archive it (keeps its history).
-- **Progress:** a "Your week" card (days, streaks, check-ins), and active and archived habits by category, each with its last 7 days as dots.
+- **Progress:** a "Your week" card (tap a day to see what you did), a month-by-month **calendar** back to your first habit, and active, finished and archived habits by category, each with its last 7 days as dots. Finished habits can start again.
 - **Onboarding:** name, detected time zone and week start, then pick up to 3 habits to start with.
 - **Fair streaks:**
   - Periods follow your time zone and your week start (Sunday or Monday).
   - A pause never breaks a streak.
   - A habit started mid-week doesn't count as missed.
 - **Groups and kids:**
-  - groups (family, friends, couple, roommates) with invite links;
+  - groups (family, friends, couple, roommates) with invite links and emoji avatars;
   - habits done together: a period is done when everyone required has checked in, with optional approval by another adult;
-  - kids without a login: an adult checks in for them, or they tap in a kid view; each approved check-in is a star, and the week's stars grow a garden;
+  - kids without a login: an adult checks in for them, or they tap in a kid view; each approved check-in is a star, and the week's stars grow a garden (or an aquarium, space, a dino egg or a town);
+  - treat goals chosen with the child ("20 ⭐ for a trip to the zoo"), and a reset that keeps only the nickname and avatar;
   - an Inbox for activity, nudges and cheers, updating live.
 
 <p align="center">
-  <img src="docs/screenshots/add-habit.png" width="220" alt="Adding a habit from a template">
-  <img src="docs/screenshots/progress.png" width="220" alt="Progress by category">
+  <img src="docs/screenshots/habit.png" width="220" alt="A habit's page: today's check-in with undo, streaks, history">
+  <img src="docs/screenshots/new-habit.png" width="220" alt="New habit: categories and ready-made templates">
+  <img src="docs/screenshots/kid-view.png" width="220" alt="The kid view: big buttons, stars and a garden">
 </p>
 
 ## Interesting problems
@@ -82,3 +85,5 @@ npm run dev                 # http://localhost:3000
 ```
 
 Tests: `npm test` · `npx supabase test db` · `npm run e2e`
+
+README screenshots: `npm run readme:screenshots` (local stack; seeds a demo month, macOS `sips` resizes).
