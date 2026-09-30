@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { NUDGE_KINDS } from "@/lib/feed-copy";
 import { errorCode, habitErrorMessage } from "@/lib/habit-errors";
 import { isUuid } from "@/lib/habit-schema";
+import { getPendingApprovals } from "@/lib/inbox";
 
 export type ReviewResult = { ok: true; reviewed: number } | { ok: false; message: string; code?: string };
 export type SendResult = { ok: boolean; message?: string; code?: string };
@@ -23,10 +24,18 @@ export async function review(checkInId: string, approve: boolean): Promise<Revie
   return { ok: true, reviewed: 1 };
 }
 
-// Only ids from pending_approvals() (which leaves out the user's own): review_check_ins skips ones
-// already reviewed or closed, but re-raises own_check_in.
+const MAX_BATCH = 100;
+
+// Approve only what pending_approvals() lists right now (it leaves out the user's own check-ins,
+// which would make review_check_ins abort the whole batch). Ids the client sent that aren't there
+// are dropped; ones that closed or were reviewed meanwhile are skipped by review_check_ins.
 export async function approveAll(checkInIds: string[]): Promise<ReviewResult> {
-  const ids = checkInIds.filter(isUuid);
+  const pending = new Set((await getPendingApprovals()).map((a) => a.check_in_id));
+  const ids = [...new Set(checkInIds)].filter((id) => isUuid(id) && pending.has(id)).slice(0, MAX_BATCH);
+  if (ids.length === 0) {
+    refresh();
+    return { ok: true, reviewed: 0 };
+  }
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("review_check_ins", { p_check_in_ids: ids, p_approve: true });
   refresh();
@@ -34,9 +43,13 @@ export async function approveAll(checkInIds: string[]): Promise<ReviewResult> {
   return { ok: true, reviewed: data ?? 0 };
 }
 
-export async function markAllRead(): Promise<void> {
+// Marks read only the rows the viewer was shown (not older ones past the list, nor newer arrivals).
+export async function markRead(ids: string[]): Promise<void> {
+  const valid = [...new Set(ids)].filter(isUuid).slice(0, MAX_BATCH);
+  if (valid.length === 0) return;
   const { supabase } = await requireUser();
-  await supabase.rpc("mark_feed_read", {});
+  const { error } = await supabase.rpc("mark_feed_read", { p_ids: valid });
+  if (error) console.error("mark_feed_read failed", error.message);
   revalidatePath("/", "layout");
 }
 

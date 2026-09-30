@@ -32,7 +32,7 @@ export default async function InboxPage() {
         activity={
           <>
             <FeedList items={feed} timeZone={tz} now={now} />
-            <MarkReadOnView hasUnread={feed.some((n) => !n.read_at)} />
+            <MarkReadOnView ids={feed.filter((n) => !n.read_at).map((n) => n.id)} />
           </>
         }
       />

@@ -35,7 +35,7 @@ export async function getWeekOverview(): Promise<WeekOverview | null> {
 export type HabitFreeze = { id: string; starts_on: string; ends_on: string | null; user_id?: string | null };
 export type HabitCheckIn = { id: string; local_date: string; created_at: string };
 // Group habits: everyone's check-ins this period (for Cheer and Nudge on the habit page).
-export type MemberCheckIn = { id: string; user_id: string; local_date: string; status: string; logged_by: string | null };
+export type MemberCheckIn = { id: string; user_id: string; local_date: string; status: string };
 
 export type HabitDetail = {
   summary: HabitSummary;
@@ -77,9 +77,10 @@ export async function getHabitDetail(habitId: string): Promise<HabitDetail | nul
     isGroup
       ? supabase
           .from("check_ins")
-          .select("id, user_id, local_date, status, logged_by")
+          .select("id, user_id, local_date, status")
           .eq("habit_id", habitId)
           .eq("period_start", summary.period_start)
+          .order("created_at")
       : null,
     // RLS: the sender reads their own nudges.
     isGroup

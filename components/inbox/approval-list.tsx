@@ -34,7 +34,7 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
   };
 
   const decide = (id: string, approve: boolean) =>
-    run(id, async () => {
+    run(`${id}:${approve ? "yes" : "no"}`, async () => {
       const r = await review(id, approve);
       if (r.ok) return;
       if (r.code === "already_reviewed" || r.code === "review_closed") {
@@ -94,10 +94,10 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   <Button type="button" variant="outline" className="h-11 rounded-xl" disabled={pending} onClick={() => decide(a.check_in_id, false)}>
-                    Not approved
+                    {busy === `${a.check_in_id}:no` ? "Saving…" : "Not approved"}
                   </Button>
                   <Button type="button" className="h-11 rounded-xl" disabled={pending} onClick={() => decide(a.check_in_id, true)}>
-                    {busy === a.check_in_id ? "Saving…" : "Approve"}
+                    {busy === `${a.check_in_id}:yes` ? "Saving…" : "Approve"}
                   </Button>
                 </div>
               )}

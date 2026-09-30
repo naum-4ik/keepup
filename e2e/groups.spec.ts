@@ -244,5 +244,7 @@ test("nudge a member with a preset, and they see it in their Inbox", async ({ pa
   await page.goto("/inbox");
   await page.getByRole("tab", { name: "Activity" }).click();
   await expect(page.getByText(/You've got this: Walk/)).toBeVisible();
+  // After a moment on Activity, the rows shown count as read and the badge clears.
+  await expect(page.getByRole("link", { name: "Inbox", exact: true })).toBeVisible();
 });
 
