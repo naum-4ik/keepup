@@ -16,7 +16,7 @@ import { feedCopy } from "@/lib/feed-copy";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
 import { getFinishSummary, getHabitEnds, getHabitSummaries, getWeekOverview, type HabitSummary } from "@/lib/habits";
-import { finishLine } from "@/lib/habit-finish";
+import { ANOTHER_GO, celebrates, finishLine } from "@/lib/habit-finish";
 import { FinishCard } from "@/components/today/finish-card";
 import { endLabel, endProgress } from "@/lib/habit-end";
 import { getPendingApprovals } from "@/lib/inbox";
@@ -158,7 +158,8 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           title={h.title}
           emoji={h.emoji}
           category={h.category}
-          line={summary ? finishLine(summary, h.period, Boolean(h.group_id)) : "You reached the end 🎉"}
+          line={summary && celebrates(summary) ? finishLine(summary, h.period, Boolean(h.group_id)) : ANOTHER_GO}
+          celebrate={Boolean(summary && celebrates(summary))}
           canDecide={!h.group_id || h.my_role === "admin"}
         />
       ))}
@@ -172,7 +173,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
             <SproutIcon className="size-6" aria-hidden />
           </div>
           <p className="text-sm text-muted-foreground">Nothing to do yet. Add a habit to get started.</p>
-          <Button asChild>
+          <Button asChild className="h-11">
             <Link href="/habits/new">Add your first habit</Link>
           </Button>
         </div>
@@ -219,7 +220,7 @@ function TodayLists({
       ) : done.length > 0 && sectionDone ? (
         <p className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">All checked off. Nice work.</p>
       ) : null}
-      {done.length > 0 && <HabitList title="Done" habits={done} endLines={endLines} />}
+      {done.length > 0 && <HabitList title="Done for today" habits={done} endLines={endLines} />}
       {later.length > 0 && <HabitList title="Later" habits={later} endLines={endLines} />}
     </>
   );

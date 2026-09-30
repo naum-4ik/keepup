@@ -9,7 +9,7 @@ import { EMOJI_PANEL_ATTR, EmojiPicker } from "@/components/habits/emoji-picker"
 import { EndPicker } from "@/components/habits/end-picker";
 import { StartDatePicker } from "@/components/habits/start-date-picker";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CATEGORIES, CATEGORY_ORDER, normalizeCategory } from "@/lib/categories";
@@ -133,6 +133,7 @@ export function HabitForm({
             "Create your own" focuses the title (not the emoji button before it). Escape inside the
             open emoji panel closes only the panel. */}
         <DialogContent
+          aria-describedby={undefined}
           onOpenAutoFocus={(e) => {
             e.preventDefault();
             if (draft?.custom) document.getElementById("title")?.focus();
@@ -141,7 +142,6 @@ export function HabitForm({
         >
           <div className="flex flex-col gap-1 pr-10">
             <DialogTitle>{draft?.custom ? "Create your own" : "Add habit"}</DialogTitle>
-            <DialogDescription>You can change anything before adding it.</DialogDescription>
           </div>
           {draft && (
             <HabitFields
@@ -272,7 +272,7 @@ function HabitFields({
           <Label htmlFor="period" className="sr-only">Per</Label>
           <select id="period" name="period" ref={periodRef} value={values.period} onChange={set("period")} className={selectClass}>
             {(["day", "week", "month"] as HabitPeriod[]).map((p) => (
-              <option key={p} value={p}>{`times a ${p}`}</option>
+              <option key={p} value={p}>{`${count === 1 ? "time" : "times"} a ${p}`}</option>
             ))}
           </select>
         </div>

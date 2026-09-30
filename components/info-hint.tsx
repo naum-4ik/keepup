@@ -19,7 +19,7 @@ export function InfoHint({ text }: { text: string }) {
         onKeyDown={(e) => {
           if (e.key === "Escape") setOpen(false);
         }}
-        className="-my-2 inline-flex size-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+        className="-my-2.5 inline-flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
       >
         <Info className="size-4" aria-hidden />
       </button>

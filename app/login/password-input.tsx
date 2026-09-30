@@ -11,9 +11,11 @@ type Props = {
   autoFocus?: boolean;
 };
 
-// A password field with a show/hide eye.
+// A password field with a show/hide eye. Controlled, so the value survives the form reset React does
+// after a server action: an error ("Use at least 8 characters") doesn't make you type it again.
 export function PasswordInput({ autoComplete, invalid, describedBy, autoFocus }: Props) {
   const [show, setShow] = useState(false);
+  const [value, setValue] = useState("");
   return (
     <div className="relative">
       <Input
@@ -22,6 +24,8 @@ export function PasswordInput({ autoComplete, invalid, describedBy, autoFocus }:
         type={show ? "text" : "password"}
         autoComplete={autoComplete}
         autoFocus={autoFocus}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
         className="h-11 rounded-xl pr-11 pl-3"
         aria-invalid={invalid}
         aria-describedby={describedBy}

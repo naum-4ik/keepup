@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { finishLine, startAgainEnd } from "./habit-finish";
+import { celebrates, finishLine, startAgainEnd } from "./habit-finish";
 
 describe("finishLine", () => {
   it("counts what was done, in the habit's unit, with the best streak", () => {
@@ -13,6 +13,15 @@ describe("finishLine", () => {
   it("never uses guilt words", () => {
     const line = finishLine({ done: 0, total: 30, best_streak: 0 }, "day", false).toLowerCase();
     for (const w of ["missed", "failed", "only"]) expect(line).not.toContain(w);
+  });
+});
+
+describe("celebrates", () => {
+  it("cheers at half done or more, not below", () => {
+    expect(celebrates({ done: 15, total: 30 })).toBe(true);
+    expect(celebrates({ done: 14, total: 30 })).toBe(false);
+    expect(celebrates({ done: 0, total: 2 })).toBe(false);
+    expect(celebrates({ done: 0, total: 0 })).toBe(false);
   });
 });
 

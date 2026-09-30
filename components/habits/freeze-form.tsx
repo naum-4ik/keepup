@@ -102,7 +102,7 @@ export function FreezeForm({
           className="flex h-11 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-input text-sm font-semibold text-muted-foreground hover:bg-muted"
         >
           <CalendarPlus aria-hidden className="size-4" />
-          Set an end date
+          Add a return date
         </button>
       ) : (
         <fieldset className="flex flex-col gap-1.5">

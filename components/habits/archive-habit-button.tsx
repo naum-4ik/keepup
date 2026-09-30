@@ -8,7 +8,7 @@ export function ArchiveHabitButton({ habitId, title }: { habitId: string; title:
     <ConfirmHabitAction
       triggerLabel="Archive habit"
       title={`Archive "${title}"?`}
-      description="It moves to Progress with its history. This can't be undone."
+      description="It leaves Today and keeps its history in Progress → Archived."
       confirmLabel="Archive"
       pendingLabel="Archiving…"
       confirmVariant="outline"

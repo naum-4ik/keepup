@@ -50,7 +50,7 @@ export default async function KidPage({
     : [];
   const names = new Map((group?.members ?? []).map((m) => [m.id, m.name]));
   const whoLogged = (loggedBy: string | null) =>
-    loggedBy === null ? `${child.name} did it` : loggedBy === userId ? "logged by you" : `logged by ${names.get(loggedBy) ?? "a former member"}`;
+    loggedBy === null ? `${child.name} did it` : loggedBy === userId ? "Logged by you" : `Logged by ${names.get(loggedBy) ?? "a former member"}`;
   const time = new Intl.DateTimeFormat("en-GB", { timeZone: group?.timezone ?? "UTC", hour: "2-digit", minute: "2-digit" });
 
   return (

@@ -191,7 +191,7 @@ test.describe("Today check-ins", () => {
     await expect(button).not.toHaveClass(/opacity-60/);
     // Scoped to the habit row: the App Router's route announcer also has role="alert" on the page.
     await expect(habitRow.getByRole("alert")).toHaveCount(0);
-    await expect(page.getByText("Done for today")).toBeVisible();
+    await expect(habitRow.getByText("Done for today")).toBeVisible();
   });
 
   test("habits left to do come first, then done, then ones that start later", async ({ page }) => {
@@ -298,7 +298,7 @@ test.describe("Habit detail", () => {
     await page.getByRole("link", { name: /Meditate/ }).click();
 
     await openSection(page, "Pause");
-    await page.getByRole("button", { name: "Set an end date" }).click();
+    await page.getByRole("button", { name: "Add a return date" }).click();
     await page.getByRole("button", { name: "2 weeks" }).click();
     await page.getByRole("button", { name: "Pause habit" }).click();
     await expect(page.getByText(/^Paused from .* until /)).toBeVisible();
@@ -392,8 +392,10 @@ test("a habit that ended: the finish card, Keep going, Finish, and Start again",
   await page.reload();
 
   const readCard = page.getByRole("region", { name: "Read is finished" });
-  await expect(readCard).toContainText("Read reached its end 🎉");
-  await expect(readCard).toContainText(/You did 0 of \d days/);
+  // Nothing done: no 🎉, an invitation instead of a count.
+  await expect(readCard).toContainText("Read reached its end");
+  await expect(readCard).not.toContainText("🎉");
+  await expect(readCard).toContainText("Want to give it another go?");
   await expect(page.getByRole("button", { name: "Check in: Read" })).toHaveCount(0); // no more check-ins
 
   await readCard.getByRole("button", { name: "Keep going" }).click();
