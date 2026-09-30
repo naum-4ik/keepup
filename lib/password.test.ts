@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PASSWORD_MIN, credentialsError, passwordAuthMessage } from "./password";
+import { CONFIRM_EMAIL_SENT, PASSWORD_MIN, credentialsError, passwordAuthMessage } from "./password";
 
 describe("credentialsError", () => {
   it("accepts a valid email and a long enough password", () => {
@@ -21,6 +21,12 @@ describe("credentialsError", () => {
   });
 });
 
+describe("CONFIRM_EMAIL_SENT", () => {
+  it("tells the person what to do next", () => {
+    expect(CONFIRM_EMAIL_SENT).toBe("Almost done: open the link we emailed you to confirm your address, then sign in.");
+  });
+});
+
 describe("passwordAuthMessage", () => {
   it.each([
     ["invalid_credentials", "That email and password don't match. Try again."],
@@ -29,6 +35,7 @@ describe("passwordAuthMessage", () => {
     ["weak_password", "Use at least 8 characters."],
     ["over_request_rate_limit", "Too many tries. Wait a minute and try again."],
     ["email_address_invalid", "Enter a valid email address."],
+    ["email_not_confirmed", "Confirm your email first: open the link we sent you, then sign in."],
   ])("maps %s", (code, message) => {
     expect(passwordAuthMessage({ code })).toBe(message);
   });

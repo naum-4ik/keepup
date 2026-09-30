@@ -19,6 +19,14 @@ export function SignupForm({ next, signInHref }: { next: string; signInHref: str
   const emailInvalid = Boolean(error && error.field !== "password");
   const passwordInvalid = Boolean(error && error.field !== "email");
 
+  if (state.status === "confirm") {
+    return (
+      <p role="status" className="rounded-xl bg-accent p-4 text-sm text-accent-foreground">
+        {state.message}
+      </p>
+    );
+  }
+
   return (
     // noValidate: the server answers in the app's own words instead of the browser's bubbles.
     <form action={action} noValidate className="flex flex-col gap-3">

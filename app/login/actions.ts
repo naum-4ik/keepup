@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { credentialsError, passwordAuthMessage } from "@/lib/password";
+import { CONFIRM_EMAIL_SENT, credentialsError, passwordAuthMessage } from "@/lib/password";
 import { safeNextPath } from "@/lib/paths";
 import { requestOrigin } from "@/lib/request-origin";
 import type { LoginState } from "./state";
@@ -11,8 +11,8 @@ function callbackUrl(origin: string, next: string) {
   return `${origin}/auth/callback?next=${encodeURIComponent(next)}`;
 }
 
-// Email + password, for both sign-in and sign-up. Email confirmation is off (no email is sent; see
-// supabase/config.toml), so a new account is signed in right away.
+// Email + password, for both sign-in and sign-up. With email confirmation off (supabase/config.toml and
+// the hosted dashboard), a new account is signed in right away; with it on, sign-up asks to confirm first.
 export async function submitCredentials(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const mode = formData.get("mode") === "signup" ? "signup" : "signin";
   const email = String(formData.get("email") ?? "").trim();
@@ -29,7 +29,10 @@ export async function submitCredentials(_prev: LoginState, formData: FormData): 
     const accountExists = error.code === "user_already_exists" || error.code === "email_exists";
     return { status: "error", message: passwordAuthMessage(error), email, mode, accountExists };
   }
-  if (!data.session) return { status: "error", message: passwordAuthMessage({}), email, mode };
+  if (!data.session) {
+    if (mode === "signup") return { status: "confirm", message: CONFIRM_EMAIL_SENT };
+    return { status: "error", message: passwordAuthMessage({}), email, mode };
+  }
 
   redirect(safeNextPath(String(formData.get("next") ?? "")));
 }

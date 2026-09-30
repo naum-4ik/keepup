@@ -21,7 +21,11 @@ export function credentialsError(
   return null;
 }
 
+// Sign-up succeeded but Supabase wants the address confirmed first (Confirm email on), so no session yet.
+export const CONFIRM_EMAIL_SENT = "Almost done: open the link we emailed you to confirm your address, then sign in.";
+
 const MESSAGES: Record<string, string> = {
+  email_not_confirmed: "Confirm your email first: open the link we sent you, then sign in.",
   invalid_credentials: "That email and password don't match. Try again.",
   user_already_exists: "That email already has an account.",
   email_exists: "That email already has an account.",
