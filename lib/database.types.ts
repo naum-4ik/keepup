@@ -412,6 +412,11 @@ isOneToOne: false
             "accept_invite":
 { Args: { "p_token": string }; Returns: string
                            },
+"calendar_cells":
+{ Args: { "p_from": string,"p_to": string }; Returns: {
+              "check_ins": number,"habit_id": string,"local_date": string,"outcome": string
+            }[]
+                           },
 "can_act_for_profile":
 { Args: { "p_profile_id": string }; Returns: boolean
                            },
