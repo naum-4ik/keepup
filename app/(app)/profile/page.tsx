@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { signOut } from "@/app/auth/actions";
-import { Avatar } from "@/components/avatar";
+import { AvatarEdit } from "@/components/avatar-edit";
 import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
+import { isAvatarColor } from "@/lib/avatars";
 import { cityOf } from "@/lib/timezones";
 import { appVersion } from "@/lib/version";
+import { saveAvatar } from "./actions";
 
 export default async function ProfilePage() {
   const { profile } = await getProfile();
@@ -12,7 +14,14 @@ export default async function ProfilePage() {
   return (
     <section className="flex flex-col gap-6 py-6">
       <div className="flex flex-col items-center gap-3 text-center">
-        <Avatar name={profile.display_name} emoji={profile.avatar_emoji} color={profile.avatar_color} className="size-20 text-4xl font-bold" />
+        <AvatarEdit
+          name={profile.display_name}
+          emoji={profile.avatar_emoji}
+          color={profile.avatar_color && isAvatarColor(profile.avatar_color) ? profile.avatar_color : null}
+          action={saveAvatar}
+          title="Change your avatar"
+          description="Shown to your groups."
+        />
         <div>
           <h1 className="text-xl font-bold">{profile.display_name}</h1>
           <p className="text-sm text-muted-foreground">

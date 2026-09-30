@@ -9,10 +9,15 @@ export function AvatarPicker({
   name,
   emoji: initialEmoji,
   color: initialColor,
+  options = AVATAR_EMOJI,
+  hint = "Pick an animal or a friendly thing. No photos, ever.",
 }: {
   name: string;
   emoji?: string | null;
   color?: AvatarColor | null;
+  // The emoji to choose from: people get AVATAR_EMOJI, groups GROUP_AVATAR_EMOJI.
+  options?: readonly string[];
+  hint?: string;
 }) {
   const [emoji, setEmoji] = useState(initialEmoji ?? "");
   const [color, setColor] = useState<AvatarColor>(initialColor ?? "peach");
@@ -22,10 +27,10 @@ export function AvatarPicker({
       <input type="hidden" name="avatarColor" value={color} />
       <div className="flex items-center gap-3">
         <Avatar name={name || "?"} emoji={emoji} color={color} size="lg" />
-        <p className="text-sm text-muted-foreground">Pick an animal or a friendly thing. No photos, ever.</p>
+        <p className="text-sm text-muted-foreground">{hint}</p>
       </div>
       <div role="group" aria-label="Avatar" className="grid grid-cols-6 gap-1">
-        {AVATAR_EMOJI.map((e) => (
+        {options.map((e) => (
           <button
             key={e}
             type="button"
