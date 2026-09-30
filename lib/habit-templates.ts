@@ -22,8 +22,8 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
   t("sleep", "😴", "Sleep by 23:00", "health", 1, "day", true),
   t("vitamins", "💊", "Take vitamins or meds", "health", 1, "day"),
   t("veggies", "🥗", "Eat fruit or vegetables", "health", 3, "day"),
-  t("floss", "🦷", "Floss", "health", 1, "day"),
-  t("wake-up", "⏰", "Wake up at 07:00", "health", 1, "day"),
+  t("brush-teeth", "🪥", "Brush teeth", "health", 2, "day"),
+  t("wake-up", "⏰", "Wake up before 07:00", "health", 1, "day"),
 
   t("steps", "👟", "Walk 10,000 steps", "fitness", 1, "day", true),
   t("workout", "🏋️", "Work out", "fitness", 3, "week", true),
