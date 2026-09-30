@@ -213,7 +213,10 @@ test("the profile shows the app version and links to what's new", async ({ page 
   const version = page.getByRole("link", { name: /^v\d+\.\d+\.\d+ · (dev|[0-9a-f]{7})$/ });
   await expect(version).toBeVisible();
   await version.click();
-  await expect(page.getByRole("heading", { name: "Changelog" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What's new" })).toBeVisible();
+  // Written for people: versions and plain lines, not commit hashes or PR links.
+  await expect(page.getByRole("heading", { name: /^Version \d+\.\d+\.\d+$/ }).first()).toBeVisible();
+  await expect(page.locator("main")).not.toContainText(/#\d+|Changelog/);
 });
 
 test("a broken sign-in link shows a helpful error", async ({ page }) => {
