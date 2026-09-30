@@ -762,6 +762,31 @@ isOneToOne: false
 "reset_child":
 { Args: { "p_child_id": string }; Returns: undefined
                            },
+"restore_habit":
+{ Args: { "p_habit_id": string }; Returns: {
+              "archived_at": string | null,
+"category": Database["public"]['Enums']["habit_category"] | null,
+"created_at": string,
+"created_by": string | null,
+"emoji": string,
+"ends_on": string | null,
+"finished_at": string | null,
+"group_id": string | null,
+"id": string,
+"owner_id": string | null,
+"period": Database["public"]['Enums']["habit_period"],
+"requires_approval": boolean,
+"starts_on": string,
+"target_count": number,
+"title": string,
+"week_start": number
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "habits"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "review_check_in":
 { Args: { "p_approve": boolean,"p_check_in_id": string }; Returns: {
               "created_at": string,
