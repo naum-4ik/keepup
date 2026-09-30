@@ -6,6 +6,16 @@ test("signed-out visitors are sent to sign in", async ({ page }) => {
   await expect(page).toHaveURL(/\/login\?next=%2Ftoday$/);
 });
 
+test("the landing page offers sign-in and sign-up", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Keepup" })).toBeVisible();
+  await page.getByRole("link", { name: "Create account" }).click();
+  await expect(page).toHaveURL(/\/signup$/);
+  await page.goto("/");
+  await page.getByRole("link", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/login$/);
+});
+
 test("a new user signs in, onboards and lands on Today", async ({ page }) => {
   await signUp(page, uniqueEmail());
 

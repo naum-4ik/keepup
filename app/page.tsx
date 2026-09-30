@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -19,16 +20,22 @@ export default async function Home({
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 px-4 text-center">
-      <div>
+      <div className="flex flex-col items-center">
+        <Image src="/icons/icon-192.png" alt="" width={72} height={72} className="mb-4 rounded-2xl" priority />
         <h1 className="text-4xl font-bold tracking-tight">
           <span className="text-foreground">Keep</span>
           <span className="text-primary">up</span>
         </h1>
         <p className="mt-2 text-muted-foreground">Habits, together.</p>
       </div>
-      <Button asChild size="lg" className="h-11">
-        <Link href="/login">Sign in</Link>
-      </Button>
+      <div className="flex flex-col gap-3">
+        <Button asChild size="lg" className="h-11">
+          <Link href="/login">Sign in</Link>
+        </Button>
+        <Button asChild size="lg" variant="outline" className="h-11 bg-card hover:bg-muted">
+          <Link href="/signup">Create account</Link>
+        </Button>
+      </div>
     </main>
   );
 }
