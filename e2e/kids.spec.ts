@@ -30,6 +30,40 @@ test("add a child with the three starter habits, check in for her on Today, and 
   await expect(mary).toContainText("⭐ 1");
 });
 
+test("Add a child: the guardian box comes first, remove a starter habit, choose more in the dialog", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await openGroup(page, "Family");
+  await page.getByRole("link", { name: "Add a child" }).click();
+  await page.getByLabel("Nickname").fill("Leo");
+  const habits = page.getByRole("region", { name: "Habits to start" });
+  await expect(habits.getByRole("listitem")).toHaveCount(3);
+  await habits.getByRole("button", { name: "Remove Tidy my toys" }).click();
+  await expect(habits.getByRole("listitem")).toHaveCount(2);
+
+  await habits.getByRole("button", { name: "Choose more habits" }).click();
+  const dialog = page.getByRole("dialog", { name: "Habits to start" });
+  await expect(dialog.getByRole("button", { name: /Brush teeth/ })).toHaveAttribute("aria-pressed", "true");
+  await dialog.getByRole("button", { name: /Bath time/ }).click();
+  await dialog.getByRole("button", { name: /Play outside/ }).click();
+  await dialog.getByRole("button", { name: "Done · 4 picked" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(habits.getByRole("listitem")).toHaveCount(4);
+
+  // The button stays in reach above the bottom nav.
+  const add = page.getByRole("button", { name: "Add Leo" });
+  await expect(add).toBeInViewport();
+  const nav = await page.getByRole("navigation", { name: "Main" }).boundingBox();
+  expect((await add.boundingBox())!.y + (await add.boundingBox())!.height).toBeLessThanOrEqual(nav!.y);
+  await page.getByLabel("I'm this child's parent or guardian").check();
+  await add.click();
+  await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/);
+  const list = page.getByRole("region", { name: "Habits" });
+  await expect(list.getByRole("listitem")).toHaveCount(4);
+  await expect(list).toContainText("Bath time");
+  await expect(list).not.toContainText("Tidy my toys");
+});
+
 test("an admin of a family group with no children sees Add a child?, which opens the form", async ({ page }) => {
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
