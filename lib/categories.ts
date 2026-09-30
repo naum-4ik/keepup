@@ -5,14 +5,14 @@ export type CategoryMeta = { label: string; icon: LucideIcon; chipClass: string;
 
 // Pastel chip + deeper icon color. defaultEmoji matches private.default_emoji() in the database.
 export const CATEGORIES: Record<HabitCategory, CategoryMeta> = {
-  health: { label: "Health", icon: HeartPulse, chipClass: "bg-[#E3F1FA] dark:bg-[#3B82B8]/20", iconClass: "text-[#3B82B8]", defaultEmoji: "🍎" },
-  fitness: { label: "Fitness", icon: Footprints, chipClass: "bg-[#E5F2E6] dark:bg-[#4F8A5B]/20", iconClass: "text-[#4F8A5B]", defaultEmoji: "👟" },
-  mind: { label: "Mind", icon: Sun, chipClass: "bg-[#EEE8F8] dark:bg-[#7B61B0]/20", iconClass: "text-[#7B61B0]", defaultEmoji: "🌿" },
-  learning: { label: "Learning", icon: BookOpen, chipClass: "bg-[#FBF3D9] dark:bg-[#B08A1E]/20", iconClass: "text-[#B08A1E]", defaultEmoji: "📚" },
-  people: { label: "People", icon: Users, chipClass: "bg-[#FBE6E8] dark:bg-[#C2505F]/20", iconClass: "text-[#C2505F]", defaultEmoji: "💛" },
-  home: { label: "Home", icon: House, chipClass: "bg-[#E0F3EF] dark:bg-[#3A8C7E]/20", iconClass: "text-[#3A8C7E]", defaultEmoji: "🏠" },
-  work_money: { label: "Work & money", icon: BriefcaseBusiness, chipClass: "bg-[#F1EADF] dark:bg-[#8A6B45]/20", iconClass: "text-[#8A6B45]", defaultEmoji: "💼" },
-  break_habit: { label: "Break a habit", icon: ShieldBan, chipClass: "bg-[#F0ECE8] dark:bg-[#8A7F76]/20", iconClass: "text-[#8A7F76]", defaultEmoji: "🚫" },
+  health: { label: "Health", icon: HeartPulse, chipClass: "bg-cat-health-soft", iconClass: "text-cat-health", defaultEmoji: "🍎" },
+  fitness: { label: "Fitness", icon: Footprints, chipClass: "bg-cat-fitness-soft", iconClass: "text-cat-fitness", defaultEmoji: "👟" },
+  mind: { label: "Mind", icon: Sun, chipClass: "bg-cat-mind-soft", iconClass: "text-cat-mind", defaultEmoji: "🌿" },
+  learning: { label: "Learning", icon: BookOpen, chipClass: "bg-cat-learning-soft", iconClass: "text-cat-learning", defaultEmoji: "📚" },
+  people: { label: "People", icon: Users, chipClass: "bg-cat-people-soft", iconClass: "text-cat-people", defaultEmoji: "💛" },
+  home: { label: "Home", icon: House, chipClass: "bg-cat-home-soft", iconClass: "text-cat-home", defaultEmoji: "🏠" },
+  work_money: { label: "Work & money", icon: BriefcaseBusiness, chipClass: "bg-cat-work-money-soft", iconClass: "text-cat-work-money", defaultEmoji: "💼" },
+  break_habit: { label: "Break a habit", icon: ShieldBan, chipClass: "bg-cat-break-habit-soft", iconClass: "text-cat-break-habit", defaultEmoji: "🚫" },
 };
 
 export const CATEGORY_ORDER: HabitCategory[] = ["health", "fitness", "mind", "learning", "people", "home", "work_money", "break_habit"];

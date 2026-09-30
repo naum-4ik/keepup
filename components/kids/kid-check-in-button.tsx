@@ -65,10 +65,10 @@ export function KidCheckInButton({
           }}
           className={cn(
             "flex size-11 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-            state === "done" && "border-[#4F8A5B] bg-[#4F8A5B] text-white",
-            state === "pending" && "border-[#D4A017] text-[#9A6A10]",
-            state === "checked-today" && "border-[#4F8A5B] text-[#4F8A5B]",
-            state === "frozen" && "border-border text-[#5B8DB8]",
+            state === "done" && "border-done bg-done text-done-foreground",
+            state === "pending" && "border-pending text-pending",
+            state === "checked-today" && "border-done text-done",
+            state === "frozen" && "border-border text-frozen",
             state === "not-started" && "border-border text-muted-foreground",
             state === "open" && "border-input text-primary hover:bg-accent",
             pending && "opacity-60",

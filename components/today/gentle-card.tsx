@@ -30,7 +30,7 @@ export function GentleCard({ card }: { card: GentleCardData }) {
 
   return (
     <div className="flex items-start gap-3 rounded-2xl bg-card p-4 shadow-soft">
-      <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#FBE6E8] text-[#C2505F] dark:bg-[#C2505F]/20">
+      <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-full bg-cat-people-soft text-cat-people">
         <Icon className="size-5" />
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">

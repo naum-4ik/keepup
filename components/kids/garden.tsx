@@ -106,7 +106,7 @@ export function NextStep({ stars, theme, weekStart }: { stars: number; theme?: s
     const t = kidTheme(theme);
     const full = t.stages[t.stages.length - 1];
     return (
-      <p className="text-center text-xl font-bold text-[#4F8A5B]">
+      <p className="text-center text-xl font-bold text-done">
         {day ? restartLine(theme, day, true) : t.id === "garden" ? "Full garden! 🌻" : `${full.label}! ${full.icon}`}
       </p>
     );

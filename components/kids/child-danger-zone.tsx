@@ -137,7 +137,7 @@ function ResetChildButton({ childId, childName }: { childId: string; childName: 
         <span className="truncate">Reset {childName}&apos;s profile</span>
       </Button>
       {done && (
-        <p role="status" className="text-sm font-semibold text-[#4F8A5B]">
+        <p role="status" className="text-sm font-semibold text-done">
           {childName}&apos;s profile is reset. A fresh start 🌱
         </p>
       )}

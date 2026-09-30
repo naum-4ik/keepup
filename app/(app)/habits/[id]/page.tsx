@@ -138,7 +138,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
         <Card title={PERIOD_TITLE[h.period]}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 flex-col gap-1.5">
-              <p className={isDone ? "font-bold text-[#4F8A5B]" : "font-bold"}>{everyone ? "Everyone did it ✓" : progress.text}</p>
+              <p className={isDone ? "font-bold text-done" : "font-bold"}>{everyone ? "Everyone did it ✓" : progress.text}</p>
               {h.target_count > 1 && (
                 <div className="h-2 w-40 overflow-hidden rounded-full bg-muted" aria-hidden>
                   <div className={`h-full rounded-full bg-current ${CATEGORIES[h.category].iconClass}`} style={{ width: `${Math.min(100, (h.done_count / h.target_count) * 100)}%` }} />
@@ -182,7 +182,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
 
       <section aria-label="Streaks" className="grid grid-cols-2 divide-x divide-border rounded-2xl bg-card py-4 shadow-soft">
         <div className="flex flex-col items-center gap-0.5">
-          <p className="flex items-center gap-1 text-2xl font-extrabold tabular-nums text-[#E8804F]">
+          <p className="flex items-center gap-1 text-2xl font-extrabold tabular-nums text-flame">
             <Flame aria-hidden className="size-5" />
             {h.current_streak}
             <span className="text-sm font-bold">{unit(h.current_streak, h.period)}</span>

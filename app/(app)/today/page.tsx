@@ -128,7 +128,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       )}
       {approvals.length > 0 && (
         <Link href="/inbox" className="flex min-h-14 items-center gap-3 rounded-2xl bg-card p-4 shadow-soft hover:bg-muted">
-          <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#FBF3D9] text-[#9A6A10]">
+          <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-pending-soft text-pending">
             <Clock className="size-5" />
           </span>
           <span className="flex-1 font-semibold">

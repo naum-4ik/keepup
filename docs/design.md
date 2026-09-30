@@ -38,29 +38,36 @@ Soft and warm: cream surfaces, warm-brown text, one terracotta accent, pastel ca
 
 ### Status
 
-Soft tones; always paired with an icon.
+Soft tones; always paired with an icon. Tokens live in `app/globals.css` (Tailwind: `text-done`, `bg-done-soft`, …); never hardcode hex in components.
 
-| Status | Color | Icon |
-|---|---|---|
-| Done | `#4F8A5B` sage | check |
-| Pending approval | `#D4A017` honey | clock |
-| Frozen | `#5B8DB8` soft blue | snowflake |
-| Missed / destructive | `#C0392B` | x |
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `done` | `#3D7549` sage | `#7FBF8C` | Done text, check icons, filled check-in button (5.5:1 on white; 4.7:1 on `done-soft`) |
+| `done-soft` | `#E5F2E6` | `#32392A` | "All done" card, finish card |
+| `done-foreground` | `#FFFFFF` | `#1F1915` | Icon or text on a `done` fill |
+| `pending` | `#8A5E0C` honey | `#E0B84A` | Pending approval text, clock, border (5.1:1 on `pending-soft`) |
+| `pending-soft` | `#FBF3D9` | `#4F3E1B` | Pending chips and notes |
+| `frozen` | `#3B6E99` soft blue | `#8FB8DC` | Paused text, snowflake |
+| `frozen-soft` | `#E3F1FA` | `#353A3E` | Paused surfaces |
+| `flame-soft` | `#FDE6D8` | `#543727` | Peach avatar |
+| `destructive` | `#C0392B` | `#E06C5E` | Missed / destructive, with x |
 
 ### Categories
 
 Pastel chip background with a deeper icon color. Category tabs and pickers show the icon; a habit shows its own emoji in the same chip (see below).
 
-| Category | Chip | Icon color | Icon |
-|---|---|---|---|
-| Health | `#E3F1FA` | `#3B82B8` | heart-pulse |
-| Fitness | `#E5F2E6` | `#4F8A5B` | footprints |
-| Mind | `#EEE8F8` | `#7B61B0` | sun |
-| Learning | `#FBF3D9` | `#B08A1E` | book-open |
-| People | `#FBE6E8` | `#C2505F` | users |
-| Home | `#E0F3EF` | `#3A8C7E` | house |
-| Work & money | `#F1EADF` | `#8A6B45` | briefcase-business |
-| Break a habit | `#F0ECE8` | `#8A7F76` | shield-ban |
+| Category | Token | Chip (light / dark) | Icon (light / dark) | Icon |
+|---|---|---|---|---|
+| Health | `cat-health` | `#E3F1FA` / `#2D353B` | `#3B82B8` / `#7FB0DA` | heart-pulse |
+| Fitness | `cat-fitness` | `#E5F2E6` / `#313729` | `#4F8A5B` / `#7FBF8C` | footprints |
+| Mind | `cat-mind` | `#EEE8F8` / `#3A2F3A` | `#7B61B0` / `#A992D6` | sun |
+| Learning | `cat-learning` | `#FBF3D9` / `#45371C` | `#B08A1E` / `#D9B54A` | book-open |
+| People | `cat-people` | `#FBE6E8` / `#482B29` | `#C2505F` / `#E0848F` | users |
+| Home | `cat-home` | `#E0F3EF` / `#2D3730` | `#3A8C7E` / `#6FC0B0` | house |
+| Work & money | `cat-work-money` | `#F1EADF` / `#3D3124` | `#8A6B45` / `#C4A07A` | briefcase-business |
+| Break a habit | `cat-break-habit` | `#F0ECE8` / `#3D352E` | `#8A7F76` / `#B5AAA0` | shield-ban |
+
+Use `bg-cat-<name>-soft` for the chip and `text-cat-<name>` for the icon. Dark chips are 20% of the category colour mixed into the warm card (`#2A221C`), so they stay warm, never cold navy. Undone emoji chips fade with `grayscale` and opacity (60% in dark, 40% in light), never a darkening filter.
 
 Icons come from `lucide-react` (rounded line style). **Kid habits** use picture emoji a child recognizes (🪥 brush teeth, 🧸 tidy toys, 📖 read, 🛁 bath, 🥦 eat veggies, 😴 bedtime), chosen from a curated kid set, shown large in a pastel circle. **Habit emoji:** every habit has one emoji (templates bring theirs; "Create your own" picks one, or gets the category default: 🍎 health, 👟 fitness, 🌿 mind, 📚 learning, 💛 people, 🏠 home, 💼 work & money, 🚫 break a habit). It sits inside the category-coloured chip wherever the habit appears (Today, the habit page, Progress), so the colour tells the category and the emoji tells the habit. Otherwise emoji only in copy (🔥 in the streak count) and in avatars, never as UI icons.
 
