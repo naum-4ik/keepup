@@ -1,13 +1,10 @@
 import Link from "next/link";
 import { signOut } from "@/app/auth/actions";
+import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
 import { cityOf } from "@/lib/timezones";
 import { appVersion } from "@/lib/version";
-
-function initial(name: string) {
-  return [...name.trim()][0]?.toUpperCase() ?? "?";
-}
 
 export default async function ProfilePage() {
   const { profile } = await getProfile();
@@ -15,9 +12,7 @@ export default async function ProfilePage() {
   return (
     <section className="flex flex-col gap-6 py-6">
       <div className="flex flex-col items-center gap-3 text-center">
-        <div className="flex size-20 items-center justify-center rounded-full bg-accent text-2xl font-bold text-accent-foreground">
-          {initial(profile.display_name)}
-        </div>
+        <Avatar name={profile.display_name} emoji={profile.avatar_emoji} color={profile.avatar_color} className="size-20 text-4xl font-bold" />
         <div>
           <h1 className="text-xl font-bold">{profile.display_name}</h1>
           <p className="text-sm text-muted-foreground">

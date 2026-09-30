@@ -1,10 +1,15 @@
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 
-function initial(name: string) {
-  return [...name.trim()][0]?.toUpperCase() ?? "?";
-}
-
-export function AppHeader({ displayName }: { displayName: string }) {
+export function AppHeader({
+  displayName,
+  avatarEmoji,
+  avatarColor,
+}: {
+  displayName: string;
+  avatarEmoji?: string | null;
+  avatarColor?: string | null;
+}) {
   return (
     <header
       className="sticky top-0 z-10 flex items-center justify-between bg-background/95 px-4 pb-3 backdrop-blur"
@@ -14,12 +19,8 @@ export function AppHeader({ displayName }: { displayName: string }) {
         <span className="text-foreground">Keep</span>
         <span className="text-primary">up</span>
       </Link>
-      <Link
-        href="/profile"
-        aria-label="Profile"
-        className="flex size-11 items-center justify-center rounded-full bg-accent text-sm font-semibold text-accent-foreground hover:brightness-95"
-      >
-        {initial(displayName)}
+      <Link href="/profile" aria-label="Profile" className="rounded-full hover:brightness-95">
+        <Avatar name={displayName} emoji={avatarEmoji} color={avatarColor} size="md" />
       </Link>
     </header>
   );

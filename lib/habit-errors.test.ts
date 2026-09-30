@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GENERIC_ERROR, habitErrorMessage } from "./habit-errors";
+import { errorCode, GENERIC_ERROR, habitErrorMessage } from "./habit-errors";
 
 describe("habitErrorMessage", () => {
   it("maps database rule errors to friendly copy", () => {
@@ -16,5 +16,17 @@ describe("habitErrorMessage", () => {
   it("falls back to a generic message", () => {
     expect(habitErrorMessage({ message: "connection reset" })).toBe(GENERIC_ERROR);
     expect(habitErrorMessage(null)).toBe(GENERIC_ERROR);
+  });
+});
+
+describe("errorCode", () => {
+  it("reads the keepup: code from a database error", () => {
+    expect(errorCode({ message: "keepup:children_would_be_deleted" })).toBe("children_would_be_deleted");
+    expect(errorCode({ message: "ERROR: keepup:last_admin (P0001)" })).toBe("last_admin");
+  });
+  it("is undefined when there is no code", () => {
+    expect(errorCode({ message: "connection reset" })).toBeUndefined();
+    expect(errorCode(null)).toBeUndefined();
+    expect(errorCode({})).toBeUndefined();
   });
 });
