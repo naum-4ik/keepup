@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronDown, ChevronLeft, Plus } from "lucide-react";
 import { Avatar } from "@/components/avatar";
+import { AvatarEdit } from "@/components/avatar-edit";
 import { ConfirmGroupAction } from "@/components/groups/confirm-group-action";
 import { KindChip } from "@/components/groups/group-card";
 import { HabitEmoji } from "@/components/habits/category-icon";
@@ -10,6 +11,7 @@ import { InviteLink } from "@/components/groups/invite-link";
 import { MemberRow } from "@/components/groups/member-row";
 import { RenameGroupForm } from "@/components/groups/rename-group-form";
 import { getProfile } from "@/lib/auth";
+import { GROUP_AVATAR_EMOJI } from "@/lib/avatars";
 import { childrenDeletionNotice, inviteUrl } from "@/lib/group-schema";
 import { getGroupDetail } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
@@ -17,7 +19,7 @@ import { getHabitSummaries } from "@/lib/habits";
 import { requestOrigin } from "@/lib/request-origin";
 import { describeSchedule } from "@/lib/schedule";
 import { listTimezones } from "@/lib/timezones";
-import { deleteGroup, leaveGroup, renameGroup, updateGroupSettings } from "../actions";
+import { deleteGroup, leaveGroup, renameGroup, saveGroupAvatar, updateGroupSettings } from "../actions";
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -56,10 +58,26 @@ export default async function GroupPage({
         Groups
       </Link>
 
-      <header className="flex flex-col gap-2">
-        <RenameGroupForm name={group.name} canRename={isAdmin} action={renameGroup.bind(null, group.id)} />
-        <div>
-          <KindChip kind={group.kind} />
+      <header className="flex items-center gap-4">
+        {isAdmin ? (
+          <AvatarEdit
+            name={group.name}
+            emoji={group.avatar_emoji}
+            color={group.avatar_color}
+            action={saveGroupAvatar.bind(null, group.id)}
+            options={GROUP_AVATAR_EMOJI}
+            title="Change the group avatar"
+            description="Everyone in the group sees it."
+            className="size-16 text-3xl"
+          />
+        ) : (
+          <Avatar name={group.name} emoji={group.avatar_emoji} color={group.avatar_color} size="lg" />
+        )}
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <RenameGroupForm name={group.name} canRename={isAdmin} action={renameGroup.bind(null, group.id)} />
+          <div>
+            <KindChip kind={group.kind} />
+          </div>
         </div>
       </header>
 

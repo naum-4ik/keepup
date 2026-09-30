@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { isGroupAvatarEmoji, parseAvatar, type AvatarFormState } from "@/lib/avatars";
 import { isGroupKind, parseGroupName } from "@/lib/group-schema";
 import { errorCode, habitErrorMessage } from "@/lib/habit-errors";
 import { isUuid } from "@/lib/habit-schema";
@@ -28,9 +29,16 @@ export async function createGroup(_prev: GroupActionState, formData: FormData): 
   const name = parseGroupName(String(formData.get("name") ?? ""));
   if (!name.ok) return { status: "error", message: name.error };
   const kind = String(formData.get("kind") ?? "other");
+  const avatar = parseAvatar(formData, isGroupAvatarEmoji);
+  if (!avatar.ok) return { status: "error", message: avatar.message };
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("create_group", { p_name: name.value, p_kind: isGroupKind(kind) ? kind : "other" });
   if (error || !data) return { status: "error", message: error ? nameErrorMessage(error) : habitErrorMessage(null) };
+  // Optional: the group is created either way, so a failed avatar only logs (it can be set later).
+  if (avatar.emoji || avatar.color !== "peach") {
+    const { error: avatarError } = await supabase.rpc("set_group_avatar", { p_group_id: data.id, p_emoji: avatar.emoji ?? "", p_color: avatar.color });
+    if (avatarError) console.error("set_group_avatar failed", avatarError.message);
+  }
   refresh();
   redirect(`/groups/${data.id}?invite=1`);
 }
@@ -110,4 +118,15 @@ export async function deleteGroup(groupId: string, confirmChildren: boolean): Pr
   if (error) return { status: "error", message: habitErrorMessage(error), code: errorCode(error) };
   refresh(groupId);
   redirect("/groups");
+}
+
+export async function saveGroupAvatar(groupId: string, _prev: AvatarFormState, formData: FormData): Promise<AvatarFormState> {
+  if (!isUuid(groupId)) return { status: "error", message: "That group isn't available." };
+  const avatar = parseAvatar(formData, isGroupAvatarEmoji);
+  if (!avatar.ok) return { status: "error", message: avatar.message };
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("set_group_avatar", { p_group_id: groupId, p_emoji: avatar.emoji ?? "", p_color: avatar.color });
+  if (error) return { status: "error", message: habitErrorMessage(error) };
+  refresh(groupId);
+  return { status: "saved" };
 }

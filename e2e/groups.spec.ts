@@ -52,15 +52,49 @@ test("deleting a group with a child asks again, and Cancel resets that step", as
   await expect(page.getByText("Levi family")).toBeHidden();
 });
 
-test("pick an avatar in settings and see it in the header", async ({ page }) => {
+test("tap your avatar on Profile to change it, and see it in the header", async ({ page }) => {
   await signUpAndOnboard(page);
   await page.goto("/profile/settings");
-  await page.getByText("Your avatar").click();
-  await page.getByRole("group", { name: "Avatar" }).getByRole("button", { name: "🦊" }).click();
-  await page.getByRole("button", { name: "Sky", exact: true }).click();
-  await page.getByRole("button", { name: "Save" }).last().click();
+  await expect(page.getByText("Your avatar")).toHaveCount(0); // moved to Profile
+  await page.goto("/profile");
+  await page.getByRole("button", { name: "Change your avatar" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("group", { name: "Avatar" }).getByRole("button", { name: "🦊" }).click();
+  await dialog.getByRole("button", { name: "Sky", exact: true }).click();
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden(); // closes once saved
   // The header avatar and the nav's Profile tab are both "Profile" links; the header is the banner.
   await expect(page.getByRole("banner").getByRole("link", { name: "Profile" })).toContainText("🦊");
+  await expect(page.getByRole("button", { name: "Change your avatar" })).toContainText("🦊");
+});
+
+test("a group gets an avatar on creation, admins change it, members only see it", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await page.goto("/groups/new");
+  await page.getByLabel("Name").fill("Pizza night");
+  await page.getByRole("group", { name: "Avatar" }).getByRole("button", { name: "🍕" }).click();
+  await page.getByRole("button", { name: "Create group" }).click();
+  await expect(page).toHaveURL(/\/groups\/[0-9a-f-]{36}/);
+  await expect(page.getByRole("button", { name: "Change the group avatar" })).toContainText("🍕");
+
+  await page.getByRole("button", { name: "Change the group avatar" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("group", { name: "Avatar" }).getByRole("button", { name: "🏡" }).click();
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page.getByRole("button", { name: "Change the group avatar" })).toContainText("🏡");
+  const url = await inviteLink(page);
+  await page.goto("/groups");
+  await expect(page.getByRole("link", { name: /Pizza night/ })).toContainText("🏡");
+
+  const guestContext = await browser.newContext();
+  const guest = await guestContext.newPage();
+  await joinByLink(guest, url, "Dan");
+  await guest.goto("/groups");
+  await guest.getByRole("link", { name: /Pizza night/ }).click();
+  await expect(guest.getByRole("img", { name: "Pizza night" })).toContainText("🏡");
+  await expect(guest.getByRole("button", { name: "Change the group avatar" })).toHaveCount(0);
+  await guestContext.close();
 });
 
 test("an invited person joins from the link and lands on the group's habits", async ({ page, browser }) => {

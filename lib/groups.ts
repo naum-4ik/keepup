@@ -20,6 +20,8 @@ export type GroupDetail = {
   kind: GroupKind;
   timezone: string;
   week_start: 0 | 1;
+  avatar_emoji: string | null;
+  avatar_color: AvatarColor | null;
   my_role: "admin" | "member";
   members: GroupMember[];
   children: GroupChild[];

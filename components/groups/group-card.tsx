@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ChevronRight, Users } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import { Avatar } from "@/components/avatar";
 import { GROUP_KIND_LABEL, isGroupKind } from "@/lib/group-schema";
 import type { MyGroup } from "@/lib/groups";
 
@@ -21,8 +22,9 @@ export function GroupCard({ group }: { group: MyGroup }) {
       href={`/groups/${group.group_id}`}
       className="flex min-h-16 items-center gap-3 rounded-2xl bg-card p-4 shadow-soft hover:bg-muted/60"
     >
-      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-accent text-primary">
-        <Users aria-hidden className="size-5" />
+      {/* The name is right next to it, so the avatar is decoration here. */}
+      <span aria-hidden>
+        <Avatar name={group.name} emoji={group.avatar_emoji} color={group.avatar_color} size="md" />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="truncate font-bold">{group.name}</span>

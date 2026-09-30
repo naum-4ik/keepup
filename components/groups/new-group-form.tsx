@@ -2,9 +2,11 @@
 
 import { useActionState, useState } from "react";
 import { createGroup, type GroupActionState } from "@/app/(app)/groups/actions";
+import { AvatarPicker } from "@/components/avatar-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { GROUP_AVATAR_EMOJI } from "@/lib/avatars";
 import { GROUP_KIND_LABEL, GROUP_KINDS, type GroupKind } from "@/lib/group-schema";
 
 const initialState: GroupActionState = { status: "idle" };
@@ -63,6 +65,13 @@ export function NewGroupForm({ city }: { city: string }) {
           <p id="group-new-name-error" role="alert" className="text-sm text-destructive">{state.message}</p>
         )}
       </div>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-2 text-sm font-semibold">
+          Avatar <span className="font-normal text-muted-foreground">(optional)</span>
+        </legend>
+        <AvatarPicker name={name} options={GROUP_AVATAR_EMOJI} hint="Until you pick one, the group shows its first letter." />
+      </fieldset>
 
       <p id="group-new-name-help" className="text-sm text-muted-foreground">
         Your time zone ({city}) and week start are used for the group&apos;s habits. Admins can change them later.
