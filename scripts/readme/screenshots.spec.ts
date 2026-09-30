@@ -88,7 +88,14 @@ test("README screenshots", async ({ page }) => {
 
   await page.goto(kidPage);
   await page.getByRole("link", { name: "Open Mary's view" }).click();
-  for (const b of await page.getByRole("button", { name: /Brush teeth|Tidy my toys|Get dressed/ }).all()) await b.click();
+  await expect(page.getByRole("button", { name: "Hold to exit Mary's view" })).toBeVisible();
+  // Tap each habit until it's done (Today already logged one): a few stars this week.
+  for (let i = 0; i < 6; i++) {
+    const open = page.locator("button:not([disabled])").filter({ hasText: /Brush teeth|Read a book together|Tidy my toys/ });
+    if ((await open.count()) === 0) break;
+    await open.first().click();
+    await page.waitForTimeout(300);
+  }
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(800); // let the scene settle
   await page.screenshot({ path: `${OUT}/kid-view.png` });
