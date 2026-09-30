@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml)
 
-A warm, mobile-first habit tracker for one person and for families. Pick a habit, check in with one tap, and watch your streaks grow. Next up: shared family habits and kid profiles.
+A warm, mobile-first habit tracker for one person and for families. Pick a habit, check in with one tap, and watch your streaks grow. Next up: an installable app, offline check-ins and push reminders.
 
 **Status:** in development (v0.x). Try the staging build at **https://keepup-murex.vercel.app**. Sign-in is limited to test users for now.
 
