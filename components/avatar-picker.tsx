@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Avatar } from "@/components/avatar";
-import { AVATAR_COLORS, AVATAR_EMOJI, type AvatarColor } from "@/lib/avatars";
+import { AVATAR_COLOR_LABEL, AVATAR_COLORS, AVATAR_EMOJI, type AvatarColor } from "@/lib/avatars";
 import { cn } from "@/lib/utils";
 
 export function AvatarPicker({
@@ -42,7 +42,7 @@ export function AvatarPicker({
           <button
             key={c}
             type="button"
-            aria-label={c}
+            aria-label={AVATAR_COLOR_LABEL[c]}
             aria-pressed={c === color}
             onClick={() => setColor(c)}
             className={cn(

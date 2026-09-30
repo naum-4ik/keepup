@@ -16,6 +16,15 @@ export const AVATAR_COLORS: Record<AvatarColor, string> = {
   rose: "bg-[#FBE6E8] dark:bg-[#C2505F]/25",
 };
 
+export const AVATAR_COLOR_LABEL: Record<AvatarColor, string> = {
+  peach: "Peach",
+  sage: "Sage",
+  sky: "Sky",
+  lilac: "Lilac",
+  butter: "Butter",
+  rose: "Rose",
+};
+
 export const isAvatarColor = (v: string): v is AvatarColor => Object.hasOwn(AVATAR_COLORS, v);
 export const isAvatarEmoji = (v: string): boolean => (AVATAR_EMOJI as readonly string[]).includes(v);
 

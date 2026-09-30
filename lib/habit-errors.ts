@@ -43,7 +43,12 @@ const MESSAGES: Record<string, string> = {
   cannot_cheer: "You can cheer other people's check-ins.",
 };
 
+// The rule name a database function raised ("keepup:<code>"), if any.
+export function errorCode(error: { message?: string } | null | undefined): string | undefined {
+  return error?.message?.match(/keepup:([a-z_]+)/)?.[1];
+}
+
 export function habitErrorMessage(error: { message?: string } | null | undefined): string {
-  const code = error?.message?.match(/keepup:([a-z_]+)/)?.[1];
+  const code = errorCode(error);
   return (code && MESSAGES[code]) || GENERIC_ERROR;
 }

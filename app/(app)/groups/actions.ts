@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isGroupKind, parseGroupName } from "@/lib/group-schema";
-import { habitErrorMessage } from "@/lib/habit-errors";
+import { errorCode, habitErrorMessage } from "@/lib/habit-errors";
 import { isUuid } from "@/lib/habit-schema";
 import { listTimezones } from "@/lib/timezones";
 
@@ -13,7 +13,6 @@ export type GroupActionState = { status: "idle" } | { status: "saved" } | { stat
 const NOT_FOUND: GroupActionState = { status: "error", message: "That group isn't available." };
 const NO_MEMBER: GroupActionState = { status: "error", message: "That person isn't in this group." };
 const NAME_ERROR = "Give the group a name up to 40 characters.";
-const code = (m?: string) => m?.match(/keepup:([a-z_]+)/)?.[1];
 
 // A name the database rejects arrives as a raw check violation, not a keepup: code.
 const nameErrorMessage = (error: { code?: string; message?: string }) =>
@@ -62,7 +61,7 @@ export async function updateGroupSettings(groupId: string, _prev: GroupActionSta
 
 async function run(groupId: string, call: () => PromiseLike<{ error: { message: string } | null }>): Promise<GroupActionState> {
   const { error } = await call();
-  if (error) return { status: "error", message: habitErrorMessage(error), code: code(error.message) };
+  if (error) return { status: "error", message: habitErrorMessage(error), code: errorCode(error) };
   refresh(groupId);
   return { status: "saved" };
 }
@@ -81,6 +80,8 @@ export async function revokeInvites(groupId: string): Promise<GroupActionState> 
 
 export async function setMemberRole(groupId: string, userId: string, role: "admin" | "member"): Promise<GroupActionState> {
   if (!isUuid(groupId) || !isUuid(userId)) return NO_MEMBER;
+  // Server actions take any value from the client, whatever the type says.
+  if (role !== "admin" && role !== "member") return { status: "error", message: "Pick admin or member." };
   const { supabase } = await requireUser();
   return run(groupId, () => supabase.rpc("set_member_role", { p_group_id: groupId, p_user_id: userId, p_role: role }));
 }
@@ -97,7 +98,7 @@ export async function leaveGroup(groupId: string, confirmChildren: boolean): Pro
   if (!isUuid(groupId)) return NOT_FOUND;
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("leave_group", { p_group_id: groupId, p_confirm_children: confirmChildren });
-  if (error) return { status: "error", message: habitErrorMessage(error), code: code(error.message) };
+  if (error) return { status: "error", message: habitErrorMessage(error), code: errorCode(error) };
   refresh(groupId);
   redirect("/groups");
 }
@@ -106,7 +107,7 @@ export async function deleteGroup(groupId: string, confirmChildren: boolean): Pr
   if (!isUuid(groupId)) return NOT_FOUND;
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("delete_group", { p_group_id: groupId, p_confirm_children: confirmChildren });
-  if (error) return { status: "error", message: habitErrorMessage(error), code: code(error.message) };
+  if (error) return { status: "error", message: habitErrorMessage(error), code: errorCode(error) };
   refresh(groupId);
   redirect("/groups");
 }

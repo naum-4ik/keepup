@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { signUpAndOnboard } from "./helpers/auth";
-import { createGroup, inviteLink } from "./helpers/groups";
+import { addChild, createGroup, inviteLink } from "./helpers/groups";
 
 test("create a group, get an invite link, rename it, and see it in Groups", async ({ page }) => {
   await signUpAndOnboard(page);
@@ -27,12 +27,37 @@ test("the only member deletes their group", async ({ page }) => {
   await expect(page.getByText("Book club")).toBeHidden();
 });
 
+test("deleting a group with a child asks again, and Cancel resets that step", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Levi family");
+  const groupId = page.url().match(/\/groups\/([0-9a-f-]{36})/)![1];
+  await addChild(groupId, "Mary");
+  await page.reload();
+  const dialog = page.getByRole("dialog");
+
+  await page.getByRole("button", { name: "Delete group" }).click();
+  await dialog.getByRole("button", { name: "Delete group" }).click();
+  await expect(dialog.getByRole("alert")).toHaveText("Mary's profile and history will be deleted.");
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(dialog).toBeHidden();
+
+  // Reopening starts over: the warning is gone and the confirm button isn't armed.
+  await page.getByRole("button", { name: "Delete group" }).click();
+  await expect(dialog.getByRole("alert")).toBeHidden();
+  await expect(dialog.getByRole("button", { name: "Delete anyway" })).toBeHidden();
+  await dialog.getByRole("button", { name: "Delete group" }).click();
+  await expect(dialog.getByRole("alert")).toHaveText("Mary's profile and history will be deleted.");
+  await dialog.getByRole("button", { name: "Delete anyway" }).click();
+  await expect(page).toHaveURL(/\/groups$/);
+  await expect(page.getByText("Levi family")).toBeHidden();
+});
+
 test("pick an avatar in settings and see it in the header", async ({ page }) => {
   await signUpAndOnboard(page);
   await page.goto("/profile/settings");
   await page.getByText("Your avatar").click();
   await page.getByRole("group", { name: "Avatar" }).getByRole("button", { name: "🦊" }).click();
-  await page.getByRole("button", { name: "sky" }).click();
+  await page.getByRole("button", { name: "Sky", exact: true }).click();
   await page.getByRole("button", { name: "Save" }).last().click();
   // The header avatar and the nav's Profile tab are both "Profile" links; the header is the banner.
   await expect(page.getByRole("banner").getByRole("link", { name: "Profile" })).toContainText("🦊");
