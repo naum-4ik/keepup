@@ -19,7 +19,7 @@ export default async function KidViewPage({ params }: { params: Promise<{ id: st
 
   return (
     <KidPlay
-      child={{ id, name: child.name, emoji: child.avatar_emoji, color: child.avatar_color }}
+      child={{ id, name: child.name, emoji: child.avatar_emoji, color: child.avatar_color, theme: child.kid_theme }}
       habits={habits}
       stars={rewards?.stars_this_week ?? 0}
     />

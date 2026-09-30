@@ -10,7 +10,7 @@ import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
 type PlayHabit = { id: string; title: string; emoji: string; target: number; done: number; state: CheckInState };
-type Child = { id: string; name: string; emoji: string | null; color: string | null };
+type Child = { id: string; name: string; emoji: string | null; color: string | null; theme: string };
 type Flying = { key: number; x: number; y: number; dx: number; dy: number };
 
 // The full-screen kid view: big buttons, a tap counts at once (logged as by the child), a ⭐ flies
@@ -50,9 +50,9 @@ export function KidPlay({ child, habits, stars }: { child: Child; habits: PlayHa
       </header>
 
       <div ref={garden} className="flex flex-col items-center gap-2">
-        <GardenPicture stars={view.stars} size="lg" />
+        <GardenPicture stars={view.stars} size="lg" theme={child.theme} />
         <p className="text-3xl font-bold tabular-nums" aria-live="polite">⭐ {view.stars}</p>
-        <NextStep stars={view.stars} />
+        <NextStep stars={view.stars} theme={child.theme} />
       </div>
 
       {error && <p role="alert" className="text-center text-base text-destructive">{error}</p>}
