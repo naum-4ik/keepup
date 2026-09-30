@@ -8,6 +8,11 @@ const MESSAGES: Record<string, string> = {
   last_admin: "Make someone else an admin first.",
   children_would_be_deleted: "The children's profiles and history would be deleted. Export or move them first.",
   use_leave: "Use Leave group to remove yourself.",
+  guardian_required: "Please confirm you're this child's parent or guardian.",
+  same_group: "They're already in that group.",
+  goal_exists: "There's already a goal. Finish or cancel it first.",
+  goal_not_found: "That goal isn't available.",
+  goal_not_reached: "Not reached yet.",
   member_not_found: "That person isn't in this group.",
   invalid_role: "Pick admin or member.",
   not_a_child: "That's only for a child's profile.",
@@ -32,6 +37,9 @@ const MESSAGES: Record<string, string> = {
   freeze_overlaps: "This habit is already paused then.",
   freeze_range_invalid: "The end date must be on or after the start date.",
   not_authenticated: "Please sign in again.",
+  already_nudged: "You've already nudged them about this today.",
+  cannot_nudge: "They're all set for now.",
+  cannot_cheer: "You can cheer other people's check-ins.",
 };
 
 export function habitErrorMessage(error: { message?: string } | null | undefined): string {

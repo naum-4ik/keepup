@@ -60,6 +60,31 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"cheers": {
+                  Row: {
+                    "check_in_id": string,"created_at": string,"user_id": string
+                  }
+                  Insert: {
+                    "check_in_id": string,"created_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "check_in_id"?: string,"created_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cheers_check_in_id_fkey"
+      columns: ["check_in_id"]
+isOneToOne: false
+      referencedRelation: "check_ins"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cheers_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"group_habit_participants": {
                   Row: {
                     "habit_id": string,"profile_id": string
@@ -187,13 +212,13 @@ isOneToOne: false
                   ]
                 },"habits": {
                   Row: {
-                    "archived_at": string | null,"category": Database["public"]['Enums']["habit_category"],"created_at": string,"created_by": string | null,"emoji": string,"group_id": string | null,"id": string,"owner_id": string | null,"period": Database["public"]['Enums']["habit_period"],"requires_approval": boolean,"starts_on": string,"target_count": number,"title": string,"week_start": number
+                    "archived_at": string | null,"category": Database["public"]['Enums']["habit_category"] | null,"created_at": string,"created_by": string | null,"emoji": string,"group_id": string | null,"id": string,"owner_id": string | null,"period": Database["public"]['Enums']["habit_period"],"requires_approval": boolean,"starts_on": string,"target_count": number,"title": string,"week_start": number
                   }
                   Insert: {
-                    "archived_at"?: string | null,"category": Database["public"]['Enums']["habit_category"],"created_at"?: string,"created_by"?: string | null,"emoji": string,"group_id"?: string | null,"id"?: string,"owner_id"?: string | null,"period": Database["public"]['Enums']["habit_period"],"requires_approval"?: boolean,"starts_on": string,"target_count": number,"title": string,"week_start"?: number
+                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"] | null,"created_at"?: string,"created_by"?: string | null,"emoji": string,"group_id"?: string | null,"id"?: string,"owner_id"?: string | null,"period": Database["public"]['Enums']["habit_period"],"requires_approval"?: boolean,"starts_on": string,"target_count": number,"title": string,"week_start"?: number
                   }
                   Update: {
-                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"],"created_at"?: string,"created_by"?: string | null,"emoji"?: string,"group_id"?: string | null,"id"?: string,"owner_id"?: string | null,"period"?: Database["public"]['Enums']["habit_period"],"requires_approval"?: boolean,"starts_on"?: string,"target_count"?: number,"title"?: string,"week_start"?: number
+                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"] | null,"created_at"?: string,"created_by"?: string | null,"emoji"?: string,"group_id"?: string | null,"id"?: string,"owner_id"?: string | null,"period"?: Database["public"]['Enums']["habit_period"],"requires_approval"?: boolean,"starts_on"?: string,"target_count"?: number,"title"?: string,"week_start"?: number
                   }
                   Relationships: [
                     {
@@ -211,6 +236,86 @@ isOneToOne: false
     },{
       foreignKeyName: "habits_owner_id_fkey"
       columns: ["owner_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"notifications": {
+                  Row: {
+                    "actor_id": string | null,"check_in_id": string | null,"created_at": string,"dedupe_key": string | null,"group_id": string | null,"habit_id": string | null,"id": string,"kind": string,"payload": NonNullable<Json>,"read_at": string | null,"seen_at": string | null,"subject_id": string | null,"user_id": string
+                  }
+                  Insert: {
+                    "actor_id"?: string | null,"check_in_id"?: string | null,"created_at"?: string,"dedupe_key"?: string | null,"group_id"?: string | null,"habit_id"?: string | null,"id"?: string,"kind": string,"payload"?: NonNullable<Json>,"read_at"?: string | null,"seen_at"?: string | null,"subject_id"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "actor_id"?: string | null,"check_in_id"?: string | null,"created_at"?: string,"dedupe_key"?: string | null,"group_id"?: string | null,"habit_id"?: string | null,"id"?: string,"kind"?: string,"payload"?: NonNullable<Json>,"read_at"?: string | null,"seen_at"?: string | null,"subject_id"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notifications_actor_id_fkey"
+      columns: ["actor_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_check_in_id_fkey"
+      columns: ["check_in_id"]
+isOneToOne: false
+      referencedRelation: "check_ins"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_habit_id_fkey"
+      columns: ["habit_id"]
+isOneToOne: false
+      referencedRelation: "habits"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_subject_id_fkey"
+      columns: ["subject_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"nudges": {
+                  Row: {
+                    "created_at": string,"habit_id": string,"kind": string,"local_date": string,"recipient_id": string,"sender_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"habit_id": string,"kind": string,"local_date": string,"recipient_id": string,"sender_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"habit_id"?: string,"kind"?: string,"local_date"?: string,"recipient_id"?: string,"sender_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "nudges_habit_id_fkey"
+      columns: ["habit_id"]
+isOneToOne: false
+      referencedRelation: "habits"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "nudges_recipient_id_fkey"
+      columns: ["recipient_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "nudges_sender_id_fkey"
+      columns: ["sender_id"]
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
@@ -254,6 +359,31 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"treat_goals": {
+                  Row: {
+                    "child_id": string,"created_at": string,"created_by": string | null,"emoji": string,"id": string,"reached_at": string | null,"received_at": string | null,"target": number,"title": string
+                  }
+                  Insert: {
+                    "child_id": string,"created_at"?: string,"created_by"?: string | null,"emoji": string,"id"?: string,"reached_at"?: string | null,"received_at"?: string | null,"target": number,"title": string
+                  }
+                  Update: {
+                    "child_id"?: string,"created_at"?: string,"created_by"?: string | null,"emoji"?: string,"id"?: string,"reached_at"?: string | null,"received_at"?: string | null,"target"?: number,"title"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "treat_goals_child_id_fkey"
+      columns: ["child_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "treat_goals_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -271,6 +401,9 @@ isOneToOne: false
                            },
 "can_read_habit":
 { Args: { "p_habit_id": string }; Returns: boolean
+                           },
+"cancel_treat_goal":
+{ Args: { "p_goal_id": string }; Returns: undefined
                            },
 "check_in":
 { Args: { "p_habit_id": string }; Returns: {
@@ -329,6 +462,40 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"cheer":
+{ Args: { "p_check_in_id": string }; Returns: undefined
+                           },
+"child_summaries":
+{ Args: { "p_child_id": string }; Returns: {
+              "archived_at": string,"best_streak": number,"category": Database["public"]['Enums']["habit_category"],"checked_in_today": boolean,"created_at": string,"current_streak": number,"days_left": number,"done_count": number,"emoji": string,"frozen": boolean,"frozen_until": string,"group_done": boolean,"group_id": string,"group_name": string,"habit_id": string,"members": Json,"my_role": string,"not_started": boolean,"pending_count": number,"period": Database["public"]['Enums']["habit_period"],"period_start": string,"requires_approval": boolean,"starts_on": string,"target_count": number,"title": string
+            }[]
+                           },
+"create_child":
+{ Args: { "p_avatar_color": string,"p_avatar_emoji": string,"p_group_id": string,"p_guardian_confirmed": boolean,"p_name": string }; Returns: string
+                           },
+"create_child_habit":
+{ Args: { "p_child_id": string,"p_emoji": string,"p_period": Database["public"]['Enums']["habit_period"],"p_starts_on"?: string,"p_target_count": number,"p_title": string }; Returns: {
+              "archived_at": string | null,
+"category": Database["public"]['Enums']["habit_category"] | null,
+"created_at": string,
+"created_by": string | null,
+"emoji": string,
+"group_id": string | null,
+"id": string,
+"owner_id": string | null,
+"period": Database["public"]['Enums']["habit_period"],
+"requires_approval": boolean,
+"starts_on": string,
+"target_count": number,
+"title": string,
+"week_start": number
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "habits"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "create_group":
 { Args: { "p_kind"?: string,"p_name": string }; Returns: {
               "created_at": string,
@@ -348,7 +515,7 @@ isOneToOne: false
 "create_group_habit":
 { Args: { "p_category": Database["public"]['Enums']["habit_category"],"p_children"?: (string)[],"p_emoji": string,"p_group_id": string,"p_period": Database["public"]['Enums']["habit_period"],"p_requires_approval"?: boolean,"p_starts_on"?: string,"p_target_count": number,"p_title": string }; Returns: {
               "archived_at": string | null,
-"category": Database["public"]['Enums']["habit_category"],
+"category": Database["public"]['Enums']["habit_category"] | null,
 "created_at": string,
 "created_by": string | null,
 "emoji": string,
@@ -384,11 +551,17 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"delete_child":
+{ Args: { "p_child_id": string }; Returns: undefined
+                           },
 "delete_group":
 { Args: { "p_confirm_children"?: boolean,"p_group_id": string }; Returns: undefined
                            },
 "delete_habit":
 { Args: { "p_habit_id": string }; Returns: undefined
+                           },
+"export_child":
+{ Args: { "p_child_id": string }; Returns: Json
                            },
 "freeze_habit":
 { Args: { "p_ends_on"?: string,"p_habit_id": string,"p_starts_on"?: string }; Returns: {
@@ -435,6 +608,11 @@ isOneToOne: false
               "archived_at": string,"best_streak": number,"category": Database["public"]['Enums']["habit_category"],"checked_in_today": boolean,"created_at": string,"current_streak": number,"days_left": number,"done_count": number,"emoji": string,"frozen": boolean,"frozen_until": string,"group_done": boolean,"group_id": string,"group_name": string,"habit_id": string,"members": Json,"my_role": string,"not_started": boolean,"pending_count": number,"period": Database["public"]['Enums']["habit_period"],"period_start": string,"requires_approval": boolean,"starts_on": string,"target_count": number,"title": string
             }[]
                            },
+"inbox_feed":
+{ Args: { "p_limit"?: number }; Returns: {
+              "actor_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_title": string,"id": string,"kind": string,"payload": Json,"read_at": string,"seen_at": string,"subject_avatar_emoji": string,"subject_id": string,"subject_name": string
+            }[]
+                           },
 "invite_preview":
 { Args: { "p_token": string }; Returns: {
               "group_kind": string,"group_name": string,"inviter_name": string,"member_count": number
@@ -452,9 +630,34 @@ isOneToOne: false
 "leave_group":
 { Args: { "p_confirm_children"?: boolean,"p_group_id": string }; Returns: undefined
                            },
+"mark_feed_read":
+{ Args: { "p_ids"?: (string)[] }; Returns: number
+                           },
+"mark_feed_seen":
+{ Args: { "p_ids": (string)[] }; Returns: number
+                           },
+"mark_treat_received":
+{ Args: { "p_goal_id": string }; Returns: undefined
+                           },
+"move_child":
+{ Args: { "p_child_id": string,"p_to_group_id": string }; Returns: undefined
+                           },
+"my_children":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "avatar_color": string,"avatar_emoji": string,"child_id": string,"created_at": string,"group_id": string,"group_name": string,"name": string
+            }[]
+                           },
 "my_groups":
 { Args: Record<PropertyKey, never>; Returns: {
               "child_count": number,"group_id": string,"joined_at": string,"kind": string,"member_count": number,"name": string,"role": string
+            }[]
+                           },
+"nudge":
+{ Args: { "p_habit_id": string,"p_kind": string,"p_recipient_id": string }; Returns: undefined
+                           },
+"pending_approvals":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "author_avatar_color": string,"author_avatar_emoji": string,"author_id": string,"author_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_title": string,"local_date": string,"review_deadline": string
             }[]
                            },
 "remove_member":
@@ -488,6 +691,24 @@ isOneToOne: false
 "set_member_role":
 { Args: { "p_group_id": string,"p_role": string,"p_user_id": string }; Returns: undefined
                            },
+"set_treat_goal":
+{ Args: { "p_child_id": string,"p_emoji": string,"p_target": number,"p_title": string }; Returns: {
+              "child_id": string,
+"created_at": string,
+"created_by": string | null,
+"emoji": string,
+"id": string,
+"reached_at": string | null,
+"received_at": string | null,
+"target": number,
+"title": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "treat_goals"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "undo_check_in":
 { Args: { "p_check_in_id": string }; Returns: undefined
                            },
@@ -496,6 +717,9 @@ isOneToOne: false
                            },
 "unfreeze_member":
 { Args: { "p_habit_id": string,"p_profile_id"?: string }; Returns: undefined
+                           },
+"update_child":
+{ Args: { "p_avatar_color"?: string,"p_avatar_emoji"?: string,"p_child_id": string,"p_name"?: string }; Returns: undefined
                            },
 "update_group":
 { Args: { "p_group_id": string,"p_kind"?: string,"p_name"?: string,"p_timezone"?: string,"p_week_start"?: number }; Returns: {
