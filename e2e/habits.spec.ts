@@ -44,9 +44,9 @@ test("custom habits are validated", async ({ page }) => {
 test("category tabs show more templates and 'Create your own'", async ({ page }) => {
   await signUpAndOnboard(page);
   await page.goto("/habits/new");
-  await expect(page.getByRole("button", { name: /^Floss/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Brush teeth/ })).toHaveCount(0);
   await page.getByRole("tab", { name: "Health" }).click();
-  await expect(page.getByRole("button", { name: /^Floss/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Brush teeth/ })).toBeVisible();
   await page.getByRole("tab", { name: "Work & money" }).click();
   await expect(page.getByRole("tabpanel").getByRole("button")).toHaveCount(6);
   await expect(page.getByRole("button", { name: /^Plan tomorrow/ })).toBeVisible();
