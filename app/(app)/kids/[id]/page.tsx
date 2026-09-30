@@ -10,6 +10,7 @@ import { AddKidHabit } from "@/components/kids/add-kid-habit";
 import { ChildDangerZone } from "@/components/kids/child-danger-zone";
 import { EditChildButton } from "@/components/kids/edit-child-form";
 import { Garden } from "@/components/kids/garden";
+import { ThemePicker } from "@/components/kids/theme-picker";
 import { GardenAlbum } from "@/components/kids/garden-album";
 import { KidCheckInButton, UndoForChildButton } from "@/components/kids/kid-check-in-button";
 import { TreatGoal } from "@/components/kids/treat-goal";
@@ -82,8 +83,9 @@ export default async function KidPage({
         Open {child.name}&apos;s view
       </Link>
 
-      {rewards && <Garden stars={rewards.stars_this_week} />}
-      {rewards && <GardenAlbum weeks={rewards.album} />}
+      {rewards && <Garden stars={rewards.stars_this_week} theme={child.kid_theme} />}
+      <ThemePicker childId={id} childName={child.name} theme={child.kid_theme} />
+      {rewards && <GardenAlbum weeks={rewards.album} theme={child.kid_theme} />}
       {rewards && <TreatGoal childId={id} childName={child.name} goal={rewards.goal} />}
 
       <section aria-label="Habits" className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">

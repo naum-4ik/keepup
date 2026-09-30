@@ -176,3 +176,19 @@ test("a treat goal of our own, with another star count", async ({ page }) => {
   await expect(goal).toContainText("⭐ 0 of 15");
 });
 
+test("choose what grows with the child: the kid page and the kid view switch theme", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  const picker = page.getByRole("region", { name: "What grows" });
+  await expect(picker.getByRole("button", { name: /Garden/ })).toHaveAttribute("aria-pressed", "true");
+  await picker.getByRole("button", { name: /Aquarium/ }).click();
+  await expect(picker.getByRole("button", { name: /Aquarium/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("region", { name: "This week's aquarium" })).toBeVisible();
+  await page.reload(); // saved
+  await expect(page.getByRole("region", { name: "What grows" }).getByRole("button", { name: /Aquarium/ })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await expect(page.getByRole("img", { name: "Clear water" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "3 more stars to seaweed" })).toBeVisible();
+});
+

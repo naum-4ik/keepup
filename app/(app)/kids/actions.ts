@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { isAvatarColor, isAvatarEmoji } from "@/lib/avatars";
 import { habitErrorMessage } from "@/lib/habit-errors";
 import { isOneEmoji, isUuid, parseHabit } from "@/lib/habit-schema";
+import { isKidTheme } from "@/lib/garden";
 import { isKidTemplateId, KID_TEMPLATES } from "@/lib/kid-templates";
 import { parseChildName, parseGoal } from "@/lib/kid-schema";
 
@@ -211,4 +212,14 @@ export async function exportChild(childId: string): Promise<{ ok: true; data: un
   const { data, error } = await supabase.rpc("export_child", { p_child_id: childId });
   if (error) return { ok: false, message: habitErrorMessage(error) };
   return { ok: true, data };
+}
+
+export async function setChildTheme(childId: string, theme: string): Promise<KidActionResult> {
+  if (!isUuid(childId) || !isKidTheme(theme)) return NOT_FOUND;
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("set_child_theme", { p_child_id: childId, p_theme: theme });
+  if (error) return { ok: false, message: "Couldn't change it. Try again." };
+  revalidatePath(`/kids/${childId}`);
+  revalidatePath(`/kids/${childId}/play`);
+  return { ok: true };
 }
