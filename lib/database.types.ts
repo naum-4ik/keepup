@@ -231,13 +231,13 @@ isOneToOne: false
                   ]
                 },"habits": {
                   Row: {
-                    "archived_at": string | null,"category": Database["public"]['Enums']["habit_category"] | null,"created_at": string,"created_by": string | null,"emoji": string,"group_id": string | null,"id": string,"owner_id": string | null,"period": Database["public"]['Enums']["habit_period"],"requires_approval": boolean,"starts_on": string,"target_count": number,"title": string,"week_start": number
+                    "archived_at": string | null,"category": Database["public"]['Enums']["habit_category"] | null,"created_at": string,"created_by": string | null,"emoji": string,"ends_on": string | null,"finished_at": string | null,"group_id": string | null,"id": string,"owner_id": string | null,"period": Database["public"]['Enums']["habit_period"],"requires_approval": boolean,"starts_on": string,"target_count": number,"title": string,"week_start": number
                   }
                   Insert: {
-                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"] | null,"created_at"?: string,"created_by"?: string | null,"emoji": string,"group_id"?: string | null,"id"?: string,"owner_id"?: string | null,"period": Database["public"]['Enums']["habit_period"],"requires_approval"?: boolean,"starts_on": string,"target_count": number,"title": string,"week_start"?: number
+                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"] | null,"created_at"?: string,"created_by"?: string | null,"emoji": string,"ends_on"?: string | null,"finished_at"?: string | null,"group_id"?: string | null,"id"?: string,"owner_id"?: string | null,"period": Database["public"]['Enums']["habit_period"],"requires_approval"?: boolean,"starts_on": string,"target_count": number,"title": string,"week_start"?: number
                   }
                   Update: {
-                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"] | null,"created_at"?: string,"created_by"?: string | null,"emoji"?: string,"group_id"?: string | null,"id"?: string,"owner_id"?: string | null,"period"?: Database["public"]['Enums']["habit_period"],"requires_approval"?: boolean,"starts_on"?: string,"target_count"?: number,"title"?: string,"week_start"?: number
+                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"] | null,"created_at"?: string,"created_by"?: string | null,"emoji"?: string,"ends_on"?: string | null,"finished_at"?: string | null,"group_id"?: string | null,"id"?: string,"owner_id"?: string | null,"period"?: Database["public"]['Enums']["habit_period"],"requires_approval"?: boolean,"starts_on"?: string,"target_count"?: number,"title"?: string,"week_start"?: number
                   }
                   Relationships: [
                     {
@@ -502,6 +502,8 @@ isOneToOne: false
 "created_at": string,
 "created_by": string | null,
 "emoji": string,
+"ends_on": string | null,
+"finished_at": string | null,
 "group_id": string | null,
 "id": string,
 "owner_id": string | null,
@@ -543,6 +545,8 @@ isOneToOne: false
 "created_at": string,
 "created_by": string | null,
 "emoji": string,
+"ends_on": string | null,
+"finished_at": string | null,
 "group_id": string | null,
 "id": string,
 "owner_id": string | null,
@@ -595,6 +599,31 @@ isOneToOne: false
               "best_emoji": string,"best_period": Database["public"]['Enums']["habit_period"],"best_streak": number,"best_title": string,"check_ins": number,"group_id": string,"group_name": string,"week_start": string
             }[]
                            },
+"finish_habit":
+{ Args: { "p_habit_id": string }; Returns: {
+              "archived_at": string | null,
+"category": Database["public"]['Enums']["habit_category"] | null,
+"created_at": string,
+"created_by": string | null,
+"emoji": string,
+"ends_on": string | null,
+"finished_at": string | null,
+"group_id": string | null,
+"id": string,
+"owner_id": string | null,
+"period": Database["public"]['Enums']["habit_period"],
+"requires_approval": boolean,
+"starts_on": string,
+"target_count": number,
+"title": string,
+"week_start": number
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "habits"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "freeze_habit":
 { Args: { "p_ends_on"?: string,"p_habit_id": string,"p_starts_on"?: string }; Returns: {
               "created_at": string,
@@ -630,6 +659,11 @@ isOneToOne: false
 "group_detail":
 { Args: { "p_group_id": string }; Returns: Json
                            },
+"habit_finish_summary":
+{ Args: { "p_habit_id": string }; Returns: {
+              "best_streak": number,"done": number,"total": number
+            }[]
+                           },
 "habit_history":
 { Args: { "p_habit_id": string,"p_limit"?: number }; Returns: {
               "outcome": string,"period_start": string
@@ -659,6 +693,31 @@ isOneToOne: false
 "is_valid_timezone":
 { Args: { "tz": string }; Returns: boolean
                            },
+"keep_going":
+{ Args: { "p_habit_id": string }; Returns: {
+              "archived_at": string | null,
+"category": Database["public"]['Enums']["habit_category"] | null,
+"created_at": string,
+"created_by": string | null,
+"emoji": string,
+"ends_on": string | null,
+"finished_at": string | null,
+"group_id": string | null,
+"id": string,
+"owner_id": string | null,
+"period": Database["public"]['Enums']["habit_period"],
+"requires_approval": boolean,
+"starts_on": string,
+"target_count": number,
+"title": string,
+"week_start": number
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "habits"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "leave_group":
 { Args: { "p_confirm_children"?: boolean,"p_group_id": string }; Returns: undefined
                            },
@@ -735,6 +794,31 @@ isOneToOne: false
                           SetofOptions: {
         from: "*"
         to: "groups"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"set_habit_end":
+{ Args: { "p_ends_on": string,"p_habit_id": string }; Returns: {
+              "archived_at": string | null,
+"category": Database["public"]['Enums']["habit_category"] | null,
+"created_at": string,
+"created_by": string | null,
+"emoji": string,
+"ends_on": string | null,
+"finished_at": string | null,
+"group_id": string | null,
+"id": string,
+"owner_id": string | null,
+"period": Database["public"]['Enums']["habit_period"],
+"requires_approval": boolean,
+"starts_on": string,
+"target_count": number,
+"title": string,
+"week_start": number
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "habits"
         isOneToOne: true
         isSetofReturn: false
       } },
