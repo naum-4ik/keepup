@@ -1,5 +1,5 @@
 const PUBLIC_EXACT = new Set(["/"]);
-const PUBLIC_PREFIXES = ["/login", "/auth", "/whats-new"];
+const PUBLIC_PREFIXES = ["/login", "/signup", "/auth", "/whats-new"];
 
 export function isPublicPath(pathname: string): boolean {
   if (PUBLIC_EXACT.has(pathname)) return true;
@@ -12,4 +12,9 @@ export function safeNextPath(next: string | null | undefined, fallback = "/today
   if (!next || !next.startsWith("/") || next.startsWith("//")) return fallback;
   if (/[\u0000-\u001f\\]/.test(next)) return fallback;
   return next;
+}
+
+// Links between /login and /signup carry `next` along, but only when it isn't the default.
+export function withNext(path: string, next: string): string {
+  return next === "/today" ? path : `${path}?next=${encodeURIComponent(next)}`;
 }

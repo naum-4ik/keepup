@@ -48,31 +48,56 @@ test("password sign-in explains mistakes", async ({ page }) => {
   await expect(page.locator("#login-error")).toHaveText("That email and password don't match. Try again.");
   await expect(page.getByLabel("Email")).toHaveValue(email);
 
-  await page.getByRole("tab", { name: "Create account" }).click();
-  await expect(page.getByLabel("Email")).toHaveValue(email); // kept across the switch
-  await page.getByLabel("Password", { exact: true }).fill(TEST_PASSWORD);
-  await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page.locator("#login-error")).toContainText("That email already has an account.");
-  await page.getByRole("button", { name: "Sign in instead" }).click();
-  await expect(page.getByRole("tab", { name: "Sign in" })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByLabel("Email")).toHaveValue(email);
+  // Changing the email clears the old error.
+  await page.getByRole("button", { name: "Change" }).click();
+  await page.getByLabel("Email").fill("not-an-email");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.locator("#login-error")).toHaveText("Enter a valid email address.");
+  await page.getByLabel("Email").fill(email);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await expect(page.locator("#login-error")).toHaveCount(0);
+});
 
-  await page.getByRole("tab", { name: "Create account" }).click();
+test("sign-up explains mistakes and links to sign-in for an existing email", async ({ page }) => {
+  const email = uniqueEmail();
+  await signUp(page, email);
+  await completeOnboarding(page);
+  await page.goto("/profile");
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page).toHaveURL(/\/$/);
+
+  await page.goto("/signup");
   await expect(page.getByText("At least 8 characters.")).toBeVisible();
   await page.getByLabel("Email").fill(uniqueEmail());
   await page.getByLabel("Password", { exact: true }).fill("short");
   await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page.locator("#login-error")).toHaveText("Use at least 8 characters.");
+  await expect(page.locator("#signup-error")).toHaveText("Use at least 8 characters.");
+
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(TEST_PASSWORD);
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.locator("#signup-error")).toContainText("That email already has an account.");
+  await page.getByRole("link", { name: "Sign in instead" }).click();
+  await expect(page).toHaveURL(/\/login$/);
 });
 
-test("the password can be shown, and forgot password explains what to do", async ({ page }) => {
+test("sign-in and sign-up link to each other, and the password can be shown", async ({ page }) => {
   await page.goto("/login");
+  await expect(page.getByRole("heading", { name: "Welcome to Keepup" })).toBeVisible();
+  await page.getByRole("link", { name: "Sign up" }).click();
+  await expect(page).toHaveURL(/\/signup$/);
+  await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
+
   const password = page.getByLabel("Password", { exact: true });
   await password.fill("secret-words");
   await expect(password).toHaveAttribute("type", "password");
   await page.getByRole("button", { name: "Show password" }).click();
   await expect(password).toHaveAttribute("type", "text");
 
+  await page.getByRole("link", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await page.getByLabel("Email").fill("ana@example.com");
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("button", { name: "Forgot password?" }).click();
   await expect(page.getByText("Sign in with Google using the same email, or ask Ilya to reset it.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Email me a link" })).toHaveCount(0);
@@ -87,11 +112,17 @@ test("signing in returns to the page that asked for it", async ({ page }) => {
 
   await page.goto("/progress");
   await expect(page).toHaveURL(/\/login\?next=%2Fprogress$/);
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(TEST_PASSWORD);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("link", { name: "Sign up" })).toHaveAttribute("href", "/signup?next=%2Fprogress");
+  await signInHere(page, email);
   await expect(page).toHaveURL(/\/progress$/);
 });
+
+async function signInHere(page: import("@playwright/test").Page, email: string) {
+  await page.getByLabel("Email").fill(email);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByLabel("Password", { exact: true }).fill(TEST_PASSWORD);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+}
 
 async function signUpAndOnboardWith(page: import("@playwright/test").Page, email: string) {
   await signUp(page, email);
@@ -105,7 +136,7 @@ test("invalid input keeps what the user typed", async ({ page }) => {
   await page.getByLabel("Display name").fill("x".repeat(41));
   await page.getByRole("button", { name: "Change", exact: true }).click();
   await chooseTimezone(page, "Asia/Tokyo");
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
 
   await expect(page.getByText("Keep it to 40 characters.")).toBeVisible();
   await expect(page.getByLabel("Time zone")).toHaveValue("Asia/Tokyo");

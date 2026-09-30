@@ -8,17 +8,18 @@ export const TEST_PASSWORD = "correct-horse-42";
 
 // Creates the account with email + password (no email is sent; confirmation is off).
 export async function signUp(page: Page, email: string): Promise<void> {
-  await page.goto("/login");
-  await page.getByRole("tab", { name: "Create account" }).click();
+  await page.goto("/signup");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(TEST_PASSWORD);
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page).not.toHaveURL(/\/login/);
 }
 
+// Email first, then the password (the sign-in screen asks one at a time).
 export async function signIn(page: Page, email: string, password = TEST_PASSWORD): Promise<void> {
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
 }
@@ -41,7 +42,7 @@ export async function completeOnboarding(
     await page.getByRole("button", { name: "Change", exact: true }).click();
     await chooseTimezone(page, timezone);
   }
-  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await expect(page).toHaveURL(/\/onboarding\/habits$/);
   await page.getByRole("link", { name: "Skip for now" }).click();
   await expect(page).toHaveURL(/\/today$/);
