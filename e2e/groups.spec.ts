@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signUpAndOnboard } from "./helpers/auth";
+import { completeOnboarding, signUp, signUpAndOnboard, uniqueEmail } from "./helpers/auth";
 import { addChild, createGroup, inviteLink } from "./helpers/groups";
 
 test("create a group, get an invite link, rename it, and see it in Groups", async ({ page }) => {
@@ -61,4 +61,51 @@ test("pick an avatar in settings and see it in the header", async ({ page }) => 
   await page.getByRole("button", { name: "Save" }).last().click();
   // The header avatar and the nav's Profile tab are both "Profile" links; the header is the banner.
   await expect(page.getByRole("banner").getByRole("link", { name: "Profile" })).toContainText("🦊");
+});
+
+test("an invited person joins from the link and lands on the group's habits", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const url = await inviteLink(page);
+
+  const guest = await (await browser.newContext()).newPage();
+  await guest.goto(url);
+  await expect(guest.getByRole("heading", { name: /invited you to Family/ })).toBeVisible();
+  await expect(guest.getByText("1 person is already in Family.")).toBeVisible();
+  // Google is off on the local stack, so email is the main button ("Use email instead" next to
+  // "Join with Google" when it's on).
+  await guest.getByRole("link", { name: "Continue with email" }).click();
+  await expect(guest).toHaveURL(/\/login\?next=%2Finvite%2F/);
+  await guest.getByRole("link", { name: "Sign up" }).click();
+  await expect(guest).toHaveURL(/\/signup\?next=%2Finvite%2F/);
+  await signUp(guest, uniqueEmail("guest"), { startOnSignupPage: true });
+  await expect(guest).toHaveURL(/\/invite\//);
+  await guest.getByRole("button", { name: "Join Family" }).click();
+  await expect(guest).toHaveURL(/\/onboarding\?joined=/);
+  await expect(guest.getByText("You're joining Family. A little about you first.")).toBeVisible();
+  await expect(guest.getByText("Keepup is for")).toBeHidden();
+  await completeOnboarding(guest, { name: "Grandma", invited: true });
+  await expect(guest.getByRole("status")).toContainText("You joined Family ✓");
+
+  await page.goto("/groups");
+  await expect(page.getByRole("link", { name: /Family/ })).toContainText("2 members");
+});
+
+test("someone already using Keepup joins with one tap", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Flatmates", "Roommates");
+  const url = await inviteLink(page);
+
+  const friend = await (await browser.newContext()).newPage();
+  await signUpAndOnboard(friend);
+  await friend.goto(url);
+  await friend.getByRole("button", { name: "Join Flatmates" }).click();
+  await expect(friend).toHaveURL(/\/today\?joined=/);
+  await expect(friend.getByRole("status")).toContainText("You joined Flatmates ✓");
+});
+
+test("an expired or revoked link explains itself", async ({ page }) => {
+  await page.goto("/invite/not-a-real-token-at-all-xx");
+  await expect(page.getByRole("heading", { name: "This invite link doesn't work anymore" })).toBeVisible();
+  await expect(page.getByText("Ask the person who sent it for a new one.")).toBeVisible();
 });

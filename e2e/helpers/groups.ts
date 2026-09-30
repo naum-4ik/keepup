@@ -20,8 +20,14 @@ export async function inviteLink(page: Page): Promise<string> {
 // Children can't be added from the UI until Task 10; add one straight into the local database with
 // the service role (local stack only).
 function localAdmin(): { url: string; key: string } {
-  const status = JSON.parse(execSync("npx supabase status -o json", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }));
-  return { url: status.API_URL, key: status.SERVICE_ROLE_KEY };
+  const raw = execSync("npx supabase status -o json", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+  // The CLI may print notices before the JSON (see scripts/local-env.mjs).
+  const status = JSON.parse(raw.slice(raw.indexOf("{")));
+  const url: string = status.API_URL;
+  // Never send the service-role key anywhere but the local stack.
+  const host = new URL(url).hostname;
+  if (host !== "localhost" && host !== "127.0.0.1") throw new Error(`Refusing to use the service role on ${url}`);
+  return { url, key: status.SERVICE_ROLE_KEY };
 }
 
 export async function addChild(groupId: string, name: string): Promise<void> {

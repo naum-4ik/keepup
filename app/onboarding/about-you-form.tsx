@@ -6,6 +6,7 @@ import { SaveButton } from "@/components/save-button";
 import { TimezonePicker } from "@/components/timezone-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { purposeForGroupKind, type GroupKind } from "@/lib/group-schema";
 import type { OnboardingFormState, OnboardingFormValues, Purpose } from "@/lib/profile-schema";
 import { cityOf, pickTimezone } from "@/lib/timezones";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,8 @@ type Props = {
   action: (state: OnboardingFormState, formData: FormData) => Promise<OnboardingFormState>;
   timezones: string[];
   defaults: OnboardingFormValues;
+  // Set when the user came from an invite: the group sets the purpose, so the picker is hidden.
+  invitedTo?: { id: string; name: string; kind: GroupKind };
 };
 
 // The emoji are the owner-chosen content of this one choice, not UI icons.
@@ -36,7 +39,7 @@ function detectWeekStart(): "0" | "1" | null {
   return firstDay === 7 ? "0" : "1";
 }
 
-export function AboutYouForm({ action, timezones, defaults }: Props) {
+export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) {
   const [state, formAction, pending] = useActionState(action, initialState);
   const [timezone, setTimezone] = useState(defaults.timezone);
   const [weekStart, setWeekStart] = useState(defaults.weekStart);
@@ -138,35 +141,42 @@ export function AboutYouForm({ action, timezones, defaults }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <p id="purpose-label" className="text-sm font-semibold">
-          Keepup is for… <span className="font-normal text-muted-foreground">(optional)</span>
-        </p>
-        <input type="hidden" name="purpose" value={purpose} />
-        <div role="group" aria-labelledby="purpose-label" className="flex flex-wrap gap-2">
-          {PURPOSE_CHIPS.map((chip) => {
-            const pressed = purpose === chip.value;
-            return (
-              <button
-                key={chip.value}
-                type="button"
-                aria-pressed={pressed}
-                onClick={() => setPurpose(pressed ? "" : chip.value)}
-                className={cn(
-                  "flex min-h-11 items-center gap-1.5 rounded-full border px-4 text-sm font-semibold transition-colors",
-                  pressed
-                    ? "border-primary bg-accent text-foreground ring-1 ring-primary hover:brightness-95"
-                    : "border-input bg-card text-foreground hover:bg-muted",
-                )}
-              >
-                <span aria-hidden>{chip.emoji}</span>
-                {chip.label}
-              </button>
-            );
-          })}
+      {invitedTo ? (
+        <>
+          <input type="hidden" name="purpose" value={purposeForGroupKind(invitedTo.kind)} />
+          <input type="hidden" name="joined" value={invitedTo.id} />
+        </>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <p id="purpose-label" className="text-sm font-semibold">
+            Keepup is for… <span className="font-normal text-muted-foreground">(optional)</span>
+          </p>
+          <input type="hidden" name="purpose" value={purpose} />
+          <div role="group" aria-labelledby="purpose-label" className="flex flex-wrap gap-2">
+            {PURPOSE_CHIPS.map((chip) => {
+              const pressed = purpose === chip.value;
+              return (
+                <button
+                  key={chip.value}
+                  type="button"
+                  aria-pressed={pressed}
+                  onClick={() => setPurpose(pressed ? "" : chip.value)}
+                  className={cn(
+                    "flex min-h-11 items-center gap-1.5 rounded-full border px-4 text-sm font-semibold transition-colors",
+                    pressed
+                      ? "border-primary bg-accent text-foreground ring-1 ring-primary hover:brightness-95"
+                      : "border-input bg-card text-foreground hover:bg-muted",
+                  )}
+                >
+                  <span aria-hidden>{chip.emoji}</span>
+                  {chip.label}
+                </button>
+              );
+            })}
+          </div>
+          {errors.purpose && <p className="text-sm text-destructive">{errors.purpose}</p>}
         </div>
-        {errors.purpose && <p className="text-sm text-destructive">{errors.purpose}</p>}
-      </div>
+      )}
 
       {state.status === "error" && state.message && (
         <p role="alert" className="text-sm text-destructive">

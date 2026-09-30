@@ -1,5 +1,5 @@
 const PUBLIC_EXACT = new Set(["/"]);
-const PUBLIC_PREFIXES = ["/login", "/signup", "/auth", "/whats-new"];
+const PUBLIC_PREFIXES = ["/login", "/signup", "/auth", "/whats-new", "/invite"];
 
 export function isPublicPath(pathname: string): boolean {
   if (PUBLIC_EXACT.has(pathname)) return true;

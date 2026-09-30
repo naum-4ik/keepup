@@ -4,12 +4,20 @@ import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard } from "@/components/habits/habit-card";
 import { WeekStrip } from "@/components/overview/week-overview";
 import { Button } from "@/components/ui/button";
+import { getMyGroups } from "@/lib/groups";
+import { isUuid } from "@/lib/habit-schema";
 import { getHabitSummaries, getWeekOverview, type HabitSummary } from "@/lib/habits";
 import { groupForToday } from "@/lib/today";
 import { hasWeekData } from "@/lib/week-overview";
 
-export default async function TodayPage() {
-  const [summaries, overview] = await Promise.all([getHabitSummaries(), getWeekOverview()]);
+export default async function TodayPage({ searchParams }: { searchParams: Promise<{ joined?: string }> }) {
+  const { joined } = await searchParams;
+  const [summaries, overview, groups] = await Promise.all([
+    getHabitSummaries(),
+    getWeekOverview(),
+    joined && isUuid(joined) ? getMyGroups() : Promise.resolve([]),
+  ]);
+  const joinedGroup = groups.find((g) => g.group_id === joined);
   const habits = summaries.filter((h) => !h.archived_at);
   const { todo, done, later } = groupForToday(habits);
   // The first-check-in tip is for people who have never checked in (not for someone on a new device).
@@ -18,6 +26,11 @@ export default async function TodayPage() {
   return (
     <section className="flex flex-col gap-4 py-6">
       <h1 className="text-xl font-bold">Today</h1>
+      {joinedGroup && (
+        <p role="status" className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">
+          You joined {joinedGroup.name} ✓
+        </p>
+      )}
       {overview && hasWeekData(overview) && <WeekStrip overview={overview} />}
       {habits.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">

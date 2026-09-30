@@ -13,7 +13,8 @@ import { startWithHabits, type PickHabitsState } from "./actions";
 
 const initialState: PickHabitsState = { status: "idle" };
 
-export function PickHabits({ templates }: { templates: HabitTemplate[] }) {
+// `joined`: the group an invited user just joined; skipping is the expected path, so Skip is a real button.
+export function PickHabits({ templates, joined }: { templates: HabitTemplate[]; joined?: string }) {
   const [state, formAction, pending] = useActionState(startWithHabits, initialState);
   const [picked, setPicked] = useState<string[]>([]);
   const [atLimit, setAtLimit] = useState(false);
@@ -41,6 +42,7 @@ export function PickHabits({ templates }: { templates: HabitTemplate[] }) {
 
   return (
     <form action={formAction} className="flex flex-col gap-5">
+      {joined && <input type="hidden" name="joined" value={joined} />}
       {picked.map((id) => (
         <input key={id} type="hidden" name="templateId" value={id} />
       ))}
@@ -96,9 +98,15 @@ export function PickHabits({ templates }: { templates: HabitTemplate[] }) {
         <Button type="submit" disabled={n === 0 || pending} className="h-11 text-base">
           {pending ? "Adding…" : n === 0 ? "Pick a habit to start" : `Start with ${n} ${n === 1 ? "habit" : "habits"}`}
         </Button>
-        <Button asChild variant="ghost" className="h-11 text-base text-muted-foreground">
-          <Link href="/today">Skip for now</Link>
-        </Button>
+        {joined ? (
+          <Button asChild variant="secondary" className="h-11 w-full text-base">
+            <Link href={`/today?joined=${joined}`}>Skip</Link>
+          </Button>
+        ) : (
+          <Button asChild variant="ghost" className="h-11 text-base text-muted-foreground">
+            <Link href="/today">Skip for now</Link>
+          </Button>
+        )}
       </div>
     </form>
   );

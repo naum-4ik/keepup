@@ -6,7 +6,11 @@ describe("isPublicPath", () => {
     expect(isPublicPath(p)).toBe(true);
   });
 
-  it.each(["/today", "/profile", "/profile/settings", "/onboarding", "/loginx", "/signupx", "/authx"])(
+  it("treats invite landings as public", () => {
+    expect(isPublicPath("/invite/abc")).toBe(true);
+  });
+
+  it.each(["/today", "/profile", "/profile/settings", "/onboarding", "/loginx", "/signupx", "/authx", "/invitex"])(
     "%s is private",
     (p) => {
       expect(isPublicPath(p)).toBe(false);

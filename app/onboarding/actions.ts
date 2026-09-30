@@ -5,13 +5,19 @@ import { redirect } from "next/navigation";
 import { getProfile, requireUser } from "@/lib/auth";
 import { insertHabits } from "@/lib/habit-create";
 import { habitErrorMessage } from "@/lib/habit-errors";
-import { parseHabit, type HabitInput } from "@/lib/habit-schema";
+import { isUuid, parseHabit, type HabitInput } from "@/lib/habit-schema";
 import { MAX_STARTER_HABITS, onboardingTemplates } from "@/lib/habit-templates";
 import { parseOnboarding, parsePurpose, readOnboardingForm, type OnboardingFormState } from "@/lib/profile-schema";
 import { saveProfile } from "@/lib/profile-update";
 import { listTimezones } from "@/lib/timezones";
 
 export type PickHabitsState = { status: "idle" } | { status: "error"; message: string };
+
+// The group an invited user just joined, carried through onboarding in the URL (?joined=<id>).
+function readJoined(formData: FormData): string | null {
+  const joined = String(formData.get("joined") ?? "");
+  return isUuid(joined) ? joined : null;
+}
 
 export async function completeOnboarding(_prev: OnboardingFormState, formData: FormData): Promise<OnboardingFormState> {
   const values = readOnboardingForm(formData);
@@ -23,17 +29,24 @@ export async function completeOnboarding(_prev: OnboardingFormState, formData: F
   const message = await saveProfile(supabase, userId, parsed.value, { markOnboarded: true });
   if (message) return { status: "error", message, values };
 
-  redirect("/onboarding/habits");
+  const joined = readJoined(formData);
+  redirect(`/onboarding/habits${joined ? `?joined=${joined}` : ""}`);
 }
 
 export async function startWithHabits(_prev: PickHabitsState, formData: FormData): Promise<PickHabitsState> {
-  const { supabase, profile } = await getProfile();
+  const { supabase, userId, profile } = await getProfile();
   if (!profile.onboarded_at) redirect("/onboarding");
+  const joined = readJoined(formData);
+  const today = joined ? `/today?joined=${joined}` : "/today";
 
-  // Back + Start again (or a double submit) must not create a second set.
-  const { count, error: countError } = await supabase.from("habits").select("id", { count: "exact", head: true });
+  // Back + Start again (or a double submit) must not create a second set. Own habits only: members
+  // can also read their groups' habits.
+  const { count, error: countError } = await supabase
+    .from("habits")
+    .select("id", { count: "exact", head: true })
+    .eq("owner_id", userId);
   if (countError) return { status: "error", message: "Couldn't add your habits. Try again." };
-  if ((count ?? 0) > 0) redirect("/today");
+  if ((count ?? 0) > 0) redirect(today);
 
   const purpose = parsePurpose(profile.purpose ?? "");
   const offered = onboardingTemplates(purpose.ok ? purpose.value : null);
@@ -57,5 +70,5 @@ export async function startWithHabits(_prev: PickHabitsState, formData: FormData
 
   revalidatePath("/today");
   revalidatePath("/progress");
-  redirect("/today");
+  redirect(today);
 }

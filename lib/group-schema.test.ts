@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { childrenDeletionNotice, inviteUrl, parseGroupName } from "@/lib/group-schema";
+import { childrenDeletionNotice, inviteUrl, parseGroupName, purposeForGroupKind } from "@/lib/group-schema";
 
 describe("group name", () => {
   it("trims and accepts 1–40 characters", () => {
@@ -24,5 +24,15 @@ describe("children deletion notice", () => {
     expect(childrenDeletionNotice(["Mary", "Leo"])).toBe("Mary and Leo's profiles and history will be deleted.");
     expect(childrenDeletionNotice(["Mary", "Leo", "Ada"])).toBe("Mary, Leo and Ada's profiles and history will be deleted.");
     expect(childrenDeletionNotice([])).toBe("The children's profiles and history will be deleted.");
+  });
+});
+
+describe("purpose for group kind", () => {
+  it("derives the invited user's purpose from the group", () => {
+    expect(purposeForGroupKind("family")).toBe("family");
+    expect(purposeForGroupKind("couple")).toBe("family");
+    expect(purposeForGroupKind("friends")).toBe("friends");
+    expect(purposeForGroupKind("roommates")).toBe("friends");
+    expect(purposeForGroupKind("other")).toBe("friends");
   });
 });
