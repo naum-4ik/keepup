@@ -25,6 +25,9 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
           timer.current = window.setTimeout(() => router.refresh(), 400);
         })
         .subscribe();
+    }).catch((e: unknown) => {
+      // No live updates this time; the page still works and refreshes on navigation.
+      console.error("realtime setAuth failed", e);
     });
     return () => {
       closed = true;

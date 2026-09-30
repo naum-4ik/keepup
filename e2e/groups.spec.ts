@@ -190,3 +190,59 @@ test("Together templates show only when adding from a group, and never offer Jus
   await expect(dialog.getByRole("radio", { name: "Just me" })).toBeVisible();
   await expect(dialog.getByRole("radio", { name: "Levi family" })).toBeChecked();
 });
+
+test("approval: check-ins wait, each approves the other in the Inbox, both see Everyone did it", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Gym buddies", "Friends");
+  const url = await inviteLink(page);
+  const guest = await (await browser.newContext()).newPage();
+  await joinByLink(guest, url, "Dan");
+
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: "Create your own" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Title").fill("Gym");
+  await dialog.getByRole("radio", { name: "Gym buddies" }).check();
+  await dialog.getByRole("switch", { name: "Needs approval" }).click();
+  await dialog.getByRole("button", { name: /^Add habit/ }).click();
+
+  await page.getByRole("button", { name: "Check in: Gym" }).click();
+  await expect(page.getByRole("button", { name: "Waiting for approval: Gym" })).toBeVisible();
+  await guest.goto("/today");
+  await guest.getByRole("button", { name: "Check in: Gym" }).click();
+  await expect(guest.getByRole("link", { name: /check-in waiting for you/ })).toBeVisible();
+
+  await guest.getByRole("link", { name: /Inbox/ }).click();
+  // exact: "Approve" is also a substring of "Not approved".
+  await guest.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(guest.getByText("Nothing waiting for you.")).toBeVisible();
+
+  await page.goto("/inbox");
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await page.goto("/today");
+  await expect(page.getByText("Everyone did it ✓")).toBeVisible();
+  await guest.goto("/today");
+  await expect(guest.getByText("Everyone did it ✓")).toBeVisible();
+  await guest.getByRole("link", { name: /Inbox/ }).click();
+  await guest.getByRole("tab", { name: "Activity" }).click();
+  await expect(guest.getByText("Everyone did it: Gym ✓")).toBeVisible();
+});
+
+test("nudge a member with a preset, and they see it in their Inbox", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const url = await inviteLink(page);
+  const guest = await (await browser.newContext()).newPage();
+  await joinByLink(guest, url, "Dan");
+  await createGroupHabitVia(page, "Family", "Walk");
+  // A new member isn't required in the period they joined, so nudge from Dan to Anna instead: Anna was there from the start.
+  await guest.goto("/today");
+  await guest.getByRole("link", { name: /Walk/ }).click();
+  await guest.getByRole("button", { name: /^Nudge/ }).click();
+  await guest.getByRole("menuitem", { name: "💪 You've got this" }).click();
+  await expect(guest.getByRole("button", { name: "Nudged ✓" })).toBeDisabled();
+  await page.goto("/inbox");
+  await page.getByRole("tab", { name: "Activity" }).click();
+  await expect(page.getByText(/You've got this: Walk/)).toBeVisible();
+});
+

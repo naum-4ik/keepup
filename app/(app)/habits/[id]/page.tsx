@@ -4,6 +4,7 @@ import { ChevronDown, ChevronLeft, Flame, Trophy } from "lucide-react";
 import { ArchiveHabitButton } from "@/components/habits/archive-habit-button";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { CheckInButton } from "@/components/habits/check-in-button";
+import { CheerButton } from "@/components/habits/cheer-button";
 import { CheckInList } from "@/components/habits/check-in-list";
 import { DeleteHabitButton } from "@/components/habits/delete-habit-button";
 import { FreezeForm } from "@/components/habits/freeze-form";
@@ -11,6 +12,7 @@ import { HabitDetailsForm } from "@/components/habits/habit-details-form";
 import { HistoryGrid } from "@/components/habits/history-grid";
 import { LiveRefresh } from "@/components/habits/live-refresh";
 import { MEMBER_STATUS_LABEL, MemberAvatar } from "@/components/habits/member-status-row";
+import { NudgeButton } from "@/components/habits/nudge-button";
 import { PauseMeForm } from "@/components/habits/pause-me-form";
 import { getProfile } from "@/lib/auth";
 import { CATEGORIES } from "@/lib/categories";
@@ -62,7 +64,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const [{ profile, userId }, detail] = await Promise.all([getProfile(), getHabitDetail(id)]);
   if (!detail) notFound();
 
-  const { summary: h, history, freezes, checkIns, totalCheckIns } = detail;
+  const { summary: h, history, freezes, checkIns, totalCheckIns, memberCheckIns, myCheers, myNudges } = detail;
   const members = membersOf(h);
   // A group habit runs on its group's calendar (time zone and week start).
   const group = h.group_id ? await getGroupDetail(h.group_id) : null;
@@ -92,6 +94,19 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   });
 
   const everyone = Boolean(members && h.group_done);
+  // Nudge and Cheer are between adults only (M3 decision). Nudge: required, not there yet and no
+  // check-in today (nudge()'s own rule). Cheer: today's counted check-in.
+  const todays = (memberId: string) => memberCheckIns.filter((c) => c.user_id === memberId && c.local_date === today);
+  const actionFor = (m: NonNullable<typeof members>[number]) => {
+    if (m.profile_id === userId || m.kind !== "adult") return null;
+    const counted = todays(m.profile_id).filter((c) => c.status === "approved").at(-1);
+    if (counted) return <CheerButton checkInId={counted.id} habitId={h.habit_id} name={m.name} cheered={myCheers.includes(counted.id)} />;
+    if (memberStatus(m, h.target_count) === "open" && !todays(m.profile_id).some((c) => c.status !== "rejected")) {
+      const sent = myNudges.some((n) => n.recipient_id === m.profile_id && n.local_date === today);
+      return <NudgeButton habitId={h.habit_id} recipientId={m.profile_id} name={m.name} sent={sent} />;
+    }
+    return null;
+  };
   const isDone = h.done_count >= h.target_count || everyone;
 
   return (
@@ -144,17 +159,19 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
               return (
                 <li key={m.profile_id} className="flex min-h-11 items-center gap-3">
                   <MemberAvatar member={m} status={status} size="md" />
-                  <span className="min-w-0 flex-1 truncate font-semibold">
-                    {m.name}
-                    {m.profile_id === userId && <span className="font-normal text-muted-foreground"> (you)</span>}
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate font-semibold">
+                      {m.name}
+                      {m.profile_id === userId && <span className="font-normal text-muted-foreground"> (you)</span>}
+                    </span>
+                    <span className="text-sm text-muted-foreground">{MEMBER_STATUS_LABEL[status]}</span>
                   </span>
-                  <span className="text-sm text-muted-foreground">{MEMBER_STATUS_LABEL[status]}</span>
+                  {actionFor(m)}
                 </li>
               );
             })}
           </ul>
           <p className="text-sm font-semibold">Group streak 🔥 {h.current_streak}</p>
-          {/* Nudge and Cheer arrive with Task 9. */}
         </Card>
       )}
 

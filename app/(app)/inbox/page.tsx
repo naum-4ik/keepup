@@ -1,0 +1,43 @@
+import { ApprovalList, type ApprovalRow } from "@/components/inbox/approval-list";
+import { FeedList } from "@/components/inbox/feed-list";
+import { InboxTabs } from "@/components/inbox/inbox-tabs";
+import { MarkReadOnView } from "@/components/inbox/mark-read-on-view";
+import { LiveRefresh } from "@/components/habits/live-refresh";
+import { getProfile } from "@/lib/auth";
+import { dayLabel, reviewBy, todayIn } from "@/lib/dates";
+import { getFeed, getPendingApprovals } from "@/lib/inbox";
+
+export default async function InboxPage() {
+  const [{ profile, userId }, approvals, feed] = await Promise.all([getProfile(), getPendingApprovals(), getFeed()]);
+  const tz = profile.timezone;
+  const now = new Date();
+  const today = todayIn(tz, now);
+  const rows: ApprovalRow[] = approvals.map((a) => ({
+    check_in_id: a.check_in_id,
+    author_name: a.author_name,
+    author_avatar_emoji: a.author_avatar_emoji,
+    author_avatar_color: a.author_avatar_color,
+    habit_title: a.habit_title,
+    group_name: a.group_name,
+    day: dayLabel(a.local_date, today).replace(/^(Today|Yesterday)$/, (d) => d.toLowerCase()),
+    reviewBy: reviewBy(a.review_deadline, tz, now),
+  }));
+
+  return (
+    <section className="flex flex-col gap-4 py-6">
+      <h1 className="text-xl font-bold">Inbox</h1>
+      <InboxTabs
+        approvalsCount={rows.length}
+        approvals={<ApprovalList rows={rows} />}
+        activity={
+          <>
+            <FeedList items={feed} timeZone={tz} now={now} />
+            <MarkReadOnView hasUnread={feed.some((n) => !n.read_at)} />
+          </>
+        }
+      />
+      {/* New notifications (approvals asked, check-ins, nudges) refresh the page; RLS applies. */}
+      <LiveRefresh table="notifications" filter={`user_id=eq.${userId}`} />
+    </section>
+  );
+}
