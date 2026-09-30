@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { deleteChild, exportChild, moveChild } from "@/app/(app)/kids/actions";
+import { deleteChild, exportChild, moveChild, resetChild } from "@/app/(app)/kids/actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { exportFileName } from "@/lib/kid-schema";
@@ -116,6 +116,69 @@ export function MoveChildForm({
   );
 }
 
+// A fresh start: habits, check-ins, stars, the album and treat goals go; the nickname and avatar stay.
+function ResetChildButton({ childId, childName }: { childId: string; childName: string }) {
+  const [open, setOpen] = useState(false);
+  const [done, setDone] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        className="h-11 text-destructive hover:text-destructive"
+        onClick={() => {
+          setDone(false);
+          setError(null);
+          setOpen(true);
+        }}
+      >
+        Reset {childName}&apos;s profile
+      </Button>
+      {done && (
+        <p role="status" className="text-sm font-semibold text-[#4F8A5B]">
+          {childName}&apos;s profile is reset. A fresh start 🌱
+        </p>
+      )}
+      <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
+        <DialogContent>
+          <div className="flex flex-col gap-1 pr-10">
+            <DialogTitle>Reset {childName}&apos;s profile?</DialogTitle>
+            <DialogDescription>
+              Everything except {childName}&apos;s nickname and avatar is cleared: habits, check-ins, stars, the garden album and treat
+              goals. This can&apos;t be undone.
+            </DialogDescription>
+          </div>
+          <ExportChildButton childId={childId} childName={childName} label="Export first" />
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="h-11 flex-1"
+              disabled={pending}
+              onClick={() =>
+                startTransition(async () => {
+                  const r = await resetChild(childId);
+                  if (!r.ok) return setError(r.message);
+                  setOpen(false);
+                  setDone(true);
+                })
+              }
+            >
+              {pending ? "Resetting…" : "Reset"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 function DeleteChildButton({ childId, childName }: { childId: string; childName: string }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -176,6 +239,7 @@ export function ChildDangerZone({
       <h2 className="text-sm font-bold text-muted-foreground">Danger zone</h2>
       <ExportChildButton childId={childId} childName={childName} />
       {isAdmin && <MoveChildForm childId={childId} childName={childName} targets={moveTargets} />}
+      {isAdmin && <ResetChildButton childId={childId} childName={childName} />}
       {isAdmin && <DeleteChildButton childId={childId} childName={childName} />}
     </section>
   );
