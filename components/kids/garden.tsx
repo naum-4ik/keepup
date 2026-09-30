@@ -1,4 +1,4 @@
-import { kidTheme, nextStep, restartDay, restartLine, stageFor, starsToNext } from "@/lib/garden";
+import { kidTheme, nextStep, restartDay, restartLine, sceneFor, stageFor, starsToNext } from "@/lib/garden";
 import { cn } from "@/lib/utils";
 
 // The week's garden: the stage's emoji layers composed on soil in a soft rounded card. The stage
@@ -15,9 +15,12 @@ export function GardenPicture({
   className?: string;
 }) {
   const t = kidTheme(theme);
-  const stage = t.stages[stageFor(stars)];
-  // The first layer is the soil (🟫), drawn as a band; the rest stand on it.
-  const plants = stage.layers.slice(1);
+  const stageIndex = stageFor(stars);
+  const stage = t.stages[stageIndex];
+  // The soil (🟫) is drawn as a band, with a mound at the start; the rest stand on it. The next
+  // picture shows faintly beside it (not on album thumbnails: those weeks are over).
+  const { plants, ghost, base } = sceneFor(stars, t.id);
+  const showGhost = ghost !== null && size !== "sm";
   return (
     <div
       role="img"
@@ -25,7 +28,7 @@ export function GardenPicture({
       className={cn(
         "relative flex flex-col items-center justify-end overflow-hidden rounded-3xl bg-gradient-to-b",
         t.sky,
-        { sm: "h-20 w-28 rounded-2xl", md: "h-36 w-full", lg: "h-56 w-full" }[size],
+        { sm: "h-20 w-28 rounded-2xl", md: "h-36 w-full", lg: "h-[28vh] min-h-40 max-h-60 w-full" }[size],
         className,
       )}
     >
@@ -33,14 +36,16 @@ export function GardenPicture({
         aria-hidden
         className={cn(
           "flex items-end justify-center gap-1 leading-none select-none",
-          { sm: "text-xl", md: "text-4xl", lg: "text-6xl" }[size],
+          // A seed or a shell is small: half the size, half sunk into the mound.
+          base ? { sm: "translate-y-1 text-xs", md: "translate-y-2 text-xl", lg: "translate-y-3 text-3xl" }[size] : { sm: "text-xl", md: "text-4xl", lg: "text-6xl" }[size],
         )}
       >
         {plants.map((p, i) => (
           <span
             key={`${p}-${i}`}
             className={cn(
-              (p === "☀️" || p === "🌙" || p === "🪐") && "absolute top-2 right-3",
+              // Sky things float top right; the rest are positioned so they paint over the mound.
+              p === "☀️" || p === "🌙" || p === "🪐" ? "absolute top-2 right-3" : "relative z-10",
               ["🦋", "🐞", "🐟", "🐡", "🐠", "⭐", "🌟", "☄️"].includes(p) && "-translate-y-1/2",
             )}
           >
@@ -48,11 +53,24 @@ export function GardenPicture({
           </span>
         ))}
       </span>
+      {showGhost && (
+        <span
+          aria-hidden
+          className={cn(
+            "absolute bottom-[18%] right-[12%] leading-none opacity-25 grayscale select-none",
+            { sm: "", md: "text-3xl", lg: "text-5xl" }[size],
+          )}
+        >
+          {ghost}
+        </span>
+      )}
       <span
         aria-hidden
         className={cn("relative flex w-full justify-center", t.ground, { sm: "h-3", md: "h-5", lg: "h-7" }[size])}
       >
-        {plants.length === 0 && <span className="absolute -top-1 size-2 rounded-full bg-[#8A6B45]" />}
+        {stageIndex === 0 && (
+          <span className={cn("absolute bottom-full [border-radius:50%_50%_0_0/100%_100%_0_0]", t.ground, { sm: "h-2 w-12", md: "h-4 w-28", lg: "h-7 w-44" }[size])} />
+        )}
       </span>
     </div>
   );

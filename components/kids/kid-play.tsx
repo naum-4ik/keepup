@@ -67,7 +67,10 @@ export function KidPlay({
 
       <div ref={garden} className="flex flex-col items-center gap-2">
         <GardenPicture stars={view.stars} size="lg" theme={child.theme} />
-        <p className="text-3xl font-bold tabular-nums" aria-live="polite">⭐ {view.stars}</p>
+        {/* The star path below is the one visible count; this line tells screen readers when it grows. */}
+        <p className="sr-only" aria-live="polite">
+          {view.stars} {view.stars === 1 ? "star" : "stars"} this week
+        </p>
         <NextStep stars={view.stars} theme={child.theme} weekStart={weekStart} />
       </div>
 
@@ -103,18 +106,21 @@ export function KidPlay({
                 <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                   <span className="text-xl font-bold leading-tight">{h.title}</span>
                   {h.target > 1 && (
-                    <span aria-hidden className="flex gap-1.5">
+                    <span aria-hidden className="flex flex-wrap gap-1.5">
                       {Array.from({ length: h.target }, (_, i) => (
-                        <span key={i} className={cn("size-3 rounded-full", i < h.done ? (done ? "bg-white" : "bg-[#4F8A5B]") : done ? "bg-white/40" : "bg-muted ring-1 ring-border")} />
+                        <span key={i} className={cn("size-5 rounded-full", i < h.done ? (done ? "bg-white" : "bg-[#4F8A5B]") : done ? "bg-white/40" : "bg-muted ring-1 ring-border")} />
                       ))}
                     </span>
                   )}
                 </span>
-                {done && (
+                {done ? (
                   <>
-                    <Check aria-hidden className="size-10 shrink-0" strokeWidth={3} />
+                    <Check aria-hidden className="size-12 shrink-0" strokeWidth={3} />
                     <span className="sr-only">, done</span>
                   </>
+                ) : (
+                  // Where the ✓ will go: an empty circle says "tap here".
+                  <span aria-hidden className="size-12 shrink-0 rounded-full border-2 border-primary/50 bg-background" />
                 )}
               </button>
             </li>

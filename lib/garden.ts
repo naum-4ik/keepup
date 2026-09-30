@@ -112,6 +112,19 @@ export function nextStep(
   return { have: stars - now.min, need: next.min - now.min, left: next.min - stars, icon: next.icon, label: next.label };
 }
 
+// What stands on the ground this week, plus a faint preview of the next picture (design review
+// 2026-09-30: an empty sky with one dot looked like nothing was there). Pictures with nothing on the
+// soil get a small base: a seed, a shell on the sand.
+const BASE: Partial<Record<KidThemeId, string>> = { garden: "🌰", aquarium: "🐚" };
+
+export function sceneFor(stars: number, theme?: string | null): { plants: string[]; ghost: string | null; base: boolean } {
+  const t = kidTheme(theme);
+  const plants = t.stages[stageFor(stars)].layers.slice(1);
+  const base = BASE[t.id];
+  const useBase = plants.length === 0 && Boolean(base);
+  return { plants: useBase ? [base!] : [...plants], ghost: nextStep(stars, t.id)?.icon ?? null, base: useBase };
+}
+
 // ideas/kid-view-next.md: when it starts over (the family group's first day of the week) and how the
 // new week is announced, in the child's theme.
 const THEME_WORDS: Record<KidThemeId, { noun: string; start: string; seed: string }> = {
