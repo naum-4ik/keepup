@@ -141,17 +141,35 @@ test("a treat goal from an idea, with a quick star target", async ({ page }) => 
   await addChild(page, "Family", "Mary");
   const goal = page.getByRole("region", { name: "Treat goal" });
   await goal.getByRole("button", { name: "Set a goal" }).click();
-  await expect(goal.getByRole("button", { name: /Stay up late/ })).toHaveCount(0); // six ideas first
-  await goal.getByRole("button", { name: "More ideas" }).click();
-  await expect(goal.getByRole("button", { name: /Stay up late/ })).toBeVisible();
-  await goal.getByRole("button", { name: /Pizza night/ }).click();
+  const ideas = goal.getByRole("group", { name: "Choose a treat together" });
+  await expect(goal.getByRole("button", { name: "Set goal" })).toBeDisabled(); // pick something first
+  await expect(ideas.getByRole("button", { name: /Stay up late/ })).toHaveCount(0); // six ideas first
+  await ideas.getByRole("button", { name: "More ideas" }).click();
+  await ideas.getByRole("button", { name: /Pizza night/ }).click();
   await expect(goal.getByLabel("Treat", { exact: true })).toHaveValue("Pizza night");
-  await expect(goal.getByRole("group", { name: "Treat emoji" }).getByRole("button", { name: "🍕" })).toHaveAttribute("aria-pressed", "true");
+  await expect(goal.getByRole("button", { name: "Picture: 🍕. Change" })).toBeVisible();
   await goal.getByLabel("Treat", { exact: true }).fill("Pizza night with grandma"); // an idea can be edited
+  await goal.getByRole("button", { name: "Picture: 🍕. Change" }).click();
+  await goal.getByRole("group", { name: "Treat emoji" }).getByRole("button", { name: "🎈" }).click();
+  await expect(goal.getByRole("button", { name: "Picture: 🎈. Change" })).toBeVisible();
   await goal.getByRole("button", { name: "⭐ 30" }).click();
-  await expect(goal.getByLabel("Stars")).toHaveValue("30");
   await goal.getByRole("button", { name: "Set goal" }).click();
   await expect(goal).toContainText("Pizza night with grandma");
   await expect(goal).toContainText("⭐ 0 of 30");
+});
+
+test("a treat goal of our own, with another star count", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  const goal = page.getByRole("region", { name: "Treat goal" });
+  await goal.getByRole("button", { name: "Set a goal" }).click();
+  await goal.getByRole("button", { name: "Our own idea" }).click();
+  await goal.getByLabel("Treat", { exact: true }).fill("Trip to the aquarium");
+  await goal.getByRole("button", { name: "Other" }).click();
+  await goal.getByLabel("Stars", { exact: true }).fill("15");
+  await goal.getByRole("button", { name: "Set goal" }).click();
+  await expect(goal).toContainText("Trip to the aquarium");
+  await expect(goal).toContainText("⭐ 0 of 15");
 });
 
