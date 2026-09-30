@@ -59,3 +59,11 @@ export function endLabel(p: { n: number; total: number; almost: boolean }, perio
 export function extendEnd(endsOn: string, period: HabitPeriod, n: number): string {
   return endsOnFor(addDays(endsOn, 1), period, n);
 }
+
+// A habit has ended once today, in its own calendar, is after its last day: no more check-ins.
+export const hasEnded = (endsOn: string | undefined | null, today: string) => Boolean(endsOn) && (endsOn as string) < today;
+
+// The habits still running today (kid views and Today's lists leave ended ones out).
+export function withoutEnded<T extends { habit_id: string }>(habits: T[], ends: Map<string, string>, todayOf: (h: T) => string): T[] {
+  return habits.filter((h) => !hasEnded(ends.get(h.habit_id), todayOf(h)));
+}

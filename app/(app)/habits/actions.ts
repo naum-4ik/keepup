@@ -6,6 +6,7 @@ import { getProfile, requireUser } from "@/lib/auth";
 import { insertHabits, setHabitEnd } from "@/lib/habit-create";
 import { startAgainEnd } from "@/lib/habit-finish";
 import { todayIn } from "@/lib/dates";
+import { getGroupDetail } from "@/lib/groups";
 import { GENERIC_ERROR, habitErrorMessage } from "@/lib/habit-errors";
 import { isUuid, LOCAL_DATE, parseHabit, parseHabitDetails, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 
@@ -30,13 +31,13 @@ const readEndsOn = (formData: FormData) => {
 };
 
 // The end is set after the habit is created, so an end before the start would be refused only then,
-// with the habit already saved without it. Check first. Empty start = today (in the user's zone).
+// with the habit already saved without it. Check first. Empty start = today in the habit's calendar:
+// the user's zone, or the group's for a group habit (`timeZone`).
 const END_BEFORE_START = "The last day can't be before the first day.";
-async function endBeforeStart(formData: FormData, startsOn: string | undefined): Promise<boolean> {
+async function endBeforeStart(formData: FormData, startsOn: string | undefined, timeZone?: string): Promise<boolean> {
   const endsOn = readEndsOn(formData);
   if (!endsOn) return false;
-  const { profile } = await getProfile();
-  return endsOn < (startsOn ?? todayIn(profile.timezone));
+  return endsOn < (startsOn ?? todayIn(timeZone ?? (await getProfile()).profile.timezone));
 }
 
 export async function createHabit(_prev: HabitFormState, formData: FormData): Promise<HabitFormState> {
@@ -184,7 +185,9 @@ export async function createGroupHabit(_prev: HabitFormState, formData: FormData
   if (!parsed.ok) return { status: "error", errors: parsed.errors, values };
   const groupId = String(formData.get("groupId") ?? "");
   if (!isUuid(groupId)) return { status: "error", message: "Pick a group.", values };
-  if (await endBeforeStart(formData, parsed.value.startsOn)) return { status: "error", message: END_BEFORE_START, values };
+  // No start = today in the group's calendar (read only when it matters).
+  const group = readEndsOn(formData) && !parsed.value.startsOn ? await getGroupDetail(groupId) : null;
+  if (await endBeforeStart(formData, parsed.value.startsOn, group?.timezone)) return { status: "error", message: END_BEFORE_START, values };
   const children = formData.getAll("children").map(String).filter(isUuid);
   const { supabase } = await requireUser();
   const { data: created, error } = await supabase.rpc("create_group_habit", {
@@ -265,15 +268,25 @@ export async function finishHabit(habitId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
-// Start again from the Finished tab: a fresh copy with the same settings and length, from today.
-// The finished one keeps its history.
+// Start again from the Finished tab: a fresh copy with the same settings and length, from today (in
+// the habit's calendar). The finished one keeps its history. A group habit keeps its children, the
+// ones still in the group (create_group_habit refuses any other).
 export async function startAgain(habitId: string): Promise<ActionResult> {
   if (!isUuid(habitId)) return { ok: false, message: "That habit isn't available." };
   const { supabase, profile } = await getProfile();
   const { data: h, error: readError } = await supabase.from("habits").select("*").eq("id", habitId).maybeSingle();
   if (readError || !h || !h.finished_at || !h.category) return { ok: false, message: "That habit isn't available." };
   let newId: string | undefined;
+  let timeZone = profile.timezone;
   if (h.group_id) {
+    const [group, participants] = await Promise.all([
+      getGroupDetail(h.group_id),
+      supabase.from("group_habit_participants").select("profile_id").eq("habit_id", habitId),
+    ]);
+    if (!group || participants.error) return { ok: false, message: GENERIC_ERROR };
+    timeZone = group.timezone;
+    const inGroup = new Set(group.children.map((c) => c.id));
+    const children = (participants.data ?? []).map((p) => p.profile_id).filter((id) => inGroup.has(id));
     const { data, error } = await supabase.rpc("create_group_habit", {
       p_group_id: h.group_id,
       p_title: h.title,
@@ -282,7 +295,7 @@ export async function startAgain(habitId: string): Promise<ActionResult> {
       p_target_count: h.target_count,
       p_period: h.period,
       p_requires_approval: h.requires_approval,
-      p_children: [],
+      p_children: children,
     });
     if (error) return { ok: false, message: habitErrorMessage(error) };
     newId = data?.id;
@@ -294,7 +307,7 @@ export async function startAgain(habitId: string): Promise<ActionResult> {
     newId = ids[0];
   }
   if (newId && h.ends_on) {
-    const endError = await setHabitEnd(supabase, newId, startAgainEnd(h.starts_on, h.ends_on, todayIn(profile.timezone)));
+    const endError = await setHabitEnd(supabase, newId, startAgainEnd(h.starts_on, h.ends_on, todayIn(timeZone)));
     if (endError) console.error("set_habit_end failed", endError.message);
   }
   refresh();

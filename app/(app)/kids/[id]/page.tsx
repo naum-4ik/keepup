@@ -18,6 +18,9 @@ import { KidCheckInButton, UndoForChildButton } from "@/components/kids/kid-chec
 import { TreatGoal } from "@/components/kids/treat-goal";
 import { getProfile } from "@/lib/auth";
 import { getGroupDetail, getMyGroups } from "@/lib/groups";
+import { todayIn } from "@/lib/dates";
+import { withoutEnded } from "@/lib/habit-end";
+import { getHabitEnds } from "@/lib/habits";
 import { isUuid } from "@/lib/habit-schema";
 import { getChildCheckIns, getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { stateOf } from "@/lib/today";
@@ -35,14 +38,18 @@ export default async function KidPage({
   const child = (await getMyChildren()).find((c) => c.child_id === id);
   if (!child) notFound();
 
-  const [{ userId }, group, groups, summaries, rewards] = await Promise.all([
+  const [{ userId, profile }, group, groups, summaries, rewards] = await Promise.all([
     getProfile(),
     getGroupDetail(child.group_id),
     getMyGroups(),
     getChildSummaries(id),
     getChildRewards(id),
   ]);
-  const habits = summaries.filter((h) => !h.archived_at);
+  const unarchived = summaries.filter((h) => !h.archived_at);
+  // A habit past its end (in the group's calendar) takes no more check-ins, so it leaves the list.
+  const ends = await getHabitEnds(unarchived.map((h) => h.habit_id));
+  const today = todayIn(group?.timezone ?? profile.timezone);
+  const habits = withoutEnded(unarchived, ends, () => today);
   const checkIns = await getChildCheckIns(id, habits);
   const isAdmin = group?.my_role === "admin";
   const moveTargets = isAdmin
@@ -146,12 +153,12 @@ export default async function KidPage({
         ) : (
           <p className="text-sm text-muted-foreground">No habits yet.</p>
         )}
-        <AddKidHabit childId={id} childName={child.name} existingTitles={habits.map((h) => h.title)} />
+        <AddKidHabit childId={id} childName={child.name} existingTitles={unarchived.map((h) => h.title)} />
       </section>
 
       <ChildDangerZone childId={id} childName={child.name} isAdmin={isAdmin} moveTargets={moveTargets} />
 
-      {/* Another adult logging for her (or her own taps in the kid view) refreshes this page. */}
+      {/* Another adult logging for the child (or the child's own taps in the kid view) refreshes this page. */}
       {habits.length > 0 && <LiveRefresh table="check_ins" filter={`user_id=eq.${id}`} />}
     </section>
   );

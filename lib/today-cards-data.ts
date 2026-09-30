@@ -30,13 +30,14 @@ export async function getFamilyRecaps(): Promise<FamilyRecap[]> {
   return (data ?? []) as FamilyRecap[];
 }
 
-// RLS: a user reads only their own dismissals.
-export async function getDismissedCards(): Promise<Set<string>> {
+// RLS: a user reads only their own dismissals. null on an error: the caller then shows no
+// dismissible card at all, rather than bringing back ones the user already closed.
+export async function getDismissedCards(): Promise<Set<string> | null> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.from("dismissed_cards").select("card");
   if (error) {
     console.error("dismissed_cards failed", error.message);
-    return new Set();
+    return null;
   }
   return new Set((data ?? []).map((r) => r.card));
 }

@@ -22,6 +22,14 @@ describe("todayProgress", () => {
     expect(p.items.map((i) => `${i.habitId}:${i.done}`)).toEqual(["read:true", "water:false", "run:false"]);
   });
 
+  it("counts a check-in waiting for approval as not done yet", () => {
+    const waiting = { ...h("walk", "open"), checked_in_today: true, pending_count: 1 };
+    const p = todayProgress([h("read", "done"), waiting]);
+    expect(p).toMatchObject({ done: 1, total: 2 });
+    expect(p.items.map((i) => `${i.habitId}:${i.done}`)).toEqual(["read:true", "walk:false"]);
+    expect(todayLine(p.done, p.total)).not.toBe("Today's all done 🎉");
+  });
+
   it("is empty when nothing is due today", () => {
     expect(todayProgress([h("walk", "later")])).toMatchObject({ done: 0, total: 0 });
   });

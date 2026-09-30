@@ -42,7 +42,11 @@ export default async function GroupPage({
   const [{ profile, userId }, group, summaries, myGroups] = await Promise.all([
     getProfile(),
     getGroupDetail(id),
-    getHabitSummaries(),
+    // Fail soft: on an error the group page shows no habits rather than the error screen.
+    getHabitSummaries().catch((e: Error) => {
+      console.error(e.message);
+      return [];
+    }),
     getMyGroups(),
   ]);
   if (!group) notFound();

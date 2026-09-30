@@ -1,5 +1,5 @@
 import type { HabitCategory, HabitPeriod } from "@/lib/habit-schema";
-import { groupForToday } from "@/lib/today";
+import { groupForToday, stateOf } from "@/lib/today";
 
 type ProgressHabit = {
   habit_id: string;
@@ -18,13 +18,16 @@ type ProgressHabit = {
 export type TodayItem = { habitId: string; title: string; emoji: string | null; category: HabitCategory | null; done: boolean };
 
 // The Today card (ideas/today-card.md): the habits on today's lists (to do + done, in page order).
+// A check-in waiting for approval isn't done yet: it stays on the "Done for today" list (as
+// waiting) but doesn't count here, so "all done" and its confetti wait for the approvals.
 export function todayProgress(habits: ProgressHabit[]): { done: number; total: number; items: TodayItem[] } {
   const { todo, done } = groupForToday(habits);
-  const doneIds = new Set(done.map((x) => x.habit_id));
+  const listed = new Set([...todo, ...done]);
+  const doneIds = new Set(done.filter((x) => stateOf(x) !== "pending").map((x) => x.habit_id));
   const items = habits
-    .filter((x) => doneIds.has(x.habit_id) || todo.includes(x))
+    .filter((x) => listed.has(x))
     .map((x) => ({ habitId: x.habit_id, title: x.title, emoji: x.emoji, category: x.category, done: doneIds.has(x.habit_id) }));
-  return { done: done.length, total: items.length, items };
+  return { done: doneIds.size, total: items.length, items };
 }
 
 // Encouraging, never guilt (docs/design.md voice); at most one emoji.

@@ -23,7 +23,12 @@ export default async function PickHabitsPage({ searchParams }: { searchParams: P
   const templates = onboardingTemplates(purpose.ok ? purpose.value : null);
 
   if (group) {
-    const together = (await getHabitSummaries()).filter((h) => h.group_id === group.group_id && !h.archived_at).length;
+    // Only the heading's count: on an error it reads as none rather than failing the page.
+    const summaries = await getHabitSummaries().catch((e: Error) => {
+      console.error(e.message);
+      return [];
+    });
+    const together = summaries.filter((h) => h.group_id === group.group_id && !h.archived_at).length;
     return (
       <main className="mx-auto max-w-md px-4 pt-10">
         <h1 className="text-2xl font-bold">
