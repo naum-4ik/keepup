@@ -4,7 +4,7 @@ import { useOptimistic, useRef, useState, useTransition } from "react";
 import { Check } from "lucide-react";
 import { checkInFor } from "@/app/(app)/kids/actions";
 import { Avatar } from "@/components/avatar";
-import { GardenPicture } from "@/components/kids/garden";
+import { GardenPicture, NextStep } from "@/components/kids/garden";
 import { HoldToExit } from "@/components/kids/hold-to-exit";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
@@ -52,6 +52,7 @@ export function KidPlay({ child, habits, stars }: { child: Child; habits: PlayHa
       <div ref={garden} className="flex flex-col items-center gap-2">
         <GardenPicture stars={view.stars} size="lg" />
         <p className="text-3xl font-bold tabular-nums" aria-live="polite">⭐ {view.stars}</p>
+        <NextStep stars={view.stars} />
       </div>
 
       {error && <p role="alert" className="text-center text-base text-destructive">{error}</p>}
