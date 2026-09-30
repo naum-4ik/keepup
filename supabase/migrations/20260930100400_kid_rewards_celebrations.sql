@@ -60,6 +60,9 @@ begin
     return new; -- not a child
   end if;
 
+  -- Serialize a child's concurrent check-ins so the one that crosses 18 sees all the others.
+  perform 1 from public.profiles p where p.id = new.user_id for update;
+
   v_week := private.child_week_start(new.user_id, new.local_date);
   if private.child_stars(new.user_id, v_week, v_week + 7) >= 18 then
     perform private.notify(private.group_adults(v_group, null), 'kid_garden_full',
@@ -72,13 +75,15 @@ begin
      for update;
   if found and (select count(*) from public.check_ins c
                  where c.user_id = new.user_id and c.status = 'approved' and c.created_at >= v_goal.created_at) >= v_goal.target then
-    update public.treat_goals set reached_at = now() where id = v_goal.id;
+    update public.treat_goals set reached_at = new.created_at where id = v_goal.id;
     perform private.notify(private.group_adults(v_group, null), 'kid_goal_reached', 'kid_goal_reached:' || v_goal.id,
       v_group, null, null, null, new.user_id, jsonb_build_object('title', v_goal.title, 'emoji', v_goal.emoji));
   end if;
   return new;
 end;
 $$;
+
+create index check_ins_user_approved_idx on public.check_ins (user_id, local_date) where status = 'approved';
 
 create trigger check_ins_kid_rewards after insert or update of status on public.check_ins
   for each row execute function private.kid_rewards_on_check_in();
@@ -167,8 +172,13 @@ grant select on public.dismissed_cards to authenticated;
 
 create function public.dismiss_card(p_card text)
 returns void language plpgsql security definer set search_path = '' as $$
+declare
+  v_uuid constant text := '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 begin
   if auth.uid() is null then raise exception 'keepup:not_authenticated' using errcode = '42501'; end if;
+  if p_card is null or p_card !~ ('^(invite_family|invite_friend|add_child:' || v_uuid || '|family_recap:' || v_uuid || ':[0-9]{4}-[0-9]{2}-[0-9]{2})$') then
+    raise exception 'keepup:invalid_card' using errcode = 'P0001';
+  end if;
   insert into public.dismissed_cards (user_id, card) values (auth.uid(), p_card) on conflict do nothing;
 end;
 $$;
@@ -236,3 +246,38 @@ begin
   return v_check_in;
 end;
 $$;
+
+-- "Approve all": reviews what it can; ones someone else just reviewed, whose window closed, or that
+-- were undone meanwhile are skipped, not errors. Returns how many this call reviewed. Every review
+-- locks the habit row first, so ids are taken ordered by (habit_id, id): two reviewers approving
+-- overlapping sets then lock habits in the same order and can't deadlock. Ids not found sort last
+-- and are skipped as check_in_not_found.
+create or replace function public.review_check_ins(p_check_in_ids uuid[], p_approve boolean)
+returns int language plpgsql security definer set search_path = '' as $$
+declare
+  v_id uuid;
+  v_done int := 0;
+begin
+  if auth.uid() is null then raise exception 'keepup:not_authenticated' using errcode = '42501'; end if;
+  for v_id in
+    select x.id
+      from (select distinct u.id from unnest(coalesce(p_check_in_ids, '{}')) u(id) where u.id is not null) x
+      left join public.check_ins c on c.id = x.id
+     order by c.habit_id nulls last, x.id
+  loop
+    begin
+      perform private.review_check_in_impl(v_id, auth.uid(), p_approve, now());
+      v_done := v_done + 1;
+    exception
+      when sqlstate 'P0001' then
+        if sqlerrm not in ('keepup:already_reviewed', 'keepup:review_closed') then raise; end if;
+      when sqlstate 'P0002' then
+        if sqlerrm <> 'keepup:check_in_not_found' then raise; end if;
+    end;
+  end loop;
+  return v_done;
+end;
+$$;
+
+revoke execute on function public.review_check_ins(uuid[], boolean) from public, anon;
+grant execute on function public.review_check_ins(uuid[], boolean) to authenticated;

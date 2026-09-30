@@ -19,6 +19,7 @@ const MESSAGES: Record<string, string> = {
   own_check_in: "Someone else in the group approves your check-ins.",
   already_reviewed: "Someone already reviewed this check-in.",
   review_closed: "The time to review this check-in has passed.",
+  invalid_card: "That card isn't available.",
   child_not_found: "That child isn't in this group.",
   category_required: "Pick a category.",
   target_reached: "Already done for this period.",

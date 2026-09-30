@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(14);
+select plan(18);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -58,6 +58,14 @@ select is_empty($$select * from private.family_recaps_impl('00000000-0000-0000-0
   'no recap mid-week');
 select is((select week_start from private.family_recaps_impl('00000000-0000-0000-0000-0000000000a1', '2026-10-12T10:00:00Z')),
   '2026-10-05'::date, 'on Monday, a recap of last week');
+
+-- Dismissing cards: documented keys only
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
+select lives_ok($$select public.dismiss_card('invite_family')$$, 'a documented key is accepted');
+select lives_ok($$select public.dismiss_card('family_recap:00000000-0000-0000-0000-0000000000f1:2026-10-05')$$, 'a recap key is accepted');
+select throws_ok($$select public.dismiss_card('whatever')$$, 'P0001', 'keepup:invalid_card', 'an unknown key is refused');
+select throws_ok($$select public.dismiss_card('add_child:not-a-uuid')$$, 'P0001', 'keepup:invalid_card', 'a malformed key is refused');
+reset role;
 
 select * from finish();
 rollback;
