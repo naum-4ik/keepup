@@ -34,6 +34,8 @@ export async function getWeekOverview(): Promise<WeekOverview | null> {
 // user_id null = the whole habit; otherwise the viewer's own member pause (group habits).
 export type HabitFreeze = { id: string; starts_on: string; ends_on: string | null; user_id?: string | null };
 export type HabitCheckIn = { id: string; local_date: string; created_at: string };
+// Group habits: everyone's check-ins this period (for Cheer and Nudge on the habit page).
+export type MemberCheckIn = { id: string; user_id: string; local_date: string; status: string };
 
 export type HabitDetail = {
   summary: HabitSummary;
@@ -41,6 +43,10 @@ export type HabitDetail = {
   freezes: HabitFreeze[];
   checkIns: HabitCheckIn[];
   totalCheckIns: number;
+  memberCheckIns: MemberCheckIn[];
+  // Check-in ids the viewer has cheered, and who they nudged about this habit (this period).
+  myCheers: string[];
+  myNudges: { recipient_id: string; local_date: string }[];
 };
 
 export async function getHabitDetail(habitId: string): Promise<HabitDetail | null> {
@@ -48,7 +54,8 @@ export async function getHabitDetail(habitId: string): Promise<HabitDetail | nul
   const summary = (await getHabitSummaries()).find((s) => s.habit_id === habitId);
   if (!summary) return null;
 
-  const [history, freezes, checkIns, total] = await Promise.all([
+  const isGroup = Boolean(summary.group_id);
+  const [history, freezes, checkIns, total, memberCheckIns, myNudges] = await Promise.all([
     supabase.rpc("habit_history", { p_habit_id: habitId, p_limit: summary.period === "day" ? 84 : 12 }),
     // Group members can read everyone's pauses and check-ins; this page shows only the whole-habit
     // pauses and the viewer's own.
@@ -67,10 +74,36 @@ export async function getHabitDetail(habitId: string): Promise<HabitDetail | nul
       .order("created_at", { ascending: false }),
     // Everyone's: a habit with any history can't be deleted (delete_habit's rule).
     supabase.from("check_ins").select("id", { count: "exact", head: true }).eq("habit_id", habitId),
+    isGroup
+      ? supabase
+          .from("check_ins")
+          .select("id, user_id, local_date, status")
+          .eq("habit_id", habitId)
+          .eq("period_start", summary.period_start)
+          .order("created_at")
+      : null,
+    // RLS: the sender reads their own nudges.
+    isGroup
+      ? supabase
+          .from("nudges")
+          .select("recipient_id, local_date")
+          .eq("habit_id", habitId)
+          .eq("sender_id", userId)
+          .gte("local_date", summary.period_start)
+      : null,
   ]);
   for (const r of [history, freezes, checkIns, total]) {
     if (r.error) throw new Error(`habit detail failed: ${r.error.message}`);
   }
+  // Cheer and Nudge are extras: their reads fail soft.
+  for (const r of [memberCheckIns, myNudges]) {
+    if (r?.error) console.error("habit detail extras failed", r.error.message);
+  }
+  const others = (memberCheckIns?.data ?? []).filter((c) => c.user_id !== userId && c.status === "approved").map((c) => c.id);
+  const cheers = others.length
+    ? await supabase.from("cheers").select("check_in_id").eq("user_id", userId).in("check_in_id", others)
+    : null;
+  if (cheers?.error) console.error("cheers read failed", cheers.error.message);
 
   return {
     summary,
@@ -78,5 +111,8 @@ export async function getHabitDetail(habitId: string): Promise<HabitDetail | nul
     freezes: freezes.data ?? [],
     checkIns: checkIns.data ?? [],
     totalCheckIns: total.count ?? 0,
+    memberCheckIns: memberCheckIns?.data ?? [],
+    myCheers: (cheers?.data ?? []).map((c) => c.check_in_id),
+    myNudges: myNudges?.data ?? [],
   };
 }

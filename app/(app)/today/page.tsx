@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronRight, Clock } from "lucide-react";
 import { FirstCheckinTip } from "@/components/first-checkin-tip";
 import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard } from "@/components/habits/habit-card";
@@ -8,16 +9,18 @@ import { Button } from "@/components/ui/button";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
 import { getHabitSummaries, getWeekOverview, type HabitSummary } from "@/lib/habits";
+import { getPendingApprovals } from "@/lib/inbox";
 import { groupForToday } from "@/lib/today";
 import { sectionsForToday } from "@/lib/today-sections";
 import { hasWeekData } from "@/lib/week-overview";
 
 export default async function TodayPage({ searchParams }: { searchParams: Promise<{ joined?: string }> }) {
   const { joined } = await searchParams;
-  const [summaries, overview, groups] = await Promise.all([
+  const [summaries, overview, groups, approvals] = await Promise.all([
     getHabitSummaries(),
     getWeekOverview(),
     joined && isUuid(joined) ? getMyGroups() : Promise.resolve([]),
+    getPendingApprovals(),
   ]);
   const joinedGroup = groups.find((g) => g.group_id === joined);
   const habits = summaries.filter((h) => !h.archived_at);
@@ -36,6 +39,17 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         <p role="status" className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">
           You joined {joinedGroup.name} ✓
         </p>
+      )}
+      {approvals.length > 0 && (
+        <Link href="/inbox" className="flex min-h-14 items-center gap-3 rounded-2xl bg-card p-4 shadow-soft hover:bg-muted">
+          <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#FBF3D9] text-[#9A6A10]">
+            <Clock className="size-5" />
+          </span>
+          <span className="flex-1 font-semibold">
+            {approvals.length} {approvals.length === 1 ? "check-in" : "check-ins"} waiting for you
+          </span>
+          <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
+        </Link>
       )}
       {overview && hasWeekData(overview) && <WeekStrip overview={overview} />}
       {habits.length === 0 ? (
