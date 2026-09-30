@@ -162,6 +162,8 @@ test("a group habit: both check in, both see Everyone did it, live", async ({ pa
 
   await page.getByRole("button", { name: "Check in: Family dinner" }).click();
   await expect(page.getByRole("button", { name: "Done: Family dinner" })).toBeVisible();
+  // The first page must be listening before the guest's check-in lands (else Realtime drops it).
+  await expect(page.locator('[data-live="ready"]')).toBeAttached();
   await guest.goto("/today");
   await expect(guest.getByRole("img", { name: /: done$/ })).toBeVisible(); // Ana's avatar shows done, no names in text
   await guest.getByRole("button", { name: "Check in: Family dinner" }).click();
