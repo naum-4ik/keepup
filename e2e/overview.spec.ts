@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { signUpAndOnboard } from "./helpers/auth";
-import { createHabit } from "./helpers/habits";
+import { createHabit, startHabitDaysAgo } from "./helpers/habits";
 
 test("the weekly overview shows on Today and Progress", async ({ page }) => {
   await signUpAndOnboard(page);
@@ -50,4 +50,40 @@ test("the weekly overview shows on Today and Progress", async ({ page }) => {
   await expect(page.getByRole("link", { name: /Walk/ }).getByRole("img", { name: "Last 7 days: 6 not started, 1 done" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Read/ }).getByRole("img", { name: "Last 7 days: 6 not started, 1 done" })).toBeVisible();
   await expect(page.locator("body")).not.toContainText("%");
+});
+
+test("Progress → Calendar: the month, earlier months, and tap a day", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createHabit(page, { title: "Walk", count: 1, period: "day" });
+  const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
+  startHabitDaysAgo(id, 40);
+  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+
+  await page.goto("/progress");
+  await page.getByRole("region", { name: "Your week" }).getByRole("link", { name: "Calendar" }).click();
+  await expect(page).toHaveURL(/\/progress\/calendar$/);
+  const month = page.getByRole("navigation", { name: "Month" });
+  // The current month: no way forward, a way back (the habit started 40 days ago).
+  await expect(month.getByRole("link", { name: /^Next month/ })).toHaveCount(0);
+  const current = await month.getByRole("heading").textContent();
+
+  const today = page.getByRole("button", { name: /: 1 of 1 done$/ });
+  await expect(today).toHaveCount(1);
+  await today.click();
+  const panel = page.getByRole("region", { name: /\d/ });
+  await expect(panel).toContainText("Today");
+  await expect(panel.getByRole("listitem").filter({ hasText: "Walk" })).toContainText("Done");
+
+  await month.getByRole("link", { name: /^Previous month/ }).click();
+  await expect(page).toHaveURL(/\?m=\d{4}-\d{2}$/);
+  await expect(month.getByRole("heading")).not.toHaveText(current!);
+  await expect(month.getByRole("link", { name: /^Next month/ })).toBeVisible();
+  // A past day with nothing checked in.
+  const past = page.getByRole("button", { name: /: 0 of 1 done$/ }).last();
+  await past.click();
+  await expect(panel.getByRole("listitem").filter({ hasText: "Walk" })).toContainText("Not done");
+  // Never before the first habit, never after this month.
+  await page.goto("/progress/calendar?m=2099-01");
+  await expect(month.getByRole("heading")).toHaveText(current!);
 });

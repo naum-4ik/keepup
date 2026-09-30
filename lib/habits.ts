@@ -1,4 +1,5 @@
 import "server-only";
+import type { CalendarCell } from "@/lib/calendar";
 import { requireUser } from "@/lib/auth";
 import type { DayCheckIn } from "@/lib/day-detail";
 import { habitEmoji, normalizeCategory } from "@/lib/categories";
@@ -175,4 +176,23 @@ export async function getHabitDetail(habitId: string): Promise<HabitDetail | nul
     myCheers: (cheers?.data ?? []).map((c) => c.check_in_id),
     myNudges: myNudges?.data ?? [],
   };
+}
+
+// Progress → Calendar (ideas/progress-calendar.md): one row per day per own habit in [from, to].
+// Fails soft: an empty month instead of an error page.
+export async function getCalendarCells(from: string, to: string): Promise<CalendarCell[]> {
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase.rpc("calendar_cells", { p_from: from, p_to: to });
+  if (error) {
+    console.error("calendar_cells failed", error.message);
+    return [];
+  }
+  return data ?? [];
+}
+
+// The first day any of my own habits started: the calendar goes back no further.
+export async function getFirstHabitStart(): Promise<string | null> {
+  const { supabase, userId } = await requireUser();
+  const { data } = await supabase.from("habits").select("starts_on").eq("owner_id", userId).order("starts_on").limit(1).maybeSingle();
+  return data?.starts_on ?? null;
 }

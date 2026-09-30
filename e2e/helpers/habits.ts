@@ -32,3 +32,16 @@ update public.habits set starts_on = current_date - 3, ends_on = current_date - 
     },
   );
 }
+
+// Moves a habit's start back (Progress → Calendar needs past months). Same trick as above.
+export function startHabitDaysAgo(habitId: string, days: number): void {
+  if (!/^[0-9a-f-]{36}$/.test(habitId) || !Number.isInteger(days)) throw new Error(`Bad input: ${habitId} ${days}`);
+  execSync(
+    `docker exec -i supabase_db_keepup psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q`,
+    {
+      input: `set session_replication_role = replica;
+update public.habits set starts_on = current_date - ${days} where id = '${habitId}';`,
+      stdio: ["pipe", "ignore", "inherit"],
+    },
+  );
+}

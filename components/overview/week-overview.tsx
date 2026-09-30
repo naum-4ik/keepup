@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Check, ChevronRight, Flame, ListChecks } from "lucide-react";
+import { CalendarDays, Check, ChevronRight, Flame, ListChecks } from "lucide-react";
 import { CATEGORIES } from "@/lib/categories";
 import type { HabitCategory, HabitPeriod } from "@/lib/habit-schema";
 import { comparisonLine, ringDash, streakUnit, type HabitCells, type WeekOverview } from "@/lib/week-overview";
@@ -99,6 +99,12 @@ export function WeekCard({ overview: o, days }: { overview: WeekOverview; days?:
           </p>
           <p className="text-sm text-muted-foreground">{comparisonLine(o)}</p>
         </div>
+        {days && (
+          <Link href="/progress/calendar" className="ml-auto flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted">
+            <CalendarDays aria-hidden className="size-4" />
+            Calendar
+          </Link>
+        )}
       </div>
 
       <WeekDays days={o.days} today={o.today} details={days} />
