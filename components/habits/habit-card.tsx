@@ -34,7 +34,8 @@ export function kidProgressText(habit: HabitSummary): string {
 
 // `kid`: the row is the child's (Today's kid section): big emoji, no link to the adult habit page,
 // and the check-in is for her. Group copy ("Everyone did it") stays on the group card.
-export function HabitCard({ habit, kid }: { habit: HabitSummary; kid?: Kid }) {
+// `endLine`: "Day 12 of 30" for a habit with an end (ideas/habit-end-date.md).
+export function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; kid?: Kid; endLine?: string }) {
   if (kid) return <KidHabitCard habit={habit} kid={kid} />;
   const progress = progressOf(habit);
   const showBar = habit.period === "day" && habit.target_count > 1 && !habit.frozen;
@@ -60,6 +61,11 @@ export function HabitCard({ habit, kid }: { habit: HabitSummary; kid?: Kid }) {
           >
             {everyone ? "Everyone did it ✓" : progress.text}
           </span>
+          {endLine && (
+            <span className={cn("text-xs font-semibold", endLine.startsWith("Almost") ? "text-primary" : "text-muted-foreground")}>
+              {endLine}
+            </span>
+          )}
           {showBar && (
             <span className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
               <span

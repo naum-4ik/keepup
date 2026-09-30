@@ -19,7 +19,10 @@ import { CATEGORIES } from "@/lib/categories";
 import { todayIn } from "@/lib/dates";
 import { isUuid, type HabitPeriod } from "@/lib/habit-schema";
 import { getGroupDetail } from "@/lib/groups";
-import { getHabitDetail, type HabitFreeze } from "@/lib/habits";
+import { getHabitDetail, getHabitEnds, type HabitFreeze } from "@/lib/habits";
+import { EndControl } from "@/components/habits/end-control";
+import { endLabel, endProgress } from "@/lib/habit-end";
+import { formatLocalDate } from "@/lib/dates";
 import { describeProgress, describeSchedule } from "@/lib/schedule";
 import { memberStatus, membersOf } from "@/lib/today-sections";
 import { stateOf } from "@/lib/today";
@@ -81,6 +84,8 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   // Only the owner of a private habit, or an admin of a group habit, edits, pauses it for everyone,
   // archives or deletes it (RLS and the RPCs enforce the same).
   const canManage = !h.group_id || h.my_role === "admin";
+  const endsOn = (await getHabitEnds([h.habit_id])).get(h.habit_id) ?? null;
+  const endNow = endsOn ? endProgress(h.starts_on, endsOn, today, h.period) : null;
   const archived = Boolean(h.archived_at);
   const progress = describeProgress({
     targetCount: h.target_count,
@@ -210,6 +215,9 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
           )}
           {canManage && (
             <>
+              <Manage title="Ends" hint={endNow ? endLabel(endNow, h.period) : endsOn ? `Last day ${formatLocalDate(endsOn)}` : "No end yet"}>
+                <EndControl habitId={h.habit_id} period={h.period} startsOn={h.starts_on} endsOn={endsOn} today={today} />
+              </Manage>
               <Manage
                 title={members ? "Pause for everyone" : wholePaused ? "Paused" : activeFreeze ? "Pause scheduled" : "Pause"}
                 hint={activeFreeze ? "Resume or cancel the pause" : "Going away? Your streak waits for you"}

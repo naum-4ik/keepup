@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { insertHabits } from "@/lib/habit-create";
+import { insertHabits, setHabitEnd } from "@/lib/habit-create";
 import { GENERIC_ERROR, habitErrorMessage } from "@/lib/habit-errors";
 import { isUuid, LOCAL_DATE, parseHabit, parseHabitDetails, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 
@@ -21,17 +21,25 @@ function refresh(habitId?: string) {
   if (habitId) revalidatePath(`/habits/${habitId}`);
 }
 
+// "" (no end) or a valid date; anything else is treated as no end.
+const readEndsOn = (formData: FormData) => {
+  const v = String(formData.get("endsOn") ?? "");
+  return LOCAL_DATE.test(v) ? v : "";
+};
+
 export async function createHabit(_prev: HabitFormState, formData: FormData): Promise<HabitFormState> {
   const values = readHabitForm(formData);
   const parsed = parseHabit(values);
   if (!parsed.ok) return { status: "error", errors: parsed.errors, values };
 
   const { supabase } = await requireUser();
-  const error = await insertHabits(supabase, [parsed.value]);
+  const { error, ids } = await insertHabits(supabase, [parsed.value]);
   if (error) {
     const message = habitErrorMessage(error);
     return { status: "error", message: message === GENERIC_ERROR ? "Couldn't save the habit. Try again." : message, values };
   }
+  const endError = ids[0] ? await setHabitEnd(supabase, ids[0], readEndsOn(formData)) : null;
+  if (endError) console.error("set_habit_end failed", endError.message);
 
   refresh();
   redirect("/today");
@@ -154,7 +162,7 @@ export async function createGroupHabit(_prev: HabitFormState, formData: FormData
   if (!isUuid(groupId)) return { status: "error", message: "Pick a group.", values };
   const children = formData.getAll("children").map(String).filter(isUuid);
   const { supabase } = await requireUser();
-  const { error } = await supabase.rpc("create_group_habit", {
+  const { data: created, error } = await supabase.rpc("create_group_habit", {
     p_group_id: groupId,
     p_title: parsed.value.title,
     p_emoji: parsed.value.emoji,
@@ -166,6 +174,8 @@ export async function createGroupHabit(_prev: HabitFormState, formData: FormData
     p_children: children,
   });
   if (error) return { status: "error", message: habitErrorMessage(error), values };
+  const endError = created ? await setHabitEnd(supabase, created.id, readEndsOn(formData)) : null;
+  if (endError) console.error("set_habit_end failed", endError.message);
   refresh();
   revalidatePath(`/groups/${groupId}`);
   redirect("/today");
@@ -194,6 +204,18 @@ export async function resumeMe(habitId: string): Promise<ActionResult> {
   if (!isUuid(habitId)) return NOT_FOUND;
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("unfreeze_member", { p_habit_id: habitId });
+  if (error) return { ok: false, message: habitErrorMessage(error) };
+  refresh(habitId);
+  return { ok: true };
+}
+
+// Set, extend or remove the end from the habit page (the rule refuses earlier than today or the
+// current end; group habits need an admin).
+export async function changeHabitEnd(habitId: string, endsOn: string | null): Promise<ActionResult> {
+  if (!isUuid(habitId) || (endsOn !== null && !LOCAL_DATE.test(endsOn))) return { ok: false, message: "Pick a date." };
+  const { supabase } = await requireUser();
+  // null removes the end; the generated type can't express a nullable argument.
+  const { error } = await supabase.rpc("set_habit_end", { p_habit_id: habitId, p_ends_on: endsOn as string });
   if (error) return { ok: false, message: habitErrorMessage(error) };
   refresh(habitId);
   return { ok: true };

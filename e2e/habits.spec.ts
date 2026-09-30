@@ -353,3 +353,30 @@ test("progress groups habits by category and lists archived ones", async ({ page
   await expect(page.getByRole("link", { name: /Read 20 min/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Work out/ })).toBeVisible();
 });
+
+test("a habit with an end: 30 days on create, Day 1 of 30, then extend and remove it", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: "Create your own" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Title").fill("Read");
+  const ends = dialog.getByRole("group", { name: "Ends" });
+  await expect(ends.getByRole("button", { name: "No end" })).toHaveAttribute("aria-pressed", "true");
+  await ends.getByRole("button", { name: "30 days" }).click();
+  await expect(dialog.getByText(/^Last day: .+\. Then you choose to keep going or finish\.$/)).toBeVisible();
+  await dialog.getByRole("button", { name: /^Add habit/ }).click();
+  await expect(page).toHaveURL(/\/today$/);
+  await expect(page.getByRole("link", { name: /Read/ })).toContainText("Day 1 of 30");
+
+  await page.getByRole("link", { name: /Read/ }).click();
+  const manage = page.getByRole("region", { name: "Manage habit" });
+  await expect(manage).toContainText("Day 1 of 30");
+  await manage.getByText("Ends", { exact: true }).click();
+  await manage.getByRole("button", { name: "+30 days" }).click();
+  await expect(manage).toContainText("Day 1 of 60");
+  await manage.getByRole("button", { name: "Remove end" }).click();
+  await expect(manage).toContainText("No end yet");
+  await page.goto("/today");
+  await expect(page.getByRole("link", { name: /Read/ })).not.toContainText("Day 1 of");
+});
+

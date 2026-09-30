@@ -55,6 +55,19 @@ export async function getMyCheckIns(from: string, to: string): Promise<DayCheckI
   return data ?? [];
 }
 
+// Ends (ideas/habit-end-date.md) aren't in habit_summaries; read them from habits (RLS: what you can
+// see). Fails soft: without them the cards just don't show "Day 12 of 30".
+export async function getHabitEnds(habitIds: string[]): Promise<Map<string, string>> {
+  if (habitIds.length === 0) return new Map();
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase.from("habits").select("id, ends_on").in("id", habitIds).not("ends_on", "is", null);
+  if (error) {
+    console.error("habit ends failed", error.message);
+    return new Map();
+  }
+  return new Map((data ?? []).map((r) => [r.id, r.ends_on as string]));
+}
+
 // user_id null = the whole habit; otherwise the viewer's own member pause (group habits).
 export type HabitFreeze = { id: string; starts_on: string; ends_on: string | null; user_id?: string | null };
 export type HabitCheckIn = { id: string; local_date: string; created_at: string };

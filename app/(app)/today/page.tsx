@@ -15,7 +15,8 @@ import { getProfile } from "@/lib/auth";
 import { feedCopy } from "@/lib/feed-copy";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
-import { getHabitSummaries, getWeekOverview, type HabitSummary } from "@/lib/habits";
+import { getHabitEnds, getHabitSummaries, getWeekOverview, type HabitSummary } from "@/lib/habits";
+import { endLabel, endProgress } from "@/lib/habit-end";
 import { getPendingApprovals } from "@/lib/inbox";
 import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { parsePurpose } from "@/lib/profile-schema";
@@ -64,6 +65,14 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const now = new Date();
   const date = new Intl.DateTimeFormat("en-GB", { timeZone: profile.timezone, weekday: "long", day: "numeric", month: "long" }).format(now);
   const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: profile.timezone }).format(now);
+  // "Day 12 of 30" for habits with an end.
+  const ends = await getHabitEnds(habits.map((h) => h.habit_id));
+  const endLines = new Map<string, string>();
+  for (const h of habits) {
+    const endsOn = ends.get(h.habit_id);
+    const p = endsOn ? endProgress(h.starts_on, endsOn, dayKey, h.period) : null;
+    if (p) endLines.set(h.habit_id, endLabel(p, h.period));
+  }
 
   // Celebration cards (ideas/achievements-and-rewards.md §7), then at most one gentle card.
   const membersFor = (habitIds: (string | null)[]): CardMember[] => {
@@ -151,10 +160,10 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           withHeadings ? (
             <section key={s.key} aria-label={s.title} className="flex flex-col gap-3 pt-2">
               <h2 className="text-base font-bold">{s.title}</h2>
-              <TodayLists habits={s.habits} tipFor={isNewUser ? tipFor : undefined} />
+              <TodayLists habits={s.habits} tipFor={isNewUser ? tipFor : undefined} endLines={endLines} />
             </section>
           ) : (
-            <TodayLists key={s.key} habits={s.habits} tipFor={isNewUser ? tipFor : undefined} sectionDone={false} />
+            <TodayLists key={s.key} habits={s.habits} tipFor={isNewUser ? tipFor : undefined} sectionDone={false} endLines={endLines} />
           ),
         )
       )}
@@ -170,28 +179,48 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
 // Inside each section: what's left to do, what's done, what isn't active yet.
 // `sectionDone`: say "All checked off" when this section is finished. Off for a lone section, where
 // the Today card already says "Today's all done".
-function TodayLists({ habits, tipFor, sectionDone = true }: { habits: HabitSummary[]; tipFor?: string; sectionDone?: boolean }) {
+function TodayLists({
+  habits,
+  tipFor,
+  sectionDone = true,
+  endLines,
+}: {
+  habits: HabitSummary[];
+  tipFor?: string;
+  sectionDone?: boolean;
+  endLines?: Map<string, string>;
+}) {
   const { todo, done, later } = groupForToday(habits);
   return (
     <>
       {todo.length > 0 ? (
-        <HabitList habits={todo} tipFor={tipFor} />
+        <HabitList habits={todo} tipFor={tipFor} endLines={endLines} />
       ) : done.length > 0 && sectionDone ? (
         <p className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">All checked off. Nice work.</p>
       ) : null}
-      {done.length > 0 && <HabitList title="Done" habits={done} />}
-      {later.length > 0 && <HabitList title="Later" habits={later} />}
+      {done.length > 0 && <HabitList title="Done" habits={done} endLines={endLines} />}
+      {later.length > 0 && <HabitList title="Later" habits={later} endLines={endLines} />}
     </>
   );
 }
 
-function HabitList({ title, habits, tipFor }: { title?: string; habits: HabitSummary[]; tipFor?: string }) {
+function HabitList({
+  title,
+  habits,
+  tipFor,
+  endLines,
+}: {
+  title?: string;
+  habits: HabitSummary[];
+  tipFor?: string;
+  endLines?: Map<string, string>;
+}) {
   if (habits.length === 0) return null;
   const list = (
     <ul className="flex flex-col gap-3">
       {habits.map((h) => (
         <li key={h.habit_id}>
-          <HabitCard habit={h} />
+          <HabitCard habit={h} endLine={endLines?.get(h.habit_id)} />
           {h.habit_id === tipFor && <FirstCheckinTip />}
         </li>
       ))}

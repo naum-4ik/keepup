@@ -6,6 +6,7 @@ import { createGroupHabit, createHabit } from "@/app/(app)/habits/actions";
 import { Avatar } from "@/components/avatar";
 import { CategoryIcon, HabitEmoji } from "@/components/habits/category-icon";
 import { EMOJI_PANEL_ATTR, EmojiPicker } from "@/components/habits/emoji-picker";
+import { EndPicker } from "@/components/habits/end-picker";
 import { StartDatePicker } from "@/components/habits/start-date-picker";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -333,6 +334,9 @@ function HabitFields({
         </p>
         {errors.startsOn && <p id="startsOn-error" className="text-sm text-destructive">{errors.startsOn}</p>}
       </fieldset>
+
+      {/* Keyed by period so the chips reset to "No end" when the unit changes. */}
+      <EndPicker key={period} period={period} startsOn={values.startsOn} />
 
       {state.status === "error" && state.message && (
         <p role="alert" className="text-sm text-destructive">{state.message}</p>

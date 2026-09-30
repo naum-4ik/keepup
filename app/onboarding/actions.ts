@@ -65,7 +65,7 @@ export async function startWithHabits(_prev: PickHabitsState, formData: FormData
     habits.push(parsed.value);
   }
 
-  const error = await insertHabits(supabase, habits);
+  const { error } = await insertHabits(supabase, habits);
   if (error) return { status: "error", message: habitErrorMessage(error) };
 
   revalidatePath("/today");
