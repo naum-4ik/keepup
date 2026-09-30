@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { GARDEN_STAGES, KID_THEMES, isKidTheme, lastWeek, newWeekLine, nextStep, restartDay, restartLine, stageFor, starsToNext, themeStages } from "@/lib/garden";
+import { GARDEN_STAGES, KID_THEMES, isKidTheme, lastWeek, newWeekLine, nextStep, restartDay, restartLine, stageFor, starsToNext, themeStages, sceneFor } from "@/lib/garden";
 
 describe("garden", () => {
+  it("never draws an empty scene: every theme has something standing at 0 stars", () => {
+    for (const t of KID_THEMES) expect(sceneFor(0, t.id).plants.length, t.id).toBeGreaterThan(0);
+    expect(sceneFor(0, "garden").plants).toEqual(["🌰"]);
+    expect(sceneFor(0, "aquarium").plants).toEqual(["🐚"]);
+  });
+  it("shows a faint preview of the next picture, none once it's full", () => {
+    expect(sceneFor(0, "garden").ghost).toBe("🌱");
+    expect(sceneFor(4, "town").ghost).toBe("🌳");
+    expect(sceneFor(18, "space").ghost).toBeNull();
+  });
+
   it("grows at 0/3/7/12/18 stars (same as private.garden_stage)", () => {
     expect([0, 2, 3, 6, 7, 11, 12, 17, 18, 40].map(stageFor)).toEqual([0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
   });
