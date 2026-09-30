@@ -11,7 +11,8 @@
     "test": "vitest run",
     "db:test": "supabase test db",
     "db:types": "supabase gen types typescript --local > lib/database.types.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "readme:screenshots": "playwright test -c playwright.readme.config.ts && sips -Z 1300 docs/screenshots/*.png >/dev/null"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
