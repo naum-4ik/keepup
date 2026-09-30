@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { signUpAndOnboard } from "./helpers/auth";
-import { createGroup, inviteLink, joinByLink } from "./helpers/groups";
+import { createGroup, createGroupHabitVia, inviteLink, joinByLink } from "./helpers/groups";
 
 async function openGroup(page: Page, groupName: string) {
   await page.goto("/groups");
@@ -28,6 +28,22 @@ test("add a child with the three starter habits, check in for her on Today, and 
   const mary = page.getByRole("region", { name: /Mary/ });
   await mary.getByRole("button", { name: "Check in for Mary: Tidy my toys" }).click();
   await expect(mary).toContainText("⭐ 1");
+});
+
+test("an admin of a family group with no children sees Add a child?, which opens the form", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const groupId = page.url().match(/\/groups\/([0-9a-f-]{36})/)![1];
+  await createGroupHabitVia(page, "Family", "Walk");
+  await expect(page.getByText("Add a child? 🐼")).toBeHidden(); // not before the first check-in
+  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("Add a child? 🐼")).toBeVisible();
+  await expect(page.getByText("Track brushing teeth, reading together and more.")).toBeVisible();
+  await page.getByRole("link", { name: "Add a child", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/kids/new\\?group=${groupId}$`));
+  await expect(page.getByLabel("Nickname")).toBeVisible();
 });
 
 test("the kid view: big buttons, a tap counts at once, and hold to exit", async ({ page }) => {

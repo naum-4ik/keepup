@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -9,6 +9,9 @@ import { createClient } from "@/lib/supabase/client";
 export function LiveRefresh({ table, filter }: { table: "check_ins" | "notifications"; filter: string }) {
   const router = useRouter();
   const timer = useRef<number | null>(null);
+  // Exposed as data-live on a hidden span: "ready" once the channel has joined (tests wait for it
+  // before another browser writes, so the change can't land before anyone is listening).
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -24,17 +27,20 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
           if (timer.current) window.clearTimeout(timer.current);
           timer.current = window.setTimeout(() => router.refresh(), 400);
         })
-        .subscribe();
+        .subscribe((status) => {
+          if (!closed) setReady(status === "SUBSCRIBED");
+        });
     }).catch((e: unknown) => {
       // No live updates this time; the page still works and refreshes on navigation.
       console.error("realtime setAuth failed", e);
     });
     return () => {
       closed = true;
+      setReady(false);
       if (timer.current) window.clearTimeout(timer.current);
       if (channel) void supabase.removeChannel(channel);
     };
   }, [table, filter, router]);
 
-  return null;
+  return <span hidden data-live={ready ? "ready" : "joining"} />;
 }
