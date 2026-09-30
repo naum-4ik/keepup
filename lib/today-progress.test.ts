@@ -30,6 +30,13 @@ describe("todayProgress", () => {
     expect(todayLine(p.done, p.total)).not.toBe("Today's all done 🎉");
   });
 
+  it("counts a weekly check-in waiting for approval as not done yet", () => {
+    const weekly = { ...h("walk", "open", "week"), target_count: 3, done_count: 1, checked_in_today: true, pending_count: 1 };
+    const p = todayProgress([h("read", "done"), weekly]);
+    expect(p).toMatchObject({ done: 1, total: 2 });
+    expect(p.items.find((i) => i.habitId === "walk")?.done).toBe(false);
+  });
+
   it("is empty when nothing is due today", () => {
     expect(todayProgress([h("walk", "later")])).toMatchObject({ done: 0, total: 0 });
   });
