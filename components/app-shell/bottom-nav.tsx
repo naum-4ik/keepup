@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarCheck, ChartColumn, Plus, type LucideIcon } from "lucide-react";
+import { CalendarCheck, ChartColumn, CircleUser, Plus, Users, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
 const TODAY: NavItem = { href: "/today", label: "Today", icon: CalendarCheck };
-const PRIMARY: NavItem = { href: "/habits/new", label: "New habit", icon: Plus };
 const PROGRESS: NavItem = { href: "/progress", label: "Progress", icon: ChartColumn };
-// Three equal flex-1 slots: Today, ＋, Progress. Profile lives in the header avatar instead.
-// M3 turns this into five slots: Today, Progress, ＋, Groups, Profile.
+const PRIMARY: NavItem = { href: "/habits/new", label: "New habit", icon: Plus };
+const GROUPS: NavItem = { href: "/groups", label: "Groups", icon: Users };
+const PROFILE: NavItem = { href: "/profile", label: "Profile", icon: CircleUser };
 
 function NavLink({ href, label, icon: Icon, active }: NavItem & { active: boolean }) {
   return (
@@ -39,10 +39,12 @@ export function BottomNav() {
       className="fixed inset-x-0 bottom-0 rounded-t-[24px] bg-card shadow-[0_-1px_2px_rgb(61_44_34_/_0.06),0_-4px_12px_rgb(61_44_34_/_0.05)]"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <ul className="mx-auto flex max-w-md items-center">
-        <li className="flex flex-1 justify-center">
-          <NavLink {...TODAY} active={isActive(TODAY.href)} />
-        </li>
+      <ul className="mx-auto flex max-w-md items-center px-1">
+        {[TODAY, PROGRESS].map((item) => (
+          <li key={item.href} className="flex flex-1 justify-center">
+            <NavLink {...item} active={isActive(item.href)} />
+          </li>
+        ))}
         <li className="flex flex-1 justify-center">
           <Link
             href={PRIMARY.href}
@@ -53,9 +55,11 @@ export function BottomNav() {
             <PRIMARY.icon className="size-6" strokeWidth={2.5} aria-hidden />
           </Link>
         </li>
-        <li className="flex flex-1 justify-center">
-          <NavLink {...PROGRESS} active={isActive(PROGRESS.href)} />
-        </li>
+        {[GROUPS, PROFILE].map((item) => (
+          <li key={item.href} className="flex flex-1 justify-center">
+            <NavLink {...item} active={isActive(item.href)} />
+          </li>
+        ))}
       </ul>
     </nav>
   );
