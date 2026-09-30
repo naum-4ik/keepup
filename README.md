@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml)
 
-A warm, mobile-first habit tracker for one person and for families. Pick a habit, check in with one tap, and watch your streaks grow. Next up: shared family habits and kid profiles.
+A warm, mobile-first habit tracker for one person and for families. Pick a habit, check in with one tap, and watch your streaks grow. Next up: an installable app, offline check-ins and push reminders.
 
 **Status:** in development (v0.x). Try the staging build at **https://keepup-murex.vercel.app**. Sign-in is limited to test users for now.
 
@@ -29,19 +29,30 @@ A warm, mobile-first habit tracker for one person and for families. Pick a habit
   - Periods follow your time zone and your week start (Sunday or Monday).
   - A pause never breaks a streak.
   - A habit started mid-week doesn't count as missed.
+- **Groups and kids:**
+  - groups (family, friends, couple, roommates) with invite links;
+  - habits done together: a period is done when everyone required has checked in, with optional approval by another adult;
+  - kids without a login: an adult checks in for them, or they tap in a kid view; each approved check-in is a star, and the week's stars grow a garden;
+  - an Inbox for activity, nudges and cheers, updating live.
 
 <p align="center">
   <img src="docs/screenshots/add-habit.png" width="220" alt="Adding a habit from a template">
   <img src="docs/screenshots/progress.png" width="220" alt="Progress by category">
 </p>
 
+## Interesting problems
+
+**Who is required this period?** A group habit is done when everyone required has checked in, so "required" has to be exact. An adult counts if they were a member from the start of the period (or from the habit's creation, in its first period). A member pause that touches the period excuses them, but a period that everyone required finished is still `done`. With approval on, a period can't be finalized at its end: a pending check-in can be reviewed until period end plus 12 hours in the group's time zone, and until then the period shows as open, so a streak never flickers. All of it lives in one SQL function, `period_outcome`, covered by pgTAP.
+
+**Kids without accounts under RLS.** A child is a `profiles` row with no `auth.users` entry, so `auth.uid()` can never be the child. Adults act for them through one function, `can_act_for_profile`, that RLS and the RPCs share. Nobody can read another person's `profiles` row (it holds time zone and reminder hour), so names and avatars reach the screens only through `SECURITY DEFINER` functions that check group membership first. The one function callable without signing in is the invite preview, and a test fails if there is a second.
+
 ## Roadmap
 
 | Milestone | What | Status |
 |---|---|---|
-| M1 | Foundation: auth (Google, magic link), profiles, CI, staging deploys, versioning | ✅ v0.2.0 |
+| M1 | Foundation: auth (Google, email and password), profiles, CI, staging deploys, versioning | ✅ v0.2.0 |
 | M2 | Private habits: templates, check-ins, streaks, pauses, habit page, progress, weekly overview, onboarding | ✅ v0.3.0 |
-| M3 | Groups and family: shared habits, approvals, kid profiles with a star garden, emoji avatars, backups | Planned |
+| M3 | Groups and family: shared habits, approvals, kid profiles with a star garden, emoji avatars, backups | Groups, family and kids (in v0.4.0) |
 | M4 | Installable app (PWA), push reminders, offline check-ins | Planned |
 | M5 | XP, levels, badges, rest days, weekly recaps | Planned |
 | M6 | Landing page, "Try it" demo, privacy page and data export → **v1.0.0** | Planned |

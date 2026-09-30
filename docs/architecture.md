@@ -11,11 +11,36 @@ flowchart LR
     Proxy --> Next["Next.js 16 serverless functions (App Router)"]
     Next -->|PostgREST over HTTP| PG["Supabase Postgres (eu-central-1)"]
     Next --> Auth["Supabase Auth: Google OAuth (PKCE) + email and password"]
-    Next -.->|planned, M3/M4| Realtime["Supabase Realtime"]
+    Next -->|live updates, M3| Realtime["Supabase Realtime"]
     Next -.->|planned, M3/M4| EdgeFn["Supabase Edge Functions"]
 ```
 
 Every table has row-level security, so the connection PostgREST makes on the app's behalf carries no elevated privilege — a leaked query still can't read another family's data. A pooler (Supavisor) stays a future option if connection count ever becomes the bottleneck; today's traffic doesn't need one.
+
+## Data model (groups and kids)
+
+| Tables | Purpose |
+|---|---|
+| `profiles` | Adults and children (`kind`). A child has a `group_id` and no `auth.users` row |
+| `groups`, `group_members`, `group_invites` | Groups, adult members with roles and join/leave dates, expiring invite links |
+| `habits`, `check_ins`, `habit_freezes`, `period_results` | Private and group habits. A group habit has `group_id`; `check_ins.logged_by` is the adult who logged it |
+| `group_habit_participants` | Children chosen for a group habit. Adults are never listed |
+| `treat_goals` | Kids' goals. Stars and the garden are computed, not stored |
+| `notifications`, `nudges`, `cheers` | The feed, and the two ways members nudge each other |
+| `dismissed_cards` | Gentle cards on Today that a user closed |
+
+Other people's profiles are never readable; screens get names and avatars from membership-checked `SECURITY DEFINER` functions (decision 0010).
+
+## The feed pipeline
+
+```mermaid
+flowchart LR
+    Rules["Rule tables: check_ins, habits, habit_freezes, group_members, period_results"] -->|AFTER triggers| N["notifications (one row per recipient, dedupe_key)"]
+    N -->|Realtime, RLS applies| Inbox["Inbox and bell"]
+    N -.->|M4| Push["Push"]
+```
+
+Triggers write the feed, so every path that changes the data (RPC, review, pause, the job that closes periods) produces the same rows (decision 0014). The Inbox reads through an RPC and refreshes from Realtime; push in M4 reads the same rows.
 
 ## Environments
 
@@ -55,7 +80,7 @@ Vercel's serverless functions are stateless and scale horizontally by request �
 | Supply chain | Lockfile-pinned dependencies (`package-lock.json`, `npm ci`) | Live |
 | CI gates | Lint, types, unit, pgTAP, Playwright e2e required by branch protection on `develop` and `main` | Live |
 | Data region | EU (Frankfurt) for Postgres and Auth | Live |
-| Kids' data minimization | Current schema stores no photos or birthdates; kid profiles (M3) will keep nickname-only | Live / Planned, M3 |
+| Kids' data minimization | Current schema stores no photos or birthdates; kid profiles keep a nickname, emoji and colour only | Live |
 | Encrypted nightly backups | — | Planned, M3 |
 | GDPR export/delete | — | Planned, M6 |
 
