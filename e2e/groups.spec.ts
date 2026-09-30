@@ -154,3 +154,26 @@ test("a member pauses just themselves; the habit carries on for the others", asy
   await page.goto("/today");
   await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeEnabled();
 });
+
+test("Together templates are for groups only; other templates keep Just me", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Levi family");
+  await page.goto("/habits/new");
+  await expect(page.getByRole("tab", { name: "Popular" })).toHaveAttribute("aria-selected", "true");
+  const dialog = page.getByRole("dialog");
+
+  await page.getByRole("tab", { name: "Together" }).click();
+  await page.getByRole("button", { name: /Family dinner/ }).click();
+  await expect(dialog.getByRole("radio", { name: "Just me" })).toHaveCount(0);
+  await expect(dialog.getByRole("radio", { name: "Levi family" })).toBeChecked();
+  await page.setViewportSize({ width: 390, height: 844 });
+  if (process.env.SHOT_DIR) await page.waitForTimeout(600); // let the open animation finish
+  if (process.env.SHOT_DIR) await page.screenshot({ path: `${process.env.SHOT_DIR}/fix-together-dialog.png` });
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+
+  await page.getByRole("tab", { name: "Popular" }).click();
+  await page.getByRole("button", { name: /Drink water/ }).click();
+  await expect(dialog.getByRole("radio", { name: "Just me" })).toBeChecked();
+  await expect(dialog.getByRole("radio", { name: "Levi family" })).toBeVisible();
+});

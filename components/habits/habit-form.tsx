@@ -28,7 +28,7 @@ const chipClass =
   "relative flex h-11 cursor-pointer items-center rounded-full border border-border px-4 text-sm font-semibold has-checked:border-primary has-checked:bg-accent has-checked:text-accent-foreground has-focus-visible:ring-2 has-focus-visible:ring-ring";
 const initialState: HabitFormState = { status: "idle" };
 type Tab = "together" | "popular" | HabitCategory;
-type Draft = { key: number; custom: boolean; values: HabitFormValues; groupId: string };
+type Draft = { key: number; custom: boolean; values: HabitFormValues; groupId: string; groupOnly: boolean };
 export type FormGroup = { id: string; name: string; children: { id: string; name: string; avatar_emoji: string | null; avatar_color: string | null }[] };
 
 // One form, two creates: a group picked in "Who's it for" makes a group habit.
@@ -57,14 +57,16 @@ export function HabitForm({
     tab === "together" ? GROUP_TEMPLATES : HABIT_TEMPLATES.filter((t) => (tab === "popular" ? t.popular : t.category === tab));
 
   // Each open gets a new key, so the dialog's form starts fresh (no errors from a previous try).
-  const open = (custom: boolean, values: Omit<HabitFormValues, "startsOn">, groupId = initialGroupId ?? "") =>
-    setDraft((d) => ({ key: (d?.key ?? 0) + 1, custom, values: { ...values, startsOn: today }, groupId }));
+  const open = (custom: boolean, values: Omit<HabitFormValues, "startsOn">, groupId = initialGroupId ?? "", groupOnly = false) =>
+    setDraft((d) => ({ key: (d?.key ?? 0) + 1, custom, values: { ...values, startsOn: today }, groupId, groupOnly }));
   const pickTemplate = (t: HabitTemplate) =>
     open(
       false,
       { title: t.title, emoji: t.emoji, category: t.category, targetCount: String(t.targetCount), period: t.period },
       // A Together template pre-selects a group (the one from the link, else the first).
       tab === "together" ? (initialGroupId ?? groups[0].id) : undefined,
+      // Together templates are for groups only: no "Just me".
+      tab === "together",
     );
   const createOwn = () =>
     open(true, { title: "", emoji: "", category: tab === "popular" || tab === "together" ? "health" : tab, targetCount: "1", period: "day" });
@@ -144,6 +146,7 @@ export function HabitForm({
               key={draft.key}
               initial={draft.values}
               initialGroupId={draft.groupId}
+              groupOnly={draft.groupOnly}
               groups={groups}
               today={today}
               weekStart={weekStart}
@@ -159,6 +162,7 @@ export function HabitForm({
 function HabitFields({
   initial,
   initialGroupId,
+  groupOnly,
   groups,
   today,
   weekStart,
@@ -166,6 +170,7 @@ function HabitFields({
 }: {
   initial: HabitFormValues;
   initialGroupId: string;
+  groupOnly: boolean;
   groups: FormGroup[];
   today: string;
   weekStart: 0 | 1;
@@ -277,7 +282,7 @@ function HabitFields({
         <fieldset className="flex flex-col gap-1.5">
           <legend className="mb-1.5 text-sm font-semibold">Who&apos;s it for</legend>
           <div className="flex flex-wrap gap-2">
-            {[{ id: "", name: "Just me" }, ...groups].map((g) => (
+            {(groupOnly ? groups : [{ id: "", name: "Just me" }, ...groups]).map((g) => (
               <label key={g.id || "me"} className={chipClass}>
                 <input
                   type="radio"
