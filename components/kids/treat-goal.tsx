@@ -179,7 +179,7 @@ function SetGoalForm({ childId }: { childId: string }) {
             />
           </div>
           {emojiOpen && (
-            <div role="group" aria-label="Treat emoji" className="grid grid-cols-8 gap-1 rounded-xl bg-muted/50 p-1">
+            <div role="group" aria-label="Treat emoji" className="grid grid-cols-6 gap-1 rounded-xl bg-muted/50 p-1">
               {TREAT_EMOJI.map((e) => (
                 <button
                   key={e}
@@ -189,7 +189,7 @@ function SetGoalForm({ childId }: { childId: string }) {
                     setEmoji(e);
                     setEmojiOpen(false);
                   }}
-                  className="flex h-10 items-center justify-center rounded-lg text-2xl leading-none hover:bg-card aria-pressed:bg-accent aria-pressed:ring-2 aria-pressed:ring-primary"
+                  className="flex h-11 items-center justify-center rounded-lg text-2xl leading-none hover:bg-card aria-pressed:bg-accent aria-pressed:ring-2 aria-pressed:ring-primary"
                 >
                   {e}
                 </button>

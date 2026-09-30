@@ -141,7 +141,7 @@ function CustomHabitForm({
         </div>
         <input type="hidden" name="emoji" value={emoji} />
         <p id="kid-habit-emoji" className="text-sm font-semibold">Picture</p>
-        <div role="group" aria-labelledby="kid-habit-emoji" className="grid grid-cols-8 gap-1">
+        <div role="group" aria-labelledby="kid-habit-emoji" className="grid grid-cols-6 gap-1">
           {KID_EMOJI.map((e) => (
             <button
               key={e}

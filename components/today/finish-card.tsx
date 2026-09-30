@@ -1,31 +1,51 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { finishHabit, keepGoing } from "@/app/(app)/habits/actions";
 import { Confetti } from "@/components/celebrations/confetti";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { Button } from "@/components/ui/button";
 import type { HabitCategory } from "@/lib/habit-schema";
 
+const seenKey = (habitId: string, endsOn: string) => `keepup:finish-celebrated:${habitId}:${endsOn}`;
+
 // ideas/habit-end-date.md: a habit reached its end. Celebrate what was done (at least half), then Keep going (the end
 // is removed) or Finish (to the Finished list). Only the owner, or an admin for a group habit, decides.
+// The confetti plays once per habit and end on this device (the card can stay for days, e.g. for a
+// member waiting on an admin), and not when another celebration is on screen (`quiet`).
 export function FinishCard({
   habitId,
+  endsOn,
   title,
   emoji,
   category,
   line,
   celebrate,
+  quiet = false,
   canDecide,
 }: {
   habitId: string;
+  endsOn: string;
   title: string;
   emoji: string | null;
   category: HabitCategory | null;
   line: string;
   celebrate: boolean;
+  quiet?: boolean;
   canDecide: boolean;
 }) {
+  const [confetti, setConfetti] = useState(false);
+  useEffect(() => {
+    if (!celebrate || quiet) return;
+    try {
+      if (localStorage.getItem(seenKey(habitId, endsOn))) return;
+      localStorage.setItem(seenKey(habitId, endsOn), "1");
+    } catch {
+      // Private mode: celebrate anyway, it just may repeat.
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- plays once per habit and end
+    setConfetti(true);
+  }, [celebrate, quiet, habitId, endsOn]);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const run = (fn: (id: string) => Promise<{ ok: boolean; message?: string }>) =>
@@ -39,7 +59,7 @@ export function FinishCard({
       aria-label={`${title} is finished`}
       className="relative flex flex-col gap-3 overflow-hidden rounded-2xl bg-done-soft p-4 shadow-soft"
     >
-      {celebrate && <Confetti />}
+      {confetti && <Confetti />}
       {/* Above the confetti, so the pieces pass behind the text. */}
       <div className="relative z-10 flex items-center gap-3">
         <HabitEmoji category={category} emoji={emoji} />

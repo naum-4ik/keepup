@@ -50,6 +50,8 @@ export function HoldToExit({ href, childName }: { href: string; childName: strin
       onPointerUp={cancel}
       onPointerCancel={cancel}
       onLostPointerCapture={cancel}
+      // Focus moving away (another tap elsewhere, the app going to the background) ends the hold.
+      onBlur={cancel}
       onKeyDown={(e) => {
         if (e.key !== " " && e.key !== "Enter") return;
         e.preventDefault();

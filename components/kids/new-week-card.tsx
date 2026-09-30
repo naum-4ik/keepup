@@ -49,11 +49,11 @@ export function NewWeekCard({
         <p className="text-sm font-semibold">{newWeekLine(theme)}</p>
         <div className="flex flex-wrap gap-2">
           {albumHref && (
-            <Link href={albumHref} onClick={dismiss} className="flex min-h-10 items-center rounded-full bg-card px-3 text-sm font-semibold text-primary hover:bg-muted">
+            <Link href={albumHref} onClick={dismiss} className="flex min-h-11 items-center rounded-full bg-card px-3 text-sm font-semibold text-primary hover:bg-muted">
               See the album
             </Link>
           )}
-          <button type="button" onClick={dismiss} className="flex min-h-10 items-center rounded-full px-3 text-sm font-semibold text-muted-foreground hover:bg-card">
+          <button type="button" onClick={dismiss} className="flex min-h-11 items-center rounded-full px-3 text-sm font-semibold text-muted-foreground hover:bg-card">
             Got it
           </button>
         </div>
