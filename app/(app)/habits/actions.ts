@@ -50,6 +50,21 @@ export async function checkIn(habitId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+// "Me + Mary": my check-in and each child's in one call, all or nothing.
+export async function checkInWith(habitId: string, childIds: string[]): Promise<ActionResult> {
+  if (!isUuid(habitId) || !Array.isArray(childIds) || !childIds.every(isUuid)) return NOT_FOUND;
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("check_in_with", { p_habit_id: habitId, p_children: childIds });
+  if (error) {
+    const code = error.message?.match(/keepup:([a-z_]+)/)?.[1];
+    if (code && REFRESH_ON_ERROR.has(code)) refresh(habitId);
+    return { ok: false, message: habitErrorMessage(error) };
+  }
+  refresh(habitId);
+  for (const id of childIds) revalidatePath(`/kids/${id}`);
+  return { ok: true };
+}
+
 export async function undoCheckIn(checkInId: string, habitId: string): Promise<ActionResult> {
   if (!isUuid(checkInId) || !isUuid(habitId)) return NOT_FOUND;
   const { supabase } = await requireUser();
