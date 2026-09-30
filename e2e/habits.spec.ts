@@ -279,6 +279,36 @@ test.describe("Habit detail", () => {
     await expect(page.getByText("Make the bed")).toHaveCount(0);
   });
 
+  test("an archived habit can be restored, from Progress or its page, with its history", async ({ page }) => {
+    await signUpAndOnboard(page);
+    await createHabit(page, { template: "Make the bed", tab: "Home" });
+    await page.getByRole("button", { name: "Check in: Make the bed" }).click();
+    await expect(page.getByRole("button", { name: "Done: Make the bed" })).toBeVisible();
+    const archive = async () => {
+      await page.getByRole("link", { name: /Make the bed/ }).click();
+      await openSection(page, "Archive");
+      await page.getByRole("button", { name: "Archive habit" }).click();
+      await page.getByRole("dialog").getByRole("button", { name: "Archive", exact: true }).click();
+      await expect(page).toHaveURL(/\/progress\?view=archived$/);
+    };
+
+    await archive();
+    await page.getByRole("button", { name: "Restore Make the bed" }).click();
+    await expect(page).toHaveURL(/\/today$/);
+    // Back on Today, today's check-in kept.
+    await expect(page.getByRole("button", { name: "Done: Make the bed" })).toBeVisible();
+
+    await archive();
+    await page.getByRole("link", { name: /Make the bed/ }).click();
+    const card = page.getByRole("region", { name: "Archived" });
+    await expect(card).toContainText("don't count against you");
+    await card.getByRole("button", { name: "Restore Make the bed" }).click();
+    await expect(page).toHaveURL(/\/today$/);
+    await expect(page.getByRole("button", { name: "Done: Make the bed" })).toBeVisible();
+    await page.goto("/progress?view=archived");
+    await expect(page.getByText("No archived habits.")).toBeVisible();
+  });
+
   test("the delete confirmation can be cancelled", async ({ page }) => {
     await signUpAndOnboard(page);
     await createHabit(page, { template: "Tidy up", tab: "Home" });
@@ -408,6 +438,10 @@ test("a habit that ended: the finish card, Keep going, Finish, and Start again",
   await expect(page.getByRole("link", { name: /Stretch/ })).toBeVisible();
   await page.goto("/progress?view=archived");
   await expect(page.getByRole("link", { name: /Stretch/ })).toHaveCount(0); // finished, not just archived
+  await page.goto("/progress?view=finished");
+  await expect(page.getByRole("button", { name: "Restore Stretch" })).toHaveCount(0); // Start again instead
+  await page.goto(`/habits/${stretch}`);
+  await expect(page.getByRole("region", { name: "Archived" })).toHaveCount(0);
   await page.goto("/progress?view=finished");
   await page.getByRole("button", { name: "Start Stretch again" }).click();
   await expect(page).toHaveURL(/\/today$/);

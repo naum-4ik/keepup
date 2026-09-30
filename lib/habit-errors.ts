@@ -41,6 +41,8 @@ const MESSAGES: Record<string, string> = {
   end_too_early: "The end can move later or be removed, not earlier.",
   habit_ended: "This habit has ended. Keep going or finish it from Today.",
   habit_not_ended: "This habit hasn't ended yet.",
+  not_archived: "This habit is already active.",
+  habit_finished: "This habit is finished. Use Start again instead.",
   already_nudged: "You've already nudged them about this today.",
   cannot_nudge: "They're all set for now.",
   cannot_cheer: "You can cheer other people's check-ins.",
