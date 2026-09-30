@@ -2,8 +2,10 @@ import Link from "next/link";
 import { Check, ChevronRight, Flame, ListChecks } from "lucide-react";
 import { CATEGORIES } from "@/lib/categories";
 import type { HabitCategory, HabitPeriod } from "@/lib/habit-schema";
-import { comparisonLine, ringDash, ringFraction, streakUnit, type HabitCells, type WeekDay, type WeekOverview } from "@/lib/week-overview";
+import { comparisonLine, ringDash, streakUnit, type HabitCells, type WeekOverview } from "@/lib/week-overview";
 import { cn } from "@/lib/utils";
+import type { DayRow } from "@/lib/day-detail";
+import { WeekDays } from "@/components/overview/week-days";
 
 const STREAK = "text-[#E8804F]";
 
@@ -80,53 +82,9 @@ export function WeekStrip({ overview: o }: { overview: WeekOverview }) {
   );
 }
 
-const weekdayName = (localDate: string, style: "long" | "narrow") => {
-  const [y, m, d] = localDate.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: style }).format(new Date(Date.UTC(y, m - 1, d)));
-};
-
-function dayLabel(day: WeekDay, today: string): string {
-  const name = weekdayName(day.local_date, "long");
-  if (day.local_date > today) return `${name}: still to come`;
-  if (day.daily_possible === 0) return `${name}: nothing due`;
-  return `${name}: ${day.daily_done} of ${day.daily_possible} done`;
-}
-
-// A circle that fills from the bottom with the share of the day's daily habits done.
-function DayCircle({ day, today }: { day: WeekDay; today: string }) {
-  const size = 32;
-  const r = 13;
-  const future = day.local_date > today;
-  const isToday = day.local_date === today;
-  const fill = ringFraction(day.daily_done, day.daily_possible);
-  const clipId = `day-fill-${day.local_date}`;
-  return (
-    <li className="flex flex-1 flex-col items-center gap-1">
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={dayLabel(day, today)}>
-        {future ? (
-          <circle cx={16} cy={16} r={3} className="fill-muted-foreground/25" />
-        ) : (
-          <>
-            <defs>
-              <clipPath id={clipId}>
-                <rect x={0} y={size - size * fill} width={size} height={size * fill} />
-              </clipPath>
-            </defs>
-            <circle cx={16} cy={16} r={r} className="fill-muted" />
-            {fill > 0 && <circle cx={16} cy={16} r={r} clipPath={`url(#${clipId})`} className="fill-primary" />}
-            {isToday && <circle cx={16} cy={16} r={r + 1.5} fill="none" strokeWidth={1.5} className="stroke-foreground" />}
-          </>
-        )}
-      </svg>
-      <span aria-hidden className={cn("text-xs", isToday ? "font-bold text-foreground" : "text-muted-foreground")}>
-        {weekdayName(day.local_date, "narrow")}
-      </span>
-    </li>
-  );
-}
-
 // Progress: "Your week" card.
-export function WeekCard({ overview: o }: { overview: WeekOverview }) {
+// `days`: each past or current day's list for "tap a day" (Progress); without it the days aren't tappable.
+export function WeekCard({ overview: o, days }: { overview: WeekOverview; days?: Record<string, DayRow[]> }) {
   const streak = o.best_current_streak;
   return (
     <section aria-labelledby="your-week" className="flex flex-col gap-4 rounded-2xl bg-card p-4 shadow-soft">
@@ -143,11 +101,7 @@ export function WeekCard({ overview: o }: { overview: WeekOverview }) {
         </div>
       </div>
 
-      <ol aria-label="This week by day" className="flex justify-between">
-        {o.days.map((d) => (
-          <DayCircle key={d.local_date} day={d} today={o.today} />
-        ))}
-      </ol>
+      <WeekDays days={o.days} today={o.today} details={days} />
 
       <ul className="grid grid-cols-3 gap-2 border-t border-border pt-3 text-sm">
         <li className="flex min-w-0 flex-col items-center gap-0.5 text-center">

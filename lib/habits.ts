@@ -1,5 +1,6 @@
 import "server-only";
 import { requireUser } from "@/lib/auth";
+import type { DayCheckIn } from "@/lib/day-detail";
 import { habitEmoji, normalizeCategory } from "@/lib/categories";
 import type { Database } from "@/lib/database.types";
 import type { HabitCategory } from "@/lib/habit-schema";
@@ -35,6 +36,23 @@ export async function getWeekOverview(): Promise<WeekOverview | null> {
     return null;
   }
   return withTodayPending(data as unknown as WeekOverview);
+}
+
+// Progress → tap a day: my own check-ins this week (RLS: own rows, plus my groups'; filtered to mine).
+// Fails soft: without them the day list still shows daily habits from the overview.
+export async function getMyCheckIns(from: string, to: string): Promise<DayCheckIn[]> {
+  const { supabase, userId } = await requireUser();
+  const { data, error } = await supabase
+    .from("check_ins")
+    .select("habit_id, local_date, status")
+    .eq("user_id", userId)
+    .gte("local_date", from)
+    .lte("local_date", to);
+  if (error) {
+    console.error("my check-ins failed", error.message);
+    return [];
+  }
+  return data ?? [];
 }
 
 // user_id null = the whole habit; otherwise the viewer's own member pause (group habits).

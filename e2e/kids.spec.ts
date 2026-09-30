@@ -113,3 +113,63 @@ test("another adult in the group sees and logs for the child", async ({ page, br
   await page.getByRole("tab", { name: "Activity" }).click();
   await expect(page.getByText(/Dan logged Tidy my toys for Mary/)).toBeVisible();
 });
+
+test("add a habit for a child from the dialog: a suggestion, then your own", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.getByRole("button", { name: "Add a habit" }).click();
+  const dialog = page.getByRole("dialog", { name: "Add a habit for Mary" });
+  await expect(dialog.getByRole("region", { name: "Helping at home" })).toBeVisible();
+  await dialog.getByRole("button", { name: "Add Make my bed" }).click();
+  await expect(dialog.getByRole("status")).toHaveText("Added Make my bed ✓");
+  await expect(dialog.getByRole("button", { name: "Add Make my bed" })).toHaveCount(0); // she has it now
+
+  await dialog.getByRole("button", { name: "Create your own" }).click();
+  const own = page.getByRole("dialog", { name: "Your own habit for Mary" });
+  await own.getByLabel("Title").fill("Feed the fish");
+  await own.getByRole("group", { name: "Picture" }).getByRole("button", { name: "🐶" }).click();
+  await own.getByRole("button", { name: "Add habit" }).click();
+  await expect(own).toBeHidden();
+  await expect(page.getByText("Feed the fish")).toBeVisible();
+  await expect(page.getByText("Make my bed")).toBeVisible();
+});
+
+test("a treat goal from an idea, with a quick star target", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  const goal = page.getByRole("region", { name: "Treat goal" });
+  await goal.getByRole("button", { name: "Set a goal" }).click();
+  const ideas = goal.getByRole("group", { name: "Choose a treat together" });
+  await expect(goal.getByRole("button", { name: "Set goal" })).toBeDisabled(); // pick something first
+  await expect(ideas.getByRole("button", { name: /Stay up late/ })).toHaveCount(0); // six ideas first
+  await ideas.getByRole("button", { name: "More ideas" }).click();
+  await ideas.getByRole("button", { name: /Pizza night/ }).click();
+  await expect(goal.getByLabel("Treat", { exact: true })).toHaveValue("Pizza night");
+  await expect(goal.getByRole("button", { name: "Picture: 🍕. Change" })).toBeVisible();
+  await goal.getByLabel("Treat", { exact: true }).fill("Pizza night with grandma"); // an idea can be edited
+  await goal.getByRole("button", { name: "Picture: 🍕. Change" }).click();
+  await goal.getByRole("group", { name: "Treat emoji" }).getByRole("button", { name: "🎈" }).click();
+  await expect(goal.getByRole("button", { name: "Picture: 🎈. Change" })).toBeVisible();
+  await goal.getByRole("button", { name: "⭐ 30" }).click();
+  await goal.getByRole("button", { name: "Set goal" }).click();
+  await expect(goal).toContainText("Pizza night with grandma");
+  await expect(goal).toContainText("⭐ 0 of 30");
+});
+
+test("a treat goal of our own, with another star count", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  const goal = page.getByRole("region", { name: "Treat goal" });
+  await goal.getByRole("button", { name: "Set a goal" }).click();
+  await goal.getByRole("button", { name: "Our own idea" }).click();
+  await goal.getByLabel("Treat", { exact: true }).fill("Trip to the aquarium");
+  await goal.getByRole("button", { name: "Other" }).click();
+  await goal.getByLabel("Stars", { exact: true }).fill("15");
+  await goal.getByRole("button", { name: "Set goal" }).click();
+  await expect(goal).toContainText("Trip to the aquarium");
+  await expect(goal).toContainText("⭐ 0 of 15");
+});
+
