@@ -8,8 +8,8 @@ import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard } from "@/components/habits/habit-card";
 import { LiveRefresh } from "@/components/habits/live-refresh";
 import { KidSection } from "@/components/kids/kid-section";
-import { WeekStrip } from "@/components/overview/week-overview";
 import { GentleCard } from "@/components/today/gentle-card";
+import { TodayCard } from "@/components/today/today-card";
 import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
 import { feedCopy } from "@/lib/feed-copy";
@@ -20,6 +20,7 @@ import { getPendingApprovals } from "@/lib/inbox";
 import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { parsePurpose } from "@/lib/profile-schema";
 import { groupForToday } from "@/lib/today";
+import { todayProgress } from "@/lib/today-progress";
 import { chooseGentleCard, milestoneToday, recapKey, recapLine, visibleRecaps } from "@/lib/today-cards";
 import { getCelebrations, getDismissedCards, getFamilyRecaps, hasCheckedIn } from "@/lib/today-cards-data";
 import { membersOf, sectionsForToday } from "@/lib/today-sections";
@@ -58,6 +59,11 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const tipFor = sections.map((s) => groupForToday(s.habits).todo[0]).find(Boolean)?.habit_id;
   // The first-check-in tip is for people who have never checked in (not for someone on a new device).
   const isNewUser = habits.every((h) => h.done_count === 0 && h.best_streak === 0);
+  // The Today card: every adult section's to-do and done habits (kids have their own stars).
+  const progress = todayProgress(sections.flatMap((s) => s.habits));
+  const now = new Date();
+  const date = new Intl.DateTimeFormat("en-GB", { timeZone: profile.timezone, weekday: "long", day: "numeric", month: "long" }).format(now);
+  const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: profile.timezone }).format(now);
 
   // Celebration cards (ideas/achievements-and-rewards.md §7), then at most one gentle card.
   const membersFor = (habitIds: (string | null)[]): CardMember[] => {
@@ -85,6 +91,17 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   return (
     <section className="flex flex-col gap-4 py-6">
       <h1 className="text-xl font-bold">Today</h1>
+      {progress.total > 0 && (
+        <TodayCard
+          date={date}
+          dayKey={dayKey}
+          done={progress.done}
+          total={progress.total}
+          items={progress.items}
+          week={overview && hasWeekData(overview) ? { done: overview.done, possible: overview.possible, streak: overview.best_current_streak } : null}
+          quiet={everyone.length > 0}
+        />
+      )}
       {joinedGroup && (
         <p role="status" className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">
           You joined {joinedGroup.name} ✓
@@ -115,7 +132,10 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         <FamilyRecapCard key={recapKey(r)} cardKey={recapKey(r)} group={r.group_name} line={recapLine(r)} />
       ))}
       {gentle && <GentleCard key={gentle.key} card={gentle} />}
-      {overview && hasWeekData(overview) && <WeekStrip overview={overview} />}
+      {/* Nothing due today: the week still shows on its own. */}
+      {progress.total === 0 && overview && hasWeekData(overview) && (
+        <TodayCard date={date} dayKey={dayKey} done={0} total={0} items={[]} week={{ done: overview.done, possible: overview.possible, streak: overview.best_current_streak }} />
+      )}
       {habits.length === 0 && kids.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">
           <div className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">
@@ -134,7 +154,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
               <TodayLists habits={s.habits} tipFor={isNewUser ? tipFor : undefined} />
             </section>
           ) : (
-            <TodayLists key={s.key} habits={s.habits} tipFor={isNewUser ? tipFor : undefined} />
+            <TodayLists key={s.key} habits={s.habits} tipFor={isNewUser ? tipFor : undefined} sectionDone={false} />
           ),
         )
       )}
@@ -148,13 +168,15 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
 }
 
 // Inside each section: what's left to do, what's done, what isn't active yet.
-function TodayLists({ habits, tipFor }: { habits: HabitSummary[]; tipFor?: string }) {
+// `sectionDone`: say "All checked off" when this section is finished. Off for a lone section, where
+// the Today card already says "Today's all done".
+function TodayLists({ habits, tipFor, sectionDone = true }: { habits: HabitSummary[]; tipFor?: string; sectionDone?: boolean }) {
   const { todo, done, later } = groupForToday(habits);
   return (
     <>
       {todo.length > 0 ? (
         <HabitList habits={todo} tipFor={tipFor} />
-      ) : done.length > 0 ? (
+      ) : done.length > 0 && sectionDone ? (
         <p className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">All checked off. Nice work.</p>
       ) : null}
       {done.length > 0 && <HabitList title="Done" habits={done} />}

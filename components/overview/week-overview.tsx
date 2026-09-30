@@ -7,11 +7,20 @@ import { cn } from "@/lib/utils";
 
 const STREAK = "text-[#E8804F]";
 
-export function ProgressRing({ done, possible, size = 20 }: { done: number; possible: number; size?: number }) {
+export function ProgressRing({
+  done,
+  possible,
+  size = 20,
+  label = `${done} of ${possible} done this week`,
+}: {
+  done: number;
+  possible: number;
+  size?: number;
+  label?: string;
+}) {
   const stroke = Math.max(2.5, size / 8);
   const r = (size - stroke) / 2;
   const { circumference, offset } = ringDash(done, possible, r);
-  const label = `${done} of ${possible} done this week`;
   // A full ring would look like an empty outline, so a complete week becomes a filled sage check.
   // The check means "all done so far": `possible` only counts periods that are due or finished, so
   // it can show mid-week and give way to the ring again once the next day's habits come due.
