@@ -63,25 +63,28 @@ export function Garden({ stars }: { stars: number }) {
 export function NextStep({ stars }: { stars: number }) {
   const step = nextStep(stars);
   if (!step) {
-    return <p className="text-lg font-bold text-[#4F8A5B]">Full garden! 🌻</p>;
+    return <p className="text-xl font-bold text-[#4F8A5B]">Full garden! 🌻</p>;
   }
+  const label = `${step.left} more ${step.left === 1 ? "star" : "stars"} to ${step.label.toLowerCase()}`;
   return (
-    <div
-      role="img"
-      aria-label={`${step.left} more ${step.left === 1 ? "star" : "stars"} to ${step.label.toLowerCase()}`}
-      className="flex items-center gap-2 rounded-full bg-card px-4 py-2 shadow-soft"
-    >
-      <span aria-hidden className="flex items-center gap-1">
-        {Array.from({ length: step.need }, (_, i) => (
-          <span key={i} className={cn("text-xl leading-none", i < step.have ? "" : "opacity-25 grayscale")}>
-            ⭐
-          </span>
-        ))}
-      </span>
-      <span aria-hidden className="text-muted-foreground">→</span>
-      <span aria-hidden className="flex size-10 items-center justify-center rounded-full bg-accent text-2xl leading-none">
-        {step.icon}
-      </span>
+    <div role="img" aria-label={label} className="flex flex-col items-center gap-1.5">
+      <div className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 shadow-soft">
+        <span aria-hidden className="flex items-center gap-1">
+          {Array.from({ length: step.need }, (_, i) => (
+            <span key={i} className={cn("text-3xl leading-none", i < step.have ? "" : "opacity-25 grayscale")}>
+              ⭐
+            </span>
+          ))}
+        </span>
+        <span aria-hidden className="text-xl text-muted-foreground">→</span>
+        <span aria-hidden className="flex size-12 items-center justify-center rounded-full bg-accent text-3xl leading-none">
+          {step.icon}
+        </span>
+      </div>
+      {/* For the grown-up reading along; the child counts the stars. */}
+      <p aria-hidden className="text-base font-bold">
+        {step.left} more ⭐ to {step.icon}
+      </p>
     </div>
   );
 }
