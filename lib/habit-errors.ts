@@ -37,6 +37,9 @@ const MESSAGES: Record<string, string> = {
   freeze_overlaps: "This habit is already paused then.",
   freeze_range_invalid: "The end date must be on or after the start date.",
   not_authenticated: "Please sign in again.",
+  already_nudged: "You've already nudged them about this today.",
+  cannot_nudge: "They're all set for now.",
+  cannot_cheer: "You can cheer other people's check-ins.",
 };
 
 export function habitErrorMessage(error: { message?: string } | null | undefined): string {

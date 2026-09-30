@@ -60,6 +60,31 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"cheers": {
+                  Row: {
+                    "check_in_id": string,"created_at": string,"user_id": string
+                  }
+                  Insert: {
+                    "check_in_id": string,"created_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "check_in_id"?: string,"created_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "cheers_check_in_id_fkey"
+      columns: ["check_in_id"]
+isOneToOne: false
+      referencedRelation: "check_ins"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "cheers_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"group_habit_participants": {
                   Row: {
                     "habit_id": string,"profile_id": string
@@ -216,6 +241,86 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"notifications": {
+                  Row: {
+                    "actor_id": string | null,"check_in_id": string | null,"created_at": string,"dedupe_key": string | null,"group_id": string | null,"habit_id": string | null,"id": string,"kind": string,"payload": NonNullable<Json>,"read_at": string | null,"seen_at": string | null,"subject_id": string | null,"user_id": string
+                  }
+                  Insert: {
+                    "actor_id"?: string | null,"check_in_id"?: string | null,"created_at"?: string,"dedupe_key"?: string | null,"group_id"?: string | null,"habit_id"?: string | null,"id"?: string,"kind": string,"payload"?: NonNullable<Json>,"read_at"?: string | null,"seen_at"?: string | null,"subject_id"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "actor_id"?: string | null,"check_in_id"?: string | null,"created_at"?: string,"dedupe_key"?: string | null,"group_id"?: string | null,"habit_id"?: string | null,"id"?: string,"kind"?: string,"payload"?: NonNullable<Json>,"read_at"?: string | null,"seen_at"?: string | null,"subject_id"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notifications_actor_id_fkey"
+      columns: ["actor_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_check_in_id_fkey"
+      columns: ["check_in_id"]
+isOneToOne: false
+      referencedRelation: "check_ins"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_habit_id_fkey"
+      columns: ["habit_id"]
+isOneToOne: false
+      referencedRelation: "habits"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_subject_id_fkey"
+      columns: ["subject_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"nudges": {
+                  Row: {
+                    "created_at": string,"habit_id": string,"kind": string,"local_date": string,"recipient_id": string,"sender_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"habit_id": string,"kind": string,"local_date": string,"recipient_id": string,"sender_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"habit_id"?: string,"kind"?: string,"local_date"?: string,"recipient_id"?: string,"sender_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "nudges_habit_id_fkey"
+      columns: ["habit_id"]
+isOneToOne: false
+      referencedRelation: "habits"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "nudges_recipient_id_fkey"
+      columns: ["recipient_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "nudges_sender_id_fkey"
+      columns: ["sender_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"period_results": {
                   Row: {
                     "finalized_at": string,"habit_id": string,"outcome": string,"period_start": string
@@ -357,6 +462,9 @@ isOneToOne: false
         isOneToOne: false
         isSetofReturn: true
       } },
+"cheer":
+{ Args: { "p_check_in_id": string }; Returns: undefined
+                           },
 "child_summaries":
 { Args: { "p_child_id": string }; Returns: {
               "archived_at": string,"best_streak": number,"category": Database["public"]['Enums']["habit_category"],"checked_in_today": boolean,"created_at": string,"current_streak": number,"days_left": number,"done_count": number,"emoji": string,"frozen": boolean,"frozen_until": string,"group_done": boolean,"group_id": string,"group_name": string,"habit_id": string,"members": Json,"my_role": string,"not_started": boolean,"pending_count": number,"period": Database["public"]['Enums']["habit_period"],"period_start": string,"requires_approval": boolean,"starts_on": string,"target_count": number,"title": string
@@ -500,6 +608,11 @@ isOneToOne: false
               "archived_at": string,"best_streak": number,"category": Database["public"]['Enums']["habit_category"],"checked_in_today": boolean,"created_at": string,"current_streak": number,"days_left": number,"done_count": number,"emoji": string,"frozen": boolean,"frozen_until": string,"group_done": boolean,"group_id": string,"group_name": string,"habit_id": string,"members": Json,"my_role": string,"not_started": boolean,"pending_count": number,"period": Database["public"]['Enums']["habit_period"],"period_start": string,"requires_approval": boolean,"starts_on": string,"target_count": number,"title": string
             }[]
                            },
+"inbox_feed":
+{ Args: { "p_limit"?: number }; Returns: {
+              "actor_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_title": string,"id": string,"kind": string,"payload": Json,"read_at": string,"seen_at": string,"subject_avatar_emoji": string,"subject_id": string,"subject_name": string
+            }[]
+                           },
 "invite_preview":
 { Args: { "p_token": string }; Returns: {
               "group_kind": string,"group_name": string,"inviter_name": string,"member_count": number
@@ -517,6 +630,12 @@ isOneToOne: false
 "leave_group":
 { Args: { "p_confirm_children"?: boolean,"p_group_id": string }; Returns: undefined
                            },
+"mark_feed_read":
+{ Args: { "p_ids"?: (string)[] }; Returns: number
+                           },
+"mark_feed_seen":
+{ Args: { "p_ids": (string)[] }; Returns: number
+                           },
 "mark_treat_received":
 { Args: { "p_goal_id": string }; Returns: undefined
                            },
@@ -531,6 +650,14 @@ isOneToOne: false
 "my_groups":
 { Args: Record<PropertyKey, never>; Returns: {
               "child_count": number,"group_id": string,"joined_at": string,"kind": string,"member_count": number,"name": string,"role": string
+            }[]
+                           },
+"nudge":
+{ Args: { "p_habit_id": string,"p_kind": string,"p_recipient_id": string }; Returns: undefined
+                           },
+"pending_approvals":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "author_avatar_color": string,"author_avatar_emoji": string,"author_id": string,"author_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_title": string,"local_date": string,"review_deadline": string
             }[]
                            },
 "remove_member":
