@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { authErrorReason } from "@/lib/auth-errors";
 import { safeNextPath, withNext } from "@/lib/paths";
-import { AuthCard } from "./auth-card";
-import { LoginForm } from "./login-form";
+import { AuthCard } from "../login/auth-card";
+import { SignupForm } from "./signup-form";
 
-export default async function LoginPage({
+export default async function SignupPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
@@ -15,21 +14,19 @@ export default async function LoginPage({
   const { data } = await supabase.auth.getClaims();
   if (data?.claims) redirect("/today");
 
-  const reason = authErrorReason(params);
-  if (reason) redirect(`/auth/error?reason=${reason}`);
-
   const nextPath = safeNextPath(params.next);
   const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
+  const signInHref = withNext("/login", nextPath);
 
   return (
     <AuthCard
-      title="Welcome to Keepup"
-      subtitle="Keep up your habits, and do the ones that matter with your family."
+      title="Create your account"
+      subtitle="Track your habits on your own, or together with your family."
       next={nextPath}
       googleEnabled={googleEnabled}
-      footer={{ text: "Don't have an account?", linkLabel: "Sign up", href: withNext("/signup", nextPath) }}
+      footer={{ text: "Already have an account?", linkLabel: "Sign in", href: signInHref }}
     >
-      <LoginForm next={nextPath} />
+      <SignupForm next={nextPath} signInHref={signInHref} />
     </AuthCard>
   );
 }
