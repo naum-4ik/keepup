@@ -361,13 +361,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "avatar_color": string | null,"avatar_emoji": string | null,"created_at": string,"display_name": string,"group_id": string | null,"id": string,"kind": string,"onboarded_at": string | null,"purpose": string | null,"reminder_hour": number,"terms_accepted_at": string | null,"timezone": string,"week_start": number
+                    "avatar_color": string | null,"avatar_emoji": string | null,"created_at": string,"display_name": string,"group_id": string | null,"id": string,"kid_theme": string | null,"kind": string,"onboarded_at": string | null,"purpose": string | null,"reminder_hour": number,"terms_accepted_at": string | null,"timezone": string,"week_start": number
                   }
                   Insert: {
-                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"created_at"?: string,"display_name": string,"group_id"?: string | null,"id": string,"kind"?: string,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
+                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"created_at"?: string,"display_name": string,"group_id"?: string | null,"id": string,"kid_theme"?: string | null,"kind"?: string,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
                   }
                   Update: {
-                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"created_at"?: string,"display_name"?: string,"group_id"?: string | null,"id"?: string,"kind"?: string,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
+                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"created_at"?: string,"display_name"?: string,"group_id"?: string | null,"id"?: string,"kid_theme"?: string | null,"kind"?: string,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
                   }
                   Relationships: [
                     {
@@ -676,7 +676,7 @@ isOneToOne: false
                            },
 "my_children":
 { Args: Record<PropertyKey, never>; Returns: {
-              "avatar_color": string,"avatar_emoji": string,"child_id": string,"created_at": string,"group_id": string,"group_name": string,"name": string
+              "avatar_color": string,"avatar_emoji": string,"child_id": string,"created_at": string,"group_id": string,"group_name": string,"kid_theme": string,"name": string
             }[]
                            },
 "my_groups":
@@ -719,6 +719,9 @@ isOneToOne: false
                            },
 "revoke_invites":
 { Args: { "p_group_id": string }; Returns: undefined
+                           },
+"set_child_theme":
+{ Args: { "p_child_id": string,"p_theme": string }; Returns: undefined
                            },
 "set_group_avatar":
 { Args: { "p_color": string,"p_emoji": string,"p_group_id": string }; Returns: {
