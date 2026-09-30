@@ -133,7 +133,7 @@ export default async function KidPage({
         ) : (
           <p className="text-sm text-muted-foreground">No habits yet.</p>
         )}
-        <AddKidHabit childId={id} existingTitles={habits.map((h) => h.title)} />
+        <AddKidHabit childId={id} childName={child.name} existingTitles={habits.map((h) => h.title)} />
       </section>
 
       <ChildDangerZone childId={id} childName={child.name} isAdmin={isAdmin} moveTargets={moveTargets} />

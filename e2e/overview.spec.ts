@@ -32,7 +32,18 @@ test("the weekly overview shows on Today and Progress", async ({ page }) => {
   await expect(card.getByRole("img", { name: "2 of 2 done this week" })).toHaveAttribute("data-complete", "");
   // Today's circle fills against both of today's daily habits (the weekday comes from the server's
   // clock in the user's time zone, so it isn't recomputed here).
-  await expect(card.getByRole("img", { name: /^\w+day: 2 of 2 done$/ })).toBeVisible();
+  const todayButton = card.getByRole("button", { name: /^\w+day: 2 of 2 done$/ });
+  await expect(todayButton).toBeVisible();
+  // Tap a day: what you did that day.
+  await expect(card.getByText("Tap a day to see what you did.")).toBeVisible();
+  await todayButton.click();
+  const day = card.getByRole("region", { name: /\d/ }); // named by its date
+  await expect(day).toContainText("Today");
+  await expect(day).toContainText("2 of 2 daily done");
+  await expect(day.getByRole("listitem").filter({ hasText: "Walk" })).toContainText("Done");
+  await expect(day.getByRole("listitem").filter({ hasText: "Read" })).toContainText("Done");
+  await todayButton.click();
+  await expect(day).toBeHidden();
   await expect(card.getByRole("listitem").filter({ hasText: "check-in" })).toHaveText("2check-ins");
   await expect(card.getByRole("listitem").filter({ hasText: "active habits" })).toHaveText("2active habits");
 

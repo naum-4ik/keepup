@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CHILD_NAME_MAX } from "@/lib/kid-schema";
-import { DEFAULT_KID_TEMPLATE_IDS, KID_TEMPLATES, type KidTemplate } from "@/lib/kid-templates";
+import { DEFAULT_KID_TEMPLATE_IDS, KID_TEMPLATES, kidTemplatesByGroup, type KidTemplate } from "@/lib/kid-templates";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
@@ -85,26 +85,31 @@ export function AddChildForm({ groupId }: { groupId: string }) {
 
       <section aria-labelledby="child-habits" className="flex flex-col gap-3">
         <h2 id="child-habits" className="text-base font-bold">Habits to start</h2>
-        <ul className="grid grid-cols-1 gap-2">
-          {KID_TEMPLATES.map((t) => {
-            const on = picked.has(t.id);
-            return (
-              <li key={t.id}>
-                <button
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => toggle(t.id)}
-                  className={cn(
-                    "flex min-h-16 w-full items-center gap-3 rounded-2xl border-2 bg-card p-3 shadow-soft transition-colors",
-                    on ? "border-primary" : "border-transparent hover:border-primary/30",
-                  )}
-                >
-                  <KidTemplateTile template={t} selected={on} />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        {kidTemplatesByGroup(KID_TEMPLATES).map((g) => (
+          <div key={g.group} className="flex flex-col gap-2">
+            <h3 className="text-xs font-bold tracking-wide text-muted-foreground uppercase">{g.group}</h3>
+            <ul className="grid grid-cols-1 gap-2">
+              {g.templates.map((t) => {
+                const on = picked.has(t.id);
+                return (
+                  <li key={t.id}>
+                    <button
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => toggle(t.id)}
+                      className={cn(
+                        "flex min-h-16 w-full items-center gap-3 rounded-2xl border-2 bg-card p-3 shadow-soft transition-colors",
+                        on ? "border-primary" : "border-transparent hover:border-primary/30",
+                      )}
+                    >
+                      <KidTemplateTile template={t} selected={on} />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
       </section>
 
       <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl bg-card p-4 shadow-soft">

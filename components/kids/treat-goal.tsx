@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GOAL_DEFAULT_EMOJI, GOAL_DEFAULT_TARGET, GOAL_TITLE_MAX } from "@/lib/kid-schema";
 import type { TreatGoal as Goal } from "@/lib/kids";
+import { TREAT_EMOJI, TREAT_IDEAS } from "@/lib/treat-ideas";
 import { cn } from "@/lib/utils";
 
 const initialState: KidFormState = { status: "idle" };
-const TREAT_EMOJI = ["🎁", "🍦", "🎈", "🧁", "🎡", "🍕", "🎨", "🦖"];
+const STAR_PICKS = [10, 20, 30];
+const SHORT_IDEAS = 6;
 
 // ideas/achievements-and-rewards.md §8: a treat the family agrees on, reached with stars.
 export function TreatGoal({ childId, childName, goal }: { childId: string; childName: string; goal: Goal | null }) {
@@ -80,7 +82,10 @@ function ActiveGoal({ childId, childName, goal }: { childId: string; childName: 
 function SetGoalForm({ childId }: { childId: string }) {
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(setGoal.bind(null, childId), initialState);
-  const [emoji, setEmoji] = useState(GOAL_DEFAULT_EMOJI);
+  const [emoji, setEmoji] = useState<string>(GOAL_DEFAULT_EMOJI);
+  const [title, setTitle] = useState("");
+  const [target, setTarget] = useState(String(GOAL_DEFAULT_TARGET));
+  const [allIdeas, setAllIdeas] = useState(false);
 
   if (!open) {
     return (
@@ -94,19 +99,61 @@ function SetGoalForm({ childId }: { childId: string }) {
   }
   return (
     <form action={formAction} className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
+        <p id="treat-ideas" className="text-sm font-semibold">Ideas</p>
+        <div role="group" aria-labelledby="treat-ideas" className="flex flex-wrap gap-2">
+          {(allIdeas ? TREAT_IDEAS : TREAT_IDEAS.slice(0, SHORT_IDEAS)).map((idea) => {
+            const on = title === idea.title;
+            return (
+              <button
+                key={idea.title}
+                type="button"
+                aria-pressed={on}
+                onClick={() => {
+                  setTitle(idea.title);
+                  setEmoji(idea.emoji);
+                }}
+                className="flex min-h-11 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-sm font-semibold hover:bg-muted aria-pressed:border-primary aria-pressed:bg-accent"
+              >
+                <span aria-hidden className="text-lg leading-none">{idea.emoji}</span>
+                {idea.title}
+              </button>
+            );
+          })}
+          {!allIdeas && (
+            <button
+              type="button"
+              onClick={() => setAllIdeas(true)}
+              className="flex min-h-11 items-center rounded-full px-3 text-sm font-semibold text-primary hover:bg-accent"
+            >
+              More ideas
+            </button>
+          )}
+        </div>
+      </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="goal-title" className="font-semibold">Treat</Label>
-        <Input id="goal-title" name="title" required maxLength={GOAL_TITLE_MAX} autoComplete="off" placeholder="Ice cream at the park" className="h-11 rounded-xl px-3 text-base" />
+        <Input
+          id="goal-title"
+          name="title"
+          required
+          maxLength={GOAL_TITLE_MAX}
+          autoComplete="off"
+          placeholder="Pick an idea or write your own"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="h-11 rounded-xl px-3 text-base"
+        />
       </div>
       <input type="hidden" name="emoji" value={emoji} />
-      <div role="group" aria-label="Treat emoji" className="flex flex-wrap gap-1">
+      <div role="group" aria-label="Treat emoji" className="grid grid-cols-8 gap-1">
         {TREAT_EMOJI.map((e) => (
           <button
             key={e}
             type="button"
             aria-pressed={e === emoji}
             onClick={() => setEmoji(e)}
-            className="flex size-11 items-center justify-center rounded-xl text-2xl leading-none hover:bg-muted aria-pressed:bg-accent aria-pressed:ring-2 aria-pressed:ring-primary"
+            className="flex h-11 items-center justify-center rounded-xl text-2xl leading-none hover:bg-muted aria-pressed:bg-accent aria-pressed:ring-2 aria-pressed:ring-primary"
           >
             {e}
           </button>
@@ -114,7 +161,32 @@ function SetGoalForm({ childId }: { childId: string }) {
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="goal-target" className="font-semibold">Stars</Label>
-        <Input id="goal-target" name="target" type="number" inputMode="numeric" min={1} max={200} defaultValue={GOAL_DEFAULT_TARGET} required className="h-11 w-28 rounded-xl px-3 text-base" />
+        <div className="flex flex-wrap items-center gap-2">
+          <Input
+            id="goal-target"
+            name="target"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={200}
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+            required
+            className="h-11 w-24 rounded-xl px-3 text-base"
+          />
+          {STAR_PICKS.map((n) => (
+            <button
+              key={n}
+              type="button"
+              aria-pressed={target === String(n)}
+              onClick={() => setTarget(String(n))}
+              className="flex h-11 items-center gap-1 rounded-full border border-border px-3 text-sm font-semibold tabular-nums hover:bg-muted aria-pressed:border-primary aria-pressed:bg-accent"
+            >
+              ⭐ {n}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">A check-in earns one star.</p>
       </div>
       {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
       <div className="flex gap-2">

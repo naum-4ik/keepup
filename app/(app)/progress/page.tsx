@@ -4,7 +4,8 @@ import { StreakBadge } from "@/components/habits/streak-badge";
 import { HabitDots, WeekCard } from "@/components/overview/week-overview";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
-import { getHabitSummaries, getWeekOverview } from "@/lib/habits";
+import { dayDetail } from "@/lib/day-detail";
+import { getHabitSummaries, getMyCheckIns, getWeekOverview } from "@/lib/habits";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { hasWeekData } from "@/lib/week-overview";
@@ -15,11 +16,20 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
   const [summaries, overview] = await Promise.all([getHabitSummaries(), getWeekOverview()]);
   const habits = summaries.filter((h) => Boolean(h.archived_at) === showArchived);
   const cellsFor = new Map((overview?.per_habit ?? []).map((p) => [p.habit_id, p.cells]));
+  // Tap a day: each day up to today, from the overview's cells plus my check-ins that week.
+  const week = overview?.days ?? [];
+  const checkIns = week.length > 0 ? await getMyCheckIns(week[0].local_date, week[week.length - 1].local_date) : [];
+  const active = summaries.filter((h) => !h.archived_at);
+  const days = overview
+    ? Object.fromEntries(
+        week.filter((d) => d.local_date <= overview.today).map((d) => [d.local_date, dayDetail(d.local_date, active, overview.per_habit, checkIns)]),
+      )
+    : undefined;
 
   return (
     <section className="flex flex-col gap-5 py-6">
       <h1 className="text-xl font-bold">Progress</h1>
-      {!showArchived && overview && hasWeekData(overview) && <WeekCard overview={overview} />}
+      {!showArchived && overview && hasWeekData(overview) && <WeekCard overview={overview} days={days} />}
 
       <nav aria-label="Habit list" className="flex gap-2">
         {[
