@@ -1,4 +1,4 @@
-import { GARDEN_STAGES, stageFor, starsToNext } from "@/lib/garden";
+import { GARDEN_STAGES, nextStep, stageFor, starsToNext } from "@/lib/garden";
 import { cn } from "@/lib/utils";
 
 // The week's garden: the stage's emoji layers composed on soil in a soft rounded card. The stage
@@ -55,5 +55,33 @@ export function Garden({ stars }: { stars: number }) {
         {next === null ? "The garden is in full bloom 🌷" : `${next} more ${next === 1 ? "star" : "stars"} to the next picture`}
       </p>
     </section>
+  );
+}
+
+// The kid view (ideas/kid-view-next.md §1): a star path from this picture to the next one, which a
+// child who can't read yet can follow; a grown-up can read the label out.
+export function NextStep({ stars }: { stars: number }) {
+  const step = nextStep(stars);
+  if (!step) {
+    return <p className="text-lg font-bold text-[#4F8A5B]">Full garden! 🌻</p>;
+  }
+  return (
+    <div
+      role="img"
+      aria-label={`${step.left} more ${step.left === 1 ? "star" : "stars"} to ${step.label.toLowerCase()}`}
+      className="flex items-center gap-2 rounded-full bg-card px-4 py-2 shadow-soft"
+    >
+      <span aria-hidden className="flex items-center gap-1">
+        {Array.from({ length: step.need }, (_, i) => (
+          <span key={i} className={cn("text-xl leading-none", i < step.have ? "" : "opacity-25 grayscale")}>
+            ⭐
+          </span>
+        ))}
+      </span>
+      <span aria-hidden className="text-muted-foreground">→</span>
+      <span aria-hidden className="flex size-10 items-center justify-center rounded-full bg-accent text-2xl leading-none">
+        {step.icon}
+      </span>
+    </div>
   );
 }
