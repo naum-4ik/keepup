@@ -1,29 +1,43 @@
 import Link from "next/link";
 import { ChevronRight, Clock } from "lucide-react";
+import { EveryoneDidIt, type CardMember } from "@/components/celebrations/everyone-did-it";
+import { FamilyRecapCard } from "@/components/celebrations/family-recap-card";
+import { GroupMilestoneCard } from "@/components/celebrations/group-milestone-card";
 import { FirstCheckinTip } from "@/components/first-checkin-tip";
 import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard } from "@/components/habits/habit-card";
 import { LiveRefresh } from "@/components/habits/live-refresh";
 import { KidSection } from "@/components/kids/kid-section";
 import { WeekStrip } from "@/components/overview/week-overview";
+import { GentleCard } from "@/components/today/gentle-card";
 import { Button } from "@/components/ui/button";
+import { getProfile } from "@/lib/auth";
+import { feedCopy } from "@/lib/feed-copy";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
 import { getHabitSummaries, getWeekOverview, type HabitSummary } from "@/lib/habits";
 import { getPendingApprovals } from "@/lib/inbox";
 import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
+import { parsePurpose } from "@/lib/profile-schema";
 import { groupForToday } from "@/lib/today";
-import { sectionsForToday } from "@/lib/today-sections";
+import { chooseGentleCard, milestoneToday, recapKey, recapLine, visibleRecaps } from "@/lib/today-cards";
+import { getCelebrations, getDismissedCards, getFamilyRecaps, hasCheckedIn } from "@/lib/today-cards-data";
+import { membersOf, sectionsForToday } from "@/lib/today-sections";
 import { hasWeekData } from "@/lib/week-overview";
 
 export default async function TodayPage({ searchParams }: { searchParams: Promise<{ joined?: string }> }) {
   const { joined } = await searchParams;
-  const [summaries, overview, groups, approvals, children] = await Promise.all([
+  const [summaries, overview, groups, approvals, children, { profile }, celebrations, recaps, dismissed, checkedIn] = await Promise.all([
     getHabitSummaries(),
     getWeekOverview(),
-    joined && isUuid(joined) ? getMyGroups() : Promise.resolve([]),
+    getMyGroups(),
     getPendingApprovals(),
     getMyChildren(),
+    getProfile(),
+    getCelebrations(),
+    getFamilyRecaps(),
+    getDismissedCards(),
+    hasCheckedIn(),
   ]);
   // A section per child: her active habits and this week's stars (both fail soft).
   const kids = await Promise.all(
@@ -32,7 +46,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       return { child, habits: kidHabits.filter((h) => !h.archived_at), stars: rewards?.stars_this_week ?? null };
     }),
   );
-  const joinedGroup = groups.find((g) => g.group_id === joined);
+  const joinedGroup = joined && isUuid(joined) ? groups.find((g) => g.group_id === joined) : undefined;
   const habits = summaries.filter((h) => !h.archived_at);
   const sections = sectionsForToday(habits);
   // A solo user's Today looks as before: the "Mine" heading shows only next to a group section.
@@ -44,6 +58,29 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const tipFor = sections.map((s) => groupForToday(s.habits).todo[0]).find(Boolean)?.habit_id;
   // The first-check-in tip is for people who have never checked in (not for someone on a new device).
   const isNewUser = habits.every((h) => h.done_count === 0 && h.best_streak === 0);
+
+  // Celebration cards (ideas/achievements-and-rewards.md §7), then at most one gentle card.
+  const membersFor = (habitIds: (string | null)[]): CardMember[] => {
+    const seen = new Map<string, CardMember>();
+    for (const id of habitIds) {
+      for (const m of membersOf(summaries.find((h) => h.habit_id === id) ?? { members: null }) ?? []) {
+        if (!seen.has(m.profile_id)) seen.set(m.profile_id, { id: m.profile_id, name: m.name, avatar_emoji: m.avatar_emoji, avatar_color: m.avatar_color });
+      }
+    }
+    return [...seen.values()];
+  };
+  const everyone = celebrations.filter((n) => n.kind === "everyone_done" && !n.seen_at);
+  const everyoneHabits = [...new Map(everyone.map((n) => [n.habit_id ?? n.id, n.habit_title ?? "A habit"])).entries()];
+  const milestones = celebrations.filter((n) => n.kind === "group_milestone" && !n.seen_at);
+  const shownRecaps = visibleRecaps(recaps, dismissed);
+  const purpose = parsePurpose(profile.purpose ?? "");
+  const gentle = chooseGentleCard({
+    purpose: purpose.ok ? purpose.value : null,
+    hasCheckedIn: checkedIn,
+    groups,
+    dismissed,
+    milestoneToday: milestoneToday(celebrations, profile.timezone),
+  });
 
   return (
     <section className="flex flex-col gap-4 py-6">
@@ -64,6 +101,20 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
         </Link>
       )}
+      {everyone.length > 0 && (
+        <EveryoneDidIt
+          ids={everyone.map((n) => n.id)}
+          habits={everyoneHabits.map(([, title]) => title)}
+          members={membersFor(everyoneHabits.map(([id]) => id))}
+        />
+      )}
+      {milestones.map((n) => (
+        <GroupMilestoneCard key={n.id} id={n.id} group={n.group_name ?? "Your group"} text={feedCopy(n).body} members={membersFor([n.habit_id])} />
+      ))}
+      {shownRecaps.map((r) => (
+        <FamilyRecapCard key={recapKey(r)} cardKey={recapKey(r)} group={r.group_name} line={recapLine(r)} />
+      ))}
+      {gentle && <GentleCard key={gentle.key} card={gentle} />}
       {overview && hasWeekData(overview) && <WeekStrip overview={overview} />}
       {habits.length === 0 && kids.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">
