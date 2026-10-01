@@ -684,6 +684,9 @@ isOneToOne: false
               "actor_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_title": string,"id": string,"kind": string,"payload": Json,"read_at": string,"seen_at": string,"subject_avatar_emoji": string,"subject_id": string,"subject_name": string
             }[]
                            },
+"invite_membership":
+{ Args: { "p_token": string }; Returns: string
+                           },
 "invite_preview":
 { Args: { "p_token": string }; Returns: {
               "group_kind": string,"group_name": string,"inviter_name": string,"member_count": number
