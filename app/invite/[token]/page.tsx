@@ -36,6 +36,8 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   const n = preview.member_count;
   const next = `/invite/${token}`;
   const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
+  // Already in the group (an admin opening their own link, a member tapping it again): Open, not Join.
+  // invite_membership answers for the caller only; the anonymous preview never returns the group id.
   const memberOf = claims?.claims ? await currentGroupOf(supabase, token) : null;
 
   return (
@@ -81,16 +83,10 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   );
 }
 
-// Already in the group: the group's id, so the page offers Open instead of Join. invite_preview
-// doesn't return the group, and invite rows are readable by the group's admins only (RLS), so this
-// finds admins (e.g. opening their own link); a plain member still sees Join, which changes nothing
-// for a current member (accept_invite). Confirmed against my_groups.
 async function currentGroupOf(supabase: Awaited<ReturnType<typeof createClient>>, token: string): Promise<string | null> {
-  const [{ data: invite }, { data: mine }] = await Promise.all([
-    supabase.from("group_invites").select("group_id").eq("token", token).maybeSingle(),
-    supabase.rpc("my_groups"),
-  ]);
-  return invite && (mine ?? []).some((g) => g.group_id === invite.group_id) ? invite.group_id : null;
+  const { data, error } = await supabase.rpc("invite_membership", { p_token: token });
+  if (error) console.error("invite_membership failed", error.message);
+  return data ?? null;
 }
 
 function InviteCard({ children }: { children: React.ReactNode }) {

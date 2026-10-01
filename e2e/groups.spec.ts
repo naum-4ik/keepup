@@ -157,9 +157,10 @@ test("someone already using Keepup joins with one tap", async ({ page, browser }
   await friend.getByRole("button", { name: "Join Flatmates" }).click();
   await expect(friend).toHaveURL(/\/today\?joined=/);
   await expect(friend.getByRole("status")).toContainText("You joined Flatmates ✓");
-  // Already in: a second tap on the link opens the group instead of saying "You joined" again.
+  // Already in: the link now offers Open, not Join.
   await friend.goto(url);
-  await friend.getByRole("button", { name: "Join Flatmates" }).click();
+  await expect(friend.getByRole("button", { name: /^Join / })).toHaveCount(0);
+  await friend.getByRole("link", { name: "Open Flatmates" }).click();
   await expect(friend).toHaveURL(/\/groups\/[0-9a-f-]{36}$/);
 });
 
