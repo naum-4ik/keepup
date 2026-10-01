@@ -21,7 +21,6 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
     const supabase = createClient();
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let closed = false;
-    let joins = 0;
     const refreshSoon = () => {
       if (timer.current) window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => router.refresh(), 400);
@@ -38,13 +37,14 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
         .channel(`live:${table}:${filter}`)
         .on("postgres_changes", { event: "*", schema: "public", table, filter }, refreshSoon)
         .on("system", {}, (p: { extension?: string; status?: string }) => {
-          if (!closed && p.extension === "postgres_changes" && p.status === "ok") setReady(true);
+          if (closed || p.extension !== "postgres_changes" || p.status !== "ok") return;
+          setReady(true);
+          // Changes stream from here on. Catch up on what landed before: between the page's render
+          // and this first confirmation, or while a dropped channel rejoined.
+          refreshSoon();
         })
         .subscribe((status) => {
-          if (closed) return;
-          if (status !== "SUBSCRIBED") setReady(false);
-          // A rejoin after a drop: catch up on what changed in between.
-          if (status === "SUBSCRIBED" && ++joins > 1) refreshSoon();
+          if (!closed && status !== "SUBSCRIBED") setReady(false);
         });
     }).catch((e: unknown) => {
       // No live updates this time; the page still works and refreshes on navigation.
