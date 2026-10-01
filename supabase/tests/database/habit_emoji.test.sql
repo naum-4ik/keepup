@@ -24,31 +24,31 @@ select tests.authenticate_as('00000000-0000-0000-0000-0000000000e1');
 
 -- Insert: without an emoji (older clients) the category default is filled in.
 insert into public.habits (title, category, target_count, period) values ('Budget', 'work_money', 1, 'week');
-select is((select emoji from public.habits where title = 'Budget'), '💼', 'an insert without an emoji gets the category default');
+select is((select emoji from public.habits where owner_id = '00000000-0000-0000-0000-0000000000e1' and title = 'Budget'), '💼', 'an insert without an emoji gets the category default');
 insert into public.habits (title, emoji, category, target_count, period) values ('Blank', ' ', 'home', 1, 'day');
-select is((select emoji from public.habits where title = 'Blank'), '🏠', 'a blank emoji also gets the category default');
+select is((select emoji from public.habits where owner_id = '00000000-0000-0000-0000-0000000000e1' and title = 'Blank'), '🏠', 'a blank emoji also gets the category default');
 select lives_ok(
   $$insert into public.habits (title, emoji, category, target_count, period) values ('Paint', '🎨', 'mind', 1, 'day')$$,
   'a client can insert its own emoji');
-select is((select emoji from public.habits where title = 'Paint'), '🎨', 'the chosen emoji is kept');
+select is((select emoji from public.habits where owner_id = '00000000-0000-0000-0000-0000000000e1' and title = 'Paint'), '🎨', 'the chosen emoji is kept');
 
 -- The check constraint and not null.
 select throws_ok(
   $$insert into public.habits (title, emoji, category, target_count, period) values ('Long', repeat('x', 17), 'mind', 1, 'day')$$,
   '23514', null, 'an emoji longer than 16 characters is rejected');
-select throws_ok($$update public.habits set emoji = '' where title = 'Paint'$$,
+select throws_ok($$update public.habits set emoji = '' where owner_id = '00000000-0000-0000-0000-0000000000e1' and title = 'Paint'$$,
   '23514', null, 'the emoji cannot be emptied');
-select throws_ok($$update public.habits set emoji = null where title = 'Paint'$$,
+select throws_ok($$update public.habits set emoji = null where owner_id = '00000000-0000-0000-0000-0000000000e1' and title = 'Paint'$$,
   '23502', null, 'the emoji cannot be removed');
 
 -- Update: the owner can change it; nobody else can.
-select lives_ok($$update public.habits set emoji = '🖌️' where title = 'Paint'$$, 'the owner can change the emoji');
+select lives_ok($$update public.habits set emoji = '🖌️' where owner_id = '00000000-0000-0000-0000-0000000000e1' and title = 'Paint'$$, 'the owner can change the emoji');
 select is((select emoji from public.habit_summaries() where title = 'Paint'), '🖌️', 'summaries return the emoji');
 
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000e2');
-update public.habits set emoji = '💀' where title = 'Paint';
+update public.habits set emoji = '💀' where owner_id = '00000000-0000-0000-0000-0000000000e1' and title = 'Paint';
 reset role;
-select is((select emoji from public.habits where title = 'Paint'), '🖌️', 'another user cannot change the emoji');
+select is((select emoji from public.habits where owner_id = '00000000-0000-0000-0000-0000000000e1' and title = 'Paint'), '🖌️', 'another user cannot change the emoji');
 select is(
   (select emoji from private.subject_summaries('00000000-0000-0000-0000-0000000000e1', now()) where title = 'Budget'),
   '💼', 'the private summaries carry the emoji too');
