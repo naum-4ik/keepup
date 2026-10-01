@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.5.0](https://github.com/naum-4ik/keepup/compare/v0.4.0...v0.5.0) (2026-10-01)
+
+
+### Features
+
+* 7-day habits, and M3 polish from the reviews ([#102](https://github.com/naum-4ik/keepup/issues/102)) ([359884a](https://github.com/naum-4ik/keepup/commit/359884ab214d3060f437e52c01e9d409bc6b0799))
+* **db:** notification prefs, mute and push subscriptions ([#107](https://github.com/naum-4ik/keepup/issues/107)) ([935d1c0](https://github.com/naum-4ik/keepup/commit/935d1c05b79275f1be2286aaa69edfb448e0168a))
+* **db:** offline-safe check-ins (M4 PR 9) ([#117](https://github.com/naum-4ik/keepup/issues/117)) ([dbe664a](https://github.com/naum-4ik/keepup/commit/dbe664a7203f5cc61cbe2abe9bca2d55f5ce142d))
+* **db:** reminder scheduler (M4 PR 6) ([#113](https://github.com/naum-4ik/keepup/issues/113)) ([4ea261f](https://github.com/naum-4ik/keepup/commit/4ea261fc49cbd5d178e7dfa699ee9cab1691f2bc))
+* every tap grows the kid scene, with sounds, wiggles and a dance ([#116](https://github.com/naum-4ik/keepup/issues/116)) ([98c7396](https://github.com/naum-4ik/keepup/commit/98c7396ad10c520f8a2422c3d4241a60bae90089))
+* group pushes and delivery per category (M4 PR 8) ([#115](https://github.com/naum-4ik/keepup/issues/115)) ([a768077](https://github.com/naum-4ik/keepup/commit/a768077b928660eefa04b4fee3add89cd909c148))
+* installable app (manifest) ([#106](https://github.com/naum-4ik/keepup/issues/106)) ([5f3a29f](https://github.com/naum-4ik/keepup/commit/5f3a29f0dca571ea9c84b56f3ecebcda9d292231))
+* notification copy for pushes (M4 PR 3) ([#108](https://github.com/naum-4ik/keepup/issues/108)) ([da6fb81](https://github.com/naum-4ik/keepup/commit/da6fb81f8e6810d6c4875b62cb91fa90a393644d))
+* remind me at… (M4 PR 7) ([#114](https://github.com/naum-4ik/keepup/issues/114)) ([ea810e2](https://github.com/naum-4ik/keepup/commit/ea810e23c40b8e24a94c88099c9417dfcd91215c))
+* service worker and push delivery (M4 PR 4) ([#110](https://github.com/naum-4ik/keepup/issues/110)) ([9034ebb](https://github.com/naum-4ik/keepup/commit/9034ebbf59dea4c43ff1f80d40ae6734be12a863))
+* turn on reminders flow (M4 PR 5) ([#112](https://github.com/naum-4ik/keepup/issues/112)) ([f116f04](https://github.com/naum-4ik/keepup/commit/f116f04dfbc5f3ed4896c190385cb92df73b64a7))
+
+
+### Bug Fixes
+
+* **db:** guard push subscription saves (M4 PR 4a) ([#109](https://github.com/naum-4ik/keepup/issues/109)) ([4460ddc](https://github.com/naum-4ik/keepup/commit/4460ddc366f6b4747a0c29de47a043f7764be262))
+* **db:** hardening from the M3 reviews; Open the group for every member ([#103](https://github.com/naum-4ik/keepup/issues/103)) ([42cd5c0](https://github.com/naum-4ik/keepup/commit/42cd5c053d5e2dc78cd4455ca7c74476b2d9034f))
+* last M3 gaps from the spec audit, and two flaky tests ([#104](https://github.com/naum-4ik/keepup/issues/104)) ([1fe80f0](https://github.com/naum-4ik/keepup/commit/1fe80f0dae66142d64322a4e714dcbd688239269))
+
 ## [0.4.0](https://github.com/naum-4ik/keepup/compare/v0.3.0...v0.4.0) (2026-10-01)
 
 
