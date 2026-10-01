@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { BANNED_WORDS, feedCopy, type FeedItem } from "@/lib/feed-copy";
+import { feedCopy, type FeedItem } from "@/lib/feed-copy";
+import { BANNED_WORDS } from "@/lib/notification-copy";
 
 const item = (o: Partial<FeedItem>): FeedItem => ({
   id: "n", kind: "group_check_in", created_at: "2026-10-05T18:00:00Z", read_at: null, seen_at: null,
@@ -14,6 +15,11 @@ describe("feedCopy", () => {
     expect(feedCopy(item({ kind: "approval_needed", habit_title: "Gym" })).body).toBe("Anna did Gym. Approve?");
     expect(feedCopy(item({ kind: "check_in_rejected", habit_title: "Gym", actor_name: "Dan" }))).toMatchObject({
       title: "Gym", body: "Dan didn't approve your check-in. You can check in again today." });
+    expect(feedCopy(item({ kind: "check_in_rejected", habit_title: "Gym", actor_name: "Dan", payload: { period: "week" } })).body)
+      .toBe("Dan didn't approve your check-in. You can check in again this week.");
+    expect(feedCopy(item({ kind: "group_habit_created", habit_title: "Family dinner", payload: { period: "week", target_count: 1 } })).body)
+      .toBe("Anna added Family dinner, weekly.");
+    expect(feedCopy(item({ kind: "group_habit_created", habit_title: "Family dinner" })).body).toBe("Anna added Family dinner.");
     expect(feedCopy(item({ kind: "group_streak_ended", habit_title: "Family dinner", payload: { streak: 6, period: "week" } })).body)
       .toBe("Family dinner streak ended at 6 weeks. Start a new one this week.");
     expect(feedCopy(item({ kind: "member_joined", actor_name: "Grandma" })).body).toBe("Grandma joined Family 👋");
@@ -32,7 +38,7 @@ describe("feedCopy", () => {
       .toMatchObject({ title: "Mary", body: "Mary reached a goal: Trip to the park 🛝" });
     expect(feedCopy(item({ kind: "kid_garden_full", subject_name: "Mary" })).body).toBe("Mary's garden is in full bloom this week 🌷");
     expect(feedCopy(item({ kind: "kid_streak", subject_name: "Mary", habit_title: "Brush teeth", payload: { streak: 7 } })).body)
-      .toBe("Mary: 7 days of Brush teeth 🔥");
+      .toBe("Mary: 7 days in a row: Brush teeth 🔥");
   });
 
   it("never names anyone in group streak and everyone-done messages", () => {
