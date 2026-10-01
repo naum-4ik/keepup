@@ -103,24 +103,24 @@ select ok((select not push from public.notifications where user_id = '00000000-0
   'paused: the nudge is in the feed without a push');
 select is((select count(*)::int from net.http_request_queue where url = 'http://push.test/send-push'), 1, 'and send-push is not called');
 
--- Devices: one row per endpoint; it follows whoever signed in last.
+-- Devices: one row per endpoint; it follows whoever signed in last on that browser (same keys).
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
-select public.save_push_subscription('https://push.example/abc', 'p256-anna', 'auth-anna', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)');
+select public.save_push_subscription('https://fcm.googleapis.com/fcm/send/abc', 'p256-anna', 'auth-anna', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)');
 reset role;
-select is((select user_id from public.push_subscriptions where endpoint = 'https://push.example/abc'),
+select is((select user_id from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/abc'),
   '00000000-0000-0000-0000-0000000000a1'::uuid, 'Anna saves this phone');
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
-select public.save_push_subscription('https://push.example/abc', 'p256-dan', 'auth-dan', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)');
+select public.save_push_subscription('https://fcm.googleapis.com/fcm/send/abc', 'p256-anna', 'auth-anna', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X)');
 reset role;
-select is((select count(*)::int from public.push_subscriptions where endpoint = 'https://push.example/abc'), 1, 'one row per device');
-select is((select user_id from public.push_subscriptions where endpoint = 'https://push.example/abc'),
+select is((select count(*)::int from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/abc'), 1, 'one row per device');
+select is((select user_id from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/abc'),
   '00000000-0000-0000-0000-0000000000b1'::uuid, 'the device follows whoever signed in last');
 select throws_ok($$select private.save_push_subscription_impl('00000000-0000-0000-0000-0000000000b1', 'http://insecure.example/x', 'p', 'a', null)$$,
   'P0001', 'keepup:invalid_subscription', 'push endpoints are https');
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
-select public.delete_push_subscription('https://push.example/abc');
+select public.delete_push_subscription('https://fcm.googleapis.com/fcm/send/abc');
 reset role;
-select is((select count(*)::int from public.push_subscriptions where endpoint = 'https://push.example/abc'), 1, 'Anna cannot remove Dan''s device');
+select is((select count(*)::int from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/abc'), 1, 'Anna cannot remove Dan''s device');
 
 -- The job send-push reads, and its report back.
 insert into public.push_subscriptions (user_id, endpoint, p256dh, auth)
