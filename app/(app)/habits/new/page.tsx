@@ -1,6 +1,7 @@
 import { HabitForm, type FormGroup } from "@/components/habits/habit-form";
 import { getProfile } from "@/lib/auth";
 import { todayIn } from "@/lib/dates";
+import { isGroupKind } from "@/lib/group-schema";
 import { getGroupDetail, getMyGroups } from "@/lib/groups";
 
 export default async function NewHabitPage({ searchParams }: { searchParams: Promise<{ group?: string }> }) {
@@ -12,6 +13,7 @@ export default async function NewHabitPage({ searchParams }: { searchParams: Pro
       .map(async (g) => ({
         id: g.group_id,
         name: g.name,
+        kind: isGroupKind(g.kind) ? g.kind : "other",
         children: g.child_count > 0 ? ((await getGroupDetail(g.group_id))?.children ?? []) : [],
       })),
   );

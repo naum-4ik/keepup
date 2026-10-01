@@ -279,6 +279,7 @@ test("Together templates show only when adding from a group, and never offer Jus
   // From the group: Together is there and selected; its templates are group-only.
   await page.goto(`/habits/new?group=${groupId}`);
   await expect(page.getByRole("tab", { name: "Together" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("button", { name: /Date night/ })).toHaveCount(0); // for a couple group only
   await page.getByRole("button", { name: /Family dinner/ }).click();
   await expect(dialog.getByRole("radio", { name: "Just me" })).toHaveCount(0);
   await expect(dialog.getByRole("radio", { name: "Levi family" })).toBeChecked();
@@ -293,6 +294,12 @@ test("Together templates show only when adding from a group, and never offer Jus
   await page.getByRole("button", { name: /Drink water/ }).click();
   await expect(dialog.getByRole("radio", { name: "Just me" })).toBeVisible();
   await expect(dialog.getByRole("radio", { name: "Levi family" })).toBeChecked();
+  await page.keyboard.press("Escape");
+
+  // A couple group's Together tab offers Date night.
+  await createGroup(page, "Us two", "Couple");
+  await page.goto(`/habits/new?group=${page.url().match(/\/groups\/([0-9a-f-]{36})/)![1]}`);
+  await expect(page.getByRole("button", { name: /Date night/ })).toBeVisible();
 });
 
 test("approval: check-ins wait, each approves the other in the Inbox, both see Everyone did it", async ({ page, browser }) => {
