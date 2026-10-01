@@ -157,8 +157,26 @@ test("someone already using Keepup joins with one tap", async ({ page, browser }
   await friend.getByRole("button", { name: "Join Flatmates" }).click();
   await expect(friend).toHaveURL(/\/today\?joined=/);
   await expect(friend.getByRole("status")).toContainText("You joined Flatmates ✓");
-  // Already in: a second tap on the link opens the group instead of saying "You joined" again.
+  // Already in: the link now offers Open, not Join.
   await friend.goto(url);
+  await expect(friend.getByRole("button", { name: /^Join / })).toHaveCount(0);
+  await friend.getByRole("link", { name: "Open Flatmates" }).click();
+  await expect(friend).toHaveURL(/\/groups\/[0-9a-f-]{36}$/);
+});
+
+test("Join on a page loaded before joining opens the group", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Flatmates", "Roommates");
+  const url = await inviteLink(page);
+  const context = await browser.newContext();
+  const friend = await context.newPage();
+  await signUpAndOnboard(friend);
+  await friend.goto(url);
+  const otherTab = await context.newPage();
+  await otherTab.goto(url);
+  await otherTab.getByRole("button", { name: "Join Flatmates" }).click();
+  await expect(otherTab).toHaveURL(/\/today\?joined=/);
+  // The first tab still shows Join; tapping it now opens the group instead of "You joined".
   await friend.getByRole("button", { name: "Join Flatmates" }).click();
   await expect(friend).toHaveURL(/\/groups\/[0-9a-f-]{36}$/);
 });

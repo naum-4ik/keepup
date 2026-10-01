@@ -25,13 +25,13 @@ select is((select count(*)::int from public.notifications where user_id = '00000
 select private.check_in_impl((select v from t where k = 'dinner'), '00000000-0000-0000-0000-0000000000a1', now());
 select is((select count(*)::int from public.notifications where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'group_check_in'),
   1, 'Dan sees Anna''s check-in');
-select is((select count(*)::int from public.notifications where kind = 'everyone_done'), 0, 'not everyone yet');
+select is((select count(*)::int from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1') and kind = 'everyone_done'), 0, 'not everyone yet');
 select private.check_in_impl((select v from t where k = 'dinner'), '00000000-0000-0000-0000-0000000000b1', now());
-select is((select count(*)::int from public.notifications where kind = 'everyone_done'), 2, 'the last check-in tells each member once');
+select is((select count(*)::int from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1') and kind = 'everyone_done'), 2, 'the last check-in tells each member once');
 select private.undo_check_in_impl((select id from public.check_ins where user_id = '00000000-0000-0000-0000-0000000000b1'), '00000000-0000-0000-0000-0000000000b1', now());
 select private.check_in_impl((select v from t where k = 'dinner'), '00000000-0000-0000-0000-0000000000b1', now());
-select is((select count(*)::int from public.notifications where kind = 'everyone_done'), 2, 'undo and redo do not repeat it');
-select ok(not exists (select 1 from public.notifications where kind = 'everyone_done' and payload::text ~* '(anna|dan)'),
+select is((select count(*)::int from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1') and kind = 'everyone_done'), 2, 'undo and redo do not repeat it');
+select ok(not exists (select 1 from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1') and kind = 'everyone_done' and payload::text ~* '(anna|dan)'),
   'group messages never name anyone');
 
 -- #2, #4, #5: approvals
@@ -56,7 +56,7 @@ select throws_ok($$select private.nudge_impl('00000000-0000-0000-0000-0000000000
   'P0001', 'keepup:already_nudged', 'one nudge per person, habit and day');
 select throws_ok($$select private.nudge_impl('00000000-0000-0000-0000-0000000000b1', (select v from t where k = 'dinner'), '00000000-0000-0000-0000-0000000000a1', 'thinking_of_you', now())$$,
   'P0001', 'keepup:cannot_nudge', 'no nudging someone who already checked in today');
-select is((select payload ->> 'kind' from public.notifications where kind = 'nudge'), 'you_got_this', 'the recipient gets the preset');
+select is((select payload ->> 'kind' from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1') and kind = 'nudge'), 'you_got_this', 'the recipient gets the preset');
 
 -- Cheers
 select throws_ok($$select private.cheer_impl('00000000-0000-0000-0000-0000000000a1', (select id from public.check_ins where habit_id = (select v from t where k = 'dinner') and user_id = '00000000-0000-0000-0000-0000000000a1'))$$,
@@ -65,11 +65,11 @@ select lives_ok($$select private.cheer_impl('00000000-0000-0000-0000-0000000000b
   'Dan cheers Anna');
 select lives_ok($$select private.cheer_impl('00000000-0000-0000-0000-0000000000b1', (select id from public.check_ins where habit_id = (select v from t where k = 'dinner') and user_id = '00000000-0000-0000-0000-0000000000a1'))$$,
   'cheering twice is harmless');
-select is((select count(*)::int from public.notifications where kind = 'cheer'), 1, 'and Anna hears it once');
+select is((select count(*)::int from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1') and kind = 'cheer'), 1, 'and Anna hears it once');
 
-delete from public.notifications where kind = 'cheer';
+delete from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1') and kind = 'cheer';
 select private.cheer_impl('00000000-0000-0000-0000-0000000000b1', (select id from public.check_ins where habit_id = (select v from t where k = 'dinner') and user_id = '00000000-0000-0000-0000-0000000000a1'));
-select is((select count(*)::int from public.notifications where kind = 'cheer'), 0, 'a repeat cheer after the feed purge does not notify again');
+select is((select count(*)::int from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1') and kind = 'cheer'), 0, 'a repeat cheer after the feed purge does not notify again');
 
 -- Pending approvals: the other member sees it; the author, an outsider and a closed window do not
 select private.check_in_impl('00000000-0000-0000-0000-0000000000d9', '00000000-0000-0000-0000-0000000000b1', now());
@@ -92,13 +92,13 @@ set local session_replication_role = origin;
 insert into public.period_results (habit_id, period_start, outcome) values
   ('00000000-0000-0000-0000-0000000000d9', current_date - 4, 'skipped'),
   ('00000000-0000-0000-0000-0000000000d9', current_date - 3, 'done');
-select is((select count(*)::int from public.notifications where kind = 'group_milestone'), 0,
+select is((select count(*)::int from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1') and kind = 'group_milestone'), 0,
   'a 3-day run (a paused day passed over) is not on the milestone schedule');
 insert into public.period_results (habit_id, period_start, outcome) values ('00000000-0000-0000-0000-0000000000d9', current_date - 2, 'missed');
-select is((select (payload ->> 'streak')::int from public.notifications where kind = 'group_streak_ended' and user_id = '00000000-0000-0000-0000-0000000000b1'),
+select is((select (payload ->> 'streak')::int from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1') and kind = 'group_streak_ended' and user_id = '00000000-0000-0000-0000-0000000000b1'),
   3, 'a missed day ends the group streak and says how long it was, without names');
 insert into public.period_results (habit_id, period_start, outcome) values ((select v from t where k = 'dinner'), current_date - 1, 'done');
-select is((select (payload ->> 'streak')::int from public.notifications where kind = 'group_milestone' and habit_id = (select v from t where k = 'dinner') limit 1),
+select is((select (payload ->> 'streak')::int from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1') and kind = 'group_milestone' and habit_id = (select v from t where k = 'dinner') limit 1),
   1, 'the first done period is milestone 1 (first day together)');
 
 -- RLS and read state
@@ -110,8 +110,8 @@ select is((select count(*) from public.inbox_feed(200)), (select count(*) from p
 select is((select actor_name || ' / ' || group_name || ' / ' || habit_title from public.inbox_feed(200) where kind = 'group_check_in' limit 1),
   'Anna / Family / Family dinner', 'names, group and habit are joined in');
 select ok((select count(*) from public.inbox_feed(null)) > 0, 'a null limit falls back to the default');
-select is(public.mark_feed_seen(array(select id from public.notifications where kind = 'everyone_done')), 1, 'marking a celebration seen');
-select is(public.mark_feed_seen(array(select id from public.notifications where kind = 'everyone_done')), 0, 'only once');
+select is(public.mark_feed_seen(array(select id from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1') and kind = 'everyone_done')), 1, 'marking a celebration seen');
+select is(public.mark_feed_seen(array(select id from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1') and kind = 'everyone_done')), 0, 'only once');
 select ok(public.mark_feed_read() > 0, 'marking all read');
 select is((select count(*)::int from public.notifications where read_at is null), 0, 'leaves nothing unread');
 reset role;
@@ -131,11 +131,11 @@ select is((select count(*)::int from public.notifications where user_id = '00000
 insert into t select 'kid', private.create_child_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'fam'), 'Mia', '🦊', 'peach', true);
 insert into t select 'kidhabit', (private.create_child_habit_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'kid'), 'Brush teeth', '🪥', 1, 'day', null)).id;
 select private.check_in_impl((select v from t where k = 'kidhabit'), '00000000-0000-0000-0000-0000000000a1', now(), (select v from t where k = 'kid'));
-select is((select count(*)::int from public.notifications where kind = 'kid_check_in' and user_id = '00000000-0000-0000-0000-0000000000b1'),
+select is((select count(*)::int from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1') and kind = 'kid_check_in' and user_id = '00000000-0000-0000-0000-0000000000b1'),
   1, 'the other adult sees the kid check-in, feed only');
 select lives_ok($$select private.delete_group_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'fam'), true)$$,
   'deleting a group with habits, pauses, check-ins, a child and members succeeds');
-select is((select count(*)::int from public.notifications), 0, 'and takes its feed with it');
+select is((select count(*)::int from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1')), 0, 'and takes its feed with it');
 
 select * from finish();
 rollback;

@@ -28,8 +28,8 @@ end $$;
 select ok((select reached_at is null from public.treat_goals where id = (select v from t where k = 'goal')), 'four of five stars: not reached');
 select private.check_in_impl((select v from t where k = 'water'), '00000000-0000-0000-0000-0000000000a1', now(), (select v from t where k = 'mary'), true);
 select ok((select reached_at is not null from public.treat_goals where id = (select v from t where k = 'goal')), 'the fifth star reaches the goal');
-select is((select count(*)::int from public.notifications where kind = 'kid_goal_reached'), 2, 'both adults hear it');
-select is((select payload ->> 'title' from public.notifications where kind = 'kid_goal_reached' limit 1), 'Trip to the park', 'with the treat''s title');
+select is((select count(*)::int from public.notifications where group_id = (select v from t where k = 'fam') and kind = 'kid_goal_reached'), 2, 'both adults hear it');
+select is((select payload ->> 'title' from public.notifications where group_id = (select v from t where k = 'fam') and kind = 'kid_goal_reached' limit 1), 'Trip to the park', 'with the treat''s title');
 select lives_ok($$select private.mark_treat_received_impl('00000000-0000-0000-0000-0000000000b1', (select v from t where k = 'goal'))$$, 'a parent marks it received');
 
 -- Full garden: once per week at 18
@@ -39,9 +39,9 @@ begin
     perform private.check_in_impl((select v from t where k = 'water'), '00000000-0000-0000-0000-0000000000a1', now(), (select v from t where k = 'mary'));
   end loop;
 end $$;
-select is((select count(*)::int from public.notifications where kind = 'kid_garden_full'), 2, '18 stars fill the garden and both adults hear it');
+select is((select count(*)::int from public.notifications where group_id = (select v from t where k = 'fam') and kind = 'kid_garden_full'), 2, '18 stars fill the garden and both adults hear it');
 select private.check_in_impl((select v from t where k = 'water'), '00000000-0000-0000-0000-0000000000a1', now(), (select v from t where k = 'mary'));
-select is((select count(*)::int from public.notifications where kind = 'kid_garden_full'), 2, 'the 19th star does not repeat it');
+select is((select count(*)::int from public.notifications where group_id = (select v from t where k = 'fam') and kind = 'kid_garden_full'), 2, 'the 19th star does not repeat it');
 
 -- The rewards summary
 select is((private.child_rewards_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'mary'), now()) ->> 'stars_this_week')::int,
