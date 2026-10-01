@@ -25,6 +25,8 @@ writeFileSync(
     `NEXT_PUBLIC_SUPABASE_URL=${url}`,
     `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${key}`,
     "NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=false",
+    // The public test key from the web-push docs: local and CI only, never used to send.
+    "NEXT_PUBLIC_VAPID_PUBLIC_KEY=BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U",
     "",
   ].join("\n"),
 );
