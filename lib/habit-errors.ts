@@ -51,6 +51,7 @@ const MESSAGES: Record<string, string> = {
   invalid_category: "That setting isn't available.",
   invalid_choice: "Pick one of the options.",
   invalid_subscription: "This device couldn't be set up for notifications.",
+  invalid_time: "Pick a time on the quarter hour.",
 };
 
 // The rule name a database function raised ("keepup:<code>"), if any.
