@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Keepup",
   description: "Habits, together.",
+  applicationName: "Keepup",
+  // iPhone "Add to Home Screen": full screen, named Keepup (the icon is app/apple-icon.png).
+  appleWebApp: { capable: true, title: "Keepup", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

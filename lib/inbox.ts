@@ -1,7 +1,7 @@
 import "server-only";
 import { requireUser } from "@/lib/auth";
 import type { Database } from "@/lib/database.types";
-import type { FeedItem } from "@/lib/feed-copy";
+import { FEED_KINDS, isFeedKind, type FeedItem } from "@/lib/feed-copy";
 
 export type PendingApproval = Database["public"]["Functions"]["pending_approvals"]["Returns"][number];
 
@@ -14,7 +14,9 @@ export async function getFeed(): Promise<FeedItem[]> {
     console.error("inbox_feed failed", error.message);
     return [];
   }
-  return (data ?? []).map((row) => ({ ...row, payload: (row.payload ?? {}) as Record<string, unknown> }) as FeedItem);
+  return (data ?? [])
+    .filter((row) => isFeedKind(row.kind))
+    .map((row) => ({ ...row, payload: (row.payload ?? {}) as Record<string, unknown> }) as FeedItem);
 }
 
 export async function getPendingApprovals(): Promise<PendingApproval[]> {
@@ -30,7 +32,11 @@ export async function getPendingApprovals(): Promise<PendingApproval[]> {
 // RLS: a user reads only their own notifications.
 export async function getUnreadCount(): Promise<number> {
   const { supabase } = await requireUser();
-  const { count, error } = await supabase.from("notifications").select("id", { count: "exact", head: true }).is("read_at", null);
+  const { count, error } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .is("read_at", null)
+    .in("kind", [...FEED_KINDS]);
   if (error) {
     console.error("unread count failed", error.message);
     return 0;

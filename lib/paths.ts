@@ -1,4 +1,5 @@
-const PUBLIC_EXACT = new Set(["/"]);
+// The manifest is fetched without cookies, so it must never redirect to /login.
+const PUBLIC_EXACT = new Set(["/", "/manifest.webmanifest"]);
 const PUBLIC_PREFIXES = ["/login", "/signup", "/auth", "/whats-new", "/invite"];
 
 export function isPublicPath(pathname: string): boolean {

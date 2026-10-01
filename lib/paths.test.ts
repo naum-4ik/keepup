@@ -6,6 +6,10 @@ describe("isPublicPath", () => {
     expect(isPublicPath(p)).toBe(true);
   });
 
+  it("serves the manifest to signed-out browsers (they fetch it without cookies)", () => {
+    expect(isPublicPath("/manifest.webmanifest")).toBe(true);
+  });
+
   it("treats invite landings as public", () => {
     expect(isPublicPath("/invite/abc")).toBe(true);
   });

@@ -9,11 +9,19 @@ export type FeedItem = Omit<FeedRow, "payload" | "kind" | Nullable> & { [K in Nu
   kind: Kind;
   payload: Record<string, unknown>;
 };
-type Kind =
-  | "group_check_in" | "approval_needed" | "check_in_approved" | "check_in_rejected" | "everyone_done"
-  | "group_streak_ended" | "group_milestone" | "group_habit_created" | "group_habit_paused" | "group_habit_resumed"
-  | "group_habit_archived" | "member_paused" | "member_joined" | "member_left" | "role_changed" | "nudge" | "cheer"
-  | "kid_check_in" | "kid_streak" | "kid_goal_reached" | "kid_garden_full";
+// Every kind this app has a line for. The database ships first (deploy order), so the feed can hold
+// kinds a slightly older app doesn't know yet; the Inbox and the bell skip those instead of crashing.
+export const FEED_KINDS = [
+  "group_check_in", "approval_needed", "check_in_approved", "check_in_rejected", "everyone_done",
+  "group_streak_ended", "group_milestone", "group_habit_created", "group_habit_paused", "group_habit_resumed",
+  "group_habit_archived", "member_paused", "member_joined", "member_left", "role_changed", "nudge", "cheer",
+  "kid_check_in", "kid_streak", "kid_goal_reached", "kid_garden_full",
+] as const;
+type Kind = (typeof FEED_KINDS)[number];
+
+export function isFeedKind(kind: string): kind is Kind {
+  return (FEED_KINDS as readonly string[]).includes(kind);
+}
 
 // ideas/notifications-tone.md → "Words to avoid anywhere".
 export const BANNED_WORDS = ["failed", "missed out", "don't lose", "hurry", "last chance", "only x left", "lazy"] as const;
