@@ -10,6 +10,9 @@ export type AcceptInviteState = { message: string } | null;
 export async function acceptInvite(token: string): Promise<AcceptInviteState> {
   const { supabase, profile } = await getProfile();
   const { data: groupId, error } = await supabase.rpc("accept_invite", { p_token: token });
+  // Expired or revoked since the page loaded: back to the page, which now shows its "doesn't work
+  // anymore" card instead of an inline error.
+  if (error?.message?.includes("keepup:invite_invalid")) redirect(`/invite/${encodeURIComponent(token)}`);
   if (error || !groupId) return { message: habitErrorMessage(error) };
   // New people finish onboarding first; the group rides along in the URL.
   redirect(profile.onboarded_at ? `/today?joined=${groupId}` : `/onboarding?joined=${groupId}`);

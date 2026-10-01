@@ -139,6 +139,31 @@ test("someone already using Keepup joins with one tap", async ({ page, browser }
   await expect(friend.getByRole("status")).toContainText("You joined Flatmates ✓");
 });
 
+test("an admin opening their own link sees Open, not Join", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const groupUrl = page.url();
+  const url = await inviteLink(page);
+  await page.goto(url);
+  await expect(page.getByRole("button", { name: /^Join / })).toHaveCount(0);
+  await page.getByRole("link", { name: "Open Family" }).click();
+  await expect(page).toHaveURL(groupUrl);
+});
+
+test("a link turned off between the preview and the tap explains itself", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Flatmates", "Roommates");
+  const url = await inviteLink(page);
+  const friend = await (await browser.newContext()).newPage();
+  await signUpAndOnboard(friend);
+  await friend.goto(url);
+  await page.getByRole("button", { name: "Turn off link" }).click();
+  await expect(page.getByRole("button", { name: "Create invite link" })).toBeVisible();
+  await friend.getByRole("button", { name: "Join Flatmates" }).click();
+  await expect(friend.getByRole("heading", { name: "This invite link doesn't work anymore" })).toBeVisible();
+  await expect(friend.getByRole("alert")).toHaveCount(0);
+});
+
 test("an expired or revoked link explains itself", async ({ page }) => {
   await page.goto("/invite/not-a-real-token-at-all-xx");
   await expect(page.getByRole("heading", { name: "This invite link doesn't work anymore" })).toBeVisible();
