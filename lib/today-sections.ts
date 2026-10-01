@@ -27,6 +27,12 @@ export function memberStatus(m: Member, target: number): MemberStatus {
 export const membersOf = (h: Pick<HabitSummary, "members">): Member[] | null =>
   Array.isArray(h.members) ? (h.members as unknown as Member[]) : null;
 
+// "Me + Mary" (ideas/kids-and-groups.md §5): children in this group habit who still have it open.
+export const openChildrenOf = (h: Pick<HabitSummary, "members" | "target_count">): { id: string; name: string }[] =>
+  (membersOf(h) ?? [])
+    .filter((m) => m.kind === "child" && memberStatus(m, h.target_count) === "open")
+    .map((m) => ({ id: m.profile_id, name: m.name }));
+
 // "Everyone did it ✓" on a group habit: the group's period is done, and so am I (or I'm paused).
 // Someone who joined mid-period isn't required yet, so the group can be done while their own
 // check-in is still open; they see their own progress instead.

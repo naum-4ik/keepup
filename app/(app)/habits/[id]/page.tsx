@@ -25,7 +25,7 @@ import { EndControl } from "@/components/habits/end-control";
 import { endLabel, endProgress, hasEnded } from "@/lib/habit-end";
 import { formatLocalDate } from "@/lib/dates";
 import { describeProgress, describeSchedule } from "@/lib/schedule";
-import { everyoneDidIt, memberStatus, membersOf } from "@/lib/today-sections";
+import { everyoneDidIt, memberStatus, membersOf, openChildrenOf } from "@/lib/today-sections";
 import { stateOf } from "@/lib/today";
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
@@ -164,6 +164,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
               title={h.title}
               multi={h.target_count > 1}
               state={stateOf(h)}
+              withChildren={openChildrenOf(h)}
             />
           </div>
           <CheckInList habitId={h.habit_id} checkIns={checkIns} timeZone={profile.timezone} period={h.period} />
