@@ -4,6 +4,7 @@ import { PenLine } from "lucide-react";
 import { useActionState, useState, useTransition } from "react";
 import { cancelGoal, markReceived, setGoal, type KidFormState } from "@/app/(app)/kids/actions";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GOAL_DEFAULT_EMOJI, GOAL_DEFAULT_TARGET, GOAL_TITLE_MAX } from "@/lib/kid-schema";
@@ -28,6 +29,7 @@ export function TreatGoal({ childId, childName, goal }: { childId: string; child
 function ActiveGoal({ childId, childName, goal }: { childId: string; childName: string; goal: Goal }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const reached = goal.reached_at !== null;
   const stars = reached ? goal.target : Math.min(goal.stars, goal.target);
   const run = (fn: () => Promise<{ ok: boolean; message?: string }>) =>
@@ -67,15 +69,51 @@ function ActiveGoal({ childId, childName, goal }: { childId: string; childName: 
       ) : (
         <p className="text-sm text-muted-foreground">⭐ {stars} of {goal.target}</p>
       )}
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {error && !confirming && <p role="alert" className="text-sm text-destructive">{error}</p>}
       <button
         type="button"
         disabled={pending}
-        onClick={() => run(() => cancelGoal(goal.id, childId))}
+        onClick={() => {
+          setError(null);
+          setConfirming(true);
+        }}
         className="h-11 w-fit rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
       >
         Cancel goal
       </button>
+
+      {/* Like the other destructive actions: an in-app confirm with the error inline. */}
+      <Dialog open={confirming} onOpenChange={(next) => !pending && setConfirming(next)}>
+        <DialogContent>
+          <div className="flex flex-col gap-1 pr-10">
+            <DialogTitle>Cancel the goal?</DialogTitle>
+            <DialogDescription>
+              {goal.title} goes away with its star path. A new goal counts from zero; {childName}&apos;s garden keeps its stars.
+            </DialogDescription>
+          </div>
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => setConfirming(false)}>
+              Keep goal
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="h-11 flex-1"
+              disabled={pending}
+              onClick={() =>
+                startTransition(async () => {
+                  const r = await cancelGoal(goal.id, childId);
+                  setError(r.ok ? null : (r.message ?? null));
+                  if (r.ok) setConfirming(false);
+                })
+              }
+            >
+              {pending ? "Cancelling…" : "Cancel goal"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

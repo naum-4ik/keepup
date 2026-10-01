@@ -210,6 +210,16 @@ test("a treat goal of our own, with another star count", async ({ page }) => {
   await goal.getByRole("button", { name: "Set goal" }).click();
   await expect(goal).toContainText("Trip to the aquarium");
   await expect(goal).toContainText("⭐ 0 of 15");
+
+  // Cancel asks first; Keep goal leaves it.
+  await goal.getByRole("button", { name: "Cancel goal" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("Cancel the goal?");
+  await dialog.getByRole("button", { name: "Keep goal" }).click();
+  await expect(goal).toContainText("Trip to the aquarium");
+  await goal.getByRole("button", { name: "Cancel goal" }).click();
+  await dialog.getByRole("button", { name: "Cancel goal" }).click();
+  await expect(goal.getByRole("button", { name: "Set a goal" })).toBeVisible();
 });
 
 test("choose what grows with the child: the kid page and the kid view switch theme", async ({ page }) => {

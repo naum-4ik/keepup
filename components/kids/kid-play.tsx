@@ -30,7 +30,11 @@ export function KidPlay({
   // Last week's stars, when it had any: the new-week card shows that picture going to the album.
   lastStars?: number;
 }) {
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
+  // Only the tapped habit waits for its save; the others stay tappable. The ref guards a quick
+  // second tap on the same one before React re-renders it disabled.
+  const [saving, setSaving] = useState<ReadonlySet<string>>(() => new Set());
+  const inFlight = useRef(new Set<string>());
   const [view, tap] = useOptimistic({ habits, stars }, (s, habitId: string) => ({
     stars: s.stars + 1,
     habits: s.habits.map((h) => {
@@ -83,16 +87,25 @@ export function KidPlay({
             <li key={h.id}>
               <button
                 type="button"
-                disabled={done || pending}
+                disabled={done || saving.has(h.id)}
+                aria-busy={saving.has(h.id) || undefined}
                 onClick={(e) => {
+                  if (inFlight.current.has(h.id)) return;
+                  inFlight.current.add(h.id);
+                  setSaving(new Set(inFlight.current));
                   const el = e.currentTarget;
                   setError(null);
                   startTransition(async () => {
                     tap(h.id);
                     fly(el);
                     if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
-                    const r = await checkInFor(h.id, child.id, true);
-                    if (!r.ok) setError(r.message);
+                    try {
+                      const r = await checkInFor(h.id, child.id, true);
+                      if (!r.ok) setError(r.message);
+                    } finally {
+                      inFlight.current.delete(h.id);
+                      setSaving(new Set(inFlight.current));
+                    }
                   });
                 }}
                 className={cn(

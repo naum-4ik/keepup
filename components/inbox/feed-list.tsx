@@ -32,8 +32,17 @@ export function FeedList({ items, timeZone, now }: { items: FeedItem[]; timeZone
           <ul className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-soft">
             {rows.map((n) => {
               const { title, body, href } = feedCopy(n);
+              // Unread: a dot and words, not just the tint (docs/design.md: colour is never the only signal).
               const inner = (
                 <>
+                  <span className="mt-1.5 flex w-2 shrink-0">
+                    {!n.read_at && (
+                      <>
+                        <span aria-hidden className="size-2 rounded-full bg-primary" />
+                        <span className="sr-only">Unread: </span>
+                      </>
+                    )}
+                  </span>
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-xs font-semibold text-muted-foreground">{title}</span>
                     <span className="text-sm">{body}</span>

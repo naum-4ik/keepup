@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Ellipsis } from "lucide-react";
 import { removeMember, setMemberRole, type GroupActionState } from "@/app/(app)/groups/actions";
 import { Avatar } from "@/components/avatar";
@@ -27,6 +27,27 @@ export function MemberRow({
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const menuRef = useRef<HTMLDetailsElement>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // A <details> menu doesn't close by itself: Escape (focus back on its button) or a tap outside does.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const menu = menuRef.current;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || !menu) return;
+      menu.open = false;
+      menu.querySelector("summary")?.focus();
+    };
+    const onDown = (e: PointerEvent) => {
+      if (menu && !menu.contains(e.target as Node)) menu.open = false;
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onDown);
+    };
+  }, [menuOpen]);
 
   const run = (call: () => Promise<GroupActionState>, after?: () => void) =>
     startTransition(async () => {
@@ -49,7 +70,7 @@ export function MemberRow({
           </span>
         )}
         {canManage && (
-          <details ref={menuRef} className="relative">
+          <details ref={menuRef} onToggle={(e) => setMenuOpen(e.currentTarget.open)} className="relative">
             <summary
               aria-label={`Options for ${member.name}`}
               className="flex size-11 list-none items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground [&::-webkit-details-marker]:hidden"

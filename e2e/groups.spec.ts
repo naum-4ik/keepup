@@ -98,6 +98,26 @@ test("a group gets an avatar on creation, admins change it, members only see it"
   await guestContext.close();
 });
 
+test("the member menu closes on Escape and on a tap outside", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const url = await inviteLink(page);
+  const guest = await (await browser.newContext()).newPage();
+  await joinByLink(guest, url, "Dan");
+  await page.reload();
+  const summary = page.getByLabel("Options for Dan");
+  const makeAdmin = page.getByRole("button", { name: "Make admin" });
+  await summary.click();
+  await expect(makeAdmin).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(makeAdmin).toBeHidden();
+  await expect(summary).toBeFocused();
+  await summary.click();
+  await expect(makeAdmin).toBeVisible();
+  await page.getByRole("heading", { name: "Family" }).click();
+  await expect(makeAdmin).toBeHidden();
+});
+
 test("an invited person joins from the link and lands on the group's habits", async ({ page, browser }) => {
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
@@ -306,8 +326,18 @@ test("nudge a member with a preset, and they see it in their Inbox", async ({ pa
   await guest.getByRole("menuitem", { name: "💪 You've got this" }).click();
   await expect(guest.getByRole("button", { name: "Nudged ✓" })).toBeDisabled();
   await page.goto("/inbox");
-  await page.getByRole("tab", { name: "Activity" }).click();
+  // Tabs by keyboard: only the selected tab is in the Tab order; the arrows move and select.
+  await expect(page.getByRole("tab", { name: "Activity" })).toHaveAttribute("tabindex", "0");
+  await expect(page.getByRole("tab", { name: /^Approvals/ })).toHaveAttribute("tabindex", "-1");
+  await page.getByRole("tab", { name: "Activity" }).focus();
+  await page.keyboard.press("Home");
+  await expect(page.getByRole("tab", { name: /^Approvals/ })).toBeFocused();
+  await expect(page.getByRole("tab", { name: /^Approvals/ })).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("tab", { name: "Activity" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByText(/You've got this: Walk/)).toBeVisible();
+  // Unread says so in words, not only with a tint (read within MarkReadOnView's 1.5 s).
+  await expect(page.getByRole("listitem").filter({ hasText: /You've got this: Walk/ })).toContainText("Unread");
   // After a moment on Activity, the rows shown count as read and the badge clears.
   await expect(page.getByRole("link", { name: "Inbox", exact: true })).toBeVisible();
 });
