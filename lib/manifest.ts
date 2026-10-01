@@ -7,7 +7,7 @@ export function webManifest(): MetadataRoute.Manifest {
     name: "Keepup",
     short_name: "Keepup",
     description: "Habits, together.",
-    id: "/today",
+    id: "/",
     start_url: "/today",
     scope: "/",
     display: "standalone",

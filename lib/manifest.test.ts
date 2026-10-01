@@ -5,7 +5,7 @@ describe("web app manifest", () => {
   const m = webManifest();
 
   it("opens full screen as Keepup on Today", () => {
-    expect(m).toMatchObject({ name: "Keepup", short_name: "Keepup", display: "standalone", start_url: "/today", scope: "/" });
+    expect(m).toMatchObject({ name: "Keepup", short_name: "Keepup", display: "standalone", start_url: "/today", scope: "/", id: "/" });
   });
 
   it("uses the app-icon colours (ideas/app-icon.md)", () => {
