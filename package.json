@@ -12,6 +12,7 @@
     "db:test": "supabase test db",
     "db:types": "supabase gen types typescript --local > lib/database.types.ts",
     "e2e": "playwright test",
+    "test:functions": "deno test --no-lock --node-modules-dir=none supabase/functions && deno check --no-lock --node-modules-dir=none supabase/functions/send-push/index.ts",
     "readme:screenshots": "playwright test -c playwright.readme.config.ts && sips -Z 1300 docs/screenshots/*.png >/dev/null"
   },
   "dependencies": {

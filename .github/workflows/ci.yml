@@ -28,6 +28,18 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+  functions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      # --no-lock: no deno.lock in the repo. --node-modules-dir=none: the root package.json would
+      # otherwise make Deno look for npm: packages in node_modules, which this job doesn't install.
+      - run: deno test --no-lock --node-modules-dir=none supabase/functions
+      - run: deno check --no-lock --node-modules-dir=none supabase/functions/send-push/index.ts
   integration:
     runs-on: ubuntu-latest
     timeout-minutes: 20

@@ -33,6 +33,7 @@ files="$(git diff --name-only --no-renames "$base" HEAD)" || build "git diff fai
 while IFS= read -r f; do
   case "$f" in
     CHANGELOG.md | */CHANGELOG.md) build "$f is app-relevant" ;;
+    supabase/functions/_shared/*) build "$f is shared with the app" ;;
     supabase/* | .github/* | docs/* | *.md | scripts/backup-* | e2e/*) ;;
     *) build "$f is app-relevant" ;;
   esac

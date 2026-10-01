@@ -1,6 +1,8 @@
 // The manifest is fetched without cookies, so it must never redirect to /login.
-const PUBLIC_EXACT = new Set(["/", "/manifest.webmanifest"]);
-const PUBLIC_PREFIXES = ["/login", "/signup", "/auth", "/whats-new", "/invite"];
+const PUBLIC_EXACT = new Set(["/", "/manifest.webmanifest", "/sw.js"]);
+// /api routes check the session themselves and answer 401 JSON (a redirect to the login page would
+// look like success to a fetch from the service worker).
+const PUBLIC_PREFIXES = ["/login", "/signup", "/auth", "/whats-new", "/invite", "/api"];
 
 export function isPublicPath(pathname: string): boolean {
   if (PUBLIC_EXACT.has(pathname)) return true;
