@@ -1,5 +1,60 @@
 # Changelog
 
+## [0.4.0](https://github.com/naum-4ik/keepup/compare/v0.3.0...v0.4.0) (2026-10-01)
+
+
+### Features
+
+* a fuller kid scene and a clear tap target ([#96](https://github.com/naum-4ik/keepup/issues/96)) ([eb68251](https://github.com/naum-4ik/keepup/commit/eb6825123afe54fb6bc5850167e9f14dd67a0d12))
+* a shorter Add a child form ([#95](https://github.com/naum-4ik/keepup/issues/95)) ([1a8b571](https://github.com/naum-4ik/keepup/commit/1a8b57135fc3edcf1b3f83e17335b2d222de3694))
+* a Today card that shows how the day is going ([#76](https://github.com/naum-4ik/keepup/issues/76)) ([d0559f6](https://github.com/naum-4ik/keepup/commit/d0559f682283389c6646827442e8458580be51c9))
+* app icon and Create account on the landing page ([#64](https://github.com/naum-4ik/keepup/issues/64)) ([cfb21a3](https://github.com/naum-4ik/keepup/commit/cfb21a3a39ec4e36f2d05ede545663c541f18c0a))
+* bigger header wordmark, and a README refresh with new screenshots ([#92](https://github.com/naum-4ik/keepup/issues/92)) ([e10a6f3](https://github.com/naum-4ik/keepup/commit/e10a6f368c050525af424d102d2f6d36f823aecb))
+* colour tokens and warmer dark mode ([#97](https://github.com/naum-4ik/keepup/issues/97)) ([d0cb142](https://github.com/naum-4ik/keepup/commit/d0cb1422e4b9de6e34536c2a37ab426936c56c33))
+* **db:** calendar_cells for the Progress calendar ([#88](https://github.com/naum-4ik/keepup/issues/88)) ([a6749f0](https://github.com/naum-4ik/keepup/commit/a6749f07ce46855a3622745634d2cdcfd3545323))
+* **db:** child profiles, kid habits and treat goals ([#60](https://github.com/naum-4ik/keepup/issues/60)) ([3674528](https://github.com/naum-4ik/keepup/commit/3674528808b2333f05873993daf4af821e974dc1))
+* **db:** group avatars ([#71](https://github.com/naum-4ik/keepup/issues/71)) ([923591e](https://github.com/naum-4ik/keepup/commit/923591e8ef7012e624ed3e4ca45ee6d81f6ca736))
+* **db:** group habits, approvals and member pauses ([#57](https://github.com/naum-4ik/keepup/issues/57)) ([fa7b4ba](https://github.com/naum-4ik/keepup/commit/fa7b4ba3f9544635d115c1cb0f964f33be1b8759))
+* **db:** groups, members and invite links ([#54](https://github.com/naum-4ik/keepup/issues/54)) ([a82bc3a](https://github.com/naum-4ik/keepup/commit/a82bc3ad806cc6a818c96dd9397eb345ff26c248))
+* **db:** habits with an end date ([#82](https://github.com/naum-4ik/keepup/issues/82)) ([1c83276](https://github.com/naum-4ik/keepup/commit/1c83276d6578ec6bc2bf8c26f311e0d953014441))
+* **db:** in-app feed, nudges and cheers ([#62](https://github.com/naum-4ik/keepup/issues/62)) ([e81fcf1](https://github.com/naum-4ik/keepup/commit/e81fcf112aab3e09d4da31e545fc6176baceeed5))
+* **db:** kid themes ([#80](https://github.com/naum-4ik/keepup/issues/80)) ([b6aa8a1](https://github.com/naum-4ik/keepup/commit/b6aa8a1ed7d0c3a1b04a56c72624969a1e082b15))
+* **db:** kids' stars and garden, group celebrations ([#63](https://github.com/naum-4ik/keepup/issues/63)) ([f276902](https://github.com/naum-4ik/keepup/commit/f276902afaaa1c3988f30f208120acf8a6953d79))
+* **db:** reset a child's profile ([#78](https://github.com/naum-4ik/keepup/issues/78)) ([90977b2](https://github.com/naum-4ik/keepup/commit/90977b21554fad7a879be75e1f037a820ab48f0f))
+* **db:** restore_habit for archived habits ([#93](https://github.com/naum-4ik/keepup/issues/93)) ([6c93051](https://github.com/naum-4ik/keepup/commit/6c93051b2f22c37c35240da02ccc914c71528262))
+* design polish from the UI/UX review ([#90](https://github.com/naum-4ik/keepup/issues/90)) ([e604f9b](https://github.com/naum-4ik/keepup/commit/e604f9b8939e6fc3ecc89701a11c775d605d765c))
+* family celebrations and gentle Today cards ([#74](https://github.com/naum-4ik/keepup/issues/74)) ([27a8d1b](https://github.com/naum-4ik/keepup/commit/27a8d1bcc3c1944ca273df2d51cf314b7ea1b880))
+* friendlier time zone picker with current times and (i) hints ([#55](https://github.com/naum-4ik/keepup/issues/55)) ([53750cd](https://github.com/naum-4ik/keepup/commit/53750cdffd74af2ff62df3d014be548fab772da6))
+* group avatars, and change your avatar from Profile ([#72](https://github.com/naum-4ik/keepup/issues/72)) ([399c9dd](https://github.com/naum-4ik/keepup/commit/399c9dddf3b7c035d7787de2c4857b92776df5d6))
+* group habits on Today and the habit page ([#68](https://github.com/naum-4ik/keepup/issues/68)) ([2e7d2eb](https://github.com/naum-4ik/keepup/commit/2e7d2ebf407b42b0df394ba17f1d1c7120243469))
+* Groups tab, invite links and avatars ([#66](https://github.com/naum-4ik/keepup/issues/66)) ([8eaccca](https://github.com/naum-4ik/keepup/commit/8eaccca42961ca277303e0b63087aee8deaa7739))
+* Inbox with approvals, nudges and cheers ([#70](https://github.com/naum-4ik/keepup/issues/70)) ([856d2fa](https://github.com/naum-4ik/keepup/commit/856d2fac64850e0b7c0459caef8bd03a1e56091d))
+* invite landing and invited-user onboarding ([#67](https://github.com/naum-4ik/keepup/issues/67)) ([b1a3d80](https://github.com/naum-4ik/keepup/commit/b1a3d804dbfa46c78a457423c9c4ba3f8854750d))
+* kid themes, what grows in the kid view ([#81](https://github.com/naum-4ik/keepup/issues/81)) ([227c56e](https://github.com/naum-4ik/keepup/commit/227c56e8f0d90755bb1eff02dbbaa0ef6ec7ad8a))
+* kids: profiles, "Me + Mary", the kid view ([#73](https://github.com/naum-4ik/keepup/issues/73)) ([905eb0e](https://github.com/naum-4ik/keepup/commit/905eb0e34473b827f1e1a5ec122062699f2db435))
+* one Get started button on the landing page, full width ([#65](https://github.com/naum-4ik/keepup/issues/65)) ([4806780](https://github.com/naum-4ik/keepup/commit/480678050ce677d6a761e542c2401e4c7c9c58ef))
+* pick the time zone by the time it is now ([#58](https://github.com/naum-4ik/keepup/issues/58)) ([0a9f5c2](https://github.com/naum-4ik/keepup/commit/0a9f5c200d6d657f7ece67f083f026f44f306dc9))
+* Progress calendar, month by month, tap any day ([#89](https://github.com/naum-4ik/keepup/issues/89)) ([c96e874](https://github.com/naum-4ik/keepup/commit/c96e87411d8662a79d47436067ea3462b4c91613))
+* reset a child's profile from the danger zone ([#83](https://github.com/naum-4ik/keepup/issues/83)) ([229b81c](https://github.com/naum-4ik/keepup/commit/229b81c4e3a524ffdbca643a447e83a44b5e106f))
+* Restore an archived habit, from Progress or its page ([#98](https://github.com/naum-4ik/keepup/issues/98)) ([65a4d6f](https://github.com/naum-4ik/keepup/commit/65a4d6f5914c8b2ba04148d7983b5df9f0776994))
+* say when the garden starts over, and a new-week card ([#86](https://github.com/naum-4ik/keepup/issues/86)) ([f34408c](https://github.com/naum-4ik/keepup/commit/f34408cba6c42f1a2c7c1032fbdead03ea87b659))
+* set an end when creating a habit; Day 12 of 30 ([#84](https://github.com/naum-4ik/keepup/issues/84)) ([78351cc](https://github.com/naum-4ik/keepup/commit/78351cc9d8bf4e8a70bab00b3ed50fd08acc616e))
+* sign up with email and password ([#61](https://github.com/naum-4ik/keepup/issues/61)) ([c141bb9](https://github.com/naum-4ik/keepup/commit/c141bb9227c12c5e9b678005c9e7df1767020bc6))
+* tap a day in Progress; treat ideas; more kid habits in a dialog ([#75](https://github.com/naum-4ik/keepup/issues/75)) ([c325157](https://github.com/naum-4ik/keepup/commit/c325157b21e2d058033c0340765a5e2d10057cdf))
+* the finish card, Keep going / Finish, and Finished with Start again ([#85](https://github.com/naum-4ik/keepup/issues/85)) ([6086ebc](https://github.com/naum-4ik/keepup/commit/6086ebcc04f29cdb22831fe2a10e53409ac75b3a))
+* the kid view shows the next garden picture ([#77](https://github.com/naum-4ik/keepup/issues/77)) ([75f48fc](https://github.com/naum-4ik/keepup/commit/75f48fc654e6abbc0899fefbfb54a34f51de3aef))
+* What's new written for people, not developers ([#94](https://github.com/naum-4ik/keepup/issues/94)) ([d8ee291](https://github.com/naum-4ik/keepup/commit/d8ee291435300d07d959d327d4ff9bd7b44cd9cd))
+
+
+### Bug Fixes
+
+* a bigger star path in the kid view, with the count written out ([#79](https://github.com/naum-4ik/keepup/issues/79)) ([8cb24ae](https://github.com/naum-4ik/keepup/commit/8cb24aed06789f555af89084f4effe67c51407a9))
+* M3 final review — privacy guard, fair last period, kids and time zones ([#100](https://github.com/naum-4ik/keepup/issues/100)) ([258d7e1](https://github.com/naum-4ik/keepup/commit/258d7e1325789beb4880f55ef7cb0c73abf4fc64))
+* push backups with a deploy key instead of a token ([#56](https://github.com/naum-4ik/keepup/issues/56)) ([03a5454](https://github.com/naum-4ik/keepup/commit/03a5454b52f0acafc3b68aaf4ac5fe7fb53aa331))
+* QA findings (forms keep input, long names, dialog focus, …) ([#91](https://github.com/naum-4ik/keepup/issues/91)) ([4731554](https://github.com/naum-4ik/keepup/commit/4731554950fe0b67acea44c70cf7e672e94dcaf9))
+* say clearly that the emoji picker's own field wants an emoji ([#51](https://github.com/naum-4ik/keepup/issues/51)) ([a6346fb](https://github.com/naum-4ik/keepup/commit/a6346fb47a38180e7494be68c8f3ae83925a94e4))
+* Together habits for groups only; Brush teeth and wake up before 07:00 ([#69](https://github.com/naum-4ik/keepup/issues/69)) ([2f470bd](https://github.com/naum-4ik/keepup/commit/2f470bda95cfd2b69481fc3500d23a8ad04d7856))
+
 ## [0.3.0](https://github.com/naum-4ik/keepup/compare/v0.2.0...v0.3.0) (2026-09-29)
 
 
