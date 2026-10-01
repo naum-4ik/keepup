@@ -179,12 +179,14 @@ select is(jsonb_array_length(public.push_job((select v from t where k = 'dan_app
   'but not once its review window has closed at p_now');
 
 -- A failing push never blocks the action (spec: Pipeline; the feed is always written).
+create temp table queued_before on commit drop as
+  select count(*)::int as n from net.http_request_queue where headers ->> 'x-keepup-push-secret' = 'test-secret';
 delete from vault.secrets where name = 'send_push_url';
 select private.nudge_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'walk'), '00000000-0000-0000-0000-0000000000b1', 'you_got_this', now());
 select ok((select push from public.notifications where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'nudge'
             and habit_id = (select v from t where k = 'walk')),
   'without the webhook URL in Vault the row is still flagged');
-select is((select count(*)::int from net.http_request_queue where headers ->> 'x-keepup-push-secret' = 'test-secret'), 1,
+select is((select count(*)::int from net.http_request_queue where headers ->> 'x-keepup-push-secret' = 'test-secret'), (select n from queued_before),
   'and nothing is called');
 select vault.create_secret('not a url', 'send_push_url');
 select lives_ok($$select private.nudge_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'run'), '00000000-0000-0000-0000-0000000000b1', 'thinking_of_you', now())$$,
