@@ -1,7 +1,7 @@
 -- supabase/tests/database/offline_check_ins.test.sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(37);
+select plan(54);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -24,6 +24,13 @@ insert into public.habits (id, owner_id, group_id, title, category, emoji, targe
   ('00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000b1', null, 'Stretch', 'fitness', '🤸', 1, 'day', '2026-10-01', 1, false, '2026-10-01 08:00+02', '00000000-0000-0000-0000-0000000000b1'),
   ('00000000-0000-0000-0000-0000000000d9', null, (select v from t where k = 'fam'), 'Gym', 'fitness', '🏋️', 1, 'day', '2026-10-01', 1, true, '2026-10-01 08:00+02', '00000000-0000-0000-0000-0000000000a1');
 update public.group_members set joined_at = '2026-09-01' where group_id = (select v from t where k = 'fam');
+-- Fix round 1: pinned dates for the kid habit; Walk together (group, no approval); Water (Anna) and
+-- Read (Mary) start early so the wrappers can check in at the real now().
+update public.habits set starts_on = '2026-10-01', created_at = '2026-10-01 08:00+02' where id = (select v from t where k = 'brush');
+insert into public.habits (id, owner_id, group_id, title, category, emoji, target_count, period, starts_on, week_start, requires_approval, created_at, created_by) values
+  ('00000000-0000-0000-0000-0000000000d8', null, (select v from t where k = 'fam'), 'Walk together', 'fitness', '🚶', 1, 'day', '2026-10-01', 1, false, '2026-10-01 08:00+02', '00000000-0000-0000-0000-0000000000a1'),
+  ('00000000-0000-0000-0000-0000000000d5', '00000000-0000-0000-0000-0000000000a1', null, 'Water', 'fitness', '💧', 1, 'day', '2026-01-01', 1, false, '2026-01-01 08:00+01', '00000000-0000-0000-0000-0000000000a1'),
+  ('00000000-0000-0000-0000-0000000000d6', (select v from t where k = 'mary'), null, 'Read', null, '📚', 1, 'day', '2026-01-01', 1, false, '2026-01-01 08:00+01', '00000000-0000-0000-0000-0000000000a1');
 set local session_replication_role = origin;
 
 -- ideas/offline.md §"M4 tests"
@@ -86,13 +93,46 @@ select throws_ok($$select private.check_in_impl('00000000-0000-0000-0000-0000000
   'P0001', 'keepup:habit_archived', 'an archived habit refuses a queued tap (the app drops it)');
 
 -- Quiet merge: Anna logged Mary online; Dan's offline tap for Mary arrives later.
-select private.check_in_impl((select v from t where k = 'brush'), '00000000-0000-0000-0000-0000000000a1', now(), (select v from t where k = 'mary'));
-select is((private.check_in_impl((select v from t where k = 'brush'), '00000000-0000-0000-0000-0000000000b1', now(), (select v from t where k = 'mary'), false,
-            'c0000000-0000-0000-0000-000000000008', now())).logged_by,
+select private.check_in_impl((select v from t where k = 'brush'), '00000000-0000-0000-0000-0000000000a1', '2026-10-06 08:00+02', (select v from t where k = 'mary'));
+select is((private.check_in_impl((select v from t where k = 'brush'), '00000000-0000-0000-0000-0000000000b1', '2026-10-06 08:30+02', (select v from t where k = 'mary'), false,
+            'c0000000-0000-0000-0000-000000000008', '2026-10-06 08:10+02')).logged_by,
   '00000000-0000-0000-0000-0000000000a1'::uuid, 'a duplicate from another adult merges into the first check-in');
 select is((select count(*)::int from public.check_ins where habit_id = (select v from t where k = 'brush')), 1, 'one check-in');
 select is((select count(*)::int from public.notifications where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'already_logged'),
   1, 'Dan gets a quiet note');
+-- I3: a late tap on a kid habit counts for the day it was tapped.
+select is((private.check_in_impl((select v from t where k = 'brush'), '00000000-0000-0000-0000-0000000000b1', '2026-10-06 08:40+02', (select v from t where k = 'mary'), false,
+            'c0000000-0000-0000-0000-000000000015', '2026-10-05 19:30+02')).local_date,
+  '2026-10-05'::date, 'a late tap for a child counts for the day it was tapped');
+
+-- I1: clock skew is accepted but never moves a tap into tomorrow.
+select is((private.check_in_impl('00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000b1', '2026-10-07 23:58+02', null, false,
+            'c0000000-0000-0000-0000-000000000016', '2026-10-08 00:02+02')).local_date,
+  '2026-10-07'::date, 'a tap 4 minutes ahead just before midnight counts for today');
+select is((select tapped_at from public.check_ins where client_id = 'c0000000-0000-0000-0000-000000000016'),
+  '2026-10-08 00:02+02'::timestamptz, 'and keeps the raw tap time');
+select is((private.check_in_impl('00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000b1', '2026-10-08 00:03+02', null, false,
+            'c0000000-0000-0000-0000-000000000017', '2026-10-08 00:03+02')).local_date,
+  '2026-10-08'::date, 'a real tap the next day still counts for that day');
+
+-- I2: a late group check-in stays in the Inbox; an on-time one pushes.
+insert into t select 'wlate', (private.check_in_impl('00000000-0000-0000-0000-0000000000d8', '00000000-0000-0000-0000-0000000000a1', '2026-10-06 09:00+02', null, false,
+  'c0000000-0000-0000-0000-000000000018', '2026-10-05 20:00+02')).id;
+select ok((select not push and payload ->> 'late' = 'true' from public.notifications
+            where kind = 'group_check_in' and check_in_id = (select v from t where k = 'wlate') and user_id = '00000000-0000-0000-0000-0000000000b1'),
+  'a late group check-in is feed only, marked late');
+insert into t select 'wnow', (private.check_in_impl('00000000-0000-0000-0000-0000000000d8', '00000000-0000-0000-0000-0000000000a1', '2026-10-06 09:00+02')).id;
+select ok((select push and payload ->> 'late' is null from public.notifications
+            where kind = 'group_check_in' and check_in_id = (select v from t where k = 'wnow') and user_id = '00000000-0000-0000-0000-0000000000b1'),
+  'an on-time group check-in still pushes');
+select private.check_in_impl('00000000-0000-0000-0000-0000000000d8', '00000000-0000-0000-0000-0000000000b1', '2026-10-06 09:05+02', null, false,
+  'c0000000-0000-0000-0000-000000000019', '2026-10-05 21:00+02');
+select ok((select bool_and(not push and payload ->> 'late' = 'true') and count(*) = 2 from public.notifications
+            where kind = 'everyone_done' and habit_id = '00000000-0000-0000-0000-0000000000d8' and payload ->> 'period_start' = '2026-10-05'),
+  'Everyone did it from a late check-in is feed only too');
+select ok(not private.push_allowed('00000000-0000-0000-0000-0000000000a1', 'kid_garden_full', null, (select v from t where k = 'fam'), '{"late": true}', '2026-10-06 09:00+02')
+          and private.push_allowed('00000000-0000-0000-0000-0000000000a1', 'kid_garden_full', null, (select v from t where k = 'fam'), '{}', '2026-10-06 09:00+02'),
+  'a full garden from a late check-in does not push');
 
 -- Undo by client id, with the rules at sync time.
 select private.check_in_impl('00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000b1', '2026-10-05 10:00+00', null, false,
@@ -108,6 +148,14 @@ select ok(not private.undo_check_in_by_client_impl('c0000000-0000-0000-0000-0000
   'an offline undo after approval is refused');
 select is((select payload ->> 'reason' from public.notifications where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'undo_dropped'),
   'approved', 'with a note saying why');
+-- I3: an offline undo that arrives after its period is refused.
+select private.check_in_impl('00000000-0000-0000-0000-0000000000d3', '00000000-0000-0000-0000-0000000000b1', '2026-10-04 10:00+00', null, false,
+  'c0000000-0000-0000-0000-000000000012', '2026-10-04 10:00+00');
+select ok(not private.undo_check_in_by_client_impl('c0000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-0000000000b1', '2026-10-05 10:00+00'),
+  'an offline undo after its period is refused');
+select is((select payload ->> 'reason' from public.notifications
+            where dedupe_key = 'undo_dropped:c0000000-0000-0000-0000-000000000012:00000000-0000-0000-0000-0000000000b1'),
+  'period_closed', 'with a note saying the period is over');
 
 -- A late arrival on an approval habit gets its own 12h (decision 2026-09-29).
 set local session_replication_role = replica;
@@ -126,6 +174,9 @@ select ok(exists (select 1 from public.notifications where kind = 'group_streak_
 insert into t select 'late', (private.check_in_impl('00000000-0000-0000-0000-0000000000d9', '00000000-0000-0000-0000-0000000000b1', '2026-10-07 13:00+02', null, false,
   'c0000000-0000-0000-0000-000000000011', '2026-10-06 20:00+02')).id;
 select is((select status from public.check_ins where id = (select v from t where k = 'late')), 'pending', 'a late tap on an approval habit waits for a yes');
+select ok((select push from public.notifications where kind = 'approval_needed' and check_in_id = (select v from t where k = 'late')
+            and user_id = '00000000-0000-0000-0000-0000000000a1'),
+  'its approval request still pushes');
 select is(private.check_in_deadline((select h from public.habits h where h.id = '00000000-0000-0000-0000-0000000000d9'),
                                     (select c from public.check_ins c where c.id = (select v from t where k = 'late'))),
   '2026-10-08 01:00+02'::timestamptz, 'it gets its own 12 hours from arrival');
@@ -133,6 +184,14 @@ select is(private.check_in_deadline((select h from public.habits h where h.id = 
                                     (select c from public.check_ins c where c.habit_id = '00000000-0000-0000-0000-0000000000d9'
                                         and c.user_id = '00000000-0000-0000-0000-0000000000a1' and c.local_date = '2026-10-06')),
   '2026-10-07 12:00+02'::timestamptz, 'an on-time check-in keeps period end + 12h');
+-- I3: the expiring reminder follows the late arrival's own window (arrival + 12h, sent from + 10h).
+select private.enqueue_expiring_approvals('2026-10-07 22:59+02');
+select is((select count(*)::int from public.notifications where kind = 'approval_expiring' and check_in_id = (select v from t where k = 'late')),
+  0, 'no expiring reminder before arrival + 10h');
+select private.enqueue_expiring_approvals('2026-10-07 23:00+02');
+select is((select count(*)::int from public.notifications where kind = 'approval_expiring' and check_in_id = (select v from t where k = 'late')
+            and user_id = '00000000-0000-0000-0000-0000000000a1'),
+  1, 'Anna hears it is expiring at arrival + 10h');
 select is((select count(*)::int from private.pending_approvals_impl('00000000-0000-0000-0000-0000000000a1', '2026-10-07 23:00+02')
             where check_in_id = (select v from t where k = 'late')), 1, 'Anna can still approve it at 23:00');
 select private.finalize_periods('2026-10-07 14:00+02');
@@ -142,6 +201,11 @@ select is((select outcome from public.period_results where habit_id = '00000000-
   'done', 'approving it settles the day as done');
 select is((select count(*)::int from public.notifications where kind = 'streak_back' and habit_id = '00000000-0000-0000-0000-0000000000d9'),
   2, 'and everyone hears the streak is back');
+select ok((select bool_and(push) from public.notifications where kind = 'streak_back' and habit_id = '00000000-0000-0000-0000-0000000000d9'),
+  'and that one pushes');
+select ok((select bool_and(not push and payload ->> 'late' = 'true') and count(*) = 2 from public.notifications
+            where kind = 'everyone_done' and habit_id = '00000000-0000-0000-0000-0000000000d9' and payload ->> 'period_start' = '2026-10-06'),
+  'approving a late check-in: Everyone did it is feed only');
 
 select ok(has_function_privilege('authenticated', 'public.check_in(uuid, uuid, timestamptz)', 'execute'), 'the app can send a client id and tap time');
 select ok(has_function_privilege('authenticated', 'public.undo_check_in_by_client(uuid)', 'execute'), 'and undo by client id');
@@ -152,12 +216,19 @@ select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.
             where n.nspname = 'public' and p.proname = 'check_in'), 1, 'one public.check_in');
 select is((select count(*)::int from pg_proc p join pg_namespace n on n.oid = p.pronamespace
             where n.nspname = 'public' and p.proname = 'check_in_for'), 1, 'one public.check_in_for');
+grant select on t to authenticated;
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', true);
 select throws_ok($$select public.check_in('00000000-0000-0000-0000-0000000000ee')$$,
   'P0002', 'keepup:habit_not_found', 'an old one-argument check_in call still resolves');
 select throws_ok($$select public.check_in_for(p_habit_id => '00000000-0000-0000-0000-0000000000ee', p_child_id => '00000000-0000-0000-0000-0000000000ef')$$,
   'P0002', 'keepup:habit_not_found', 'an old named check_in_for call still resolves');
+-- I3: the wrappers with the new arguments.
+select is((select client_id from public.check_in('00000000-0000-0000-0000-0000000000d5', 'c0000000-0000-0000-0000-000000000013', now() - interval '1 minute')),
+  'c0000000-0000-0000-0000-000000000013'::uuid, 'check_in takes a client id and tap time');
+select is((select tapped_at from public.check_in_for('00000000-0000-0000-0000-0000000000d6', (select v from t where k = 'mary'), false,
+                                                     'c0000000-0000-0000-0000-000000000014', now() - interval '1 minute')),
+  now() - interval '1 minute', 'and so does check_in_for');
 reset role;
 
 select * from finish();

@@ -48,17 +48,19 @@ begin
   if v_old <> 'missed' then
     return;
   end if;
+  -- The "ended" note is found by its exact dedupe keys (the unique index on dedupe_key): one per
+  -- recipient, so for a group every member it may have reached, past members included.
   if p_habit.group_id is not null then
     if exists (select 1 from public.notifications n
-                where n.kind = 'group_streak_ended' and n.habit_id = p_habit.id
-                  and n.dedupe_key like 'group_streak_ended:' || p_habit.id || ':' || p_period_start || ':%') then
+                where n.dedupe_key = any (array(
+                  select 'group_streak_ended:' || p_habit.id || ':' || p_period_start || ':' || m.user_id
+                    from public.group_members m where m.group_id = p_habit.group_id))) then
       perform private.notify(private.group_adults(p_habit.group_id, null), 'streak_back',
         'streak_back:' || p_habit.id || ':' || p_period_start, p_habit.group_id, p_habit.id, null, null, null,
         jsonb_build_object('period_start', p_period_start));
     end if;
   elsif exists (select 1 from public.notifications n
-                 where n.kind = 'private_streak_ended' and n.habit_id = p_habit.id
-                   and n.dedupe_key like 'private_streak_ended:' || p_habit.id || ':' || p_period_start || ':%') then
+                 where n.dedupe_key = 'private_streak_ended:' || p_habit.id || ':' || p_period_start || ':' || p_habit.owner_id) then
     perform private.notify(array[p_habit.owner_id], 'streak_back',
       'streak_back:' || p_habit.id || ':' || p_period_start, null, p_habit.id, null, null, null,
       jsonb_build_object('period_start', p_period_start));
@@ -85,7 +87,9 @@ declare
   v_subject uuid := coalesce(p_subject, p_actor);
   v_kind text;
   v_habit public.habits;
-  v_tap timestamptz := coalesce(p_tapped_at, p_now);
+  -- The day a tap counts for: the tap time, never later than arrival (clock skew up to 5 minutes is
+  -- accepted but clamped, so a phone that runs fast can't log tomorrow early). tapped_at keeps the raw value.
+  v_tap timestamptz := least(coalesce(p_tapped_at, p_now), p_now);
   v_today date;
   v_start date;
   v_count int;
@@ -122,7 +126,8 @@ begin
     raise exception 'keepup:tap_in_future' using errcode = 'P0001';
   end if;
   if p_tapped_at is not null and p_tapped_at < p_now - interval '3 days' then
-    perform private.notify(array[p_actor], 'sync_dropped', 'sync_dropped:' || p_client_id,
+    perform private.notify(array[p_actor], 'sync_dropped',
+      'sync_dropped:' || coalesce(p_client_id::text, p_habit_id || ':' || v_subject || ':' || extract(epoch from p_tapped_at)),
       coalesce(v_habit.group_id, private.child_group(v_habit.owner_id)), p_habit_id, null, null,
       case when v_subject <> p_actor then v_subject end,
       jsonb_build_object('tapped_on', private.habit_today(v_habit, p_tapped_at)));
@@ -133,6 +138,8 @@ begin
     raise exception 'keepup:habit_archived' using errcode = 'P0001';
   end if;
 
+  -- The calendar is the habit's zone (profile or group) at sync time, not at tap time: a tap near
+  -- midnight just before a flight to another zone can land on the neighbouring day. Accepted.
   v_today := private.habit_today(v_habit, v_tap);
   if v_today < v_habit.starts_on then
     raise exception 'keepup:habit_not_started' using errcode = 'P0001';
@@ -486,4 +493,186 @@ begin
   end loop;
   return v_n;
 end;
+$$;
+
+-- Late check-ins don't buzz (fix round 1). A check-in is late when it arrived after its period: its
+-- period is before the habit's period on the day it arrived. Its group feed rows are still written,
+-- with payload.late = true, and push_allowed keeps them in the Inbox. "Streak is back" is the push
+-- for a late arrival; approval_needed and kid_goal_reached still push; kid rewards still count.
+create function private.is_late_check_in(p_habit public.habits, p_check_in public.check_ins)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select p_check_in.period_start < private.habit_period_start(p_habit, private.habit_today(p_habit, p_check_in.created_at));
+$$;
+
+-- Copied from 20260930100300_feed_nudges_cheers.sql (its latest definition). New: p_late, carried in
+-- the payload. Its only callers are the two check-in feed triggers below.
+drop function private.feed_everyone_done(public.habits, date);
+create function private.feed_everyone_done(p_habit public.habits, p_period_start date, p_late boolean default false)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if p_habit.group_id is null then
+    return;
+  end if;
+  -- Serialize on the habit row: review_check_in_impl locks only the check-in, so two concurrent
+  -- final approvals (or a kid's auto-approved check-in landing during a final review) could each
+  -- see the other's row as pending and nobody would get "Everyone did it". Taking the habit lock
+  -- keeps the check-in -> habit order (check_in_impl already holds it), so no deadlock.
+  perform 1 from public.habits where id = p_habit.id for update;
+  if private.period_outcome(p_habit, p_period_start) = 'done' then
+    perform private.notify(private.group_adults(p_habit.group_id, null), 'everyone_done',
+      'everyone_done:' || p_habit.id || ':' || p_period_start, p_habit.group_id, p_habit.id, null, null, null,
+      jsonb_build_object('period_start', p_period_start)
+        || case when p_late then jsonb_build_object('late', true) else '{}'::jsonb end);
+  end if;
+end;
+$$;
+
+-- Copied from 20260930100300_feed_nudges_cheers.sql (its latest definition). New: a late check-in's
+-- group_check_in and everyone_done carry late = true.
+create or replace function private.feed_on_check_in()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_habit public.habits;
+  v_kind text;
+  v_group uuid;
+  v_late boolean;
+begin
+  select h.* into v_habit from public.habits h where h.id = new.habit_id;
+  select p.kind into v_kind from public.profiles p where p.id = new.user_id;
+  v_group := coalesce(v_habit.group_id, private.child_group(v_habit.owner_id));
+  if v_group is null then
+    return new; -- an adult's private habit
+  end if;
+  v_late := private.is_late_check_in(v_habit, new);
+
+  if v_kind = 'child' then
+    perform private.notify(private.group_adults(v_group, array[new.logged_by]), 'kid_check_in', 'kid_check_in:' || new.id,
+      v_group, new.habit_id, new.id, new.logged_by, new.user_id, '{}'::jsonb);
+  elsif new.status = 'pending' then
+    perform private.notify(private.group_adults(v_group, array[new.user_id]), 'approval_needed', 'approval_needed:' || new.id,
+      v_group, new.habit_id, new.id, new.user_id, null, '{}'::jsonb);
+  else
+    perform private.notify(
+      array(select r from unnest(private.group_adults(v_group, array[new.user_id])) r
+             where not private.is_member_frozen(new.habit_id, r, new.local_date, new.local_date + 1)),
+      'group_check_in', 'group_check_in:' || new.id, v_group, new.habit_id, new.id, new.user_id, null,
+      case when v_late then jsonb_build_object('late', true) else '{}'::jsonb end);
+  end if;
+
+  if new.status = 'approved' then
+    perform private.feed_everyone_done(v_habit, new.period_start, v_late);
+  end if;
+  return new;
+end;
+$$;
+
+-- Copied from 20260930100300_feed_nudges_cheers.sql (its latest definition). New: approving a late
+-- check-in makes everyone_done late too.
+create or replace function private.feed_on_review()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_habit public.habits;
+begin
+  if old.status <> 'pending' or new.status not in ('approved', 'rejected') then
+    return new;
+  end if;
+  select h.* into v_habit from public.habits h where h.id = new.habit_id;
+  perform private.notify(array[new.user_id],
+    case new.status when 'approved' then 'check_in_approved' else 'check_in_rejected' end,
+    'review:' || new.id, v_habit.group_id, new.habit_id, new.id, new.reviewed_by, null, '{}'::jsonb);
+  if new.status = 'approved' then
+    perform private.feed_everyone_done(v_habit, new.period_start, private.is_late_check_in(v_habit, new));
+  end if;
+  return new;
+end;
+$$;
+
+-- Copied from 20260930100400_kid_rewards_celebrations.sql (its latest definition). New: a full garden
+-- reached by a late check-in carries late = true. The goal and the stars are unchanged.
+create or replace function private.kid_rewards_on_check_in()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_group uuid;
+  v_week date;
+  v_goal public.treat_goals;
+  v_habit public.habits;
+begin
+  if new.status <> 'approved' then
+    return new;
+  end if;
+  v_group := private.child_group(new.user_id);
+  if v_group is null then
+    return new; -- not a child
+  end if;
+
+  -- Serialize a child's concurrent check-ins so the one that crosses 18 sees all the others.
+  perform 1 from public.profiles p where p.id = new.user_id for update;
+
+  v_week := private.child_week_start(new.user_id, new.local_date);
+  if private.child_stars(new.user_id, v_week, v_week + 7) >= 18 then
+    select h.* into v_habit from public.habits h where h.id = new.habit_id;
+    perform private.notify(private.group_adults(v_group, null), 'kid_garden_full',
+      'kid_garden_full:' || new.user_id || ':' || v_week, v_group, null, null, null, new.user_id,
+      jsonb_build_object('week_start', v_week)
+        || case when private.is_late_check_in(v_habit, new) then jsonb_build_object('late', true) else '{}'::jsonb end);
+  end if;
+
+  select g.* into v_goal from public.treat_goals g
+   where g.child_id = new.user_id and g.received_at is null and g.reached_at is null
+     for update;
+  if found and (select count(*) from public.check_ins c
+                 where c.user_id = new.user_id and c.status = 'approved' and c.created_at >= v_goal.created_at) >= v_goal.target then
+    update public.treat_goals set reached_at = new.created_at where id = v_goal.id;
+    perform private.notify(private.group_adults(v_group, null), 'kid_goal_reached', 'kid_goal_reached:' || v_goal.id,
+      v_group, null, null, null, new.user_id, jsonb_build_object('title', v_goal.title, 'emoji', v_goal.emoji));
+  end if;
+  return new;
+end;
+$$;
+
+-- Copied from 20261005100000_group_pushes.sql (its latest definition, delivery included). New: the
+-- last clause, a late check-in's group rows stay in the Inbox.
+create or replace function private.push_allowed(
+  p_user uuid, p_kind text, p_habit_id uuid, p_group_id uuid, p_payload jsonb, p_now timestamptz)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select coalesce((
+    select c.category is not null
+       and p.kind = 'adult'
+       and (p.muted_until is null or p.muted_until <= p_now)
+       and not coalesce(s.muted, false)
+       and not (c.category = 'reminders' and p_habit_id is not null and not coalesce(s.reminders, true))
+       and (c.category = 'always' or coalesce(np.delivery, 'silent') <> 'inbox')
+       and (p_kind <> 'group_streak_ended'
+            or (case when p_payload ->> 'streak' ~ '^\d{1,9}$' then (p_payload ->> 'streak')::int else 0 end) >= 3)
+       and (p_kind <> 'member_joined' or private.is_admin(p_group_id, p_user))
+       and (p_kind <> 'streak_back' or p_group_id is not null)
+       and (p_kind not in ('group_check_in', 'everyone_done', 'kid_garden_full')
+            or p_payload ->> 'late' is distinct from 'true')
+      from (select private.push_category(p_kind) as category) c
+      join public.profiles p on p.id = p_user
+      left join public.habit_user_settings s on s.user_id = p_user and s.habit_id = p_habit_id
+      left join public.notification_prefs np on np.user_id = p_user and np.category = c.category), false);
 $$;
