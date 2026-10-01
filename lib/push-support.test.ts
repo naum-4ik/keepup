@@ -1,6 +1,8 @@
 // lib/push-support.test.ts
 import { describe, expect, it, vi } from "vitest";
-import { deviceLabel, iosVersion, pushSupport, signOutCleanup, urlBase64ToUint8Array, type PushEnv } from "./push-support";
+import {
+  deviceLabel, iosVersion, pushSupport, resaveOncePerLoad, signOutCleanup, subscribeAndSave, urlBase64ToUint8Array, type PushEnv,
+} from "./push-support";
 
 const IPHONE_17 = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
 const IPHONE_16_3 = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/604.1";
@@ -82,5 +84,67 @@ describe("signOutCleanup", () => {
       clearCaches,
     });
     expect(clearCaches).toHaveBeenCalledTimes(2);
+  });
+});
+
+const fakeSub = (endpoint: string, p256dh = "p", auth = "a") => ({
+  endpoint,
+  toJSON: () => ({ endpoint, keys: { p256dh, auth } }),
+  unsubscribe: vi.fn(async () => true),
+});
+const FCM = "https://fcm.googleapis.com/fcm/send/";
+
+describe("subscribeAndSave", () => {
+  it("saves the subscription this browser already has, or a new one", async () => {
+    const save = vi.fn(async () => ({ ok: true as const }));
+    const subscribe = vi.fn(async () => fakeSub(`${FCM}new`));
+    expect(await subscribeAndSave({ current: async () => fakeSub(`${FCM}old`), subscribe, save })).toEqual({ ok: true });
+    expect(subscribe).not.toHaveBeenCalled();
+    expect(save).toHaveBeenLastCalledWith({ endpoint: `${FCM}old`, p256dh: "p", auth: "a" });
+
+    await subscribeAndSave({ current: async () => null, subscribe, save });
+    expect(save).toHaveBeenLastCalledWith({ endpoint: `${FCM}new`, p256dh: "p", auth: "a" });
+  });
+
+  it("when another account holds the endpoint, subscribes afresh and tries once more", async () => {
+    const taken = fakeSub(`${FCM}taken`);
+    const refused = { ok: false as const, message: "This device couldn't be set up for notifications.", code: "invalid_subscription" };
+    const save = vi.fn().mockResolvedValueOnce(refused).mockResolvedValueOnce({ ok: true });
+    const r = await subscribeAndSave({ current: async () => taken, subscribe: async () => fakeSub(`${FCM}fresh`, "p2", "a2"), save });
+    expect(r).toEqual({ ok: true });
+    expect(taken.unsubscribe).toHaveBeenCalled();
+    expect(save).toHaveBeenLastCalledWith({ endpoint: `${FCM}fresh`, p256dh: "p2", auth: "a2" });
+
+    const always = vi.fn(async () => refused);
+    expect(await subscribeAndSave({ current: async () => taken, subscribe: async () => fakeSub(`${FCM}fresh`), save: always })).toEqual(refused);
+    expect(always).toHaveBeenCalledTimes(2);
+  });
+
+  it("other refusals are not retried", async () => {
+    const save = vi.fn(async () => ({ ok: false as const, message: "Something went wrong." }));
+    const subscribe = vi.fn(async () => fakeSub(`${FCM}x`));
+    await subscribeAndSave({ current: async () => fakeSub(`${FCM}y`), subscribe, save });
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(subscribe).not.toHaveBeenCalled();
+  });
+});
+
+describe("resaveOncePerLoad", () => {
+  it("re-saves this device's subscription once per page load, however often it's called", async () => {
+    const save = vi.fn(async () => undefined);
+    const resave = resaveOncePerLoad({ permission: () => "granted", getSubscription: async () => fakeSub(`${FCM}me`), save });
+    await Promise.all([resave(), resave()]);
+    await resave();
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(save).toHaveBeenCalledWith({ endpoint: `${FCM}me`, p256dh: "p", auth: "a" });
+  });
+
+  it("does nothing without a subscription or permission, and never throws", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const save = vi.fn(async () => undefined);
+    await resaveOncePerLoad({ permission: () => "granted", getSubscription: async () => null, save })();
+    await resaveOncePerLoad({ permission: () => "default", getSubscription: async () => fakeSub(`${FCM}me`), save })();
+    await expect(resaveOncePerLoad({ permission: () => "granted", getSubscription: async () => { throw new Error("no worker"); }, save })()).resolves.toBeUndefined();
+    expect(save).not.toHaveBeenCalled();
   });
 });

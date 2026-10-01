@@ -95,3 +95,49 @@ export function readPushEnv(): PushEnv {
     vapidKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || undefined,
   };
 }
+
+// What a browser push subscription gives us (PushSubscription, or a stand-in in tests).
+export type BrowserSubscription = { endpoint: string; toJSON(): PushSubscriptionJSON; unsubscribe(): Promise<boolean> };
+export type SubscriptionKeys = { endpoint: string; p256dh: string; auth: string };
+type SaveResult = { ok: true } | { ok: false; message: string; code?: string };
+
+export function subscriptionKeys(sub: BrowserSubscription): SubscriptionKeys {
+  const json = sub.toJSON();
+  return { endpoint: sub.endpoint, p256dh: json.keys?.p256dh ?? "", auth: json.keys?.auth ?? "" };
+}
+
+// This browser's subscription (or a new one) is saved for this account. The database refuses an
+// endpoint another account holds with other keys (invalid_subscription); then a fresh subscription
+// gets one more try, never more.
+export async function subscribeAndSave(deps: {
+  current(): Promise<BrowserSubscription | null>;
+  subscribe(): Promise<BrowserSubscription>;
+  save(keys: SubscriptionKeys): Promise<SaveResult>;
+}): Promise<SaveResult> {
+  const sub = (await deps.current()) ?? (await deps.subscribe());
+  const saved = await deps.save(subscriptionKeys(sub));
+  if (saved.ok || saved.code !== "invalid_subscription") return saved;
+  await sub.unsubscribe().catch(() => false);
+  return deps.save(subscriptionKeys(await deps.subscribe()));
+}
+
+// The app-open re-save (see refreshPushSubscription): at most once per page load, whatever calls it
+// (React runs effects twice in development). Never throws.
+export function resaveOncePerLoad(deps: {
+  permission(): NotificationPermission | "unsupported";
+  getSubscription(): Promise<BrowserSubscription | null>;
+  save(keys: SubscriptionKeys): Promise<unknown>;
+}): () => Promise<void> {
+  let started = false;
+  return async () => {
+    if (started) return;
+    started = true;
+    try {
+      if (deps.permission() !== "granted") return;
+      const sub = await deps.getSubscription();
+      if (sub) await deps.save(subscriptionKeys(sub));
+    } catch (e) {
+      console.error("push re-save failed", e);
+    }
+  };
+}

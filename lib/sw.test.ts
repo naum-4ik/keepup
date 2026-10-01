@@ -15,13 +15,14 @@ function win(path: string, navigate?: (url: string) => Promise<unknown>): Win {
   return w;
 }
 
-function worker(windows: Win[], openWindow = vi.fn(async () => null), fetchImpl = vi.fn()) {
+function worker(windows: Win[], openWindow = vi.fn(async () => null), fetchImpl = vi.fn(), subscribe = vi.fn()) {
   const handlers: Record<string, (e: unknown) => void> = {};
   const self = {
     location: { href: `${ORIGIN}/sw.js?v=test`, origin: ORIGIN },
     addEventListener: (type: string, fn: (e: unknown) => void) => void (handlers[type] = fn),
     clients: { matchAll: async () => windows, openWindow, claim: async () => {} },
     skipWaiting: () => {},
+    registration: { pushManager: { subscribe } },
   };
   runInNewContext(SOURCE, { self, URL, fetch: fetchImpl, console: { error: () => {} } });
   async function click(data: Record<string, unknown>, action = "") {
@@ -29,7 +30,12 @@ function worker(windows: Win[], openWindow = vi.fn(async () => null), fetchImpl 
     handlers.notificationclick({ action, notification: { data, close: () => {} }, waitUntil: (p: Promise<unknown>) => (pending = p) });
     await pending;
   }
-  return { click, openWindow };
+  async function subscriptionChange(event: Record<string, unknown>) {
+    let pending: Promise<unknown> = Promise.resolve();
+    handlers.pushsubscriptionchange({ ...event, waitUntil: (p: Promise<unknown>) => (pending = p) });
+    await pending;
+  }
+  return { click, openWindow, subscriptionChange };
 }
 
 describe("sw.js notification taps", () => {
@@ -68,5 +74,46 @@ describe("sw.js notification taps", () => {
     const { click, openWindow } = worker([], undefined, vi.fn(async () => ({ ok: false })));
     await click({ url: "/inbox", checkInId: "c1" }, "approve");
     expect(openWindow).toHaveBeenCalledWith(`${ORIGIN}/inbox`);
+  });
+});
+
+describe("sw.js pushsubscriptionchange", () => {
+  const key = new Uint8Array([1, 2, 3]).buffer;
+  const fresh = {
+    endpoint: "https://fcm.googleapis.com/fcm/send/fresh",
+    toJSON: () => ({ endpoint: "https://fcm.googleapis.com/fcm/send/fresh", keys: { p256dh: "p", auth: "a" } }),
+  };
+
+  it("subscribes again with the old options and saves the new subscription", async () => {
+    const subscribe = vi.fn(async () => fresh);
+    const fetchImpl = vi.fn(async () => ({ ok: true }));
+    const { subscriptionChange } = worker([], undefined, fetchImpl, subscribe);
+    await subscriptionChange({ oldSubscription: { options: { applicationServerKey: key, userVisibleOnly: true } } });
+    expect(subscribe).toHaveBeenCalledWith({ userVisibleOnly: true, applicationServerKey: key });
+    expect(fetchImpl).toHaveBeenCalledWith("/api/push-subscription", expect.objectContaining({ method: "POST", credentials: "same-origin" }));
+    const [, init] = fetchImpl.mock.calls[0] as unknown as [string, { body: string }];
+    expect(JSON.parse(init.body)).toEqual({ endpoint: fresh.endpoint, p256dh: "p", auth: "a" });
+  });
+
+  it("uses the new subscription when the browser already made one", async () => {
+    const subscribe = vi.fn();
+    const fetchImpl = vi.fn(async () => ({ ok: true }));
+    const { subscriptionChange } = worker([], undefined, fetchImpl, subscribe);
+    await subscriptionChange({ oldSubscription: null, newSubscription: fresh });
+    expect(subscribe).not.toHaveBeenCalled();
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("does nothing without the old options, and never rejects when subscribe or the save fails", async () => {
+    const fetchImpl = vi.fn(async () => Promise.reject(new TypeError("offline")));
+    const quiet = worker([], undefined, fetchImpl, vi.fn());
+    await expect(quiet.subscriptionChange({ oldSubscription: null })).resolves.toBeUndefined();
+    expect(fetchImpl).not.toHaveBeenCalled();
+
+    const failing = worker([], undefined, fetchImpl, vi.fn(async () => Promise.reject(new Error("denied"))));
+    await expect(failing.subscriptionChange({ oldSubscription: { options: { applicationServerKey: key } } })).resolves.toBeUndefined();
+    const offline = worker([], undefined, fetchImpl, vi.fn(async () => fresh));
+    await expect(offline.subscriptionChange({ oldSubscription: { options: { applicationServerKey: key } } })).resolves.toBeUndefined();
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });
