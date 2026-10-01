@@ -11,8 +11,10 @@ import { createClient } from "@/lib/supabase/client";
 export function LiveRefresh({ table, filter }: { table: "check_ins" | "notifications"; filter: string }) {
   const router = useRouter();
   const timer = useRef<number | null>(null);
-  // Exposed as data-live on a hidden span: "ready" once the channel has joined (tests wait for it
-  // before another browser writes, so the change can't land before anyone is listening).
+  // Exposed as data-live on a hidden span: "ready" once changes are actually streaming (tests wait
+  // for it before another browser writes, so the change can't land before anyone is listening).
+  // SUBSCRIBED alone is too early: the server confirms the postgres_changes listener separately
+  // ("Subscribed to PostgreSQL", seconds later on a cold start), and changes before that are lost.
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -35,9 +37,12 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
       channel = supabase
         .channel(`live:${table}:${filter}`)
         .on("postgres_changes", { event: "*", schema: "public", table, filter }, refreshSoon)
+        .on("system", {}, (p: { extension?: string; status?: string }) => {
+          if (!closed && p.extension === "postgres_changes" && p.status === "ok") setReady(true);
+        })
         .subscribe((status) => {
           if (closed) return;
-          setReady(status === "SUBSCRIBED");
+          if (status !== "SUBSCRIBED") setReady(false);
           // A rejoin after a drop: catch up on what changed in between.
           if (status === "SUBSCRIBED" && ++joins > 1) refreshSoon();
         });
