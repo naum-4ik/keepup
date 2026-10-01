@@ -120,6 +120,26 @@ test("Me + Mary checks in both in one tap", async ({ page }) => {
   await expect(page.getByText("Everyone did it ✓")).toBeVisible();
 });
 
+test("Me + Mary from the group habit's page checks in both", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: "Create your own" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Title").fill("Walk the dog");
+  await dialog.getByRole("radio", { name: "Family" }).check();
+  await dialog.getByRole("switch", { name: "Include Mary" }).click();
+  await dialog.getByRole("button", { name: /^Add habit/ }).click();
+  await page.getByRole("link", { name: /Walk the dog/ }).click();
+  await expect(page).toHaveURL(/\/habits\/[0-9a-f-]{36}$/);
+  await page.getByRole("button", { name: "Check in: Walk the dog" }).click();
+  await page.getByRole("button", { name: "Me + Mary" }).click();
+  await expect(page.getByText("Everyone did it ✓")).toBeVisible();
+  const together = page.getByRole("region", { name: "Together" });
+  await expect(together.getByRole("listitem").filter({ hasText: "Mary" })).toContainText("Done");
+});
+
 test("the last adult leaving is warned about the child and can export first", async ({ page }) => {
   await signUpAndOnboard(page);
   await createGroup(page, "Family");

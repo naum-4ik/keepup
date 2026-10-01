@@ -1,6 +1,18 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(25);
+select plan(27);
+
+-- The DETAIL of the error a statement raises (pgTAP's throws_ok checks only the message).
+create function pg_temp.error_detail(p_sql text) returns text language plpgsql as $f$
+declare v_detail text;
+begin
+  execute p_sql;
+  return 'no error';
+exception when others then
+  get stacked diagnostics v_detail = pg_exception_detail;
+  return nullif(v_detail, '');
+end;
+$f$;
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -45,6 +57,10 @@ select results_eq($$select status, reviewed_by from public.check_ins where habit
   $$values ('approved'::text, '00000000-0000-0000-0000-0000000000b1'::uuid)$$, 'the review is recorded');
 select throws_ok($$select private.review_check_in_impl((select id from public.check_ins where habit_id = '00000000-0000-0000-0000-0000000000d1'),
   '00000000-0000-0000-0000-0000000000b1', false, '2026-10-07T06:31:00Z')$$, 'P0001', 'keepup:already_reviewed', 'reviews are final; the first one wins');
+select is(pg_temp.error_detail($$select private.review_check_in_impl((select id from public.check_ins where habit_id = '00000000-0000-0000-0000-0000000000d1'),
+  '00000000-0000-0000-0000-0000000000b1', false, '2026-10-07T06:31:00Z')$$), 'Dan', 'a second try is told who reviewed it');
+select is(pg_temp.error_detail($$select private.review_check_in_impl((select id from public.check_ins where habit_id = '00000000-0000-0000-0000-0000000000d1'),
+  '00000000-0000-0000-0000-0000000000c1', false, '2026-10-07T06:31:00Z')$$), null, 'an outsider learns no name (check_in_not_found carries no detail)');
 
 -- A rejected check-in doesn't count, and the author may check in again
 select lives_ok($$select private.check_in_impl('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000b1', '2026-10-07T15:00:00Z')$$, 'Dan checks in Wednesday');

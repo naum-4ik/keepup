@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(38);
+select plan(39);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna Levi"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -72,6 +72,8 @@ select isnt((select v from t where k = 'tok2'), (select v from t where k = 'tok'
 select lives_ok($$select private.accept_invite_impl('00000000-0000-0000-0000-0000000000e1', (select v from t where k = 'tok2'), '2026-10-01T12:30:00Z')$$, 'Eve joins');
 select throws_ok($$select private.remove_member_impl('00000000-0000-0000-0000-0000000000e1', (select v::uuid from t where k = 'g'), '00000000-0000-0000-0000-0000000000a1', '2026-10-01T13:00:00Z')$$,
   'P0001', 'keepup:not_admin', 'a member cannot remove others');
+select throws_ok($$select private.create_invite_impl('00000000-0000-0000-0000-0000000000e1', (select v::uuid from t where k = 'g'), '2026-10-01T13:00:00Z')$$,
+  'P0001', 'keepup:not_admin', 'a plain member cannot create an invite');
 select lives_ok($$select private.remove_member_impl('00000000-0000-0000-0000-0000000000b1', (select v::uuid from t where k = 'g'), '00000000-0000-0000-0000-0000000000e1', '2026-10-01T13:00:00Z')$$,
   'an admin removes a member');
 select ok((select left_at is not null from public.group_members where group_id = (select v::uuid from t where k = 'g') and user_id = '00000000-0000-0000-0000-0000000000e1'),

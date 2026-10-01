@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(32);
+select plan(33);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -65,6 +65,8 @@ select lives_ok($$select private.set_treat_goal_impl('00000000-0000-0000-0000-00
 -- Moving: admins of both groups only; history moves with the child
 select throws_ok($$select private.move_child_impl('00000000-0000-0000-0000-0000000000b1', (select v from t where k = 'mary'), (select v from t where k = 'gp'))$$,
   'P0001', 'keepup:not_admin', 'a member cannot move a child');
+select throws_ok($$select private.delete_child_impl('00000000-0000-0000-0000-0000000000b1', (select v from t where k = 'mary'))$$,
+  'P0001', 'keepup:not_admin', 'a member who is not an admin cannot delete a child');
 select lives_ok($$select private.move_child_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'mary'), (select v from t where k = 'gp'))$$,
   'an admin of both groups moves the child');
 select results_eq($$select (select count(*)::int from public.check_ins where user_id = (select v from t where k = 'mary')),

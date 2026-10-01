@@ -11,15 +11,16 @@ import { createClient } from "@/lib/supabase/client";
 export function LiveRefresh({ table, filter }: { table: "check_ins" | "notifications"; filter: string }) {
   const router = useRouter();
   const timer = useRef<number | null>(null);
-  // Exposed as data-live on a hidden span: "ready" once the channel has joined (tests wait for it
-  // before another browser writes, so the change can't land before anyone is listening).
+  // Exposed as data-live on a hidden span: "ready" once changes are actually streaming (tests wait
+  // for it before another browser writes, so the change can't land before anyone is listening).
+  // SUBSCRIBED alone is too early: the server confirms the postgres_changes listener separately
+  // ("Subscribed to PostgreSQL", seconds later on a cold start), and changes before that are lost.
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let closed = false;
-    let joins = 0;
     const refreshSoon = () => {
       if (timer.current) window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => router.refresh(), 400);
@@ -35,11 +36,15 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
       channel = supabase
         .channel(`live:${table}:${filter}`)
         .on("postgres_changes", { event: "*", schema: "public", table, filter }, refreshSoon)
+        .on("system", {}, (p: { extension?: string; status?: string }) => {
+          if (closed || p.extension !== "postgres_changes" || p.status !== "ok") return;
+          setReady(true);
+          // Changes stream from here on. Catch up on what landed before: between the page's render
+          // and this first confirmation, or while a dropped channel rejoined.
+          refreshSoon();
+        })
         .subscribe((status) => {
-          if (closed) return;
-          setReady(status === "SUBSCRIBED");
-          // A rejoin after a drop: catch up on what changed in between.
-          if (status === "SUBSCRIBED" && ++joins > 1) refreshSoon();
+          if (!closed && status !== "SUBSCRIBED") setReady(false);
         });
     }).catch((e: unknown) => {
       // No live updates this time; the page still works and refreshes on navigation.

@@ -6,7 +6,7 @@ import { StreakBadge } from "@/components/habits/streak-badge";
 import { KidCheckInButton } from "@/components/kids/kid-check-in-button";
 import type { HabitSummary } from "@/lib/habits";
 import { describeProgress } from "@/lib/schedule";
-import { everyoneDidIt, memberStatus, membersOf } from "@/lib/today-sections";
+import { everyoneDidIt, membersOf, openChildrenOf } from "@/lib/today-sections";
 import { stateOf } from "@/lib/today";
 import { CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
@@ -41,10 +41,6 @@ export function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; kid?: 
   const showBar = habit.period === "day" && habit.target_count > 1 && !habit.frozen;
   const members = membersOf(habit);
   const everyone = everyoneDidIt(habit);
-  // "Me + Mary": children in this habit who still have it open.
-  const openChildren = (members ?? [])
-    .filter((m) => m.kind === "child" && memberStatus(m, habit.target_count) === "open")
-    .map((m) => ({ id: m.profile_id, name: m.name }));
 
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-soft">
@@ -83,7 +79,7 @@ export function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; kid?: 
         title={habit.title}
         multi={habit.target_count > 1}
         state={stateOf(habit)}
-        withChildren={openChildren}
+        withChildren={openChildrenOf(habit)}
       />
     </div>
   );

@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CATEGORIES, CATEGORY_ORDER, normalizeCategory } from "@/lib/categories";
 import { formatLocalDate } from "@/lib/dates";
-import { GROUP_TEMPLATES } from "@/lib/group-templates";
+import type { GroupKind } from "@/lib/group-schema";
+import { groupTemplatesFor } from "@/lib/group-templates";
 import { HABIT_TEMPLATES, type HabitTemplate } from "@/lib/habit-templates";
 import {
   HABIT_TITLE_MAX, TARGET_LIMITS, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod,
@@ -30,7 +31,7 @@ const chipClass =
 const initialState: HabitFormState = { status: "idle" };
 type Tab = "together" | "popular" | HabitCategory;
 type Draft = { key: number; custom: boolean; values: HabitFormValues; groupId: string; groupOnly: boolean };
-export type FormGroup = { id: string; name: string; children: { id: string; name: string; avatar_emoji: string | null; avatar_color: string | null }[] };
+export type FormGroup = { id: string; name: string; kind: GroupKind; children: { id: string; name: string; avatar_emoji: string | null; avatar_color: string | null }[] };
 
 // One form, two creates: a group picked in "Who's it for" makes a group habit.
 const submitHabit = (prev: HabitFormState, formData: FormData) =>
@@ -55,8 +56,12 @@ export function HabitForm({
   const [draft, setDraft] = useState<Draft | null>(null);
   // While the create is in flight the dialog stays open (Esc, outside click and Close are ignored).
   const [pending, setPending] = useState(false);
+  // Together's templates fit the group it was opened from (Date night only for a couple).
+  const initialGroup = groups.find((g) => g.id === initialGroupId);
   const templates =
-    tab === "together" ? GROUP_TEMPLATES : HABIT_TEMPLATES.filter((t) => (tab === "popular" ? t.popular : t.category === tab));
+    tab === "together"
+      ? groupTemplatesFor(initialGroup?.kind ?? "other")
+      : HABIT_TEMPLATES.filter((t) => (tab === "popular" ? t.popular : t.category === tab));
 
   // Each open gets a new key, so the dialog's form starts fresh (no errors from a previous try).
   // The button that opened the dialog gets focus back when it closes (there's no DialogTrigger).
@@ -104,7 +109,7 @@ export function HabitForm({
         ))}
       </div>
 
-      {/* Fixed 2×3 grid (every category tab has exactly 6 templates, Together has 4) with same-size
+      {/* Fixed 2×3 grid (every category tab has exactly 6 templates, Together has 5, or 6 for a couple) with same-size
           cards, so switching tabs never moves anything and "Create your own" always sits in the same place. */}
       <div role="tabpanel" className="grid grid-cols-2 grid-rows-[repeat(3,4.75rem)] gap-2.5">
         {templates.map((t) => (
