@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 type Choice = "none" | number | "date";
 
-// ideas/habit-end-date.md: No end (default) · three lengths in the habit's unit · Until a date (not
+// ideas/habit-end-date.md: No end (default) · the lengths in the habit's unit · Until a date (not
 // "Pick a date": the start picker already has a button with that name). Posts
 // `endsOn` (the last day that counts) or "" for no end.
 export function EndPicker({ period, startsOn, name = "endsOn" }: { period: HabitPeriod; startsOn: string; name?: string }) {

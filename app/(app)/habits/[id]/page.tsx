@@ -22,7 +22,7 @@ import { getGroupDetail } from "@/lib/groups";
 import { getFinishedIds, getHabitDetail, getHabitEnds, type HabitFreeze } from "@/lib/habits";
 import { RestoreHabitButton } from "@/components/habits/restore-habit-button";
 import { EndControl } from "@/components/habits/end-control";
-import { endLabel, endProgress } from "@/lib/habit-end";
+import { endLabel, endProgress, hasEnded } from "@/lib/habit-end";
 import { formatLocalDate } from "@/lib/dates";
 import { describeProgress, describeSchedule } from "@/lib/schedule";
 import { everyoneDidIt, memberStatus, membersOf } from "@/lib/today-sections";
@@ -65,13 +65,22 @@ const shownFreeze = (freezes: HabitFreeze[], today: string, pausedNow: boolean) 
 export default async function HabitPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const [{ profile, userId }, detail] = await Promise.all([getProfile(), getHabitDetail(id)]);
+  // The end needs only the id, so it loads with the habit.
+  const [{ profile, userId }, detail, ends] = await Promise.all([getProfile(), getHabitDetail(id), getHabitEnds([id])]);
   if (!detail) notFound();
 
   const { summary: h, history, freezes, checkIns, totalCheckIns, memberCheckIns, myCheers, myNudges } = detail;
   const members = membersOf(h);
-  // A group habit runs on its group's calendar (time zone and week start).
-  const group = h.group_id ? await getGroupDetail(h.group_id) : null;
+  // Only the owner of a private habit, or an admin of a group habit, edits, pauses it for everyone,
+  // archives or deletes it (RLS and the RPCs enforce the same).
+  const canManage = !h.group_id || h.my_role === "admin";
+  const archived = Boolean(h.archived_at);
+  // A group habit runs on its group's calendar (time zone and week start). Finished habits use Start
+  // again (Progress → Finished); only plain archived ones restore, so that list is read only then.
+  const [group, finishedIds] = await Promise.all([
+    h.group_id ? getGroupDetail(h.group_id) : null,
+    archived && canManage ? getFinishedIds() : null,
+  ]);
   const today = todayIn(group?.timezone ?? profile.timezone);
   const weekStart = (group?.week_start ?? profile.week_start) === 0 ? 0 : 1;
   const wholeFreezes = freezes.filter((f) => !f.user_id);
@@ -82,14 +91,9 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const wholePaused = members ? wholeFreezes.some((f) => covers(f, today)) : h.frozen;
   const activeFreeze = shownFreeze(wholeFreezes, today, wholePaused);
   const myFreeze = shownFreeze(myFreezes, today, Boolean(me?.paused));
-  // Only the owner of a private habit, or an admin of a group habit, edits, pauses it for everyone,
-  // archives or deletes it (RLS and the RPCs enforce the same).
-  const canManage = !h.group_id || h.my_role === "admin";
-  const endsOn = (await getHabitEnds([h.habit_id])).get(h.habit_id) ?? null;
+  const endsOn = ends.get(h.habit_id) ?? null;
   const endNow = endsOn ? endProgress(h.starts_on, endsOn, today, h.period) : null;
-  const archived = Boolean(h.archived_at);
-  // Finished habits use Start again (Progress → Finished); only plain archived ones restore.
-  const restorable = archived && canManage && !(await getFinishedIds()).has(h.habit_id);
+  const restorable = archived && canManage && !finishedIds?.has(h.habit_id);
   const progress = describeProgress({
     targetCount: h.target_count,
     period: h.period,
@@ -186,7 +190,6 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
               );
             })}
           </ul>
-          <p className="text-sm font-semibold">Group streak 🔥 {h.current_streak}</p>
         </Card>
       )}
 
@@ -197,7 +200,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
             {h.current_streak}
             <span className="text-sm font-bold">{unit(h.current_streak, h.period)}</span>
           </p>
-          <p className="text-xs font-semibold text-muted-foreground">Current streak</p>
+          <p className="text-xs font-semibold text-muted-foreground">{members ? "Group streak" : "Current streak"}</p>
         </div>
         <div className="flex flex-col items-center gap-0.5">
           <p className="flex items-center gap-1 text-2xl font-extrabold tabular-nums">
@@ -225,12 +228,29 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
           )}
           {canManage && (
             <>
-              <Manage title="Ends" hint={endNow ? endLabel(endNow, h.period) : endsOn ? `Last day ${formatLocalDate(endsOn)}` : "No end yet"}>
+              <Manage
+                title="Ends"
+                hint={
+                  endNow
+                    ? endLabel(endNow, h.period)
+                    : hasEnded(endsOn, today)
+                      ? "Reached its end. Keep going or finish"
+                      : endsOn
+                        ? `Last day ${formatLocalDate(endsOn)}`
+                        : "No end yet"
+                }
+              >
                 <EndControl habitId={h.habit_id} period={h.period} startsOn={h.starts_on} endsOn={endsOn} today={today} />
               </Manage>
               <Manage
                 title={members ? "Pause for everyone" : wholePaused ? "Paused" : activeFreeze ? "Pause scheduled" : "Pause"}
-                hint={activeFreeze ? "Resume or cancel the pause" : "Going away? Your streak waits for you"}
+                hint={
+                  activeFreeze
+                    ? "Resume or cancel the pause"
+                    : members
+                      ? "Going away together? Pausing keeps the group's streak safe"
+                      : "Going away? Your streak waits for you"
+                }
               >
                 <FreezeForm
                   habitId={h.habit_id}

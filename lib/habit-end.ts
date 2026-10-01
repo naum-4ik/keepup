@@ -1,7 +1,7 @@
 import type { HabitPeriod } from "@/lib/habit-schema";
 
-// ideas/habit-end-date.md: the End chips, in the habit's own unit.
-export const END_PRESETS: Record<HabitPeriod, readonly number[]> = { day: [30, 60, 90], week: [4, 8, 12], month: [3, 6, 12] };
+// ideas/habit-end-date.md: the End chips, in the habit's own unit (a week to try something, then the longer runs).
+export const END_PRESETS: Record<HabitPeriod, readonly number[]> = { day: [7, 30, 60, 90], week: [4, 8, 12], month: [3, 6, 12] };
 const UNIT: Record<HabitPeriod, [string, string]> = { day: ["day", "days"], week: ["week", "weeks"], month: ["month", "months"] };
 export const presetLabel = (n: number, period: HabitPeriod) => `${n} ${UNIT[period][n === 1 ? 0 : 1]}`;
 
@@ -58,6 +58,22 @@ export function endLabel(p: { n: number; total: number; almost: boolean }, perio
 // Extend by n more periods after the current end (the habit page's "+30 days").
 export function extendEnd(endsOn: string, period: HabitPeriod, n: number): string {
   return endsOnFor(addDays(endsOn, 1), period, n);
+}
+
+// The habit page's end buttons. With an end: "+30 days" after it. Without: from the start, only
+// lengths that end today or later. After the end, none: the rule refuses changes then
+// (keepup:end_passed), and Keep going or Finish decide instead.
+export function endOptions(
+  startsOn: string,
+  endsOn: string | null,
+  today: string,
+  period: HabitPeriod,
+): { n: number; date: string; label: string }[] | null {
+  if (hasEnded(endsOn, today)) return null;
+  return END_PRESETS[period]
+    .map((n) => ({ n, date: endsOn ? extendEnd(endsOn, period, n) : endsOnFor(startsOn, period, n) }))
+    .filter((o) => o.date >= today)
+    .map((o) => ({ ...o, label: endsOn ? `+${presetLabel(o.n, period)}` : presetLabel(o.n, period) }));
 }
 
 // A habit has ended once today, in its own calendar, is after its last day: no more check-ins.

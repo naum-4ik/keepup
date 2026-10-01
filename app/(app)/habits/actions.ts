@@ -271,7 +271,11 @@ export async function finishHabit(habitId: string): Promise<ActionResult> {
 // Start again from the Finished tab: a fresh copy with the same settings and length, from today (in
 // the habit's calendar). The finished one keeps its history. A group habit keeps its children, the
 // ones still in the group (create_group_habit refuses any other).
-export async function startAgain(habitId: string): Promise<ActionResult> {
+// The copy is made but its end couldn't be set: say so and point to the new habit, so a second tap
+// doesn't make another copy.
+export type StartAgainResult = ActionResult | { ok: false; message: string; startedId: string };
+
+export async function startAgain(habitId: string): Promise<StartAgainResult> {
   if (!isUuid(habitId)) return { ok: false, message: "That habit isn't available." };
   const { supabase, profile } = await getProfile();
   const { data: h, error: readError } = await supabase.from("habits").select("*").eq("id", habitId).maybeSingle();
@@ -308,7 +312,11 @@ export async function startAgain(habitId: string): Promise<ActionResult> {
   }
   if (newId && h.ends_on) {
     const endError = await setHabitEnd(supabase, newId, startAgainEnd(h.starts_on, h.ends_on, todayIn(timeZone)));
-    if (endError) console.error("set_habit_end failed", endError.message);
+    if (endError) {
+      console.error("set_habit_end failed", endError.message);
+      refresh();
+      return { ok: false, message: "Started again, but the end couldn't be set. Set it on the habit page.", startedId: newId };
+    }
   }
   refresh();
   redirect("/today");

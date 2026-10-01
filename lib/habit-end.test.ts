@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { END_PRESETS, endLabel, endProgress, endsOnFor, extendEnd, hasEnded, withoutEnded } from "./habit-end";
+import { END_PRESETS, endLabel, endOptions, endProgress, endsOnFor, extendEnd, hasEnded, presetLabel, withoutEnded } from "./habit-end";
 
 describe("END_PRESETS", () => {
   it("offers days, weeks or months to match the habit's period", () => {
-    expect(END_PRESETS.day).toEqual([30, 60, 90]);
+    expect(END_PRESETS.day).toEqual([7, 30, 60, 90]);
     expect(END_PRESETS.week).toEqual([4, 8, 12]);
     expect(END_PRESETS.month).toEqual([3, 6, 12]);
   });
@@ -11,6 +11,8 @@ describe("END_PRESETS", () => {
 
 describe("endsOnFor", () => {
   it("is the last day of the n-th period, counting the start", () => {
+    expect(endsOnFor("2026-10-01", "day", 7)).toBe("2026-10-07");
+    expect(presetLabel(7, "day")).toBe("7 days");
     expect(endsOnFor("2026-10-01", "day", 30)).toBe("2026-10-30");
     expect(endsOnFor("2026-10-01", "week", 4)).toBe("2026-10-28");
     expect(endsOnFor("2026-10-01", "month", 3)).toBe("2026-12-31");
@@ -48,6 +50,23 @@ describe("extendEnd", () => {
     expect(extendEnd("2026-10-30", "day", 30)).toBe("2026-11-29");
     expect(extendEnd("2026-10-28", "week", 4)).toBe("2026-11-25");
     expect(extendEnd("2026-12-31", "month", 3)).toBe("2027-03-31");
+  });
+});
+
+describe("endOptions", () => {
+  it("offers the lengths that still end today or later, then +n after an end", () => {
+    expect(endOptions("2026-10-01", null, "2026-10-01", "day")?.map((o) => o.label)).toEqual(["7 days", "30 days", "60 days", "90 days"]);
+    expect(endOptions("2026-10-01", null, "2026-10-10", "day")?.map((o) => o.label)).toEqual(["30 days", "60 days", "90 days"]);
+    expect(endOptions("2026-10-01", "2026-10-07", "2026-10-03", "day")?.map((o) => [o.label, o.date])).toEqual([
+      ["+7 days", "2026-10-14"],
+      ["+30 days", "2026-11-06"],
+      ["+60 days", "2026-12-06"],
+      ["+90 days", "2027-01-05"],
+    ]);
+  });
+  it("still offers them on the last day, and none once today is past the end", () => {
+    expect(endOptions("2026-10-01", "2026-10-07", "2026-10-07", "day")).not.toBeNull();
+    expect(endOptions("2026-10-01", "2026-10-07", "2026-10-08", "day")).toBeNull();
   });
 });
 

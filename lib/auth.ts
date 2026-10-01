@@ -11,13 +11,15 @@ export type Profile = Pick<
 
 const BASE = "id, display_name, timezone, reminder_hour, week_start, onboarded_at, purpose";
 
-export async function requireUser() {
+// Once per request: a page's loaders each call this, and getClaims (with its JWT check) needn't run
+// a dozen times for one render.
+export const requireUser = cache(async () => {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims?.sub;
   if (!userId) redirect("/login");
   return { supabase, userId };
-}
+});
 
 export const getProfile = cache(async () => {
   const { supabase, userId } = await requireUser();

@@ -36,6 +36,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   const n = preview.member_count;
   const next = `/invite/${token}`;
   const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
+  const memberOf = claims?.claims ? await currentGroupOf(supabase, token) : null;
 
   return (
     <InviteCard>
@@ -45,7 +46,11 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
       <p className="text-sm text-muted-foreground">
         {n === 1 ? `1 person is already in ${group}.` : `${n} people are already in ${group}.`}
       </p>
-      {claims?.claims ? (
+      {memberOf ? (
+        <Button asChild className="h-12 w-full rounded-xl text-base">
+          <Link href={`/groups/${memberOf}`}>Open {group}</Link>
+        </Button>
+      ) : claims?.claims ? (
         <JoinButton action={acceptInvite.bind(null, token)} groupName={group} />
       ) : (
         <div className="flex flex-col gap-2">
@@ -74,6 +79,18 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
       )}
     </InviteCard>
   );
+}
+
+// Already in the group: the group's id, so the page offers Open instead of Join. invite_preview
+// doesn't return the group, and invite rows are readable by the group's admins only (RLS), so this
+// finds admins (e.g. opening their own link); a plain member still sees Join, which changes nothing
+// for a current member (accept_invite). Confirmed against my_groups.
+async function currentGroupOf(supabase: Awaited<ReturnType<typeof createClient>>, token: string): Promise<string | null> {
+  const [{ data: invite }, { data: mine }] = await Promise.all([
+    supabase.from("group_invites").select("group_id").eq("token", token).maybeSingle(),
+    supabase.rpc("my_groups"),
+  ]);
+  return invite && (mine ?? []).some((g) => g.group_id === invite.group_id) ? invite.group_id : null;
 }
 
 function InviteCard({ children }: { children: React.ReactNode }) {
