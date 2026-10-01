@@ -20,6 +20,7 @@ function deps(over: Partial<Deps> = {}) {
   const done: [string, string[]][] = [];
   const d: Deps = {
     secret: "s3cret",
+    pushConfigured: true,
     loadJob: async () => job,
     send: async (sub) => {
       const code = { "https://push.example/gone": 410, "https://push.example/missing": 404, "https://push.example/flaky": 500 }[sub.endpoint];
@@ -39,6 +40,18 @@ Deno.test("refuses a call without the shared secret", async () => {
   const { d, sent } = deps();
   assertEquals((await handle(post({ id: "n1" }, "wrong"), d)).status, 403);
   assertEquals(sent, []);
+});
+
+Deno.test("refuses a wrong secret of the same length", async () => {
+  const { d, sent } = deps();
+  assertEquals((await handle(post({ id: "n1" }, "s3creX"), d)).status, 403);
+  assertEquals(sent, []);
+});
+
+Deno.test("without VAPID keys: 500, nothing sent, the row is not marked done", async () => {
+  const { d, sent, done } = deps({ pushConfigured: false });
+  assertEquals((await handle(post({ id: "n1" }), d)).status, 500);
+  assertEquals([sent, done], [[], []]);
 });
 
 Deno.test("refuses everything when no secret is configured", async () => {

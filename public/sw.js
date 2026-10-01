@@ -27,15 +27,36 @@ self.addEventListener("push", (event) => {
   );
 });
 
+// A window already showing the url is focused; otherwise one of ours is moved there; failing that (it
+// isn't controlled by this worker, or navigate throws), a new window opens. Never rejects, so
+// waitUntil doesn't either.
 async function openOrFocus(url) {
-  const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-  for (const w of windows) {
-    if (new URL(w.url).origin === self.location.origin) {
-      await w.focus();
-      return "navigate" in w ? w.navigate(url) : w;
+  try {
+    const target = new URL(url, self.location.origin).href;
+    const windows = (await self.clients.matchAll({ type: "window", includeUncontrolled: true })).filter(
+      (w) => new URL(w.url).origin === self.location.origin,
+    );
+    const there = windows.find((w) => w.url === target);
+    if (there) {
+      await there.focus();
+      return;
     }
+    const w = windows[0];
+    if (w && "navigate" in w) {
+      try {
+        const moved = await w.navigate(target);
+        if (moved) {
+          await moved.focus();
+          return;
+        }
+      } catch {
+        // fall through to a new window
+      }
+    }
+    await self.clients.openWindow(target);
+  } catch (e) {
+    console.error("notification click", e);
   }
-  return self.clients.openWindow(url);
 }
 
 // Android and desktop show the buttons; iPhone has none, so a tap opens the url (/inbox for approvals).
