@@ -114,7 +114,7 @@ test("the member menu closes on Escape and on a tap outside", async ({ page, bro
   await expect(summary).toBeFocused();
   await summary.click();
   await expect(makeAdmin).toBeVisible();
-  await page.getByRole("heading", { name: "Family" }).click();
+  await page.getByRole("heading", { name: "Family", exact: true }).click();
   await expect(makeAdmin).toBeHidden();
 });
 
@@ -157,6 +157,10 @@ test("someone already using Keepup joins with one tap", async ({ page, browser }
   await friend.getByRole("button", { name: "Join Flatmates" }).click();
   await expect(friend).toHaveURL(/\/today\?joined=/);
   await expect(friend.getByRole("status")).toContainText("You joined Flatmates ✓");
+  // Already in: a second tap on the link opens the group instead of saying "You joined" again.
+  await friend.goto(url);
+  await friend.getByRole("button", { name: "Join Flatmates" }).click();
+  await expect(friend).toHaveURL(/\/groups\/[0-9a-f-]{36}$/);
 });
 
 test("an admin opening their own link sees Open, not Join", async ({ page }) => {
@@ -181,7 +185,7 @@ test("a link turned off between the preview and the tap explains itself", async 
   await expect(page.getByRole("button", { name: "Create invite link" })).toBeVisible();
   await friend.getByRole("button", { name: "Join Flatmates" }).click();
   await expect(friend.getByRole("heading", { name: "This invite link doesn't work anymore" })).toBeVisible();
-  await expect(friend.getByRole("alert")).toHaveCount(0);
+  await expect(friend.getByRole("main").getByRole("alert")).toHaveCount(0); // not an inline error
 });
 
 test("an expired or revoked link explains itself", async ({ page }) => {
@@ -326,6 +330,9 @@ test("nudge a member with a preset, and they see it in their Inbox", async ({ pa
   await guest.getByRole("menuitem", { name: "💪 You've got this" }).click();
   await expect(guest.getByRole("button", { name: "Nudged ✓" })).toBeDisabled();
   await page.goto("/inbox");
+  // Unread says so in words, not only with a tint (read within MarkReadOnView's 1.5 s; Activity is
+  // the default tab with no approvals).
+  await expect(page.getByRole("listitem").filter({ hasText: /You've got this: Walk/ })).toContainText("Unread");
   // Tabs by keyboard: only the selected tab is in the Tab order; the arrows move and select.
   await expect(page.getByRole("tab", { name: "Activity" })).toHaveAttribute("tabindex", "0");
   await expect(page.getByRole("tab", { name: /^Approvals/ })).toHaveAttribute("tabindex", "-1");
@@ -336,8 +343,6 @@ test("nudge a member with a preset, and they see it in their Inbox", async ({ pa
   await page.keyboard.press("ArrowRight");
   await expect(page.getByRole("tab", { name: "Activity" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByText(/You've got this: Walk/)).toBeVisible();
-  // Unread says so in words, not only with a tint (read within MarkReadOnView's 1.5 s).
-  await expect(page.getByRole("listitem").filter({ hasText: /You've got this: Walk/ })).toContainText("Unread");
   // After a moment on Activity, the rows shown count as read and the badge clears.
   await expect(page.getByRole("link", { name: "Inbox", exact: true })).toBeVisible();
 });
