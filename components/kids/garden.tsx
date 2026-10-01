@@ -1,4 +1,6 @@
-import { kidTheme, nextStep, restartDay, restartLine, sceneFor, stageFor, starsToNext } from "@/lib/garden";
+import { SceneItems } from "@/components/kids/scene-items";
+import { kidTheme, restartDay, restartLine, sceneFor, stageFor, starsToNext } from "@/lib/garden";
+import { isFloatingTheme, sceneItems } from "@/lib/scene-items";
 import { cn } from "@/lib/utils";
 
 // The week's garden: the stage's emoji layers composed on soil in a soft rounded card. The stage
@@ -8,19 +10,25 @@ export function GardenPicture({
   size = "md",
   theme,
   className,
+  interactive = false,
+  dancing = false,
 }: {
   stars: number;
   size?: "sm" | "md" | "lg";
   theme?: string | null;
   className?: string;
+  // The kid view: items wiggle when tapped, and dance when the day is done.
+  interactive?: boolean;
+  dancing?: boolean;
 }) {
   const t = kidTheme(theme);
   const stageIndex = stageFor(stars);
   const stage = t.stages[stageIndex];
   // The soil (🟫) is drawn as a band, with a mound at the start; the rest stand on it. The next
-  // picture shows faintly beside it (not on album thumbnails: those weeks are over).
+  // picture shows faintly beside it until the first star (not on album thumbnails: those weeks are over).
   const { plants, ghost, base } = sceneFor(stars, t.id);
-  const showGhost = ghost !== null && size !== "sm";
+  // Once taps have added items, the scene is no longer empty, so the faint preview steps aside.
+  const showGhost = ghost !== null && size !== "sm" && stars === 0;
   return (
     <div
       role="img"
@@ -53,6 +61,8 @@ export function GardenPicture({
           </span>
         ))}
       </span>
+      {/* One item per star this week (not on album thumbnails, which show only the picture). */}
+      {size !== "sm" && <SceneItems items={sceneItems(stars, t.id)} size={size} interactive={interactive} dancing={dancing} />}
       {showGhost && (
         <span
           aria-hidden
@@ -66,7 +76,8 @@ export function GardenPicture({
       )}
       <span
         aria-hidden
-        className={cn("relative flex w-full justify-center", t.ground, { sm: "h-3", md: "h-5", lg: "h-7" }[size])}
+        // Where things stand (garden, dino, town), the ground is a tall strip they stand on in rows.
+        className={cn("relative flex w-full justify-center", t.ground, size === "sm" ? "h-3" : isFloatingTheme(t.id) ? { md: "h-5", lg: "h-7" }[size] : "h-[22%]")}
       >
         {stageIndex === 0 && (
           <span className={cn("absolute bottom-full [border-radius:50%_50%_0_0/100%_100%_0_0]", t.ground, { sm: "h-2 w-12", md: "h-4 w-28", lg: "h-7 w-44" }[size])} />
@@ -94,46 +105,5 @@ export function Garden({ stars, theme, weekStart }: { stars: number; theme?: str
       </p>
       {weekStart && <p className="text-sm text-muted-foreground">{restartLine(t.id, restartDay(weekStart), false)}</p>}
     </section>
-  );
-}
-
-// The kid view (ideas/kid-view-next.md §1): a star path from this picture to the next one, which a
-// child who can't read yet can follow; a grown-up can read the label out.
-export function NextStep({ stars, theme, weekStart }: { stars: number; theme?: string | null; weekStart?: string }) {
-  const step = nextStep(stars, theme);
-  const day = weekStart ? restartDay(weekStart) : null;
-  if (!step) {
-    const t = kidTheme(theme);
-    const full = t.stages[t.stages.length - 1];
-    return (
-      <p className="text-center text-xl font-bold text-done">
-        {day ? restartLine(theme, day, true) : t.id === "garden" ? "Full garden! 🌻" : `${full.label}! ${full.icon}`}
-      </p>
-    );
-  }
-  const label = `${step.left} more ${step.left === 1 ? "star" : "stars"} to ${step.label.toLowerCase()}`;
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <div role="img" aria-label={label} className="flex flex-col items-center gap-1.5">
-        <div className="flex items-center gap-2 rounded-full bg-card px-4 py-2.5 shadow-soft">
-          <span aria-hidden className="flex items-center gap-1">
-            {Array.from({ length: step.need }, (_, i) => (
-              <span key={i} className={cn("text-3xl leading-none", i < step.have ? "" : "opacity-25 grayscale")}>
-                ⭐
-              </span>
-            ))}
-          </span>
-          <span aria-hidden className="text-xl text-muted-foreground">→</span>
-          <span aria-hidden className="flex size-12 items-center justify-center rounded-full bg-accent text-3xl leading-none">
-            {step.icon}
-          </span>
-        </div>
-        {/* For the grown-up reading along; the child counts the stars. */}
-        <p aria-hidden className="text-base font-bold">
-          {step.left} more ⭐ to {step.icon}
-        </p>
-      </div>
-      {day && <p className="text-sm text-muted-foreground">{restartLine(theme, day, false)}</p>}
-    </div>
   );
 }
