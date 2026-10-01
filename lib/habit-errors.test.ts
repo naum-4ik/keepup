@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { errorCode, GENERIC_ERROR, habitErrorMessage } from "./habit-errors";
+import { alreadyReviewedNote, errorCode, GENERIC_ERROR, habitErrorMessage, reviewerOf } from "./habit-errors";
 
 describe("habitErrorMessage", () => {
   it("maps database rule errors to friendly copy", () => {
@@ -39,5 +39,23 @@ describe("errorCode", () => {
     expect(errorCode({ message: "connection reset" })).toBeUndefined();
     expect(errorCode(null)).toBeUndefined();
     expect(errorCode({})).toBeUndefined();
+  });
+});
+
+describe("already reviewed by X", () => {
+  it("reads the reviewer's name from the error's details", () => {
+    const error = { message: "keepup:already_reviewed", details: "Dan" };
+    expect(reviewerOf(error)).toBe("Dan");
+    expect(alreadyReviewedNote(reviewerOf(error))).toBe("Dan already reviewed this.");
+  });
+
+  it("falls back to the current copy without a name", () => {
+    expect(reviewerOf({ message: "keepup:already_reviewed" })).toBeUndefined();
+    expect(reviewerOf({ message: "keepup:already_reviewed", details: "  " })).toBeUndefined();
+    expect(alreadyReviewedNote(reviewerOf({ message: "keepup:already_reviewed", details: null }))).toBe("Someone already reviewed this.");
+  });
+
+  it("ignores details on other errors", () => {
+    expect(reviewerOf({ message: "keepup:review_closed", details: "Dan" })).toBeUndefined();
   });
 });

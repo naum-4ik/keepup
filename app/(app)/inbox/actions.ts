@@ -3,11 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { NUDGE_KINDS } from "@/lib/feed-copy";
-import { errorCode, habitErrorMessage } from "@/lib/habit-errors";
+import { errorCode, habitErrorMessage, reviewerOf } from "@/lib/habit-errors";
 import { isUuid } from "@/lib/habit-schema";
 import { getPendingApprovals } from "@/lib/inbox";
 
-export type ReviewResult = { ok: true; reviewed: number } | { ok: false; message: string; code?: string };
+export type ReviewResult = { ok: true; reviewed: number } | { ok: false; message: string; code?: string; reviewer?: string };
 export type SendResult = { ok: boolean; message?: string; code?: string };
 
 function refresh() {
@@ -20,7 +20,7 @@ export async function review(checkInId: string, approve: boolean): Promise<Revie
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("review_check_in", { p_check_in_id: checkInId, p_approve: approve });
   refresh();
-  if (error) return { ok: false, message: habitErrorMessage(error), code: errorCode(error) };
+  if (error) return { ok: false, message: habitErrorMessage(error), code: errorCode(error), reviewer: reviewerOf(error) };
   return { ok: true, reviewed: 1 };
 }
 

@@ -55,6 +55,16 @@ export function errorCode(error: { message?: string } | null | undefined): strin
   return error?.message?.match(/keepup:([a-z_]+)/)?.[1];
 }
 
+// already_reviewed carries the first reviewer's display name in the error's DETAIL (only members
+// reach it). PostgREST passes DETAIL through as `details`.
+export function reviewerOf(error: { message?: string; details?: string | null } | null | undefined): string | undefined {
+  return (errorCode(error) === "already_reviewed" && error?.details?.trim()) || undefined;
+}
+
+// The Inbox row's note when someone else got there first.
+export const alreadyReviewedNote = (reviewer?: string): string =>
+  reviewer ? `${reviewer} already reviewed this.` : "Someone already reviewed this.";
+
 // Check constraints (23514) aren't keepup: codes; the ones a person can hit get their own copy.
 const CONSTRAINTS: Record<string, string> = {
   habits_ends_after_start_check: "The last day can't be before the first day.",
