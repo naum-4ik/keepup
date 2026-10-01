@@ -88,7 +88,7 @@ function ActiveGoal({ childId, childName, goal }: { childId: string; childName: 
           <div className="flex flex-col gap-1 pr-10">
             <DialogTitle>Cancel the goal?</DialogTitle>
             <DialogDescription>
-              {goal.title} goes away with its star path. A new goal counts from zero; {childName}&apos;s garden keeps its stars.
+              {goal.title} goes away with its star path. A new goal counts from zero; {childName} keeps the stars.
             </DialogDescription>
           </div>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
