@@ -56,7 +56,7 @@ A warm, mobile-first habit tracker for one person and for families. Pick a habit
 | M1 | Foundation: auth (Google, email and password), profiles, CI, staging deploys, versioning | ✅ v0.2.0 |
 | M2 | Private habits: templates, check-ins, streaks, pauses, habit page, progress, weekly overview, onboarding | ✅ v0.3.0 |
 | M3 | Groups and family: shared habits, approvals, kid profiles with a star garden, emoji avatars, backups | ✅ v0.4.0 |
-| M4 | Installable app (PWA), push reminders, offline check-ins | Planned |
+| M4 | Installable app (PWA), push reminders, offline check-ins | 🚧 In progress: installable app and push reminders on staging; offline check-ins next |
 | M5 | XP, levels, badges, rest days, weekly recaps | Planned |
 | M6 | Landing page, "Try it" demo, privacy page and data export → **v1.0.0** | Planned |
 

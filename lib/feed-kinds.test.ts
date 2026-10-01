@@ -29,3 +29,22 @@ describe("#11 private streak ended (feed only)", () => {
     expect(feedCopy(item({ payload: { streak: 3, period: "week", best: 3 } })).body).toBe("Read streak ended at 3 weeks. Start a new one this week.");
   });
 });
+
+describe("reminder kinds in the Inbox", () => {
+  it("the daily summary and a habit's own reminder", () => {
+    expect(feedCopy(item({ kind: "daily_summary", habit_id: null, habit_title: null, payload: {
+      todo: [{ title: "Read", done: 0, target: 1 }], at_risk: [{ title: "Run", done: 1, target: 3, period: "week", days_left: 2 }] } })))
+      .toEqual({ title: "Today", body: "Still to do: Read · Run: 1 of 3 this week, 2 days left 🌱", href: "/today" });
+    expect(feedCopy(item({ kind: "habit_reminder", habit_title: "Vitamins" })).body).toBe("Time for Vitamins.");
+  });
+
+  it("a summary with nothing left says so, from the shared copy", () => {
+    expect(feedCopy(item({ kind: "daily_summary", habit_id: null, payload: { todo: [], at_risk: [] } })))
+      .toEqual({ title: "Today", body: "All done for today 🎉", href: "/today" });
+  });
+
+  it("an approval about to close", () => {
+    expect(feedCopy(item({ kind: "approval_expiring", group_name: "Family", actor_name: "Anna", habit_title: "Gym" })))
+      .toEqual({ title: "Family", body: "Anna's Gym check-in needs a yes within 2 hours", href: "/inbox" });
+  });
+});

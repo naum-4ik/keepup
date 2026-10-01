@@ -8,6 +8,7 @@ import { startAgainEnd } from "@/lib/habit-finish";
 import { todayIn } from "@/lib/dates";
 import { getGroupDetail } from "@/lib/groups";
 import { GENERIC_ERROR, habitErrorMessage } from "@/lib/habit-errors";
+import { reminderError } from "@/lib/reminder-mode";
 import { isUuid, LOCAL_DATE, parseHabit, parseHabitDetails, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 
 const NOT_FOUND: ActionResult = { ok: false, message: "That habit isn't available." };
@@ -320,4 +321,29 @@ export async function startAgain(habitId: string): Promise<StartAgainResult> {
   }
   refresh();
   redirect("/today");
+}
+
+// "Remind me at…" (ideas/notifications-tone.md): the database stores it and the scheduler uses it.
+export async function setHabitReminder(habitId: string, mode: string, remindAt: string | null): Promise<ActionResult> {
+  if (!isUuid(habitId)) return NOT_FOUND;
+  const invalid = reminderError(mode, remindAt);
+  if (invalid) return { ok: false, message: invalid };
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("set_habit_reminder", {
+    p_habit_id: habitId,
+    p_mode: mode,
+    ...(mode === "time" && remindAt ? { p_remind_at: remindAt } : {}),
+  });
+  if (error) return { ok: false, message: habitErrorMessage(error) };
+  revalidatePath(`/habits/${habitId}`);
+  return { ok: true };
+}
+
+export async function setHabitMute(habitId: string, muted: boolean): Promise<ActionResult> {
+  if (!isUuid(habitId)) return NOT_FOUND;
+  const { supabase } = await requireUser();
+  const { error } = await supabase.rpc("set_habit_mute", { p_habit_id: habitId, p_muted: muted === true });
+  if (error) return { ok: false, message: habitErrorMessage(error) };
+  revalidatePath(`/habits/${habitId}`);
+  return { ok: true };
 }

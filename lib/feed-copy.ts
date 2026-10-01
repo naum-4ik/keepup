@@ -19,7 +19,7 @@ export const FEED_KINDS = [
   "group_streak_ended", "group_milestone", "group_habit_created", "group_habit_paused", "group_habit_resumed",
   "group_habit_archived", "member_paused", "member_joined", "member_left", "role_changed", "nudge", "cheer",
   "kid_check_in", "kid_streak", "kid_goal_reached", "kid_garden_full",
-  "private_streak_ended",
+  "private_streak_ended", "daily_summary", "habit_reminder", "approval_expiring",
 ] as const;
 type Kind = (typeof FEED_KINDS)[number];
 
@@ -98,5 +98,19 @@ export function feedCopy(n: FeedItem): { title: string; body: string; href: stri
         href: habitHref,
       };
     }
+    case "daily_summary": {
+      const rows = (v: unknown) => (Array.isArray(v) ? (v as Record<string, unknown>[]) : []);
+      const summary = copy.dailySummary({
+        todo: rows(n.payload.todo).map((r) => ({ title: String(r.title), done: Number(r.done ?? 0), target: Number(r.target ?? 1) })),
+        atRisk: rows(n.payload.at_risk).map((r) => ({
+          title: String(r.title), done: Number(r.done ?? 0), target: Number(r.target ?? 1),
+          period: r.period === "month" ? "month" : "week", daysLeft: Number(r.days_left ?? 0),
+        })),
+      });
+      return { ...(summary ?? copy.allDoneToday), href: "/today" };
+    }
+    // A habit's own reminder has no group: the line names only the habit.
+    case "habit_reminder": return { ...copy.habitReminder(habit), href: habitHref };
+    case "approval_expiring": return { ...copy.approvalExpiring(group, who, habit), href: "/inbox" };
   }
 }
