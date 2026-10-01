@@ -27,7 +27,7 @@ select ok((select push and category = 'group_activity' from public.notifications
 select isnt(public.push_job((select id from public.notifications where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'group_check_in'), now()), null,
   'a non-final check-in''s group_check_in is a normal job');
 select private.check_in_impl((select v from t where k = 'dinner'), '00000000-0000-0000-0000-0000000000b1', now());
-select is((select count(*)::int from public.notifications where kind = 'everyone_done' and push), 2, '#10 Everyone did it is pushed to each member');
+select is((select count(*)::int from public.notifications where kind = 'everyone_done' and push and habit_id = (select v from t where k = 'dinner')), 2, '#10 Everyone did it is pushed to each member');
 select ok((select bool_and(public.push_job(id, now()) is null) from public.notifications where kind = 'group_check_in' and habit_id = (select v from t where k = 'dinner')),
   'once everyone is done the group_check_in jobs are skipped');
 select ok((select bool_and(pushed_at is not null) from public.notifications where kind = 'group_check_in' and habit_id = (select v from t where k = 'dinner')),
