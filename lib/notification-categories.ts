@@ -43,4 +43,4 @@ export function deliveryByCategory(rows: readonly { category: string; delivery: 
   return out;
 }
 
-export const IPHONE_SOUND_HINT = "On iPhone, sound is one switch for all of Keepup: Settings → Notifications → Keepup → Sounds.";
+export const IPHONE_SOUND_HINT = "On iPhone and iPad, sound is one switch for all of Keepup: Settings → Notifications → Keepup → Sounds.";

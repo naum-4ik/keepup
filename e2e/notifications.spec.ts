@@ -20,7 +20,7 @@ test("Settings: the daily reminder is back with its hint, and the choices stick"
   await page.reload();
   await expect(section.getByLabel("Daily reminder")).toHaveValue("7");
   await expect(nudges.getByRole("radio", { name: "Inbox only" })).toBeChecked();
-  await expect(section.getByText(/On iPhone, sound is one switch/)).toHaveCount(0);
+  await expect(section.getByText(/On iPhone and iPad, sound is one switch/)).toHaveCount(0);
 
   await section.getByRole("group", { name: "Approvals" }).getByRole("radio", { name: "Inbox only" }).check();
   await expect(section.getByText("Your group can't complete habits that need your approval.")).toBeVisible();
@@ -52,7 +52,7 @@ test.describe("on an iPhone", () => {
     await signUpAndOnboard(page);
     await page.goto("/profile/settings");
     await expect(page.getByRole("region", { name: "Notifications" })
-      .getByText("On iPhone, sound is one switch for all of Keepup: Settings → Notifications → Keepup → Sounds.")).toBeVisible();
+      .getByText("On iPhone and iPad, sound is one switch for all of Keepup: Settings → Notifications → Keepup → Sounds.")).toBeVisible();
   });
 });
 
