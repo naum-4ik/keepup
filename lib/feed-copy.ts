@@ -1,4 +1,5 @@
 import type { Database } from "@/lib/database.types";
+import { formatLocalDate } from "@/lib/dates";
 import * as copy from "@/lib/notification-copy";
 import type { NudgeKind, PeriodUnit } from "@/lib/notification-copy";
 
@@ -48,8 +49,8 @@ export function feedCopy(n: FeedItem): { title: string; body: string; href: stri
   const kidHref = n.subject_id ? `/kids/${n.subject_id}` : null;
 
   switch (n.kind) {
-    case "group_check_in": return { ...copy.groupCheckIn(group, [who], habit), href: habitHref };
-    case "approval_needed": return { ...copy.approvalNeeded(group, [{ author: who, habit }]), href: "/inbox" };
+    case "group_check_in": return { ...copy.groupCheckIn(group, [who], habit)!, href: habitHref };
+    case "approval_needed": return { ...copy.approvalNeeded(group, [{ author: who, habit }])!, href: "/inbox" };
     case "check_in_approved": return { title: habit, body: `${who} approved your check-in.`, href: habitHref };
     case "check_in_rejected": return { ...copy.checkInNotApproved(habit, who, asPeriod(n.payload.period, "day")), href: habitHref };
     case "everyone_done": return { ...copy.everyoneDidIt(group, habit), href: habitHref };
@@ -61,12 +62,12 @@ export function feedCopy(n: FeedItem): { title: string; body: string; href: stri
     }
     case "group_milestone": return { title: group, body: `🔥 ${habit}: ${streak} ${unit(streak, n.payload.period)} in a row, together`, href: habitHref };
     case "group_habit_created": {
-      // The feed row carries the period, not the full schedule: "weekly" when known, none otherwise.
+      // The feed row carries period and target_count, not the full schedule: say "weekly" only for a once-a-period habit.
       const p = n.payload.period;
-      if (p === "day" || p === "week" || p === "month") return { ...copy.groupHabitCreated(group, who, habit, SCHEDULE[p]), href: habitHref };
+      if ((p === "day" || p === "week" || p === "month") && n.payload.target_count === 1) return { ...copy.groupHabitCreated(group, who, habit, SCHEDULE[p]), href: habitHref };
       return { title: group, body: `${who} added ${habit}.`, href: habitHref };
     }
-    case "group_habit_paused": return { ...copy.groupHabitPaused(group, habit, n.payload.ends_on ? String(n.payload.ends_on) : null), href: habitHref };
+    case "group_habit_paused": return { ...copy.groupHabitPaused(group, habit, n.payload.ends_on ? formatLocalDate(String(n.payload.ends_on)) : null), href: habitHref };
     case "group_habit_resumed": return { ...copy.groupHabitResumed(group, habit), href: habitHref };
     case "group_habit_archived": return { title: group, body: `${habit} was archived.`, href: groupHref };
     case "member_paused": return { title: group, body: `${who} paused ${habit} for a while.`, href: habitHref };

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { feedCopy, type FeedItem } from "@/lib/feed-copy";
-import { BANNED_WORDS } from "@/lib/notification-copy";
+import { BANNED_PATTERNS, BANNED_WORDS } from "@/lib/notification-copy";
 
 const item = (o: Partial<FeedItem>): FeedItem => ({
   id: "n", kind: "group_check_in", created_at: "2026-10-05T18:00:00Z", read_at: null, seen_at: null,
@@ -19,6 +19,10 @@ describe("feedCopy", () => {
       .toBe("Dan didn't approve your check-in. You can check in again this week.");
     expect(feedCopy(item({ kind: "group_habit_created", habit_title: "Family dinner", payload: { period: "week", target_count: 1 } })).body)
       .toBe("Anna added Family dinner, weekly.");
+    expect(feedCopy(item({ kind: "group_habit_created", habit_title: "Gym", payload: { period: "week", target_count: 3 } })).body)
+      .toBe("Anna added Gym.");
+    expect(feedCopy(item({ kind: "group_habit_paused", habit_title: "Family dinner", payload: { ends_on: "2026-10-12" } })).body)
+      .toBe("Family dinner is paused until Mon 12 Oct.");
     expect(feedCopy(item({ kind: "group_habit_created", habit_title: "Family dinner" })).body).toBe("Anna added Family dinner.");
     expect(feedCopy(item({ kind: "group_streak_ended", habit_title: "Family dinner", payload: { streak: 6, period: "week" } })).body)
       .toBe("Family dinner streak ended at 6 weeks. Start a new one this week.");
@@ -56,6 +60,7 @@ describe("feedCopy", () => {
       const { title, body } = feedCopy(item({ kind, subject_name: "Mary", payload: { streak: 3, period: "day", kind: "thinking_of_you", role: "admin", title: "Park", emoji: "🛝" } }));
       const text = `${title} ${body}`.toLowerCase();
       for (const w of BANNED_WORDS) expect(text).not.toContain(w);
+      for (const re of BANNED_PATTERNS) expect(text).not.toMatch(re);
       expect((body.match(emoji) ?? []).length).toBeLessThanOrEqual(1);
     }
   });

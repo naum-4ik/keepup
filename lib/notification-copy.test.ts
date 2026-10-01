@@ -1,7 +1,7 @@
 // lib/notification-copy.test.ts
 import { describe, expect, it } from "vitest";
 import * as copy from "./notification-copy";
-import { BANNED_WORDS, type Copy } from "./notification-copy";
+import { BANNED_PATTERNS, BANNED_WORDS, type Copy } from "./notification-copy";
 
 const EMOJI = /\p{Extended_Pictographic}/gu;
 
@@ -9,10 +9,12 @@ const EMOJI = /\p{Extended_Pictographic}/gu;
 const samples: Copy[] = [
   copy.dailySummary({ todo: [{ title: "Water", done: 5, target: 8 }, { title: "Read" }], atRisk: [{ title: "Run", done: 1, target: 3, period: "week", daysLeft: 2 }] })!,
   copy.habitReminder("Vitamins"),
-  copy.groupCheckIn("Family", ["Anna", "Dan"], "Read 20 min"),
+  copy.groupCheckIn("Family", ["Anna", "Dan"], "Read 20 min")!,
+  copy.groupCheckIn("Family", ["Anna", "Dan", "Grandma"], "Read 20 min")!,
+  copy.groupCheckIn("Family", ["Anna", "Dan", "Grandma", "Mary"], "Read 20 min")!,
   copy.everyoneDidIt("Family", "Family dinner"),
-  copy.approvalNeeded("Family", [{ author: "Anna", habit: "Gym" }]),
-  copy.approvalNeeded("Family", [{ author: "Anna", habit: "Gym" }, { author: "Dan", habit: "Read" }, { author: "Dan", habit: "Run" }]),
+  copy.approvalNeeded("Family", [{ author: "Anna", habit: "Gym" }])!,
+  copy.approvalNeeded("Family", [{ author: "Anna", habit: "Gym" }, { author: "Dan", habit: "Read" }, { author: "Dan", habit: "Run" }])!,
   copy.approvalExpiring("Family", "Anna", "Gym"),
   copy.checkInNotApproved("Gym", "Dan", "day"),
   copy.nudge("thinking_of_you", "Anna", "Family dinner"),
@@ -22,21 +24,27 @@ const samples: Copy[] = [
   copy.groupStreakBack("Family", "Family dinner"),
   copy.groupHabitCreated("Family", "Anna", "Family dinner", "weekly"),
   copy.groupHabitPaused("Family", "Family dinner", "Mon 12 Oct"),
+  copy.groupHabitPaused("Family", "Family dinner", null),
   copy.groupHabitResumed("Family", "Family dinner"),
   copy.memberJoined("Family", "Grandma"),
   copy.restDayUsed("Read", 14, "day"),
-  copy.weeklyRecap({ done: 18, possible: 21, longest: { habit: "Read 20 min", length: 12 } }),
+  copy.weeklyRecap({ done: 18, possible: 21, longest: { habit: "Read 20 min", length: 12 } })!,
+  copy.weeklyRecap({ done: 4, possible: 7, longest: null })!,
   copy.levelUp(6, "Sprout"),
   copy.badgeUnlocked("Bookworm"),
   copy.kidTreatGoal("Mary", "Trip to the park", "🛝"),
   copy.kidFullGarden("Mary"),
   copy.kidStreak("Mary", 7, "Brush teeth"),
+  copy.kidTreatGoal("Mary", "Trip to the park", ""),
+  { title: "milestone", body: copy.milestoneCard("Read 20 min", 30, "day") },
+  { title: "milestone", body: copy.milestoneCard("Family dinner", 1, "week") },
 ];
 
 describe("voice rules over every notification", () => {
   it.each(samples.map((s) => [s.title, s]))("%s: no banned words", (_t, s) => {
     const text = `${s.title} ${s.body}`.toLowerCase();
     for (const word of BANNED_WORDS) expect(text).not.toContain(word);
+    for (const re of BANNED_PATTERNS) expect(text).not.toMatch(re);
   });
 
   it.each(samples.map((s) => [s.title, s]))("%s: at most one emoji", (_t, s) => {
@@ -51,6 +59,41 @@ describe("voice rules over every notification", () => {
   it("kid copy never assumes a gender", () => {
     const kid = [copy.kidTreatGoal("Mary", "Trip to the park", "🛝"), copy.kidFullGarden("Mary"), copy.kidStreak("Mary", 7, "Brush teeth")];
     for (const s of kid) expect(s.body).not.toMatch(/\b(her|his|she|he)\b/i);
+  });
+});
+
+describe("never names who missed", () => {
+  it("group outcomes carry no member names", () => {
+    const names = ["Anna", "Dan", "Grandma", "Mary"];
+    const outcomes = [copy.everyoneDidIt("Family", "Family dinner"), copy.groupStreakEnded("Family", "Family dinner", 6, "week")!, copy.groupStreakBack("Family", "Family dinner")];
+    for (const o of outcomes) for (const n of names) expect(`${o.title} ${o.body}`).not.toContain(n);
+  });
+});
+
+describe("banned patterns", () => {
+  it("catches any 'only N left'", () => {
+    expect(BANNED_PATTERNS.some((re) => re.test("Only 2 left!"))).toBe(true);
+  });
+});
+
+describe("edge cases", () => {
+  it("empty inputs return null so callers skip", () => {
+    expect(copy.approvalNeeded("Family", [])).toBeNull();
+    expect(copy.groupCheckIn("Family", [], "Gym")).toBeNull();
+    expect(copy.weeklyRecap({ done: 0, possible: 0, longest: null })).toBeNull();
+  });
+
+  it("pluralises the recap and trims an empty goal emoji", () => {
+    expect(copy.weeklyRecap({ done: 1, possible: 1, longest: null })?.body).toBe("1 of 1 check-in last week.");
+    expect(copy.kidTreatGoal("Mary", "Trip to the park", "").body).toBe("Mary reached a goal: Trip to the park");
+  });
+
+  it("exact bodies", () => {
+    expect(copy.habitReminder("Vitamins")).toEqual({ title: "Vitamins", body: "Time for Vitamins." });
+    expect(copy.everyoneDidIt("Family", "Family dinner")).toEqual({ title: "Family", body: "Everyone did it: Family dinner ✓" });
+    expect(copy.approvalExpiring("Family", "Anna", "Gym")).toEqual({ title: "Family", body: "Anna's Gym check-in needs a yes within 2 hours" });
+    expect(copy.groupCheckIn("Family", ["Anna", "Dan", "Grandma"], "Read")?.body).toBe("Anna, Dan and Grandma checked in: Read");
+    expect(copy.groupCheckIn("Family", ["Anna", "Dan", "Grandma", "Mary"], "Read")?.body).toBe("Anna, Dan and 2 others checked in: Read");
   });
 });
 
@@ -86,8 +129,8 @@ describe("copy sheet rows", () => {
   });
 
   it("approval: one names the person, several are counted", () => {
-    expect(copy.approvalNeeded("Family", [{ author: "Anna", habit: "Gym" }]).body).toBe("Anna did Gym. Approve?");
-    expect(copy.approvalNeeded("Family", [{ author: "Anna", habit: "Gym" }, { author: "Dan", habit: "Read" }]).body).toBe("2 check-ins waiting for you");
+    expect(copy.approvalNeeded("Family", [{ author: "Anna", habit: "Gym" }])?.body).toBe("Anna did Gym. Approve?");
+    expect(copy.approvalNeeded("Family", [{ author: "Anna", habit: "Gym" }, { author: "Dan", habit: "Read" }])?.body).toBe("2 check-ins waiting for you");
   });
 
   it("not approved says when you can try again", () => {
@@ -129,7 +172,7 @@ describe("copy sheet rows", () => {
       title: "Your week",
       body: "18 of 21 check-ins last week. Longest streak: Read 20 min 🔥 12",
     });
-    expect(copy.weeklyRecap({ done: 4, possible: 7, longest: null }).body).toBe("4 of 7 check-ins last week.");
+    expect(copy.weeklyRecap({ done: 4, possible: 7, longest: null })?.body).toBe("4 of 7 check-ins last week.");
     expect(copy.levelUp(6, "Sprout")).toEqual({ title: "Level 6", body: "Sprout 🌱" });
     expect(copy.badgeUnlocked("Bookworm")).toEqual({ title: "Unlocked", body: "Bookworm" });
     expect(copy.milestoneCard("Read 20 min", 30, "day")).toBe("🔥 Read 20 min: 30 days in a row");

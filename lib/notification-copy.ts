@@ -8,7 +8,9 @@ export type NudgeKind = "thinking_of_you" | "you_got_this" | "gentle_reminder";
 export type SummaryItem = { title: string; done?: number; target?: number };
 export type AtRiskItem = { title: string; done: number; target: number; period: "week" | "month"; daysLeft: number };
 
-export const BANNED_WORDS = ["failed", "missed out", "don't lose", "hurry", "last chance", "only x left", "lazy", "you missed"] as const;
+export const BANNED_WORDS = ["failed", "missed out", "don't lose", "hurry", "last chance", "lazy", "you missed"] as const;
+// "only X left" is a pattern: any number.
+export const BANNED_PATTERNS: readonly RegExp[] = [/only \d+ left/i];
 
 const THIS: Record<PeriodUnit, string> = { day: "today", week: "this week", month: "this month" };
 
@@ -34,14 +36,15 @@ export function dailySummary({ todo, atRisk }: { todo: SummaryItem[]; atRisk: At
 
 export const habitReminder = (habit: string): Copy => ({ title: habit, body: `Time for ${habit}.` });
 
-export const groupCheckIn = (group: string, names: string[], habit: string): Copy => ({
-  title: group,
-  body: `${joinNames(names)} checked in: ${habit}`,
-});
+export function groupCheckIn(group: string, names: string[], habit: string): Copy | null {
+  if (names.length === 0) return null;
+  return { title: group, body: `${joinNames(names)} checked in: ${habit}` };
+}
 
 export const everyoneDidIt = (group: string, habit: string): Copy => ({ title: group, body: `Everyone did it: ${habit} ✓` });
 
-export function approvalNeeded(group: string, pending: { author: string; habit: string }[]): Copy {
+export function approvalNeeded(group: string, pending: { author: string; habit: string }[]): Copy | null {
+  if (pending.length === 0) return null;
   if (pending.length === 1) return { title: group, body: `${pending[0].author} did ${pending[0].habit}. Approve?` };
   return { title: group, body: `${pending.length} check-ins waiting for you` };
 }
@@ -93,8 +96,9 @@ export const restDayUsed = (habit: string, streakLength: number, period: "day" |
   body: `Rest ${period} used. Your ${streakLength}-${period} streak is safe 💤`,
 });
 
-export function weeklyRecap({ done, possible, longest }: { done: number; possible: number; longest: { habit: string; length: number } | null }): Copy {
-  const base = `${done} of ${possible} check-ins last week.`;
+export function weeklyRecap({ done, possible, longest }: { done: number; possible: number; longest: { habit: string; length: number } | null }): Copy | null {
+  if (possible === 0) return null;
+  const base = `${done} of ${plural(possible, "check-in")} last week.`;
   return { title: "Your week", body: longest ? `${base} Longest streak: ${longest.habit} 🔥 ${longest.length}` : base };
 }
 
@@ -107,7 +111,7 @@ export const milestoneCard = (habit: string, length: number, period: PeriodUnit)
 
 export const kidTreatGoal = (kid: string, goal: string, goalEmoji: string): Copy => ({
   title: kid,
-  body: `${kid} reached a goal: ${goal} ${goalEmoji}`,
+  body: `${kid} reached a goal: ${goal} ${goalEmoji}`.trim(),
 });
 
 export const kidFullGarden = (kid: string): Copy => ({ title: kid, body: `${kid}'s garden is in full bloom this week 🌷` });
