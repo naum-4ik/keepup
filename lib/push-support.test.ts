@@ -1,0 +1,86 @@
+// lib/push-support.test.ts
+import { describe, expect, it, vi } from "vitest";
+import { deviceLabel, iosVersion, pushSupport, signOutCleanup, urlBase64ToUint8Array, type PushEnv } from "./push-support";
+
+const IPHONE_17 = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
+const IPHONE_16_3 = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.3 Mobile/15E148 Safari/604.1";
+const IPHONE_16_10 = IPHONE_16_3.replace("16_3", "16_10");
+const IPAD_DESKTOP = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15";
+const ANDROID = "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36";
+
+const env = (o: Partial<PushEnv>): PushEnv => ({
+  userAgent: ANDROID, maxTouchPoints: 5, standalone: false, hasServiceWorker: true, hasPushManager: true,
+  permission: "default", vapidKey: "BKey", ...o,
+});
+
+describe("pushSupport", () => {
+  it("an iPhone that hasn't installed Keepup needs the Home Screen first", () => {
+    expect(pushSupport(env({ userAgent: IPHONE_17, hasPushManager: false, permission: "unsupported" }))).toBe("needs-install");
+  });
+
+  it("an installed iPhone on iOS 16.4+ is ready", () => {
+    expect(pushSupport(env({ userAgent: IPHONE_17, standalone: true }))).toBe("ready");
+  });
+
+  it("iOS before 16.4 can't, and says so (16.10 is newer than 16.4)", () => {
+    expect(pushSupport(env({ userAgent: IPHONE_16_3, standalone: true }))).toBe("ios-too-old");
+    expect(pushSupport(env({ userAgent: IPHONE_16_10, standalone: true }))).toBe("ready");
+  });
+
+  it("an iPad that says it's a Mac still needs installing", () => {
+    expect(pushSupport(env({ userAgent: IPAD_DESKTOP, maxTouchPoints: 5 }))).toBe("needs-install");
+    expect(pushSupport(env({ userAgent: IPAD_DESKTOP, maxTouchPoints: 0 }))).toBe("ready");
+  });
+
+  it("Android Chrome works in the browser", () => {
+    expect(pushSupport(env({}))).toBe("ready");
+  });
+
+  it("blocked, unsupported and not configured", () => {
+    expect(pushSupport(env({ permission: "denied" }))).toBe("blocked");
+    expect(pushSupport(env({ hasPushManager: false }))).toBe("unsupported");
+    expect(pushSupport(env({ vapidKey: undefined }))).toBe("not-configured");
+  });
+
+  it("reads iOS versions", () => {
+    expect(iosVersion(IPHONE_17, 5)).toEqual([17, 5]);
+    expect(iosVersion(ANDROID, 5)).toBeNull();
+  });
+});
+
+describe("deviceLabel", () => {
+  it("names the phone and browser", () => {
+    expect(deviceLabel(IPHONE_17)).toBe("iPhone · Safari");
+    expect(deviceLabel(ANDROID)).toBe("Android · Chrome");
+    expect(deviceLabel(null)).toBe("A device");
+  });
+});
+
+describe("urlBase64ToUint8Array", () => {
+  it("decodes the VAPID public key", () => {
+    expect([...urlBase64ToUint8Array("AQID_-8")]).toEqual([1, 2, 3, 255, 239]);
+  });
+});
+
+describe("signOutCleanup", () => {
+  it("unsubscribes this device before signing out, so the next account's pushes don't reach the last one", async () => {
+    const calls: string[] = [];
+    await signOutCleanup({
+      getSubscription: async () => ({ endpoint: "https://push.example/abc", unsubscribe: async () => (calls.push("unsubscribe"), true) }),
+      forget: async (e) => void calls.push(`forget ${e}`),
+      clearCaches: async () => void calls.push("caches"),
+    });
+    expect(calls).toEqual(["forget https://push.example/abc", "unsubscribe", "caches"]);
+  });
+
+  it("still clears caches when there is no worker or the server can't be reached", async () => {
+    const clearCaches = vi.fn(async () => undefined);
+    await signOutCleanup({ getSubscription: async () => { throw new Error("no worker"); }, forget: async () => undefined, clearCaches });
+    await signOutCleanup({
+      getSubscription: async () => ({ endpoint: "e", unsubscribe: async () => true }),
+      forget: async () => { throw new TypeError("Failed to fetch"); },
+      clearCaches,
+    });
+    expect(clearCaches).toHaveBeenCalledTimes(2);
+  });
+});
