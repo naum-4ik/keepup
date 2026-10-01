@@ -48,6 +48,9 @@ const MESSAGES: Record<string, string> = {
   already_nudged: "You've already nudged them about this today.",
   cannot_nudge: "They're all set for now.",
   cannot_cheer: "You can cheer other people's check-ins.",
+  invalid_category: "That setting isn't available.",
+  invalid_choice: "Pick one of the options.",
+  invalid_subscription: "This device couldn't be set up for notifications.",
 };
 
 // The rule name a database function raised ("keepup:<code>"), if any.

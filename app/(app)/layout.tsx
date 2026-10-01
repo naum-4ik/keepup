@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/app-shell/app-header";
 import { BottomNav } from "@/components/app-shell/bottom-nav";
+import { PushRefresh } from "@/components/notifications/push-refresh";
 import { getProfile } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/inbox";
 
@@ -14,6 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* wrap-anywhere (inherited): a long name with no spaces wraps instead of widening the page. */}
       <main className="mx-auto w-full max-w-md flex-1 px-4 pb-24 wrap-anywhere">{children}</main>
       <BottomNav />
+      <PushRefresh />
     </div>
   );
 }

@@ -79,3 +79,36 @@ self.addEventListener("notificationclick", (event) => {
   }
   event.waitUntil(openOrFocus(url || "/inbox"));
 });
+
+// The browser replaced this device's subscription (expired or rotated keys). Subscribe again with the
+// old one's options and save it, with the endpoint it replaces: the server saves it only while this
+// account still has that device. Without the old subscription there is nothing to go on, so nothing
+// is done. If anything fails, do nothing. Never rejects, so waitUntil doesn't either.
+async function resubscribe(event) {
+  try {
+    const old = event.oldSubscription;
+    if (!old || !old.endpoint) return;
+    const options = old.options;
+    let sub = event.newSubscription || null;
+    if (!sub) {
+      if (!options || !options.applicationServerKey) return;
+      sub = await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: options.applicationServerKey });
+    }
+    const json = sub.toJSON();
+    await fetch("/api/push-subscription", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        endpoint: sub.endpoint,
+        p256dh: json.keys && json.keys.p256dh,
+        auth: json.keys && json.keys.auth,
+        oldEndpoint: old.endpoint,
+      }),
+    });
+  } catch (e) {
+    console.error("push resubscribe", e);
+  }
+}
+
+self.addEventListener("pushsubscriptionchange", (event) => event.waitUntil(resubscribe(event)));

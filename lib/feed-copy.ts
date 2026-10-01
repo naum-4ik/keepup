@@ -19,6 +19,7 @@ export const FEED_KINDS = [
   "group_streak_ended", "group_milestone", "group_habit_created", "group_habit_paused", "group_habit_resumed",
   "group_habit_archived", "member_paused", "member_joined", "member_left", "role_changed", "nudge", "cheer",
   "kid_check_in", "kid_streak", "kid_goal_reached", "kid_garden_full",
+  "private_streak_ended",
 ] as const;
 type Kind = (typeof FEED_KINDS)[number];
 
@@ -87,5 +88,15 @@ export function feedCopy(n: FeedItem): { title: string; body: string; href: stri
       return { ...goal, body: goal.body.trim(), href: kidHref };
     }
     case "kid_garden_full": return { ...copy.kidFullGarden(kid), href: kidHref };
+    case "private_streak_ended": {
+      // ideas/achievements-and-rewards.md §5: "Read streak ended at 12 days. Your best is still 21."
+      const best = Number(n.payload.best ?? 0);
+      const ended = `${habit} streak ended at ${streak} ${unit(streak, n.payload.period)}.`;
+      return {
+        title: habit,
+        body: best > streak ? `${ended} Your best is still ${best}.` : `${ended} Start a new one ${THIS[String(n.payload.period)] ?? "today"}.`,
+        href: habitHref,
+      };
+    }
   }
 }
