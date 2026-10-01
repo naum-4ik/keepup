@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { signOut } from "@/app/auth/actions";
 import { AvatarEdit } from "@/components/avatar-edit";
+import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
 import { isAvatarColor } from "@/lib/avatars";
@@ -32,11 +32,7 @@ export default async function ProfilePage() {
       <Button asChild variant="outline" className="h-11">
         <Link href="/profile/settings">Settings</Link>
       </Button>
-      <form action={signOut}>
-        <Button type="submit" variant="outline" className="h-11 w-full">
-          Sign out
-        </Button>
-      </form>
+      <SignOutButton />
       <footer className="text-center text-xs text-muted-foreground">
         <Link href="/whats-new" className="font-mono underline-offset-4 hover:underline">
           {appVersion()}

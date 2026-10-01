@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { NotificationSettingsCard } from "@/components/notifications/notification-settings";
 import { ProfileForm } from "@/components/profile-form";
 import { getProfile } from "@/lib/auth";
+import { getNotificationSettings } from "@/lib/notification-settings";
 import { listTimezones } from "@/lib/timezones";
 import { updateProfile } from "./actions";
 
 export default async function SettingsPage() {
-  const { profile } = await getProfile();
+  const [{ profile }, notifications] = await Promise.all([getProfile(), getNotificationSettings()]);
 
   return (
     <section className="flex flex-col gap-3 pt-2 pb-6">
@@ -27,6 +29,7 @@ export default async function SettingsPage() {
           submitLabel="Save"
         />
       </div>
+      <NotificationSettingsCard settings={notifications} />
     </section>
   );
 }

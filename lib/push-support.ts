@@ -59,7 +59,7 @@ export function deviceLabel(userAgent: string | null): string {
   return browser ? `${os} · ${browser}` : os;
 }
 
-export function urlBase64ToUint8Array(base64: string): Uint8Array {
+export function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padded = (base64 + "=".repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/");
   const raw = atob(padded);
   return Uint8Array.from(raw, (c) => c.charCodeAt(0));
