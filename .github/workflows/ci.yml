@@ -62,14 +62,19 @@ jobs:
         run: |
           npm run db:types
           git diff --exit-code lib/database.types.ts
-      - run: node scripts/local-env.mjs
-      - run: npx playwright install --with-deps chromium
+      # E2E runs on pull requests only. The push run after a merge tests the same code the PR
+      # already passed, and the staging deploy waits on it; DB tests above still gate that deploy.
+      - if: github.event_name == 'pull_request'
+        run: node scripts/local-env.mjs
+      - if: github.event_name == 'pull_request'
+        run: npx playwright install --with-deps chromium
       - name: End-to-end tests
+        if: github.event_name == 'pull_request'
         run: npm run e2e
         env:
           CI: "true"
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: failure() && github.event_name == 'pull_request'
         with:
           name: playwright-report
           path: playwright-report
