@@ -392,6 +392,7 @@ test("a habit with an end: 30 days on create, Day 1 of 30, then extend and remov
   await dialog.getByLabel("Title").fill("Read");
   const ends = dialog.getByRole("group", { name: "Ends" });
   await expect(ends.getByRole("button", { name: "No end" })).toHaveAttribute("aria-pressed", "true");
+  await expect(ends.getByRole("button")).toHaveText(["No end", "7 days", "30 days", "60 days", "90 days", "Until a date"]);
   await ends.getByRole("button", { name: "30 days" }).click();
   await expect(dialog.getByText(/^Last day: .+\. Then you choose to keep going or finish\.$/)).toBeVisible();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
@@ -448,3 +449,17 @@ test("a habit that ended: the finish card, Keep going, Finish, and Start again",
   await expect(page.getByRole("link", { name: /Stretch/ })).toContainText("Day 1 of 3");
 });
 
+test("after the end, the habit page offers only Keep going or Finish", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createHabit(page, { title: "Read", count: 1, period: "day" });
+  const read = (await page.getByRole("link", { name: /Read/ }).getAttribute("href"))!.split("/").pop()!;
+  endHabitYesterday(read);
+  await page.goto(`/habits/${read}`);
+  const manage = page.getByRole("region", { name: "Manage habit" });
+  await expect(manage).toContainText("Reached its end. Keep going or finish");
+  await manage.getByText("Ends", { exact: true }).click();
+  await expect(manage.getByRole("button", { name: /^\+/ })).toHaveCount(0);
+  await expect(manage.getByRole("button", { name: "Remove end" })).toHaveCount(0);
+  await manage.getByRole("button", { name: "Keep going" }).click();
+  await expect(manage).toContainText("No end yet");
+});
