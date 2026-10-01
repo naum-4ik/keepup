@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(35);
+select plan(36);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -180,6 +180,12 @@ select private.review_check_in_impl((select v from t where k = 'ci2'), '00000000
 select is(private.enqueue_expiring_approvals('2026-10-26 09:30+00'), 0, 'an approval reviewed in time writes nothing');
 select is((select count(*)::int from public.notifications where kind = 'approval_expiring' and check_in_id = (select v from t where k = 'ci2')),
   0, 'no expiring row for a reviewed check-in');
+
+-- A group habit's reminder is keyed to the group's day (Rome), not the person's (Tokyo).
+select private.set_habit_reminder_impl('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000d9', 'time', '07:00');
+select private.enqueue_reminders('2026-10-27 07:05+09');
+select ok(exists(select 1 from public.notifications where kind = 'habit_reminder' and habit_id = '00000000-0000-0000-0000-0000000000d9'
+  and user_id = '00000000-0000-0000-0000-0000000000a1' and dedupe_key like '%:2026-10-26:%'), 'a group habit reminder uses the group''s day');
 
 select * from finish();
 rollback;
