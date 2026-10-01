@@ -6,5 +6,6 @@ describe("notification setting errors", () => {
     expect(habitErrorMessage({ message: "keepup:invalid_category" })).toBe("That setting isn't available.");
     expect(habitErrorMessage({ message: "keepup:invalid_choice" })).toBe("Pick one of the options.");
     expect(habitErrorMessage({ message: "keepup:invalid_subscription" })).toBe("This device couldn't be set up for notifications.");
+    expect(habitErrorMessage({ message: "keepup:invalid_time" })).toBe("Pick a time on the quarter hour.");
   });
 });

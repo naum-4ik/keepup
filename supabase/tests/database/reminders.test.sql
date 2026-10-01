@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(25);
+select plan(35);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -122,13 +122,64 @@ select private.enqueue_expiring_approvals('2026-10-25 09:00+00');
 select is((select count(*)::int from public.notifications where kind = 'approval_expiring'), 1, 'once per check-in');
 select ok((select push and category = 'approvals' from public.notifications where kind = 'approval_expiring'), 'pushed under Approvals');
 
-select is((select schedule from cron.job where jobname = 'keepup-reminders'), '*/15 * * * *', 'the scheduler runs every 15 minutes');
+select is((select array_agg(jobname || ' ' || schedule order by jobname) from cron.job
+            where jobname in ('keepup-reminders', 'keepup-expiring-approvals')),
+  array['keepup-expiring-approvals */15 * * * *', 'keepup-reminders */15 * * * *'],
+  'the scheduler runs every 15 minutes, as two jobs');
 
 -- Wall-clock times the clocks skip or repeat (Rome: 29 Mar 2026 02:00 → 03:00; 25 Oct 03:00 → 02:00).
 select is(private.local_instant('2026-03-29', '02:30', 'Europe/Rome'), '2026-03-29 03:30+02'::timestamptz,
   'a time the clocks skip lands an hour later');
 select is(private.local_instant('2026-10-25', '02:30', 'Europe/Rome'), '2026-10-25 02:30+01'::timestamptz,
   'a time the clocks repeat is its second occurrence (after they go back)');
+
+-- Own times are on the quarter hour, and each quarter has its tick.
+select throws_ok($$select private.set_habit_reminder_impl('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000f1', 'time', '07:10')$$,
+  'P0001', 'keepup:invalid_time', 'a time off the quarter hour is refused');
+
+-- A weekly habit with its own time (Anna now lives in Tokyo; the week starts Mon 26 Oct).
+select private.set_habit_reminder_impl('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000fa', 'time', '09:00');
+create temp view plan_reminders as
+  select n.* from public.notifications n where n.kind = 'habit_reminder' and n.habit_id = '00000000-0000-0000-0000-0000000000fa';
+select private.enqueue_reminders('2026-10-26 09:05+09');
+select is(private.enqueue_reminders('2026-10-27 09:05+09'), 1, 'the count is the rows written');
+select is(private.enqueue_reminders('2026-10-27 09:20+09'), 0, 'a row already written is not counted again');
+select is((select count(*)::int from plan_reminders), 2, 'a weekly habit with its own time is reminded each day until done');
+set local session_replication_role = replica;
+insert into public.check_ins (habit_id, user_id, local_date, period_start, status, created_at, logged_by)
+values ('00000000-0000-0000-0000-0000000000fa', '00000000-0000-0000-0000-0000000000a1', '2026-10-27', '2026-10-26', 'approved', '2026-10-27 12:00+09', '00000000-0000-0000-0000-0000000000a1');
+set local session_replication_role = origin;
+select private.enqueue_reminders('2026-10-28 09:05+09');
+select private.enqueue_reminders('2026-10-29 09:05+09');
+select is((select count(*)::int from plan_reminders), 2, 'and not after it is done');
+
+select private.set_habit_reminder_impl('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000f1', 'time', '23:45');
+select private.enqueue_reminders('2026-10-30 23:30+09');
+select is((select count(*)::int from public.notifications where kind = 'habit_reminder' and habit_id = '00000000-0000-0000-0000-0000000000f1'),
+  0, '23:45 is not due at the 23:30 tick');
+select private.enqueue_reminders('2026-10-30 23:45+09');
+select is((select count(*)::int from public.notifications where kind = 'habit_reminder' and habit_id = '00000000-0000-0000-0000-0000000000f1'),
+  1, '23:45 fires at the 23:45 tick, before the day ends');
+
+-- Pause all: the summary is still written to the feed, without a push.
+update public.profiles set muted_until = 'infinity' where id = '00000000-0000-0000-0000-0000000000b1';
+select private.enqueue_reminders('2026-10-28 07:05+01');
+select ok((select not push from summary where user_id = '00000000-0000-0000-0000-0000000000b1' and dedupe_key like 'daily_summary:2026-10-28:%'),
+  'paused: the summary is in the feed, without a push');
+
+-- A check-in reviewed before the job runs gets no "expiring" row. pgTAP runs in one session, so the
+-- review comes before the call (same window) rather than between the job's select and its lock.
+set local session_replication_role = replica;
+with x as (
+  insert into public.check_ins (habit_id, user_id, local_date, period_start, status, created_at, logged_by)
+  values ('00000000-0000-0000-0000-0000000000d9', '00000000-0000-0000-0000-0000000000b1', '2026-10-25', '2026-10-25', 'pending', '2026-10-25 18:00+01', '00000000-0000-0000-0000-0000000000b1')
+  returning id)
+insert into t select 'ci2', id from x;
+set local session_replication_role = origin;
+select private.review_check_in_impl((select v from t where k = 'ci2'), '00000000-0000-0000-0000-0000000000a1', true, '2026-10-26 08:00+00');
+select is(private.enqueue_expiring_approvals('2026-10-26 09:30+00'), 0, 'an approval reviewed in time writes nothing');
+select is((select count(*)::int from public.notifications where kind = 'approval_expiring' and check_in_id = (select v from t where k = 'ci2')),
+  0, 'no expiring row for a reviewed check-in');
 
 select * from finish();
 rollback;
