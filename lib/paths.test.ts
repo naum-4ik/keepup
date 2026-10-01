@@ -6,6 +6,12 @@ describe("isPublicPath", () => {
     expect(isPublicPath(p)).toBe(true);
   });
 
+  it("lets the service worker and API routes answer for themselves", () => {
+    expect(isPublicPath("/sw.js")).toBe(true);
+    expect(isPublicPath("/api/check-ins/abc/review")).toBe(true);
+    expect(isPublicPath("/apix")).toBe(false);
+  });
+
   it("serves the manifest to signed-out browsers (they fetch it without cookies)", () => {
     expect(isPublicPath("/manifest.webmanifest")).toBe(true);
   });
