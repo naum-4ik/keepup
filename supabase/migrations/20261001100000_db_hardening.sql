@@ -1,9 +1,11 @@
 -- M3 database hardening (follow-ups from the M3 final review). Every function below is copied from its
 -- latest definition; only the parts named in its comment change.
 --
--- Lock order, everywhere: group row → habit rows (ascending id) → check-in rows. Two transactions that
--- take locks in the same order wait for each other instead of deadlocking. pgTAP runs in one session,
--- so the orders are argued here rather than tested.
+-- Lock order: habit rows (ascending id) → check-in rows, with the group row after the habits. Every
+-- feed insert takes FOR KEY SHARE on its group (notifications.group_id) while the check-in, review or
+-- finalize that wrote it holds the habit, so whatever locks or deletes a group row must lock the
+-- group's habits first. Two transactions that take locks in the same order wait for each other
+-- instead of deadlocking. pgTAP runs in one session, so the orders are argued here rather than tested.
 
 -- 1. Treat goals: cancel vs mark received (copied from 20260930100200_children.sql).
 -- The goal row is locked, as mark_treat_received_impl does, so the two serialise: whichever comes
@@ -211,7 +213,7 @@ end;
 $$;
 
 -- 4c. The habits a group's deletion cascades to: its group habits and its children's habits, locked
--- in id order before the group goes (habit → check-in, as above). The caller holds the group row.
+-- in id order before the group row is locked or deleted (see the lock order at the top).
 create function private.lock_group_habits(p_group_id uuid)
 returns void
 language plpgsql
@@ -226,15 +228,13 @@ begin
 end;
 $$;
 
--- Copied from 20260930100000_groups.sql; the group row is now locked first (as leave_group_impl
--- does; otherwise delete's habit → group order would cross leave's group → habit), then its habits.
+-- Copied from 20260930100000_groups.sql; the group's habits are locked before the group is deleted.
 create or replace function private.delete_group_impl(p_user_id uuid, p_group_id uuid, p_confirm_children boolean)
 returns void
 language plpgsql
 set search_path = ''
 as $$
 begin
-  perform 1 from public.groups g where g.id = p_group_id for update;
   perform private.require_admin(p_group_id, p_user_id);
   if private.group_has_children(p_group_id) and not coalesce(p_confirm_children, false) then
     raise exception 'keepup:children_would_be_deleted' using errcode = 'P0001';
@@ -244,13 +244,19 @@ begin
 end;
 $$;
 
--- Copied from 20260930100000_groups.sql; the delete path locks the group's habits first.
+-- Copied from 20260930100000_groups.sql. Leaving may delete the group (the last adult), so the group's
+-- habits are locked before the group row (see the lock order at the top); a non-member is turned away
+-- before locking anything, and the membership is checked again under the group lock.
 create or replace function private.leave_group_impl(p_user_id uuid, p_group_id uuid, p_confirm_children boolean, p_now timestamptz)
 returns void
 language plpgsql
 set search_path = ''
 as $$
 begin
+  if not private.is_member(p_group_id, p_user_id) then
+    raise exception 'keepup:group_not_found' using errcode = 'P0002';
+  end if;
+  perform private.lock_group_habits(p_group_id);
   -- Serialise membership changes of one group (two admins leaving at once).
   perform 1 from public.groups g where g.id = p_group_id for update;
   if not private.is_member(p_group_id, p_user_id) then
@@ -262,7 +268,6 @@ begin
     if private.group_has_children(p_group_id) and not coalesce(p_confirm_children, false) then
       raise exception 'keepup:children_would_be_deleted' using errcode = 'P0001';
     end if;
-    perform private.lock_group_habits(p_group_id);
     delete from public.groups where id = p_group_id;
     return;
   end if;
@@ -279,7 +284,8 @@ $$;
 
 -- 5. Restore (copied from 20260930170000_restore_habit.sql). An approval habit's archive-day period
 -- that is still in its review window isn't settled here: a pending check-in may still be approved,
--- and finalize_periods settles the period once the window closes.
+-- and finalize_periods settles the period once the window closes. Any other period in the gap was
+-- archived throughout and is skipped as before, even if its window is still open.
 create or replace function private.restore_habit_impl(p_actor uuid, p_habit_id uuid, p_now timestamptz)
 returns public.habits
 language plpgsql
@@ -307,7 +313,8 @@ begin
   select v_habit.id, s.d::date,
          case when private.period_outcome(v_habit, s.d::date) = 'done' then 'done' else 'skipped' end, p_now
     from generate_series(v_from::timestamp, v_current::timestamp - v_step, v_step) as s(d)
-   where not private.in_grace(v_habit, s.d::date, p_now)
+   where not (s.d::date = private.habit_period_start(v_habit, private.habit_today(v_habit, v_habit.archived_at))
+              and private.in_grace(v_habit, s.d::date, p_now))
   on conflict (habit_id, period_start) do nothing;
   perform set_config('keepup.restoring', 'on', true);
   update public.habits set archived_at = null where id = p_habit_id returning * into v_habit;

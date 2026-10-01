@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(36);
 
 -- Follow-ups from the M3 final review (20261001100000_db_hardening.sql). Lock-order fixes can't be
 -- raced in one session; their behaviour is covered by the existing tests and argued in the migration.
@@ -173,6 +173,20 @@ select private.review_check_in_impl((select v::uuid from t where k = 'gymci2'), 
 select private.finalize_periods('2026-10-06T13:00:00Z');
 select results_eq($$select period_start::text, outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d5'$$,
   $$values ('2026-10-05', 'done')$$, 'approved in the window, the day ends done');
+
+-- Only the archive day waits: a later day that was archived throughout is skipped at once, even while
+-- its own window is open, and finalize leaves it skipped.
+set local session_replication_role = replica;
+insert into public.habits (id, owner_id, group_id, title, category, emoji, target_count, period, starts_on, week_start, requires_approval, created_at, created_by, archived_at)
+values ('00000000-0000-0000-0000-0000000000d6', null, (select v::uuid from t where k = 'pair'), 'Run', 'fitness', '🏃', 1, 'day',
+        '2026-10-04', 1, true, '2026-10-03T00:00:00Z', '00000000-0000-0000-0000-0000000000a1', '2026-10-04T18:00:00Z');
+set local session_replication_role = origin;
+select private.restore_habit_impl('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000d6', '2026-10-06T08:00:00Z');
+select results_eq($$select period_start::text, outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d6' order by 1$$,
+  $$values ('2026-10-04', 'skipped'), ('2026-10-05', 'skipped')$$, 'archived the day before: both days are skipped at once');
+select private.finalize_periods('2026-10-06T13:00:00Z');
+select results_eq($$select period_start::text, outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d6' order by 1$$,
+  $$values ('2026-10-04', 'skipped'), ('2026-10-05', 'skipped')$$, 'and finalize never turns the archived day into missed');
 
 -- 10. invite_membership: the group id for a current member, null for anyone else, signed-in only.
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
