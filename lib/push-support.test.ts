@@ -1,7 +1,8 @@
 // lib/push-support.test.ts
 import { describe, expect, it, vi } from "vitest";
 import {
-  deviceLabel, iosVersion, pushSupport, resaveOncePerLoad, signOutCleanup, subscribeAndSave, urlBase64ToUint8Array, type PushEnv,
+  deviceLabel, iosVersion, pushSupport, removeDevice, resaveOncePerLoad, signOutCleanup, subscribeAndSave, urlBase64ToUint8Array, withTimeout,
+  type PushEnv,
 } from "./push-support";
 
 const IPHONE_17 = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
@@ -146,5 +147,43 @@ describe("resaveOncePerLoad", () => {
     await resaveOncePerLoad({ permission: () => "default", getSubscription: async () => fakeSub(`${FCM}me`), save })();
     await expect(resaveOncePerLoad({ permission: () => "granted", getSubscription: async () => { throw new Error("no worker"); }, save })()).resolves.toBeUndefined();
     expect(save).not.toHaveBeenCalled();
+  });
+});
+
+describe("removeDevice", () => {
+  const ok = async () => ({ ok: true as const });
+
+  it("removing this device also ends its browser subscription", async () => {
+    const here = fakeSub(`${FCM}me`);
+    expect(await removeDevice({ endpoint: `${FCM}me`, here: `${FCM}me`, forget: ok, getSubscription: async () => here })).toEqual({ ok: true });
+    expect(here.unsubscribe).toHaveBeenCalled();
+  });
+
+  it("another device, or a refused remove, leaves this browser's subscription alone", async () => {
+    const here = fakeSub(`${FCM}me`);
+    await removeDevice({ endpoint: `${FCM}phone`, here: `${FCM}me`, forget: ok, getSubscription: async () => here });
+    const refused = { ok: false as const, message: "Something went wrong." };
+    expect(await removeDevice({ endpoint: `${FCM}me`, here: `${FCM}me`, forget: async () => refused, getSubscription: async () => here })).toEqual(refused);
+    expect(here.unsubscribe).not.toHaveBeenCalled();
+  });
+
+  it("a failing unsubscribe doesn't undo the remove", async () => {
+    const here = { ...fakeSub(`${FCM}me`), unsubscribe: vi.fn(async () => Promise.reject(new Error("no"))) };
+    expect(await removeDevice({ endpoint: `${FCM}me`, here: `${FCM}me`, forget: ok, getSubscription: async () => here })).toEqual({ ok: true });
+  });
+});
+
+describe("withTimeout", () => {
+  it("gives up on a service worker that never becomes ready", async () => {
+    vi.useFakeTimers();
+    try {
+      const never = withTimeout(new Promise(() => undefined), 10_000);
+      const check = expect(never).rejects.toThrow("timed out");
+      await vi.advanceTimersByTimeAsync(10_000);
+      await check;
+      await expect(withTimeout(Promise.resolve(1), 10_000)).resolves.toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

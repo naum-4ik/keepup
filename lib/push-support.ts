@@ -141,3 +141,44 @@ export function resaveOncePerLoad(deps: {
     }
   };
 }
+
+// This browser's push subscription, or null: no worker, no registration, or the browser says no.
+// Browser only. Never throws.
+export async function browserSubscription(): Promise<PushSubscription | null> {
+  try {
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return null;
+    const reg = await navigator.serviceWorker.getRegistration();
+    return (await reg?.pushManager?.getSubscription().catch(() => null)) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Rejects after `ms` (e.g. a service worker that never becomes ready).
+export function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`timed out after ${ms} ms`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+// Devices → Remove. Removing this device also ends its browser subscription, so nothing saves it
+// again (the re-save on open, or a later rotation). Another device's subscription isn't ours to end.
+export async function removeDevice(deps: {
+  endpoint: string;
+  here: string | null;
+  forget(endpoint: string): Promise<SaveResult>;
+  getSubscription(): Promise<BrowserSubscription | null>;
+}): Promise<SaveResult> {
+  const r = await deps.forget(deps.endpoint);
+  if (r.ok && deps.endpoint === deps.here) {
+    try {
+      const sub = await deps.getSubscription();
+      if (sub?.endpoint === deps.endpoint) await sub.unsubscribe();
+    } catch {
+      // The row is gone; the browser may keep a subscription nobody sends to.
+    }
+  }
+  return r;
+}

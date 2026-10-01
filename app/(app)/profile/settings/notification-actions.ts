@@ -46,16 +46,3 @@ export async function forgetPushSubscription(endpoint: string): Promise<NotifyRe
   const { error } = await supabase.rpc("delete_push_subscription", { p_endpoint: String(endpoint) });
   return result(error);
 }
-
-// On each app open, a device whose reminders are on saves its subscription again (once per load), so
-// the 10-device cap drops a phone nobody uses, never an active one. Only an endpoint this account
-// already has: a device removed under Devices stays removed. No revalidate: nothing on screen changes.
-export async function refreshPushSubscription(sub: { endpoint: string; p256dh: string; auth: string; userAgent: string }): Promise<NotifyResult> {
-  const { supabase } = await requireUser();
-  const { data, error: readError } = await supabase.from("push_subscriptions").select("endpoint").eq("endpoint", String(sub.endpoint)).maybeSingle();
-  if (readError || !data) return { ok: true };
-  const { error } = await supabase.rpc("save_push_subscription", {
-    p_endpoint: String(sub.endpoint), p_p256dh: String(sub.p256dh), p_auth: String(sub.auth), p_user_agent: String(sub.userAgent).slice(0, 300),
-  });
-  return error ? { ok: false, message: habitErrorMessage(error), code: errorCode(error) } : { ok: true };
-}

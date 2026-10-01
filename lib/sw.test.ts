@@ -79,6 +79,7 @@ describe("sw.js notification taps", () => {
 
 describe("sw.js pushsubscriptionchange", () => {
   const key = new Uint8Array([1, 2, 3]).buffer;
+  const OLD = "https://fcm.googleapis.com/fcm/send/old";
   const fresh = {
     endpoint: "https://fcm.googleapis.com/fcm/send/fresh",
     toJSON: () => ({ endpoint: "https://fcm.googleapis.com/fcm/send/fresh", keys: { p256dh: "p", auth: "a" } }),
@@ -88,32 +89,34 @@ describe("sw.js pushsubscriptionchange", () => {
     const subscribe = vi.fn(async () => fresh);
     const fetchImpl = vi.fn(async () => ({ ok: true }));
     const { subscriptionChange } = worker([], undefined, fetchImpl, subscribe);
-    await subscriptionChange({ oldSubscription: { options: { applicationServerKey: key, userVisibleOnly: true } } });
+    await subscriptionChange({ oldSubscription: { endpoint: OLD, options: { applicationServerKey: key, userVisibleOnly: true } } });
     expect(subscribe).toHaveBeenCalledWith({ userVisibleOnly: true, applicationServerKey: key });
     expect(fetchImpl).toHaveBeenCalledWith("/api/push-subscription", expect.objectContaining({ method: "POST", credentials: "same-origin" }));
     const [, init] = fetchImpl.mock.calls[0] as unknown as [string, { body: string }];
-    expect(JSON.parse(init.body)).toEqual({ endpoint: fresh.endpoint, p256dh: "p", auth: "a" });
+    expect(JSON.parse(init.body)).toEqual({ endpoint: fresh.endpoint, p256dh: "p", auth: "a", oldEndpoint: OLD });
   });
 
   it("uses the new subscription when the browser already made one", async () => {
     const subscribe = vi.fn();
     const fetchImpl = vi.fn(async () => ({ ok: true }));
     const { subscriptionChange } = worker([], undefined, fetchImpl, subscribe);
-    await subscriptionChange({ oldSubscription: null, newSubscription: fresh });
+    await subscriptionChange({ oldSubscription: { endpoint: OLD, options: {} }, newSubscription: fresh });
     expect(subscribe).not.toHaveBeenCalled();
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
-  it("does nothing without the old options, and never rejects when subscribe or the save fails", async () => {
+  it("does nothing without the old subscription, and never rejects when subscribe or the save fails", async () => {
     const fetchImpl = vi.fn(async () => Promise.reject(new TypeError("offline")));
     const quiet = worker([], undefined, fetchImpl, vi.fn());
     await expect(quiet.subscriptionChange({ oldSubscription: null })).resolves.toBeUndefined();
+    await expect(quiet.subscriptionChange({ oldSubscription: null, newSubscription: fresh })).resolves.toBeUndefined();
+    await expect(quiet.subscriptionChange({ oldSubscription: { endpoint: OLD, options: {} } })).resolves.toBeUndefined();
     expect(fetchImpl).not.toHaveBeenCalled();
 
     const failing = worker([], undefined, fetchImpl, vi.fn(async () => Promise.reject(new Error("denied"))));
-    await expect(failing.subscriptionChange({ oldSubscription: { options: { applicationServerKey: key } } })).resolves.toBeUndefined();
+    await expect(failing.subscriptionChange({ oldSubscription: { endpoint: OLD, options: { applicationServerKey: key } } })).resolves.toBeUndefined();
     const offline = worker([], undefined, fetchImpl, vi.fn(async () => fresh));
-    await expect(offline.subscriptionChange({ oldSubscription: { options: { applicationServerKey: key } } })).resolves.toBeUndefined();
+    await expect(offline.subscriptionChange({ oldSubscription: { endpoint: OLD, options: { applicationServerKey: key } } })).resolves.toBeUndefined();
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });

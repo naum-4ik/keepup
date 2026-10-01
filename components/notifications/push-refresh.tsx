@@ -2,17 +2,22 @@
 "use client";
 
 import { useEffect } from "react";
-import { refreshPushSubscription } from "@/app/(app)/profile/settings/notification-actions";
-import { resaveOncePerLoad } from "@/lib/push-support";
+import { browserSubscription, resaveOncePerLoad } from "@/lib/push-support";
 
-// Module scope, so it runs once per page load, not once per mount.
+// Module scope, so it runs once per page load, not once per mount. A plain fetch, not a server action:
+// it must never queue ahead of the person's first tap. The route saves only a device this account
+// still has (a removed one stays removed).
 const resave = resaveOncePerLoad({
   permission: () => ("Notification" in window ? Notification.permission : "unsupported"),
-  getSubscription: async () => {
-    if (!("serviceWorker" in navigator)) return null;
-    return (await (await navigator.serviceWorker.getRegistration())?.pushManager.getSubscription()) ?? null;
-  },
-  save: (keys) => refreshPushSubscription({ ...keys, userAgent: navigator.userAgent }),
+  getSubscription: browserSubscription,
+  save: (keys) =>
+    fetch("/api/push-subscription", {
+      method: "POST",
+      credentials: "same-origin",
+      keepalive: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...keys, refresh: true }),
+    }),
 });
 
 // An active phone saves its subscription again when the app opens, so the 10-device cap never drops it.

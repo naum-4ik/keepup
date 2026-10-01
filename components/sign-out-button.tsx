@@ -5,7 +5,7 @@ import { useTransition } from "react";
 import { signOut } from "@/app/auth/actions";
 import { forgetPushSubscription } from "@/app/(app)/profile/settings/notification-actions";
 import { Button } from "@/components/ui/button";
-import { signOutCleanup } from "@/lib/push-support";
+import { browserSubscription, signOutCleanup } from "@/lib/push-support";
 
 export function SignOutButton() {
   const [pending, startTransition] = useTransition();
@@ -18,8 +18,7 @@ export function SignOutButton() {
       onClick={() =>
         startTransition(async () => {
           await signOutCleanup({
-            getSubscription: async () =>
-              "serviceWorker" in navigator ? ((await (await navigator.serviceWorker.getRegistration())?.pushManager.getSubscription()) ?? null) : null,
+            getSubscription: browserSubscription,
             forget: async (endpoint) => void (await forgetPushSubscription(endpoint)),
             clearCaches: async () => {
               if ("caches" in window) await Promise.all((await caches.keys()).map((k) => caches.delete(k)));

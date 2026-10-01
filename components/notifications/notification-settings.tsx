@@ -1,16 +1,18 @@
 // components/notifications/notification-settings.tsx
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { forgetPushSubscription, pauseAll, setCategory, setReminderHour } from "@/app/(app)/profile/settings/notification-actions";
 import { currentEndpoint, TurnOnReminders } from "@/components/notifications/turn-on-reminders";
 import { InfoHint } from "@/components/info-hint";
 import { Button } from "@/components/ui/button";
 import { APPROVALS_OFF_NOTE, NOTIFICATION_CATEGORIES, PAUSE_CHOICES } from "@/lib/notification-categories";
 import type { NotificationSettings } from "@/lib/notification-settings";
+import { browserSubscription, removeDevice } from "@/lib/push-support";
 
 const selectClass = "h-11 rounded-xl border border-input bg-transparent px-3 text-base";
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
+const hourLabel = (h: number) => `${String(h).padStart(2, "0")}:00`;
 
 function pausedLabel(until: string, timeZone: string): string {
   if (until === "infinity") return "Paused until you turn them back on";
@@ -22,6 +24,10 @@ export function NotificationSettingsCard({ settings }: { settings: NotificationS
   const [error, setError] = useState<string | null>(null);
   const [here, setHere] = useState<string | null>(null);
   const [now, setNow] = useState<number | null>(null);
+  // Turned on in this visit: the confirmation says when the summary comes, and takes focus (the
+  // dialog it came from closes as this device appears under Devices).
+  const [justOn, setJustOn] = useState(false);
+  const confirmation = useRef<HTMLParagraphElement>(null);
   const paused = settings.mutedUntil && (settings.mutedUntil === "infinity" || (now !== null && Date.parse(settings.mutedUntil) > now));
 
   useEffect(() => {
@@ -39,6 +45,10 @@ export function NotificationSettingsCard({ settings }: { settings: NotificationS
 
   const thisDeviceOn = here !== null && settings.devices.some((d) => d.endpoint === here);
 
+  useEffect(() => {
+    if (justOn && thisDeviceOn) confirmation.current?.focus();
+  }, [justOn, thisDeviceOn]);
+
   return (
     <section aria-label="Notifications" className="flex flex-col gap-5 rounded-2xl bg-card p-6 shadow-soft">
       <h2 className="text-base font-bold">Notifications</h2>
@@ -50,12 +60,20 @@ export function NotificationSettingsCard({ settings }: { settings: NotificationS
         </div>
         <select id="reminderHour" className={selectClass} defaultValue={settings.reminderHour} key={settings.reminderHour}
           disabled={pending} onChange={(e) => run(() => setReminderHour(Number(e.target.value)))}>
-          {HOURS.map((h) => <option key={h} value={h}>{`${String(h).padStart(2, "0")}:00`}</option>)}
+          {HOURS.map((h) => <option key={h} value={h}>{hourLabel(h)}</option>)}
         </select>
         {thisDeviceOn ? (
-          <p className="text-sm text-muted-foreground">Reminders are on for this device ✓</p>
+          <p ref={confirmation} tabIndex={-1} role="status" className="text-sm text-muted-foreground outline-none">
+            {justOn ? `Reminders are on for this device ✓ Your daily summary arrives at ${hourLabel(settings.reminderHour)}.` : "Reminders are on for this device ✓"}
+          </p>
         ) : (
-          <TurnOnReminders hour={settings.reminderHour} />
+          <TurnOnReminders
+            hour={settings.reminderHour}
+            onDone={() => {
+              setJustOn(true);
+              void currentEndpoint().then(setHere);
+            }}
+          />
         )}
       </div>
 
@@ -104,7 +122,16 @@ export function NotificationSettingsCard({ settings }: { settings: NotificationS
                   {d.label}
                   {d.endpoint === here && <span className="text-muted-foreground"> · this device</span>}
                 </span>
-                <Button type="button" variant="outline" className="h-11" disabled={pending} onClick={() => run(() => forgetPushSubscription(d.endpoint))}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11"
+                  aria-label={`Remove ${d.label}${d.endpoint === here ? " (this device)" : ""}`}
+                  disabled={pending}
+                  onClick={() =>
+                    run(() => removeDevice({ endpoint: d.endpoint, here, forget: forgetPushSubscription, getSubscription: browserSubscription }))
+                  }
+                >
                   Remove
                 </Button>
               </li>

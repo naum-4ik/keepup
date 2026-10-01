@@ -6,7 +6,9 @@ import { BellRing } from "lucide-react";
 import { savePushSubscription, setReminderHour } from "@/app/(app)/profile/settings/notification-actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { PUSH_SUPPORT_TEXT, pushSupport, readPushEnv, subscribeAndSave, urlBase64ToUint8Array, type PushSupport } from "@/lib/push-support";
+import {
+  browserSubscription, PUSH_SUPPORT_TEXT, pushSupport, readPushEnv, subscribeAndSave, urlBase64ToUint8Array, withTimeout, type PushSupport,
+} from "@/lib/push-support";
 
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 // Inlined at build time, so the server and the browser render the same thing.
@@ -14,10 +16,11 @@ const VAPID_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const hourLabel = (h: number) => `${String(h).padStart(2, "0")}:00`;
 
 export async function currentEndpoint(): Promise<string | null> {
-  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return null;
-  const reg = await navigator.serviceWorker.getRegistration();
-  return (await reg?.pushManager.getSubscription())?.endpoint ?? null;
+  return (await browserSubscription())?.endpoint ?? null;
 }
+
+// The worker installs on the first visit; if it never gets there, say so instead of spinning forever.
+const READY_TIMEOUT_MS = 10_000;
 
 // The first "turn on reminders" (ideas/onboarding.md): the hour, then the browser's permission, then
 // this device is saved. On an iPhone that hasn't installed Keepup, the Home Screen guide instead.
@@ -39,9 +42,9 @@ export function TurnOnReminders({ hour, label = "Turn on reminders", onDone }: {
         return;
       }
       try {
-        const reg = await navigator.serviceWorker.ready;
+        const reg = await withTimeout(navigator.serviceWorker.ready, READY_TIMEOUT_MS);
         const saved = await subscribeAndSave({
-          current: () => reg.pushManager.getSubscription(),
+          current: () => reg.pushManager.getSubscription().catch(() => null),
           subscribe: () => reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_KEY ?? "") }),
           save: (keys) => savePushSubscription({ ...keys, userAgent: navigator.userAgent }),
         });
