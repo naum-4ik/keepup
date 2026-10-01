@@ -34,6 +34,9 @@ export function dailySummary({ todo, atRisk }: { todo: SummaryItem[]; atRisk: At
   return { title: "Today", body: `Still to do: ${parts.join(" · ")} 🌱` };
 }
 
+// The Inbox line for a daily summary row with nothing left to do (the push is skipped then).
+export const allDoneToday: Copy = { title: "Today", body: "All done for today 🎉" };
+
 export const habitReminder = (habit: string): Copy => ({ title: habit, body: `Time for ${habit}.` });
 
 export function groupCheckIn(group: string, names: string[], habit: string): Copy | null {

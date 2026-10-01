@@ -38,6 +38,11 @@ describe("reminder kinds in the Inbox", () => {
     expect(feedCopy(item({ kind: "habit_reminder", habit_title: "Vitamins" })).body).toBe("Time for Vitamins.");
   });
 
+  it("a summary with nothing left says so, from the shared copy", () => {
+    expect(feedCopy(item({ kind: "daily_summary", habit_id: null, payload: { todo: [], at_risk: [] } })))
+      .toEqual({ title: "Today", body: "All done for today 🎉", href: "/today" });
+  });
+
   it("an approval about to close", () => {
     expect(feedCopy(item({ kind: "approval_expiring", group_name: "Family", actor_name: "Anna", habit_title: "Gym" })))
       .toEqual({ title: "Family", body: "Anna's Gym check-in needs a yes within 2 hours", href: "/inbox" });

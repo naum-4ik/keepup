@@ -16,6 +16,7 @@ export async function getHabitSettings(habitId: string): Promise<HabitSettings> 
   return {
     muted: row.data?.muted ?? false,
     ...reminderMode(row.data ?? null),
+    // any of the user's devices, not necessarily this one (brief)
     hasDevice: (devices.count ?? 0) > 0,
     reminderHour: profile.data?.reminder_hour ?? 20,
   };

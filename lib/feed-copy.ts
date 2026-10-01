@@ -107,7 +107,7 @@ export function feedCopy(n: FeedItem): { title: string; body: string; href: stri
           period: r.period === "month" ? "month" : "week", daysLeft: Number(r.days_left ?? 0),
         })),
       });
-      return { ...(summary ?? { title: "Today", body: "All done for today 🎉" }), href: "/today" };
+      return { ...(summary ?? copy.allDoneToday), href: "/today" };
     }
     // A habit's own reminder has no group: the line names only the habit.
     case "habit_reminder": return { ...copy.habitReminder(habit), href: habitHref };

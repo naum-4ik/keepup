@@ -16,17 +16,21 @@ const MODES: { mode: ReminderMode; label: string }[] = [
 export function ReminderControl({ habitId, settings }: { habitId: string; settings: HabitSettings }) {
   const [mode, setMode] = useState<ReminderMode>(settings.mode);
   const [time, setTime] = useState(settings.remindAt ?? "08:00");
-  const [status, setStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [muted, setMuted] = useState(settings.muted);
+  const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
 
-  const run = (action: () => Promise<{ ok: true } | { ok: false; message: string }>) =>
+  const run = (action: () => Promise<{ ok: true } | { ok: false; message: string }>, onFail?: () => void) =>
     startTransition(async () => {
-      setStatus(null);
-      setError(null);
+      setStatus("");
+      setError("");
       const r = await action();
       if (r.ok) setStatus("Saved ✓");
-      else setError(r.message);
+      else {
+        onFail?.();
+        setError(r.message);
+      }
     });
 
   return (
@@ -54,8 +58,12 @@ export function ReminderControl({ habitId, settings }: { habitId: string; settin
       </fieldset>
 
       <label className="flex min-h-11 items-start gap-3">
-        <input type="checkbox" className="mt-1 size-5 accent-primary" defaultChecked={settings.muted} disabled={pending}
-          onChange={(e) => run(() => setHabitMute(habitId, e.target.checked))} />
+        <input type="checkbox" className="mt-1 size-5 accent-primary" checked={muted} disabled={pending}
+          onChange={(e) => {
+            const next = e.target.checked;
+            setMuted(next);
+            run(() => setHabitMute(habitId, next), () => setMuted(!next));
+          }} />
         <span className="flex flex-col">
           <span className="font-semibold">Mute this habit</span>
           <span className="text-xs text-muted-foreground">No notifications about it, not even from your group. It stays in your Inbox.</span>
@@ -65,8 +73,9 @@ export function ReminderControl({ habitId, settings }: { habitId: string; settin
       {!settings.hasDevice && mode !== "off" && (
         <TurnOnReminders hour={settings.reminderHour} label="Turn on reminders on this device" />
       )}
-      {status && <p role="status" className="text-sm text-done">{status}</p>}
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {/* Always rendered so screen readers announce the text when it changes. */}
+      <p role="status" className="text-sm text-done">{status}</p>
+      <p role="alert" className="text-sm text-destructive">{error}</p>
     </div>
   );
 }

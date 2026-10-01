@@ -18,7 +18,7 @@ describe("reminderHint", () => {
     expect(reminderHint({ mode: "summary", remindAt: null, reminderHour: 20, muted: false })).toBe("In your daily summary at 20:00");
     expect(reminderHint({ mode: "time", remindAt: "07:30", reminderHour: 20, muted: false })).toBe("At 07:30");
     expect(reminderHint({ mode: "off", remindAt: null, reminderHour: 20, muted: false })).toBe("No reminders");
-    expect(reminderHint({ mode: "summary", remindAt: null, reminderHour: 7, muted: true })).toBe("Muted");
+    expect(reminderHint({ mode: "summary", remindAt: null, reminderHour: 7, muted: true })).toBe("Muted: no reminders for this habit");
   });
 });
 
@@ -31,7 +31,7 @@ describe("reminderError", () => {
     expect(reminderError("time", "08:05")).toBe("Pick a time on the quarter hour.");
     expect(reminderError("time", "24:00")).toBe("Pick a time on the quarter hour.");
     expect(reminderError("time", null)).toBe("Pick a time on the quarter hour.");
-    expect(reminderError("loud", null)).toBe("Pick when to remind you.");
+    expect(reminderError("loud", null)).toBe("Pick one of the options.");
   });
   it("offers 96 slots, all valid", () => {
     expect(QUARTER_HOURS).toHaveLength(96);

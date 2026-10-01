@@ -128,9 +128,10 @@ test("Remind me at… moves a habit out of the summary to its own time, and Mute
   await expect(row.getByRole("status")).toHaveText("Saved ✓");
 
   await page.reload();
-  await expect(page.getByText("Muted", { exact: true })).toBeVisible();
+  await expect(page.getByText("Muted: no reminders for this habit", { exact: true })).toBeVisible();
   await page.getByText("Reminders", { exact: true }).click();
   await expect(row.getByRole("radio", { name: "At a time" })).toBeChecked();
   await expect(row.getByLabel("Reminder time")).toHaveValue("08:00");
+  // The VAPID key comes from scripts/local-env.mjs (CI runs it); without a key the button is not rendered.
   await expect(row.getByRole("button", { name: "Turn on reminders on this device" })).toBeVisible();
 });
