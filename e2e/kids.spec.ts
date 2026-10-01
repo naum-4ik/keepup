@@ -87,21 +87,45 @@ test("the kid view: big buttons, a tap counts at once, and hold to exit", async 
   await addChild(page, "Family", "Mary");
   await page.getByRole("link", { name: "Open Mary's view" }).click();
   await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
-  await expect(page.getByRole("img", { name: "3 more stars to a sprout" })).toBeVisible();
-  await expect(page.getByText("3 more ⭐ to 🌱")).toBeVisible(); // written out for the grown-up
-  await expect(page.getByText(/^A new garden starts on \w+day 🌱$/)).toBeVisible(); // the family's first day of the week
-  await page.getByRole("button", { name: /Brush teeth/ }).click();
-  await expect(page.getByText("1 star this week")).toBeAttached(); // for screen readers; the path is the visible count
-  await expect(page.getByRole("img", { name: "2 more stars to a sprout" })).toBeVisible(); // the path fills
+  // For a toddler: no counts or "what's next" here (they're on the kid page), just the scene.
+  await expect(page.getByText(/more ⭐ to/)).toHaveCount(0);
+  const items = page.locator("[data-items]");
+  await expect(items).toHaveAttribute("data-items", "0");
+  const teeth = page.getByRole("button", { name: /Brush teeth/ });
+  await teeth.click();
+  await expect(page.getByText("1 star this week")).toBeAttached(); // for screen readers
+  await expect(items).toHaveAttribute("data-items", "1"); // each tap adds one thing to the scene
+  await teeth.click(); // a toddler's quick double tap counts once
+  await expect(page.getByText("1 star this week")).toBeAttached();
+  await page.waitForTimeout(2100);
+  await teeth.click(); // 2× a day: the second one, after a pause
+  await expect(page.getByText("2 stars this week")).toBeAttached();
+  await expect(page.getByRole("button", { name: "Brush teeth , done" })).toBeVisible();
+  await page.getByRole("button", { name: "Brush teeth , done" }).click(); // done: a wiggle, nothing counted
+  await page.waitForTimeout(500);
+  await expect(page.getByText("2 stars this week")).toBeAttached();
+  await expect(items).toHaveAttribute("data-items", "2");
+  // Sound is on by default; the grown-up can mute it, and it's remembered on this phone.
+  const sound = page.getByRole("button", { name: "Sound" });
+  await expect(sound).toHaveAttribute("aria-pressed", "true");
+  await sound.click();
+  await expect(sound).toHaveAttribute("aria-pressed", "false");
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Sound" })).toHaveAttribute("aria-pressed", "false");
   const exit = page.getByRole("button", { name: "Hold to exit Mary's view" });
   await exit.click(); // a quick tap does nothing
   await expect(page).toHaveURL(/\/play$/);
   await exit.hover();
   await page.mouse.down();
-  await page.waitForTimeout(1700);
+  // It closes once the hold is done, with the finger still down.
+  await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/, { timeout: 4000 });
   await page.mouse.up();
-  await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/);
-  await expect(page.getByText("Mary did it")).toBeVisible();
+  await expect(page.getByText("Mary did it")).toHaveCount(2); // both taps, logged as by Mary
+  // What's next and when it starts over are for the grown-up, on the kid page.
+  const garden = page.getByRole("region", { name: "This week's garden" });
+  await expect(garden).toContainText("1 more star to a sprout 🌱");
+  await expect(garden).toContainText(/A new garden starts on \w+day 🌱/);
+  await expect(garden.locator("[data-items]")).toHaveAttribute("data-items", "2");
 });
 
 test("Me + Mary checks in both in one tap", async ({ page }) => {
@@ -255,7 +279,6 @@ test("choose what grows with the child: the kid page and the kid view switch the
   await expect(page.getByRole("region", { name: "What grows" }).getByRole("button", { name: /Aquarium/ })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("link", { name: "Open Mary's view" }).click();
   await expect(page.getByRole("img", { name: "Clear water" })).toBeVisible();
-  await expect(page.getByRole("img", { name: "3 more stars to seaweed" })).toBeVisible();
 });
 
 test("reset a child's profile: export first is offered, and only the nickname and avatar stay", async ({ page }) => {
@@ -326,4 +349,25 @@ test("a group habit with a child that ended leaves the kid views, and Start agai
   await page.getByRole("button", { name: "Start Walk the dog again" }).click();
   await expect(page).toHaveURL(/\/today$/);
   await expect(page.getByRole("region", { name: "Mary", exact: true })).toContainText("Walk the dog");
+});
+
+test("the kid view: the third star brings the sprout, and the last habit of the day makes the scene dance", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await expect(page).toHaveURL(/\/play$/); // the kid page shows the same picture: tap only in the kid view
+  await expect(page.getByRole("img", { name: "A seed in the soil" })).toBeVisible();
+  await page.getByRole("button", { name: /Read a book together/ }).click();
+  await page.getByRole("button", { name: /Tidy my toys/ }).click();
+  await page.getByRole("button", { name: /Brush teeth/ }).click();
+  await expect(page.getByRole("img", { name: "A sprout" })).toBeVisible(); // 3 stars: the next picture
+  // The new picture zooms in big over the screen for ~2 s, then settles into the scene.
+  await expect(page.locator("[data-milestone]")).toHaveText("🌱");
+  await expect(page.locator("[data-milestone]")).toHaveCount(0, { timeout: 4000 });
+  await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "3");
+  await page.waitForTimeout(2100);
+  await page.getByRole("button", { name: /Brush teeth/ }).click(); // the last one today
+  await expect(page.locator("[data-items] .animate-dance").first()).toBeAttached();
+  await expect(page.locator("[data-items] .animate-dance")).toHaveCount(0, { timeout: 4000 }); // ~2 seconds, then still
 });

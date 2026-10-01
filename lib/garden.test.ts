@@ -1,18 +1,43 @@
 import { describe, expect, it } from "vitest";
-import { GARDEN_STAGES, KID_THEMES, isKidTheme, lastWeek, newWeekLine, nextStep, restartDay, restartLine, stageFor, starsToNext, themeStages, sceneFor } from "@/lib/garden";
+import { GARDEN_STAGES, KID_THEMES, isKidTheme, lastWeek, newWeekLine, nextStep, restartDay, restartLine, stageFor, starsToNext, themeStages, stepLines } from "@/lib/garden";
 
 describe("garden", () => {
-  it("never draws an empty scene: every theme has something standing at 0 stars", () => {
-    for (const t of KID_THEMES) expect(sceneFor(0, t.id).plants.length, t.id).toBeGreaterThan(0);
-    expect(sceneFor(0, "garden").plants).toEqual(["🌰"]);
-    expect(sceneFor(0, "aquarium").plants).toEqual(["🐚"]);
+  it("gives every stage its own picture and its own sky", () => {
+    for (const t of KID_THEMES) {
+      expect(new Set(t.stages.map((s) => s.icon)).size, t.id).toBe(5);
+      expect(new Set(t.stages.map((s) => s.sky)).size, t.id).toBe(5);
+      for (const s of t.stages) expect(s.sky, `${t.id} ${s.min}`).toMatch(/^from-\[#/);
+    }
   });
-  it("shows a faint preview of the next picture, none once it's full", () => {
-    expect(sceneFor(0, "garden").ghost).toBe("🌱");
-    expect(sceneFor(4, "town").ghost).toBe("🌳");
-    expect(sceneFor(18, "space").ghost).toBeNull();
+  it("names this week's picture and the next one on the kid page", () => {
+    expect(stepLines(7, "space")).toEqual({ now: "The moon 🌙", next: "5 more stars to planets 🪐" });
+    expect(stepLines(2, "garden")).toEqual({ now: "A seed in the soil 🌰", next: "1 more star to a sprout 🌱" });
+    expect(stepLines(18, "garden")).toEqual({ now: "A full garden 🌻", next: null });
+    // Every line reads as plain English, in every theme.
+    const lines = KID_THEMES.flatMap((t) => t.stages.slice(0, -1).map((s) => stepLines(s.min, t.id).next));
+    expect(lines).toEqual([
+      "3 more stars to a sprout 🌱",
+      "4 more stars to the first flower 🌷",
+      "5 more stars to flowers and a butterfly 🦋",
+      "6 more stars to a full garden 🌻",
+      "3 more stars to seaweed 🌿",
+      "4 more stars to a fish 🐠",
+      "5 more stars to fish and a shell 🐚",
+      "6 more stars to a full reef 🐙",
+      "3 more stars to a rocket 🚀",
+      "4 more stars to the moon 🌙",
+      "5 more stars to planets 🪐",
+      "6 more stars to a starry galaxy 🌟",
+      "3 more stars to a cracking egg 🐣",
+      "4 more stars to a baby dino 🦎",
+      "5 more stars to a dino and its nest 🦕",
+      "6 more stars to a grown-up dino 🦖",
+      "3 more stars to a house 🏠",
+      "4 more stars to a house and a tree 🌳",
+      "5 more stars to a street 🚗",
+      "6 more stars to a little town 🏫",
+    ]);
   });
-
   it("grows at 0/3/7/12/18 stars (same as private.garden_stage)", () => {
     expect([0, 2, 3, 6, 7, 11, 12, 17, 18, 40].map(stageFor)).toEqual([0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
   });
