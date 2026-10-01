@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { signUpAndOnboard } from "./helpers/auth";
+import { createHabit } from "./helpers/habits";
 
 const IPHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
 
@@ -109,4 +110,27 @@ test.describe("with push stood in for", () => {
     await expect(page.getByRole("region", { name: "Notifications" }).getByRole("button", { name: "Turn on reminders" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Devices" })).toHaveCount(0);
   });
+});
+
+test("Remind me at… moves a habit out of the summary to its own time, and Mute sticks", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createHabit(page, { title: "Vitamins", count: 1, period: "day" });
+  await page.getByRole("link", { name: /Vitamins/ }).click();
+  const row = page.getByRole("group", { name: "Reminders" });
+  await page.getByText("Reminders", { exact: true }).click();
+  await expect(page.getByText("In your daily summary at 20:00")).toBeVisible();
+
+  await row.getByRole("radio", { name: "At a time" }).check();
+  await row.getByLabel("Reminder time").selectOption("08:00");
+  await row.getByRole("button", { name: "Save" }).click();
+  await expect(row.getByRole("status")).toHaveText("Saved ✓");
+  await row.getByRole("checkbox", { name: /Mute this habit/ }).check();
+  await expect(row.getByRole("status")).toHaveText("Saved ✓");
+
+  await page.reload();
+  await expect(page.getByText("Muted", { exact: true })).toBeVisible();
+  await page.getByText("Reminders", { exact: true }).click();
+  await expect(row.getByRole("radio", { name: "At a time" })).toBeChecked();
+  await expect(row.getByLabel("Reminder time")).toHaveValue("08:00");
+  await expect(row.getByRole("button", { name: "Turn on reminders on this device" })).toBeVisible();
 });

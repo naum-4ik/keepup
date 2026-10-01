@@ -20,6 +20,9 @@ import { todayIn } from "@/lib/dates";
 import { isUuid, type HabitPeriod } from "@/lib/habit-schema";
 import { getGroupDetail } from "@/lib/groups";
 import { getFinishedIds, getHabitDetail, getHabitEnds, type HabitFreeze } from "@/lib/habits";
+import { ReminderControl } from "@/components/habits/reminder-control";
+import { getHabitSettings } from "@/lib/habit-settings";
+import { reminderHint } from "@/lib/reminder-mode";
 import { RestoreHabitButton } from "@/components/habits/restore-habit-button";
 import { EndControl } from "@/components/habits/end-control";
 import { endLabel, endProgress, hasEnded } from "@/lib/habit-end";
@@ -77,10 +80,13 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const archived = Boolean(h.archived_at);
   // A group habit runs on its group's calendar (time zone and week start). Finished habits use Start
   // again (Progress → Finished); only plain archived ones restore, so that list is read only then.
-  const [group, finishedIds] = await Promise.all([
+  const [group, finishedIds, settings] = await Promise.all([
     h.group_id ? getGroupDetail(h.group_id) : null,
     archived && canManage ? getFinishedIds() : null,
+    getHabitSettings(h.habit_id),
   ]);
+  // Reminders are for people who do the habit: its owner, or anyone in its group (adults always take part).
+  const takesPart = Boolean(h.group_id) || h.my_role === "owner";
   const today = todayIn(group?.timezone ?? profile.timezone);
   const weekStart = (group?.week_start ?? profile.week_start) === 0 ? 0 : 1;
   const wholeFreezes = freezes.filter((f) => !f.user_id);
@@ -219,6 +225,11 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
 
       {!archived && (
         <section aria-label="Manage habit" className="overflow-hidden rounded-2xl bg-card shadow-soft">
+          {takesPart && (
+            <Manage title="Reminders" hint={reminderHint(settings)}>
+              <ReminderControl habitId={h.habit_id} settings={settings} />
+            </Manage>
+          )}
           {members && (
             <Manage
               title="Pause just me"

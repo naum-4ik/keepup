@@ -54,7 +54,8 @@ describe("feedCopy", () => {
   it("uses no banned words and at most one emoji, for every kind", () => {
     const kinds: FeedItem["kind"][] = ["group_check_in", "approval_needed", "check_in_approved", "check_in_rejected", "everyone_done",
       "group_streak_ended", "group_milestone", "group_habit_created", "group_habit_paused", "group_habit_resumed", "group_habit_archived",
-      "member_paused", "member_joined", "member_left", "role_changed", "nudge", "cheer", "kid_check_in", "kid_streak", "kid_goal_reached", "kid_garden_full"];
+      "member_paused", "member_joined", "member_left", "role_changed", "nudge", "cheer", "kid_check_in", "kid_streak", "kid_goal_reached", "kid_garden_full",
+      "daily_summary", "habit_reminder", "approval_expiring"];
     const emoji = /\p{Extended_Pictographic}/gu;
     for (const kind of kinds) {
       const { title, body } = feedCopy(item({ kind, subject_name: "Mary", payload: { streak: 3, period: "day", kind: "thinking_of_you", role: "admin", title: "Park", emoji: "🛝" } }));
