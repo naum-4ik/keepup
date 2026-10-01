@@ -162,7 +162,7 @@ test("settings changes show on the profile", async ({ page }) => {
   await completeOnboarding(page);
 
   await page.goto("/profile/settings");
-  await expect(page.getByLabel("Daily reminder")).toHaveCount(0); // returns with reminders (M4)
+  await expect(page.getByLabel("Daily reminder")).toBeVisible(); // back with reminders (M4)
   await expect(page.getByLabel("Time zone").locator("option:checked")).toHaveText(/^\d\d:\d\d \(Rome\)$/);
   await chooseTimezone(page, "Asia/Tokyo");
   await expect(page.getByText("Changes apply from your next day and week.")).toBeVisible();

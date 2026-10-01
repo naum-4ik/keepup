@@ -34,7 +34,7 @@ test("step 1 pre-fills the name, shows the detected line, and has no reminder ho
   await expect(page.getByText("Nothing to do yet")).toBeVisible();
 
   await page.goto("/profile/settings");
-  await expect(page.getByLabel("Daily reminder")).toHaveCount(0); // returns with reminders (M4)
+  await expect(page.getByLabel("Daily reminder")).toBeVisible(); // back with reminders (M4)
 });
 
 test("purpose My family adds People and Home templates to step 2", async ({ page }) => {
