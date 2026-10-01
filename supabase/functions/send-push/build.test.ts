@@ -64,6 +64,12 @@ Deno.test("kid moments name the child and open the kid page", () => {
   assertEquals([p.title, p.body, p.url], ["Mary", "Mary: 7 days in a row: Brush teeth 🔥", "/kids/k1"]);
 });
 
+Deno.test("silent unless the person chose Sound; a job without the field stays quiet", () => {
+  assertEquals(buildPush(job({ kind: "nudge" }))!.silent, true);
+  assertEquals(buildPush(job({ kind: "nudge", silent: true }))!.silent, true);
+  assertEquals(buildPush(job({ kind: "nudge", silent: false }))!.silent, false);
+});
+
 Deno.test("a kind send-push doesn't know is skipped", () => {
   assertEquals(buildPush(job({ kind: "cheer" })), null);
 });

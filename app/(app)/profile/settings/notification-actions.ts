@@ -4,6 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { errorCode, habitErrorMessage } from "@/lib/habit-errors";
+import { validDelivery } from "@/lib/notification-categories";
 
 // `code` is the database rule ("keepup:<code>"), so a caller can tell a refusal it can recover from.
 export type NotifyResult = { ok: true } | { ok: false; message: string; code?: string };
@@ -21,9 +22,10 @@ export async function setReminderHour(hour: number): Promise<NotifyResult> {
   return result(error);
 }
 
-export async function setCategory(category: string, enabled: boolean): Promise<NotifyResult> {
+export async function setDelivery(category: string, delivery: string): Promise<NotifyResult> {
+  if (!validDelivery(category, delivery)) return { ok: false, message: habitErrorMessage({ message: "keepup:invalid_choice" }), code: "invalid_choice" };
   const { supabase } = await requireUser();
-  const { error } = await supabase.rpc("set_notification_pref", { p_category: String(category), p_enabled: enabled === true });
+  const { error } = await supabase.rpc("set_notification_delivery", { p_category: category, p_delivery: delivery });
   return result(error);
 }
 

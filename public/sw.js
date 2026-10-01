@@ -18,7 +18,11 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(data.title || "Keepup", {
       body: data.body || "",
       tag: data.tag || undefined,
-      renotify: Boolean(data.tag),
+      // Silent unless the person chose Sound (send-push says silent: false). Android Chrome and desktop
+      // browsers honour it; iPhone Safari ignores it (one Sounds switch per app in iOS Settings).
+      // renotify only with a tag (Chrome throws otherwise) and only when it may ring.
+      silent: data.silent !== false,
+      renotify: Boolean(data.tag) && data.silent === false,
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",
       data: { url: data.url || "/inbox", checkInId: data.checkInId || null, version: VERSION },

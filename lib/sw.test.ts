@@ -17,12 +17,13 @@ function win(path: string, navigate?: (url: string) => Promise<unknown>): Win {
 
 function worker(windows: Win[], openWindow = vi.fn(async () => null), fetchImpl = vi.fn(), subscribe = vi.fn()) {
   const handlers: Record<string, (e: unknown) => void> = {};
+  const showNotification = vi.fn(async () => undefined);
   const self = {
     location: { href: `${ORIGIN}/sw.js?v=test`, origin: ORIGIN },
     addEventListener: (type: string, fn: (e: unknown) => void) => void (handlers[type] = fn),
     clients: { matchAll: async () => windows, openWindow, claim: async () => {} },
     skipWaiting: () => {},
-    registration: { pushManager: { subscribe } },
+    registration: { pushManager: { subscribe }, showNotification },
   };
   runInNewContext(SOURCE, { self, URL, fetch: fetchImpl, console: { error: () => {} } });
   async function click(data: Record<string, unknown>, action = "") {
@@ -35,8 +36,32 @@ function worker(windows: Win[], openWindow = vi.fn(async () => null), fetchImpl 
     handlers.pushsubscriptionchange({ ...event, waitUntil: (p: Promise<unknown>) => (pending = p) });
     await pending;
   }
-  return { click, openWindow, subscriptionChange };
+  async function push(data: Record<string, unknown>) {
+    let pending: Promise<unknown> = Promise.resolve();
+    handlers.push({ data: { json: () => data }, waitUntil: (p: Promise<unknown>) => (pending = p) });
+    await pending;
+    return showNotification.mock.calls.at(-1) as unknown as [string, Record<string, unknown>];
+  }
+  return { click, openWindow, subscriptionChange, push };
 }
+
+describe("sw.js push", () => {
+  it("is silent by default, and doesn't buzz again for a replaced notification", async () => {
+    const [title, options] = await worker([]).push({ title: "Family", body: "Hi", tag: "habit:h1" });
+    expect(title).toBe("Family");
+    expect(options).toMatchObject({ silent: true, renotify: false, tag: "habit:h1" });
+  });
+
+  it("Sound: not silent, and a replaced notification rings again", async () => {
+    const [, options] = await worker([]).push({ title: "Family", body: "Hi", tag: "habit:h1", silent: false });
+    expect(options).toMatchObject({ silent: false, renotify: true });
+  });
+
+  it("never asks to renotify without a tag", async () => {
+    const [, options] = await worker([]).push({ title: "Family", body: "Hi", silent: false });
+    expect(options).toMatchObject({ silent: false, renotify: false });
+  });
+});
 
 describe("sw.js notification taps", () => {
   it("focuses a window already at the url, without navigating", async () => {
