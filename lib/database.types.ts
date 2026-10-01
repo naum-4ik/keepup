@@ -229,6 +229,31 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"habit_user_settings": {
+                  Row: {
+                    "habit_id": string,"muted": boolean,"remind_at": string | null,"reminders": boolean,"user_id": string
+                  }
+                  Insert: {
+                    "habit_id": string,"muted"?: boolean,"remind_at"?: string | null,"reminders"?: boolean,"user_id": string
+                  }
+                  Update: {
+                    "habit_id"?: string,"muted"?: boolean,"remind_at"?: string | null,"reminders"?: boolean,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "habit_user_settings_habit_id_fkey"
+      columns: ["habit_id"]
+isOneToOne: false
+      referencedRelation: "habits"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "habit_user_settings_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"habits": {
                   Row: {
                     "archived_at": string | null,"category": Database["public"]['Enums']["habit_category"] | null,"created_at": string,"created_by": string | null,"emoji": string,"ends_on": string | null,"finished_at": string | null,"group_id": string | null,"id": string,"owner_id": string | null,"period": Database["public"]['Enums']["habit_period"],"requires_approval": boolean,"starts_on": string,"target_count": number,"title": string,"week_start": number
@@ -260,15 +285,34 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"notifications": {
+                },"notification_prefs": {
                   Row: {
-                    "actor_id": string | null,"check_in_id": string | null,"created_at": string,"dedupe_key": string | null,"group_id": string | null,"habit_id": string | null,"id": string,"kind": string,"payload": NonNullable<Json>,"read_at": string | null,"seen_at": string | null,"subject_id": string | null,"user_id": string
+                    "category": string,"enabled": boolean,"user_id": string
                   }
                   Insert: {
-                    "actor_id"?: string | null,"check_in_id"?: string | null,"created_at"?: string,"dedupe_key"?: string | null,"group_id"?: string | null,"habit_id"?: string | null,"id"?: string,"kind": string,"payload"?: NonNullable<Json>,"read_at"?: string | null,"seen_at"?: string | null,"subject_id"?: string | null,"user_id": string
+                    "category": string,"enabled": boolean,"user_id": string
                   }
                   Update: {
-                    "actor_id"?: string | null,"check_in_id"?: string | null,"created_at"?: string,"dedupe_key"?: string | null,"group_id"?: string | null,"habit_id"?: string | null,"id"?: string,"kind"?: string,"payload"?: NonNullable<Json>,"read_at"?: string | null,"seen_at"?: string | null,"subject_id"?: string | null,"user_id"?: string
+                    "category"?: string,"enabled"?: boolean,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notification_prefs_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"notifications": {
+                  Row: {
+                    "actor_id": string | null,"category": string | null,"check_in_id": string | null,"created_at": string,"dedupe_key": string | null,"group_id": string | null,"habit_id": string | null,"id": string,"kind": string,"payload": NonNullable<Json>,"push": boolean,"pushed_at": string | null,"read_at": string | null,"seen_at": string | null,"subject_id": string | null,"user_id": string
+                  }
+                  Insert: {
+                    "actor_id"?: string | null,"category"?: string | null,"check_in_id"?: string | null,"created_at"?: string,"dedupe_key"?: string | null,"group_id"?: string | null,"habit_id"?: string | null,"id"?: string,"kind": string,"payload"?: NonNullable<Json>,"push"?: boolean,"pushed_at"?: string | null,"read_at"?: string | null,"seen_at"?: string | null,"subject_id"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "actor_id"?: string | null,"category"?: string | null,"check_in_id"?: string | null,"created_at"?: string,"dedupe_key"?: string | null,"group_id"?: string | null,"habit_id"?: string | null,"id"?: string,"kind"?: string,"payload"?: NonNullable<Json>,"push"?: boolean,"pushed_at"?: string | null,"read_at"?: string | null,"seen_at"?: string | null,"subject_id"?: string | null,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -361,13 +405,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "avatar_color": string | null,"avatar_emoji": string | null,"created_at": string,"display_name": string,"group_id": string | null,"id": string,"kid_theme": string | null,"kind": string,"onboarded_at": string | null,"purpose": string | null,"reminder_hour": number,"terms_accepted_at": string | null,"timezone": string,"week_start": number
+                    "avatar_color": string | null,"avatar_emoji": string | null,"created_at": string,"display_name": string,"group_id": string | null,"id": string,"kid_theme": string | null,"kind": string,"muted_until": string | null,"onboarded_at": string | null,"purpose": string | null,"reminder_hour": number,"terms_accepted_at": string | null,"timezone": string,"week_start": number
                   }
                   Insert: {
-                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"created_at"?: string,"display_name": string,"group_id"?: string | null,"id": string,"kid_theme"?: string | null,"kind"?: string,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
+                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"created_at"?: string,"display_name": string,"group_id"?: string | null,"id": string,"kid_theme"?: string | null,"kind"?: string,"muted_until"?: string | null,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
                   }
                   Update: {
-                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"created_at"?: string,"display_name"?: string,"group_id"?: string | null,"id"?: string,"kid_theme"?: string | null,"kind"?: string,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
+                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"created_at"?: string,"display_name"?: string,"group_id"?: string | null,"id"?: string,"kid_theme"?: string | null,"kind"?: string,"muted_until"?: string | null,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
                   }
                   Relationships: [
                     {
@@ -375,6 +419,25 @@ isOneToOne: false
       columns: ["group_id"]
 isOneToOne: false
       referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"push_subscriptions": {
+                  Row: {
+                    "auth": string,"created_at": string,"endpoint": string,"id": string,"p256dh": string,"user_agent": string | null,"user_id": string
+                  }
+                  Insert: {
+                    "auth": string,"created_at"?: string,"endpoint": string,"id"?: string,"p256dh": string,"user_agent"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "auth"?: string,"created_at"?: string,"endpoint"?: string,"id"?: string,"p256dh"?: string,"user_agent"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "push_subscriptions_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
                   ]
@@ -593,6 +656,9 @@ isOneToOne: false
 "delete_habit":
 { Args: { "p_habit_id": string }; Returns: undefined
                            },
+"delete_push_subscription":
+{ Args: { "p_endpoint": string }; Returns: undefined
+                           },
 "dismiss_card":
 { Args: { "p_card": string }; Returns: undefined
                            },
@@ -754,10 +820,19 @@ isOneToOne: false
 "nudge":
 { Args: { "p_habit_id": string,"p_kind": string,"p_recipient_id": string }; Returns: undefined
                            },
+"pause_notifications":
+{ Args: { "p_choice": string }; Returns: string
+                           },
 "pending_approvals":
 { Args: Record<PropertyKey, never>; Returns: {
               "author_avatar_color": string,"author_avatar_emoji": string,"author_id": string,"author_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_title": string,"local_date": string,"review_deadline": string
             }[]
+                           },
+"push_done":
+{ Args: { "p_dead_endpoints": (string)[],"p_id": string }; Returns: undefined
+                           },
+"push_job":
+{ Args: { "p_id": string }; Returns: Json
                            },
 "remove_member":
 { Args: { "p_group_id": string,"p_user_id": string }; Returns: undefined
@@ -815,6 +890,9 @@ isOneToOne: false
 "revoke_invites":
 { Args: { "p_group_id": string }; Returns: undefined
                            },
+"save_push_subscription":
+{ Args: { "p_auth": string,"p_endpoint": string,"p_p256dh": string,"p_user_agent"?: string }; Returns: undefined
+                           },
 "set_child_theme":
 { Args: { "p_child_id": string,"p_theme": string }; Returns: undefined
                            },
@@ -861,8 +939,17 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"set_habit_mute":
+{ Args: { "p_habit_id": string,"p_muted": boolean }; Returns: undefined
+                           },
+"set_habit_reminder":
+{ Args: { "p_habit_id": string,"p_mode": string,"p_remind_at"?: string }; Returns: undefined
+                           },
 "set_member_role":
 { Args: { "p_group_id": string,"p_role": string,"p_user_id": string }; Returns: undefined
+                           },
+"set_notification_pref":
+{ Args: { "p_category": string,"p_enabled": boolean }; Returns: undefined
                            },
 "set_treat_goal":
 { Args: { "p_child_id": string,"p_emoji": string,"p_target": number,"p_title": string }; Returns: {
