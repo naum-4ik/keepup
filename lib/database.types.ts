@@ -287,13 +287,13 @@ isOneToOne: false
                   ]
                 },"notification_prefs": {
                   Row: {
-                    "category": string,"enabled": boolean,"user_id": string
+                    "category": string,"delivery": string,"enabled": boolean,"user_id": string
                   }
                   Insert: {
-                    "category": string,"enabled": boolean,"user_id": string
+                    "category": string,"delivery"?: string,"enabled": boolean,"user_id": string
                   }
                   Update: {
-                    "category"?: string,"enabled"?: boolean,"user_id"?: string
+                    "category"?: string,"delivery"?: string,"enabled"?: boolean,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -947,6 +947,9 @@ isOneToOne: false
                            },
 "set_member_role":
 { Args: { "p_group_id": string,"p_role": string,"p_user_id": string }; Returns: undefined
+                           },
+"set_notification_delivery":
+{ Args: { "p_category": string,"p_delivery": string }; Returns: undefined
                            },
 "set_notification_pref":
 { Args: { "p_category": string,"p_enabled": boolean }; Returns: undefined
