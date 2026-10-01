@@ -25,13 +25,13 @@ export type Database = {
           Tables: {
             "check_ins": {
                   Row: {
-                    "created_at": string,"habit_id": string,"id": string,"local_date": string,"logged_by": string | null,"period_start": string,"reviewed_at": string | null,"reviewed_by": string | null,"status": string,"user_id": string
+                    "client_id": string | null,"created_at": string,"habit_id": string,"id": string,"local_date": string,"logged_by": string | null,"period_start": string,"reviewed_at": string | null,"reviewed_by": string | null,"status": string,"tapped_at": string | null,"user_id": string
                   }
                   Insert: {
-                    "created_at"?: string,"habit_id": string,"id"?: string,"local_date": string,"logged_by"?: string | null,"period_start": string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"status"?: string,"user_id": string
+                    "client_id"?: string | null,"created_at"?: string,"habit_id": string,"id"?: string,"local_date": string,"logged_by"?: string | null,"period_start": string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"status"?: string,"tapped_at"?: string | null,"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"habit_id"?: string,"id"?: string,"local_date"?: string,"logged_by"?: string | null,"period_start"?: string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"status"?: string,"user_id"?: string
+                    "client_id"?: string | null,"created_at"?: string,"habit_id"?: string,"id"?: string,"local_date"?: string,"logged_by"?: string | null,"period_start"?: string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"status"?: string,"tapped_at"?: string | null,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -493,8 +493,9 @@ isOneToOne: false
 { Args: { "p_goal_id": string }; Returns: undefined
                            },
 "check_in":
-{ Args: { "p_habit_id": string }; Returns: {
-              "created_at": string,
+{ Args: { "p_client_id"?: string,"p_habit_id": string,"p_tapped_at"?: string }; Returns: {
+              "client_id": string | null,
+"created_at": string,
 "habit_id": string,
 "id": string,
 "local_date": string,
@@ -503,6 +504,7 @@ isOneToOne: false
 "reviewed_at": string | null,
 "reviewed_by": string | null,
 "status": string,
+"tapped_at": string | null,
 "user_id": string
             }
                           SetofOptions: {
@@ -512,8 +514,9 @@ isOneToOne: false
         isSetofReturn: false
       } },
 "check_in_for":
-{ Args: { "p_by_child"?: boolean,"p_child_id": string,"p_habit_id": string }; Returns: {
-              "created_at": string,
+{ Args: { "p_by_child"?: boolean,"p_child_id": string,"p_client_id"?: string,"p_habit_id": string,"p_tapped_at"?: string }; Returns: {
+              "client_id": string | null,
+"created_at": string,
 "habit_id": string,
 "id": string,
 "local_date": string,
@@ -522,6 +525,7 @@ isOneToOne: false
 "reviewed_at": string | null,
 "reviewed_by": string | null,
 "status": string,
+"tapped_at": string | null,
 "user_id": string
             }
                           SetofOptions: {
@@ -532,7 +536,8 @@ isOneToOne: false
       } },
 "check_in_with":
 { Args: { "p_children": (string)[],"p_habit_id": string }; Returns: {
-              "created_at": string,
+              "client_id": string | null,
+"created_at": string,
 "habit_id": string,
 "id": string,
 "local_date": string,
@@ -541,6 +546,7 @@ isOneToOne: false
 "reviewed_at": string | null,
 "reviewed_by": string | null,
 "status": string,
+"tapped_at": string | null,
 "user_id": string
             }[]
                           SetofOptions: {
@@ -867,7 +873,8 @@ isOneToOne: false
       } },
 "review_check_in":
 { Args: { "p_approve": boolean,"p_check_in_id": string }; Returns: {
-              "created_at": string,
+              "client_id": string | null,
+"created_at": string,
 "habit_id": string,
 "id": string,
 "local_date": string,
@@ -876,6 +883,7 @@ isOneToOne: false
 "reviewed_at": string | null,
 "reviewed_by": string | null,
 "status": string,
+"tapped_at": string | null,
 "user_id": string
             }
                           SetofOptions: {
@@ -974,6 +982,9 @@ isOneToOne: false
       } },
 "undo_check_in":
 { Args: { "p_check_in_id": string }; Returns: undefined
+                           },
+"undo_check_in_by_client":
+{ Args: { "p_client_id": string }; Returns: boolean
                            },
 "unfreeze_habit":
 { Args: { "p_habit_id": string }; Returns: undefined
