@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { celebrates, finishLine, startAgainEnd } from "./habit-finish";
+import { celebrates, CONFETTI_TURN_MS, finishLine, startAgainEnd, takeConfettiTurn } from "./habit-finish";
 
 describe("finishLine", () => {
   it("counts what was done, in the habit's unit, with the best streak", () => {
@@ -29,5 +29,19 @@ describe("startAgainEnd", () => {
   it("keeps the same length, starting today", () => {
     expect(startAgainEnd("2026-10-01", "2026-10-30", "2026-11-05")).toBe("2026-12-04");
     expect(startAgainEnd("2026-10-01", "2026-10-01", "2026-11-05")).toBe("2026-11-05");
+  });
+});
+
+describe("takeConfettiTurn", () => {
+  it("plays the first burst now and each next one after the one before", () => {
+    const turns = { freeAt: 0 };
+    expect(takeConfettiTurn(turns, 1000)).toBe(0);
+    expect(takeConfettiTurn(turns, 1000)).toBe(CONFETTI_TURN_MS);
+    expect(takeConfettiTurn(turns, 1100)).toBe(2 * CONFETTI_TURN_MS - 100);
+  });
+  it("doesn't wait once the last burst is over", () => {
+    const turns = { freeAt: 0 };
+    takeConfettiTurn(turns, 1000);
+    expect(takeConfettiTurn(turns, 1000 + CONFETTI_TURN_MS + 1)).toBe(0);
   });
 });

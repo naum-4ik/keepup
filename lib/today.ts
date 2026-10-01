@@ -32,3 +32,13 @@ export function groupForToday<T extends TodayHabit>(habits: T[]): { todo: T[]; d
   }
   return groups;
 }
+
+// "All checked off. Nice work." says it once on Today: under the first section with nothing left
+// to do and something done. Null when none qualifies.
+export function allCheckedOffKey<T extends TodayHabit>(sections: { key: string; habits: T[] }[]): string | null {
+  for (const s of sections) {
+    const { todo, done } = groupForToday(s.habits);
+    if (todo.length === 0 && done.length > 0) return s.key;
+  }
+  return null;
+}

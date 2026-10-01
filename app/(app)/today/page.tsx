@@ -23,7 +23,7 @@ import { todayIn } from "@/lib/dates";
 import { getPendingApprovals } from "@/lib/inbox";
 import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { parsePurpose } from "@/lib/profile-schema";
-import { groupForToday } from "@/lib/today";
+import { allCheckedOffKey, groupForToday } from "@/lib/today";
 import { todayProgress } from "@/lib/today-progress";
 import { chooseGentleCard, milestoneToday, recapKey, recapLine, visibleRecaps } from "@/lib/today-cards";
 import { getCelebrations, getDismissedCards, getFamilyRecaps, hasCheckedIn } from "@/lib/today-cards-data";
@@ -44,27 +44,37 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     getDismissedCards(),
     hasCheckedIn(),
   ]);
-  // A section per child: the child's active habits and this week's stars (both fail soft).
-  const kidRows = await Promise.all(
-    children.map(async (child) => {
-      const [kidHabits, rewards] = await Promise.all([getChildSummaries(child.child_id), getChildRewards(child.child_id)]);
-      return { child, habits: kidHabits.filter((h) => !h.archived_at), stars: rewards?.stars_this_week ?? null };
-    }),
-  );
   const joinedGroup = joined && isUuid(joined) ? groups.find((g) => g.group_id === joined) : undefined;
   // Habits past their end (ideas/habit-end-date.md) leave the lists (no more check-ins) for a finish card.
   // "Ended" is judged in each habit's own calendar: a group habit (and a child's) runs on the group's zone.
+  // Two chains run side by side: the kids' sections (habits, stars, ends) and mine (ends, finish cards).
   const active = summaries.filter((h) => !h.archived_at);
-  const [ends, zones] = await Promise.all([
-    getHabitEnds([...active, ...kidRows.flatMap((k) => k.habits)].map((h) => h.habit_id)),
-    getGroupTimezones([...active.map((h) => h.group_id), ...children.map((c) => c.group_id)]),
+  const endsP = getHabitEnds(active.map((h) => h.habit_id));
+  const todayOfP = getGroupTimezones([...active.map((h) => h.group_id), ...children.map((c) => c.group_id)]).then(
+    (zones) => (groupId: string | null | undefined) => todayIn((groupId && zones.get(groupId)) || profile.timezone),
+  );
+  const [kids, ends, finishes, todayOf] = await Promise.all([
+    (async () => {
+      // A section per child: the child's active habits and this week's stars (both fail soft).
+      const kidRows = await Promise.all(
+        children.map(async (child) => {
+          const [kidHabits, rewards] = await Promise.all([getChildSummaries(child.child_id), getChildRewards(child.child_id)]);
+          return { child, habits: kidHabits.filter((h) => !h.archived_at), stars: rewards?.stars_this_week ?? null };
+        }),
+      );
+      const [kidEnds, dayOf] = await Promise.all([getHabitEnds(kidRows.flatMap((k) => k.habits).map((h) => h.habit_id)), todayOfP]);
+      // A child's ended habits simply leave the child's section (an adult decides from their own finish card).
+      return kidRows.map((k) => ({ ...k, habits: withoutEnded(k.habits, kidEnds, () => dayOf(k.child.group_id)) }));
+    })(),
+    endsP,
+    (async () => {
+      const [myEnds, dayOf] = await Promise.all([endsP, todayOfP]);
+      const ended = active.filter((h) => hasEnded(myEnds.get(h.habit_id), dayOf(h.group_id)));
+      return Promise.all(ended.map(async (h) => ({ h, summary: await getFinishSummary(h.habit_id) })));
+    })(),
+    todayOfP,
   ]);
-  const todayOf = (groupId: string | null | undefined) => todayIn((groupId && zones.get(groupId)) || profile.timezone);
-  const ended = active.filter((h) => hasEnded(ends.get(h.habit_id), todayOf(h.group_id)));
-  // A child's ended habits simply leave the child's section (an adult decides from their own finish card).
-  const kids = kidRows.map((k) => ({ ...k, habits: withoutEnded(k.habits, ends, () => todayOf(k.child.group_id)) }));
-  const finishes = await Promise.all(ended.map(async (h) => ({ h, summary: await getFinishSummary(h.habit_id) })));
-  const habits = active.filter((h) => !ended.includes(h));
+  const habits = active.filter((h) => !finishes.some((f) => f.h === h));
   const sections = sectionsForToday(habits);
   // A solo user's Today looks as before: the "Mine" heading shows only next to a group section.
   const withHeadings = sections.some((s) => s.key !== "mine") || kids.length > 0;
@@ -112,10 +122,10 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     milestoneToday: milestoneToday(celebrations, profile.timezone),
   });
 
-  // One confetti per screen: none on a finish card when "Everyone did it" or the Today card's
-  // all-done burst may play, and only on the first finish card that celebrates.
+  // Never two bursts at once: no finish-card confetti when "Everyone did it" or the Today card's
+  // all-done burst may play; finish cards take turns among themselves (FinishCard).
   const finishQuiet = everyone.length > 0 || (progress.total > 0 && progress.done >= progress.total);
-  const firstCelebrating = finishes.findIndex(({ summary }) => Boolean(summary && celebrates(summary)));
+  const checkedOffKey = withHeadings ? allCheckedOffKey(sections) : null;
 
   return (
     <section className="flex flex-col gap-4 py-6">
@@ -161,12 +171,12 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         <FamilyRecapCard key={recapKey(r)} cardKey={recapKey(r)} group={r.group_name} line={recapLine(r)} />
       ))}
       {gentle && <GentleCard key={gentle.key} card={gentle} />}
-      {finishes.map(({ h, summary }, i) => (
+      {finishes.map(({ h, summary }) => (
         <FinishCard
           key={h.habit_id}
           habitId={h.habit_id}
           endsOn={ends.get(h.habit_id) ?? ""}
-          quiet={finishQuiet || i !== firstCelebrating}
+          quiet={finishQuiet}
           title={h.title}
           emoji={h.emoji}
           category={h.category}
@@ -194,7 +204,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           withHeadings ? (
             <section key={s.key} aria-label={s.title} className="flex flex-col gap-3 pt-2">
               <h2 className="text-base font-bold">{s.title}</h2>
-              <TodayLists habits={s.habits} tipFor={isNewUser ? tipFor : undefined} endLines={endLines} />
+              <TodayLists habits={s.habits} tipFor={isNewUser ? tipFor : undefined} sectionDone={s.key === checkedOffKey} endLines={endLines} />
             </section>
           ) : (
             <TodayLists key={s.key} habits={s.habits} tipFor={isNewUser ? tipFor : undefined} sectionDone={false} endLines={endLines} />
@@ -211,8 +221,8 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
 }
 
 // Inside each section: what's left to do, what's done, what isn't active yet.
-// `sectionDone`: say "All checked off" when this section is finished. Off for a lone section, where
-// the Today card already says "Today's all done".
+// `sectionDone`: say "All checked off" when this section is finished. Only one section says it
+// (allCheckedOffKey); off for a lone section, where the Today card already says "Today's all done".
 function TodayLists({
   habits,
   tipFor,
