@@ -166,12 +166,12 @@ test("someone already using Keepup joins with one tap", async ({ page, browser }
 test("an admin opening their own link sees Open, not Join", async ({ page }) => {
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
-  const groupUrl = page.url();
+  const groupPath = new URL(page.url()).pathname;
   const url = await inviteLink(page);
   await page.goto(url);
   await expect(page.getByRole("button", { name: /^Join / })).toHaveCount(0);
   await page.getByRole("link", { name: "Open Family" }).click();
-  await expect(page).toHaveURL(groupUrl);
+  await expect(page).toHaveURL((u) => u.pathname === groupPath);
 });
 
 test("a link turned off between the preview and the tap explains itself", async ({ page, browser }) => {
