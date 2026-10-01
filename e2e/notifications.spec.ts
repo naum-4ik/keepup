@@ -12,14 +12,17 @@ test("Settings: the daily reminder is back with its hint, and the choices stick"
   await expect(section.getByText("When your daily summary arrives.")).toBeVisible();
 
   await section.getByLabel("Daily reminder").selectOption("7");
-  await section.getByRole("checkbox", { name: /Nudges/ }).uncheck();
-  await expect(section.getByRole("checkbox", { name: /Nudges/ })).not.toBeChecked();
+  const nudges = section.getByRole("group", { name: "Nudges" });
+  await expect(nudges.getByRole("radio", { name: "Silent" })).toBeChecked(); // the default: no sound, no vibration
+  await nudges.getByRole("radio", { name: "Inbox only" }).check();
+  await expect(nudges.getByRole("radio", { name: "Inbox only" })).toBeChecked();
   await page.waitForLoadState("networkidle"); // both server actions have answered
   await page.reload();
   await expect(section.getByLabel("Daily reminder")).toHaveValue("7");
-  await expect(section.getByRole("checkbox", { name: /Nudges/ })).not.toBeChecked();
+  await expect(nudges.getByRole("radio", { name: "Inbox only" })).toBeChecked();
+  await expect(section.getByText(/On iPhone, sound is one switch/)).toHaveCount(0);
 
-  await section.getByRole("checkbox", { name: /Approvals/ }).uncheck();
+  await section.getByRole("group", { name: "Approvals" }).getByRole("radio", { name: "Inbox only" }).check();
   await expect(section.getByText("Your group can't complete habits that need your approval.")).toBeVisible();
 });
 
@@ -43,6 +46,13 @@ test.describe("on an iPhone", () => {
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByRole("heading", { name: "Add Keepup to your Home Screen" })).toBeVisible();
     await expect(dialog).toContainText("Add to Home Screen");
+  });
+
+  test("an iPhone is told sound is one switch in iOS Settings", async ({ page }) => {
+    await signUpAndOnboard(page);
+    await page.goto("/profile/settings");
+    await expect(page.getByRole("region", { name: "Notifications" })
+      .getByText("On iPhone, sound is one switch for all of Keepup: Settings → Notifications → Keepup → Sounds.")).toBeVisible();
   });
 });
 
