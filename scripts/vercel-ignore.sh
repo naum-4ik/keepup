@@ -12,19 +12,20 @@ case "${VERCEL_GIT_COMMIT_REF:-}" in
 esac
 
 base="${VERCEL_GIT_PREVIOUS_SHA:-}"
-if [ -z "$base" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
-  if [ -n "$base" ]; then
+if [ -n "$base" ]; then
+  # The last deployed commit of this branch; Vercel's clone is shallow, so it may need fetching.
+  if ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
     git fetch --depth=50 origin >/dev/null 2>&1 || true
   fi
-  if [ -z "$base" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
-    base="HEAD^"
-    if ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
-      git fetch --depth=50 origin >/dev/null 2>&1 || true
-    fi
+  git cat-file -e "${base}^{commit}" 2>/dev/null || build "previous commit ${base} unavailable"
+else
+  # Nothing deployed on this branch yet (a new branch): compare with where it left develop, not
+  # with HEAD^ (an app commit followed by a docs-only one must still build).
+  if ! git rev-parse -q --verify "origin/develop^{commit}" >/dev/null; then
+    git fetch --depth=50 origin "+refs/heads/develop:refs/remotes/origin/develop" >/dev/null 2>&1 || true
   fi
+  base="$(git merge-base HEAD origin/develop 2>/dev/null)" || build "no merge base with origin/develop"
 fi
-
-git cat-file -e "${base}^{commit}" 2>/dev/null || build "base commit unavailable"
 
 files="$(git diff --name-only --no-renames "$base" HEAD)" || build "git diff failed"
 [ -n "$files" ] || build "no changed files detected"

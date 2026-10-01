@@ -12,7 +12,7 @@ flowchart LR
     Next -->|PostgREST over HTTP| PG["Supabase Postgres (eu-central-1)"]
     Next --> Auth["Supabase Auth: Google OAuth (PKCE) + email and password"]
     Next -->|live updates, M3| Realtime["Supabase Realtime"]
-    Next -.->|planned, M3/M4| EdgeFn["Supabase Edge Functions"]
+    Next -.->|planned, M4| EdgeFn["Supabase Edge Functions"]
 ```
 
 Every table has row-level security, so the connection PostgREST makes on the app's behalf carries no elevated privilege — a leaked query still can't read another family's data. A pooler (Supavisor) stays a future option if connection count ever becomes the bottleneck; today's traffic doesn't need one.
@@ -81,7 +81,7 @@ Vercel's serverless functions are stateless and scale horizontally by request �
 | CI gates | Lint, types, unit, pgTAP, Playwright e2e required by branch protection on `develop` and `main` | Live |
 | Data region | EU (Frankfurt) for Postgres and Auth | Live |
 | Kids' data minimization | Current schema stores no photos or birthdates; kid profiles keep a nickname, emoji and colour only | Live |
-| Encrypted nightly backups | — | Planned, M3 |
+| Encrypted nightly backups | Staging schema, data and logins dumped nightly, encrypted with age, kept 30 days in a private repo; a monthly job restores the latest into a throwaway database and checks it | Live (M3) |
 | GDPR export/delete | — | Planned, M6 |
 
 ## Scaling path

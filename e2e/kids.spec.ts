@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { signUpAndOnboard } from "./helpers/auth";
 import { createGroup, createGroupHabitVia, inviteLink, joinByLink } from "./helpers/groups";
+import { endHabitYesterday } from "./helpers/habits";
 
 async function openGroup(page: Page, groupName: string) {
   await page.goto("/groups");
@@ -246,3 +247,53 @@ test("reset a child's profile: export first is offered, and only the nickname an
   await expect(page.getByRole("heading", { name: "Mary" })).toBeVisible();
 });
 
+
+test("closing a dialog with Escape hands focus back to the button that opened it", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await openGroup(page, "Family");
+  await page.getByRole("link", { name: "Add a child" }).click();
+  const opener = page.getByRole("region", { name: "Habits to start" }).getByRole("button", { name: "Choose more habits" });
+  await opener.click();
+  await expect(page.getByRole("dialog", { name: "Habits to start" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(opener).toBeFocused();
+});
+
+test("a group habit with a child that ended leaves the kid views, and Start again keeps the child in", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  const kidPage = new URL(page.url()).pathname;
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: "Create your own" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Title").fill("Walk the dog");
+  await dialog.getByRole("radio", { name: "Family" }).check();
+  await dialog.getByRole("switch", { name: "Include Mary" }).click();
+  await dialog.getByRole("button", { name: /^Add habit/ }).click();
+  await expect(page).toHaveURL(/\/today$/);
+  const mary = page.getByRole("region", { name: "Mary", exact: true });
+  await expect(mary).toContainText("Walk the dog");
+  const id = (await page.getByRole("link", { name: /Walk the dog/ }).first().getAttribute("href"))!.split("/").pop()!;
+
+  endHabitYesterday(id);
+  await page.reload();
+  await expect(page.getByRole("region", { name: "Walk the dog is finished" })).toBeVisible();
+  await expect(mary).not.toContainText("Walk the dog");
+  await page.goto(kidPage);
+  await expect(page.getByRole("region", { name: "Habits" })).toContainText("Tidy my toys");
+  await expect(page.getByRole("region", { name: "Habits" })).not.toContainText("Walk the dog");
+  await page.goto(`${kidPage}/play`);
+  await expect(page.getByText("Tidy my toys")).toBeVisible();
+  await expect(page.getByText("Walk the dog")).toHaveCount(0);
+
+  await page.goto("/today");
+  await page.getByRole("region", { name: "Walk the dog is finished" }).getByRole("button", { name: "Finish" }).click();
+  await expect(page.getByRole("region", { name: "Walk the dog is finished" })).toBeHidden();
+  await page.goto("/progress?view=finished");
+  await page.getByRole("button", { name: "Start Walk the dog again" }).click();
+  await expect(page).toHaveURL(/\/today$/);
+  await expect(page.getByRole("region", { name: "Mary", exact: true })).toContainText("Walk the dog");
+});

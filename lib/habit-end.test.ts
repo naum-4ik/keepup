@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { END_PRESETS, endLabel, endProgress, endsOnFor, extendEnd } from "./habit-end";
+import { END_PRESETS, endLabel, endProgress, endsOnFor, extendEnd, hasEnded, withoutEnded } from "./habit-end";
 
 describe("END_PRESETS", () => {
   it("offers days, weeks or months to match the habit's period", () => {
@@ -48,5 +48,25 @@ describe("extendEnd", () => {
     expect(extendEnd("2026-10-30", "day", 30)).toBe("2026-11-29");
     expect(extendEnd("2026-10-28", "week", 4)).toBe("2026-11-25");
     expect(extendEnd("2026-12-31", "month", 3)).toBe("2027-03-31");
+  });
+});
+
+describe("hasEnded / withoutEnded", () => {
+  it("has ended only after the last day, in the habit's own calendar", () => {
+    expect(hasEnded("2026-10-03", "2026-10-03")).toBe(false);
+    expect(hasEnded("2026-10-03", "2026-10-04")).toBe(true);
+    expect(hasEnded(undefined, "2026-10-04")).toBe(false);
+    expect(hasEnded(null, "2026-10-04")).toBe(false);
+  });
+
+  it("leaves ended habits out, each judged by its own today", () => {
+    const habits = [{ habit_id: "a" }, { habit_id: "b" }, { habit_id: "c" }];
+    const ends = new Map([
+      ["a", "2026-10-03"],
+      ["b", "2026-10-03"],
+    ]);
+    // "a" runs on a calendar that's already on the 4th; "b" on one still on the 3rd; "c" has no end.
+    const today = { a: "2026-10-04", b: "2026-10-03", c: "2026-10-04" } as Record<string, string>;
+    expect(withoutEnded(habits, ends, (h) => today[h.habit_id]).map((h) => h.habit_id)).toEqual(["b", "c"]);
   });
 });

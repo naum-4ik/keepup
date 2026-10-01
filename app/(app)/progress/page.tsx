@@ -104,7 +104,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                       </span>
                       <StreakBadge count={h.current_streak} />
                     </Link>
-                    {showFinished && (
+                    {showFinished && (!h.group_id || h.my_role === "admin") && (
                       <span className="shrink-0 pr-2">
                         <StartAgainButton habitId={h.habit_id} title={h.title} />
                       </span>

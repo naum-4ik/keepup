@@ -69,6 +69,21 @@ export async function getHabitEnds(habitIds: string[]): Promise<Map<string, stri
   return new Map((data ?? []).map((r) => [r.id, r.ends_on as string]));
 }
 
+// Group time zones (RLS: members read their groups). A group habit, and a child's habit, run on the
+// group's calendar (private.habit_timezone), so "today" and "ended" for them use this zone, not the
+// viewer's. Fails soft: an empty map, and callers fall back to the viewer's zone.
+export async function getGroupTimezones(groupIds: (string | null | undefined)[]): Promise<Map<string, string>> {
+  const ids = [...new Set(groupIds.filter((id): id is string => Boolean(id)))];
+  if (ids.length === 0) return new Map();
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase.from("groups").select("id, timezone").in("id", ids);
+  if (error) {
+    console.error("group time zones failed", error.message);
+    return new Map();
+  }
+  return new Map((data ?? []).map((g) => [g.id, g.timezone]));
+}
+
 // Finished habits (ideas/habit-end-date.md) are archived with finished_at; the Finished tab lists them.
 export async function getFinishedIds(): Promise<Set<string>> {
   const { supabase } = await requireUser();

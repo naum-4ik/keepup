@@ -11,7 +11,17 @@ function Dialog(props: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
 }
 
-function DialogContent({ className, children, ...props }: React.ComponentProps<typeof DialogPrimitive.Content>) {
+// Focus goes back to whatever had it when the dialog opened (Radix only does this for a
+// DialogTrigger, and most dialogs here open from state). A caller's own onCloseAutoFocus runs first
+// and wins if it calls preventDefault. The opener is read in onOpenAutoFocus, before Radix moves focus.
+function DialogContent({
+  className,
+  children,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Content>) {
+  const opener = React.useRef<HTMLElement | null>(null)
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/40 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
@@ -22,6 +32,19 @@ function DialogContent({ className, children, ...props }: React.ComponentProps<t
           "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-200",
           className,
         )}
+        onOpenAutoFocus={(e) => {
+          const active = document.activeElement
+          opener.current = active instanceof HTMLElement && active !== document.body ? active : null
+          onOpenAutoFocus?.(e)
+        }}
+        onCloseAutoFocus={(e) => {
+          onCloseAutoFocus?.(e)
+          const el = opener.current
+          opener.current = null
+          if (e.defaultPrevented || !el?.isConnected) return
+          e.preventDefault()
+          el.focus()
+        }}
         {...props}
       >
         {children}

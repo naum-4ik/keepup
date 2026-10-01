@@ -52,10 +52,13 @@ jobs:
           AGE_CI_IDENTITY: ${{ secrets.AGE_CI_IDENTITY }}
         run: |
           set -euo pipefail
-          printf '%s\n' "$AGE_CI_IDENTITY" > ci.key
+          # The key is readable by this user only, and removed however the step ends.
+          (umask 077 && printf '%s\n' "$AGE_CI_IDENTITY" > ci.key)
+          trap 'rm -f ci.key' EXIT
           mkdir -p dump
           age -d -i ci.key "$LATEST" | tar -xzf - -C dump
-          rm ci.key
+          # Logins are in the backup (not loaded here: the local stack's auth schema differs by version).
+          test -s dump/auth.sql || { echo "::error::The backup has no logins (auth.sql missing or empty)"; exit 1; }
       - name: Start a throwaway Supabase database
         run: npx supabase db start
       - name: Restore and assert
