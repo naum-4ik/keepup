@@ -22,6 +22,9 @@ export type PushJob = {
   names: string[];
   pending: { check_in_id: string; author: string; habit: string }[];
   subscriptions: { endpoint: string; p256dh: string; auth: string }[];
+  // The person's delivery for this category: anything but Sound is silent. Absent (an older push_job)
+  // means silent too: fail to quiet.
+  silent?: boolean;
 };
 
 export type PushPayload = {
@@ -31,6 +34,9 @@ export type PushPayload = {
   url: string;
   actions: { action: "approve" | "reject"; title: string }[];
   checkInId: string | null;
+  // Web Push `silent`: honoured by Android Chrome and desktop browsers. iPhone Safari ignores it; there,
+  // sound is one switch per app (Settings → Notifications → Keepup → Sounds).
+  silent: boolean;
 };
 
 const PERIODS = new Set(["day", "week", "month"]);
@@ -119,5 +125,6 @@ export function buildPush(job: PushJob): PushPayload | null {
     url: urlFor(job),
     actions: single ? [{ action: "approve", title: "Approve" }, { action: "reject", title: "Don't approve" }] : [],
     checkInId: single,
+    silent: job.silent !== false,
   };
 }
