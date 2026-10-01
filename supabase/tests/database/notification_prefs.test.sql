@@ -1,7 +1,7 @@
 -- supabase/tests/database/notification_prefs.test.sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(48);
+select plan(57);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -16,6 +16,10 @@ insert into t select 'gym', (private.create_group_habit_impl('00000000-0000-0000
   'Gym', '🏋️', 'fitness', 1, 'day', null, false, '{}', now())).id;
 insert into t select 'run', (private.create_group_habit_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'fam'),
   'Run', '🏃', 'fitness', 1, 'day', null, false, '{}', now())).id;
+insert into t select 'walk', (private.create_group_habit_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'fam'),
+  'Walk', '🚶', 'fitness', 1, 'day', null, false, '{}', now())).id;
+insert into t select 'tidy', (private.create_group_habit_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'fam'),
+  'Tidy', '🧹', 'fitness', 1, 'day', null, true, '{}', now())).id;
 
 -- Precedence (spec: Mute controls): pause all → habit mute → per-habit reminders → category toggles.
 select ok(private.push_allowed('00000000-0000-0000-0000-0000000000b1', 'nudge', (select v from t where k = 'gym'), (select v from t where k = 'fam'), '{}', now()),
@@ -54,7 +58,7 @@ select private.pause_notifications_impl('00000000-0000-0000-0000-0000000000b1', 
 select ok(private.push_allowed('00000000-0000-0000-0000-0000000000b1', 'nudge', (select v from t where k = 'run'), (select v from t where k = 'fam'), '{}', now()),
   'resume turns pushes back on');
 select throws_ok($$select private.pause_notifications_impl('00000000-0000-0000-0000-0000000000b1', 'forever', now())$$,
-  'P0001', 'keepup:invalid_choice', 'only the four pause choices');
+  'P0001', 'keepup:invalid_choice', 'only the five pause choices');
 select throws_ok($$select private.set_notification_pref_impl('00000000-0000-0000-0000-0000000000b1', 'marketing', false)$$,
   'P0001', 'keepup:invalid_category', 'only the six categories');
 select throws_ok($$select private.set_habit_mute_impl('00000000-0000-0000-0000-0000000000e1', (select v from t where k = 'gym'), true)$$,
@@ -73,6 +77,9 @@ select ok((select not reminders and remind_at is null from public.habit_user_set
 -- The flag on real rows, and the webhook (Vault secrets set only inside this rolled-back test).
 select vault.create_secret('http://push.test/send-push', 'send_push_url');
 select vault.create_secret('test-secret', 'send_push_secret');
+-- Dan has a device (send-push is only called for people with one).
+insert into public.push_subscriptions (user_id, endpoint, p256dh, auth)
+values ('00000000-0000-0000-0000-0000000000b1', 'https://push.example/dead', 'p', 'a');
 select private.nudge_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'gym'), '00000000-0000-0000-0000-0000000000b1', 'you_got_this', now());
 select is((select category from public.notifications where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'nudge'),
   'nudges', 'the row records its category');
@@ -82,9 +89,17 @@ select is((select count(*)::int from net.http_request_queue where url = 'http://
 select is((select headers ->> 'x-keepup-push-secret' from net.http_request_queue where url = 'http://push.test/send-push'),
   'test-secret', 'with the shared secret, never the service-role key');
 
+select private.pause_notifications_impl('00000000-0000-0000-0000-0000000000a1', 'resume', now());
+select private.nudge_impl('00000000-0000-0000-0000-0000000000b1', (select v from t where k = 'gym'), '00000000-0000-0000-0000-0000000000a1', 'you_got_this', now());
+select ok((select push from public.notifications where user_id = '00000000-0000-0000-0000-0000000000a1' and kind = 'nudge'
+            and habit_id = (select v from t where k = 'gym')),
+  'a push row for someone with no devices yet');
+select is((select count(*)::int from net.http_request_queue where url = 'http://push.test/send-push'), 1, 'does not call send-push');
+
 select private.pause_notifications_impl('00000000-0000-0000-0000-0000000000a1', 'until_on', now());
 select private.nudge_impl('00000000-0000-0000-0000-0000000000b1', (select v from t where k = 'run'), '00000000-0000-0000-0000-0000000000a1', 'gentle_reminder', now());
-select ok((select not push from public.notifications where user_id = '00000000-0000-0000-0000-0000000000a1' and kind = 'nudge'),
+select ok((select not push from public.notifications where user_id = '00000000-0000-0000-0000-0000000000a1' and kind = 'nudge'
+            and habit_id = (select v from t where k = 'run')),
   'paused: the nudge is in the feed without a push');
 select is((select count(*)::int from net.http_request_queue where url = 'http://push.test/send-push'), 1, 'and send-push is not called');
 
@@ -109,12 +124,12 @@ select is((select count(*)::int from public.push_subscriptions where endpoint = 
 
 -- The job send-push reads, and its report back.
 insert into public.push_subscriptions (user_id, endpoint, p256dh, auth)
-values ('00000000-0000-0000-0000-0000000000b1', 'https://push.example/dead', 'p', 'a'),
-       ('00000000-0000-0000-0000-0000000000a1', 'https://push.example/annas', 'p', 'a');
+values ('00000000-0000-0000-0000-0000000000a1', 'https://push.example/annas', 'p', 'a');
 insert into t select 'dan_nudge', (select id from public.notifications where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'nudge');
 select is(jsonb_array_length(public.push_job((select v from t where k = 'dan_nudge')) -> 'subscriptions'), 2, 'the job lists Dan''s devices');
 select is(public.push_job((select v from t where k = 'dan_nudge')) ->> 'actor', 'Anna', 'with names joined in');
-select ok(public.push_job((select id from public.notifications where user_id = '00000000-0000-0000-0000-0000000000a1' and kind = 'nudge')) is null,
+select ok(public.push_job((select id from public.notifications where user_id = '00000000-0000-0000-0000-0000000000a1' and kind = 'nudge'
+                            and habit_id = (select v from t where k = 'run'))) is null,
   'no job for a row without push');
 select public.push_done((select v from t where k = 'dan_nudge'), array['https://push.example/dead', 'https://push.example/annas']);
 select ok((select pushed_at is not null from public.notifications where id = (select v from t where k = 'dan_nudge')), 'push_done marks it sent');
@@ -130,7 +145,7 @@ select is((select count(*)::int from public.notification_prefs), 0, 'nor their p
 select throws_ok($$insert into public.notification_prefs (user_id, category, enabled) values ('00000000-0000-0000-0000-0000000000e1', 'nudges', false)$$,
   '42501', null, 'tables are written only through functions');
 reset role;
-select ok(not has_function_privilege('authenticated', 'public.push_job(uuid)', 'execute'), 'signed-in people cannot read push jobs');
+select ok(not has_function_privilege('authenticated', 'public.push_job(uuid, timestamptz)', 'execute'), 'signed-in people cannot read push jobs');
 select ok(has_function_privilege('service_role', 'public.push_done(uuid, text[])', 'execute'), 'send-push can finish them');
 
 -- #11 Private streak ended (feed only).
@@ -151,6 +166,35 @@ select is((select (payload ->> 'best')::int from public.notifications where user
 insert into public.period_results (habit_id, period_start, outcome) values ('00000000-0000-0000-0000-0000000000d1', current_date - 6, 'missed');
 select is((select count(*)::int from public.notifications where user_id = '00000000-0000-0000-0000-0000000000a1' and kind = 'private_streak_ended'),
   1, 'a missed day with no run before it says nothing');
+
+-- The approvals a job lists are those still open at p_now.
+select private.check_in_impl((select v from t where k = 'tidy'), '00000000-0000-0000-0000-0000000000a1', now());
+update public.notifications set push = true
+ where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'approval_needed' and habit_id = (select v from t where k = 'tidy');
+insert into t select 'dan_approval', (select id from public.notifications
+  where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'approval_needed' and habit_id = (select v from t where k = 'tidy'));
+select is(jsonb_array_length(public.push_job((select v from t where k = 'dan_approval'), now()) -> 'pending'), 1,
+  'the job lists the approval waiting for Dan');
+select is(jsonb_array_length(public.push_job((select v from t where k = 'dan_approval'), now() + interval '30 days') -> 'pending'), 0,
+  'but not once its review window has closed at p_now');
+
+-- A failing push never blocks the action (spec: Pipeline; the feed is always written).
+delete from vault.secrets where name = 'send_push_url';
+select private.nudge_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'walk'), '00000000-0000-0000-0000-0000000000b1', 'you_got_this', now());
+select ok((select push from public.notifications where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'nudge'
+            and habit_id = (select v from t where k = 'walk')),
+  'without the webhook URL in Vault the row is still flagged');
+select is((select count(*)::int from net.http_request_queue where headers ->> 'x-keepup-push-secret' = 'test-secret'), 1,
+  'and nothing is called');
+select vault.create_secret('not a url', 'send_push_url');
+select lives_ok($$select private.nudge_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'run'), '00000000-0000-0000-0000-0000000000b1', 'thinking_of_you', now())$$,
+  'a malformed webhook URL does not block the nudge');
+select ok(exists (select 1 from public.nudges where sender_id = '00000000-0000-0000-0000-0000000000a1'
+                   and recipient_id = '00000000-0000-0000-0000-0000000000b1' and habit_id = (select v from t where k = 'run')),
+  'the nudge is saved');
+select ok((select push from public.notifications where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'nudge'
+            and habit_id = (select v from t where k = 'run')),
+  'and its feed row, flagged for push');
 
 select * from finish();
 rollback;

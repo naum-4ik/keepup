@@ -832,7 +832,7 @@ isOneToOne: false
 { Args: { "p_dead_endpoints": (string)[],"p_id": string }; Returns: undefined
                            },
 "push_job":
-{ Args: { "p_id": string }; Returns: Json
+{ Args: { "p_id": string,"p_now"?: string }; Returns: Json
                            },
 "remove_member":
 { Args: { "p_group_id": string,"p_user_id": string }; Returns: undefined

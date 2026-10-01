@@ -124,7 +124,9 @@ create trigger notifications_push_flag before insert on public.notifications
   for each row execute function private.notification_push_flag();
 
 -- The database webhook (spec: Pipeline step 2). URL and secret come from Vault, set per environment;
--- where they're missing (local, CI) nothing is called. pg_net sends only after commit.
+-- where they're missing (local, CI) nothing is called. pg_net sends only after commit. Only for
+-- people with a device. A failing push never blocks the action: any error here (a malformed URL in
+-- Vault, pg_net missing) is a warning, and the feed row and the action that wrote it still commit.
 create function private.dispatch_push()
 returns trigger
 language plpgsql
@@ -135,16 +137,23 @@ declare
   v_url text;
   v_secret text;
 begin
-  select s.decrypted_secret into v_url from vault.decrypted_secrets s where s.name = 'send_push_url';
-  select s.decrypted_secret into v_secret from vault.decrypted_secrets s where s.name = 'send_push_secret';
-  if v_url is null or v_secret is null then
+  if not exists (select 1 from public.push_subscriptions ps where ps.user_id = new.user_id) then
     return null;
   end if;
-  perform net.http_post(
-    url := v_url,
-    body := jsonb_build_object('id', new.id),
-    headers := jsonb_build_object('Content-Type', 'application/json', 'x-keepup-push-secret', v_secret),
-    timeout_milliseconds := 5000);
+  begin
+    select s.decrypted_secret into v_url from vault.decrypted_secrets s where s.name = 'send_push_url';
+    select s.decrypted_secret into v_secret from vault.decrypted_secrets s where s.name = 'send_push_secret';
+    if v_url is null or v_secret is null then
+      return null;
+    end if;
+    perform net.http_post(
+      url := v_url,
+      body := jsonb_build_object('id', new.id),
+      headers := jsonb_build_object('Content-Type', 'application/json', 'x-keepup-push-secret', v_secret),
+      timeout_milliseconds := 5000);
+  exception when others then
+    raise warning 'dispatch_push: %', sqlerrm;
+  end;
   return null;
 end;
 $$;
@@ -154,8 +163,8 @@ create trigger notifications_push_dispatch after insert on public.notifications
 
 -- 7. What send-push needs for one row, built from current state at send time (spec: Coalescing):
 -- names of everyone whose check-in on this habit and day reached this person, and the approvals
--- still waiting for them. null when the row isn't a push.
-create function public.push_job(p_id uuid)
+-- still waiting for them at p_now. null when the row isn't a push.
+create function public.push_job(p_id uuid, p_now timestamptz default now())
 returns jsonb
 language sql
 stable
@@ -180,7 +189,7 @@ as $$
     'pending', case when n.kind in ('approval_needed', 'approval_expiring') then (
       select coalesce(jsonb_agg(jsonb_build_object('check_in_id', pa.check_in_id, 'author', pa.author_name, 'habit', pa.habit_title)
                                 order by pa.created_at), '[]'::jsonb)
-        from private.pending_approvals_impl(n.user_id, now()) pa)
+        from private.pending_approvals_impl(n.user_id, p_now) pa)
       else '[]'::jsonb end,
     'subscriptions', (
       select coalesce(jsonb_agg(jsonb_build_object('endpoint', ps.endpoint, 'p256dh', ps.p256dh, 'auth', ps.auth)), '[]'::jsonb)
@@ -208,8 +217,8 @@ as $$
   update public.notifications set pushed_at = now() where id = p_id and pushed_at is null;
 $$;
 
-revoke execute on function public.push_job(uuid), public.push_done(uuid, text[]) from public, anon, authenticated;
-grant execute on function public.push_job(uuid), public.push_done(uuid, text[]) to service_role;
+revoke execute on function public.push_job(uuid, timestamptz), public.push_done(uuid, text[]) from public, anon, authenticated;
+grant execute on function public.push_job(uuid, timestamptz), public.push_done(uuid, text[]) to service_role;
 
 -- 8. Settings the app writes (rules here, p_now pinned in tests).
 create function private.set_notification_pref_impl(p_user uuid, p_category text, p_enabled boolean)
@@ -421,7 +430,7 @@ begin
         perform private.notify(array[v_habit.owner_id], 'private_streak_ended',
           'private_streak_ended:' || v_habit.id || ':' || new.period_start, null, v_habit.id, null, null, null,
           jsonb_build_object('streak', v_run, 'period', v_habit.period,
-            'best', (select s.best_streak from private.habit_streaks(v_habit.id, now()) s)));
+            'best', (select s.best_streak from private.habit_streaks(v_habit.id, new.finalized_at) s)));
       end if;
     end if;
     return new;
