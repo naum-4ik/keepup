@@ -34,18 +34,20 @@ export function ReminderControl({ habitId, settings }: { habitId: string; settin
       <fieldset className="flex flex-col gap-2">
         <legend className="sr-only">When to remind you</legend>
         {MODES.map((m) => (
-          <label key={m.mode} className="flex min-h-11 items-center gap-3">
-            <input type="radio" name={`remind-${habitId}`} className="size-5 accent-primary" checked={mode === m.mode} onChange={() => setMode(m.mode)} />
-            <span className="font-semibold">{m.label}</span>
-          </label>
+          <div key={m.mode} className="flex flex-col gap-2">
+            <label className="flex min-h-11 items-center gap-3">
+              <input type="radio" name={`remind-${habitId}`} className="size-5 accent-primary" checked={mode === m.mode} onChange={() => setMode(m.mode)} />
+              <span className="font-semibold">{m.label}</span>
+            </label>
+            {m.mode === "time" && mode === "time" && (
+              // A select, not a time input: the scheduler works in quarter hours and iOS ignores `step`.
+              <select aria-label="Reminder time" value={time} onChange={(e) => setTime(e.target.value)}
+                className="h-11 w-36 rounded-xl border border-input bg-transparent px-3 text-base">
+                {QUARTER_HOURS.map((q) => <option key={q} value={q}>{q}</option>)}
+              </select>
+            )}
+          </div>
         ))}
-        {mode === "time" && (
-          // A select, not a time input: the scheduler works in quarter hours and iOS ignores `step`.
-          <select aria-label="Reminder time" value={time} onChange={(e) => setTime(e.target.value)}
-            className="h-11 w-36 rounded-xl border border-input bg-transparent px-3 text-base">
-            {QUARTER_HOURS.map((q) => <option key={q} value={q}>{q}</option>)}
-          </select>
-        )}
         <Button type="button" className="h-11 w-fit" disabled={pending} onClick={() => run(() => setHabitReminder(habitId, mode, mode === "time" ? time : null))}>
           Save
         </Button>
