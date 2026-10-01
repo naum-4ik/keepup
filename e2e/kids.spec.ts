@@ -117,13 +117,13 @@ test("the kid view: big buttons, a tap counts at once, and hold to exit", async 
   await expect(page).toHaveURL(/\/play$/);
   await exit.hover();
   await page.mouse.down();
-  await page.waitForTimeout(1700);
+  // It closes once the hold is done, with the finger still down.
+  await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/, { timeout: 4000 });
   await page.mouse.up();
-  await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/);
   await expect(page.getByText("Mary did it")).toHaveCount(2); // both taps, logged as by Mary
   // What's next and when it starts over are for the grown-up, on the kid page.
   const garden = page.getByRole("region", { name: "This week's garden" });
-  await expect(garden).toContainText("1 more star to the next picture");
+  await expect(garden).toContainText("1 more star to a sprout 🌱");
   await expect(garden).toContainText(/A new garden starts on \w+day 🌱/);
   await expect(garden.locator("[data-items]")).toHaveAttribute("data-items", "2");
 });
@@ -356,11 +356,15 @@ test("the kid view: the third star brings the sprout, and the last habit of the 
   await createGroup(page, "Family");
   await addChild(page, "Family", "Mary");
   await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await expect(page).toHaveURL(/\/play$/); // the kid page shows the same picture: tap only in the kid view
   await expect(page.getByRole("img", { name: "A seed in the soil" })).toBeVisible();
   await page.getByRole("button", { name: /Read a book together/ }).click();
   await page.getByRole("button", { name: /Tidy my toys/ }).click();
   await page.getByRole("button", { name: /Brush teeth/ }).click();
   await expect(page.getByRole("img", { name: "A sprout" })).toBeVisible(); // 3 stars: the next picture
+  // The new picture zooms in big over the screen for ~2 s, then settles into the scene.
+  await expect(page.locator("[data-milestone]")).toHaveText("🌱");
+  await expect(page.locator("[data-milestone]")).toHaveCount(0, { timeout: 4000 });
   await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "3");
   await page.waitForTimeout(2100);
   await page.getByRole("button", { name: /Brush teeth/ }).click(); // the last one today

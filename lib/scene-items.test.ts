@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { KID_THEMES } from "@/lib/garden";
-import { MAX_ITEMS, sceneItems, tapItems } from "@/lib/scene-items";
+import { HERO_BOX, MAX_ITEMS, sceneItems, tapItems } from "@/lib/scene-items";
 
 describe("scene items: each tap adds one thing to the week's scene", () => {
   it("adds one item per star, up to 25", () => {
@@ -19,7 +19,14 @@ describe("scene items: each tap adds one thing to the week's scene", () => {
     expect(sceneItems(8, "aquarium")[6].emoji).toBe(tapItems("aquarium")[0]);
     for (const t of KID_THEMES) expect(tapItems(t.id).length, t.id).toBeGreaterThanOrEqual(6);
   });
-  it("keeps every spot inside the picture and apart; standing things on the ground, floating ones clear of the middle", () => {
+  it("never repeats a stage picture, so a new stage stands out", () => {
+    for (const t of KID_THEMES) {
+      const pictures = new Set(t.stages.map((s) => s.icon));
+      for (const item of tapItems(t.id)) expect(pictures.has(item), `${t.id} ${item}`).toBe(false);
+      expect(new Set(tapItems(t.id)).size, t.id).toBe(tapItems(t.id).length);
+    }
+  });
+  it("keeps every spot inside the picture and apart; standing things on the ground, floating ones clear of the stage picture", () => {
     for (const t of KID_THEMES) {
       const items = sceneItems(MAX_ITEMS, t.id);
       for (const i of items) {
@@ -30,7 +37,8 @@ describe("scene items: each tap adds one thing to the week's scene", () => {
         } else {
           expect(i.y, t.id).toBeGreaterThanOrEqual(8);
           expect(i.y, t.id).toBeLessThanOrEqual(80);
-          expect(i.y > 50 && i.x > 38 && i.x < 62, `${t.id} ${i.x},${i.y}`).toBe(false); // the stage picture
+          const inHero = i.x > HERO_BOX.left && i.x < HERO_BOX.right && i.y > HERO_BOX.top && i.y < HERO_BOX.bottom;
+          expect(inHero, `${t.id} ${i.x},${i.y}`).toBe(false); // the stage picture
         }
       }
       expect(new Set(items.map((i) => `${i.x},${i.y}`)).size, t.id).toBe(MAX_ITEMS);

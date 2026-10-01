@@ -1,24 +1,25 @@
 // ideas/achievements-and-rewards.md §8 and ideas/kid-view-next.md §2. Stages mirror
-// private.garden_stage(): 0 / 3 / 7 / 12 / 18 stars in the week. Each theme grows the same way, drawn
-// with simple emoji on a soft background (no characters, no text-heavy UI).
+// private.garden_stage(): 0 / 3 / 7 / 12 / 18 stars in the week. Each theme grows the same way: one big
+// picture per stage (`icon`, the hero of the scene, ideas/kid-view-next.md §4) on its own sky, so a new
+// stage looks new at a glance. Taps add small items around it (lib/scene-items.ts); they never change
+// the sky. Skies are full class strings so Tailwind sees them.
 export type KidThemeId = "garden" | "aquarium" | "space" | "dino" | "town";
-export type Stage = { min: number; label: string; icon: string; layers: readonly string[] };
+export type Stage = { min: number; label: string; icon: string; sky: string };
 
 export const GARDEN_STAGES: readonly Stage[] = [
-  { min: 0, label: "A seed in the soil", icon: "🟫", layers: ["🟫"] },
-  { min: 3, label: "A sprout", icon: "🌱", layers: ["🟫", "🌱"] },
-  { min: 7, label: "The first flower", icon: "🌷", layers: ["🟫", "🌱", "🌷"] },
-  { min: 12, label: "Flowers and a butterfly", icon: "🦋", layers: ["🟫", "🌷", "🌼", "🦋"] },
-  { min: 18, label: "A full garden", icon: "🌻", layers: ["🟫", "🌷", "🌼", "🌻", "🦋", "🐞", "☀️"] },
+  { min: 0, label: "A seed in the soil", icon: "🌰", sky: "from-[#F1EADF] to-[#E9F0E2] dark:from-[#8A6B45]/20 dark:to-[#4F8A5B]/15" },
+  { min: 3, label: "A sprout", icon: "🌱", sky: "from-[#E3F1FA] to-[#E5F2E6] dark:from-[#3B82B8]/20 dark:to-[#4F8A5B]/20" },
+  { min: 7, label: "The first flower", icon: "🌷", sky: "from-[#CDE7F8] to-[#E3F4D6] dark:from-[#3B82B8]/30 dark:to-[#4F8A5B]/25" },
+  { min: 12, label: "Flowers and a butterfly", icon: "🦋", sky: "from-[#FCE3EC] to-[#E3F4D6] dark:from-[#B8527A]/25 dark:to-[#4F8A5B]/25" },
+  { min: 18, label: "A full garden", icon: "🌻", sky: "from-[#FFE7A3] to-[#FBD5C0] dark:from-[#B08A1E]/35 dark:to-[#B8527A]/25" },
 ];
 
-// `sky` and `ground` are the picture's background; the first layer is always the ground (drawn as a band).
-export const KID_THEMES: readonly { id: KidThemeId; name: string; icon: string; sky: string; ground: string; stages: readonly Stage[] }[] = [
+// `ground` is the strip at the bottom, the same for every stage.
+export const KID_THEMES: readonly { id: KidThemeId; name: string; icon: string; ground: string; stages: readonly Stage[] }[] = [
   {
     id: "garden",
     name: "Garden",
     icon: "🌻",
-    sky: "from-[#E3F1FA] to-[#E5F2E6] dark:from-[#3B82B8]/20 dark:to-[#4F8A5B]/20",
     ground: "bg-[#8A6B45]/35 dark:bg-[#8A6B45]/50",
     stages: GARDEN_STAGES,
   },
@@ -26,56 +27,52 @@ export const KID_THEMES: readonly { id: KidThemeId; name: string; icon: string; 
     id: "aquarium",
     name: "Aquarium",
     icon: "🐠",
-    sky: "from-[#D6ECF7] to-[#B9DDF0] dark:from-[#3B82B8]/30 dark:to-[#3B82B8]/50",
     ground: "bg-[#E8D9B5] dark:bg-[#8A6B45]/50",
     stages: [
-      { min: 0, label: "Clear water", icon: "💧", layers: ["🟫"] },
-      { min: 3, label: "Seaweed", icon: "🌿", layers: ["🟫", "🌿"] },
-      { min: 7, label: "A fish", icon: "🐠", layers: ["🟫", "🌿", "🐠"] },
-      { min: 12, label: "Fish and a shell", icon: "🐚", layers: ["🟫", "🌿", "🐠", "🐟", "🐚"] },
-      { min: 18, label: "A full reef", icon: "🐙", layers: ["🟫", "🪸", "🐠", "🐟", "🐡", "🐙", "🐚"] },
+      { min: 0, label: "Clear water", icon: "💧", sky: "from-[#EEF7FB] to-[#D6ECF7] dark:from-[#3B82B8]/15 dark:to-[#3B82B8]/25" },
+      { min: 3, label: "Seaweed", icon: "🌿", sky: "from-[#D6ECF7] to-[#B5E0D8] dark:from-[#3B82B8]/25 dark:to-[#2E8B7A]/35" },
+      { min: 7, label: "A fish", icon: "🐠", sky: "from-[#BFE3F5] to-[#8FCBE8] dark:from-[#3B82B8]/35 dark:to-[#3B82B8]/50" },
+      { min: 12, label: "Fish and a shell", icon: "🐚", sky: "from-[#A6E3E9] to-[#6FB8DD] dark:from-[#2E8B9A]/40 dark:to-[#2F6FA8]/55" },
+      { min: 18, label: "A full reef", icon: "🐙", sky: "from-[#8FE0D2] via-[#62B5E0] to-[#4A7FC8] dark:from-[#2E8B7A]/50 dark:via-[#2F6FA8]/55 dark:to-[#3A4FA0]/60" },
     ],
   },
   {
     id: "space",
     name: "Space",
     icon: "🚀",
-    sky: "from-[#3A3566] to-[#5B5490] dark:from-[#1E1B3A] dark:to-[#3A3566]",
     ground: "bg-[#8A7F76]/60",
     stages: [
-      { min: 0, label: "A launch pad", icon: "🏁", layers: ["🟫", "🏁"] },
-      { min: 3, label: "A rocket", icon: "🚀", layers: ["🟫", "🚀"] },
-      { min: 7, label: "The moon", icon: "🌙", layers: ["🟫", "🚀", "🌙"] },
-      { min: 12, label: "Planets", icon: "🪐", layers: ["🟫", "🚀", "🌙", "🪐"] },
-      { min: 18, label: "A starry galaxy", icon: "🌌", layers: ["🟫", "🚀", "🌙", "🪐", "⭐", "🌟", "☄️"] },
+      { min: 0, label: "A launch pad", icon: "🏁", sky: "from-[#1C1B33] to-[#2E2B4F]" },
+      { min: 3, label: "A rocket", icon: "🚀", sky: "from-[#2B2559] to-[#4A3C7A]" },
+      { min: 7, label: "The moon", icon: "🌙", sky: "from-[#3A2466] to-[#7A4C9E]" },
+      { min: 12, label: "Planets", icon: "🪐", sky: "from-[#1B3263] via-[#2F5A9E] to-[#4A3C8C]" },
+      { min: 18, label: "A starry galaxy", icon: "🌟", sky: "from-[#24154A] via-[#5B3A8C] to-[#B65A93]" },
     ],
   },
   {
     id: "dino",
     name: "Dino egg",
     icon: "🦖",
-    sky: "from-[#FBF3D9] to-[#E5F2E6] dark:from-[#B08A1E]/20 dark:to-[#4F8A5B]/20",
     ground: "bg-[#8A6B45]/35 dark:bg-[#8A6B45]/50",
     stages: [
-      { min: 0, label: "An egg", icon: "🥚", layers: ["🟫", "🥚"] },
-      { min: 3, label: "The egg is cracking", icon: "✨", layers: ["🟫", "🥚", "✨"] },
-      { min: 7, label: "A baby dino", icon: "🦎", layers: ["🟫", "🦎"] },
-      { min: 12, label: "A dino and its nest", icon: "🦕", layers: ["🟫", "🦕", "🪺"] },
-      { min: 18, label: "A grown-up dino", icon: "🦖", layers: ["🟫", "🌴", "🦖", "🦕", "🌋"] },
+      { min: 0, label: "An egg", icon: "🥚", sky: "from-[#FBF3D9] to-[#F1EADF] dark:from-[#B08A1E]/15 dark:to-[#8A6B45]/20" },
+      { min: 3, label: "A cracking egg", icon: "🐣", sky: "from-[#FBF3D9] to-[#E5F2E6] dark:from-[#B08A1E]/20 dark:to-[#4F8A5B]/20" },
+      { min: 7, label: "A baby dino", icon: "🦎", sky: "from-[#DDF1D0] to-[#BFE3B4] dark:from-[#4F8A5B]/25 dark:to-[#4F8A5B]/40" },
+      { min: 12, label: "A dino and its nest", icon: "🦕", sky: "from-[#FFE2B8] to-[#D8EDC4] dark:from-[#C2783A]/25 dark:to-[#4F8A5B]/30" },
+      { min: 18, label: "A grown-up dino", icon: "🦖", sky: "from-[#FFD3A0] via-[#F6AE88] to-[#E58A7A] dark:from-[#C2783A]/40 dark:via-[#B8527A]/35 dark:to-[#8A3A3A]/45" },
     ],
   },
   {
     id: "town",
     name: "Town",
     icon: "🏡",
-    sky: "from-[#E3F1FA] to-[#F1EADF] dark:from-[#3B82B8]/20 dark:to-[#8A6B45]/20",
     ground: "bg-[#4F8A5B]/35 dark:bg-[#4F8A5B]/50",
     stages: [
-      { min: 0, label: "An empty field", icon: "🌾", layers: ["🟫", "🌾"] },
-      { min: 3, label: "A house", icon: "🏠", layers: ["🟫", "🏠"] },
-      { min: 7, label: "A house and a tree", icon: "🌳", layers: ["🟫", "🏠", "🌳"] },
-      { min: 12, label: "A street", icon: "🚗", layers: ["🟫", "🏠", "🌳", "🏡", "🚗"] },
-      { min: 18, label: "A little town", icon: "🏫", layers: ["🟫", "🏠", "🏡", "🌳", "🏫", "🚗", "☀️"] },
+      { min: 0, label: "An empty field", icon: "🌾", sky: "from-[#F1EADF] to-[#F4EFD8] dark:from-[#8A6B45]/20 dark:to-[#B08A1E]/15" },
+      { min: 3, label: "A house", icon: "🏠", sky: "from-[#E3F1FA] to-[#F1EADF] dark:from-[#3B82B8]/20 dark:to-[#8A6B45]/20" },
+      { min: 7, label: "A house and a tree", icon: "🌳", sky: "from-[#CDE7F8] to-[#E3F4D6] dark:from-[#3B82B8]/30 dark:to-[#4F8A5B]/25" },
+      { min: 12, label: "A street", icon: "🚗", sky: "from-[#D9E1FA] to-[#F8E3CF] dark:from-[#4A5BA8]/30 dark:to-[#C2783A]/25" },
+      { min: 18, label: "A little town", icon: "🏫", sky: "from-[#FFE4B0] via-[#FBC9B4] to-[#D9C2EC] dark:from-[#B08A1E]/35 dark:via-[#B8527A]/30 dark:to-[#6B4C9A]/35" },
     ],
   },
 ];
@@ -112,17 +109,15 @@ export function nextStep(
   return { have: stars - now.min, need: next.min - now.min, left: next.min - stars, icon: next.icon, label: next.label };
 }
 
-// What stands on the ground this week, plus a faint preview of the next picture (design review
-// 2026-09-30: an empty sky with one dot looked like nothing was there). Pictures with nothing on the
-// soil get a small base: a seed, a shell on the sand.
-const BASE: Partial<Record<KidThemeId, string>> = { garden: "🌰", aquarium: "🐚" };
-
-export function sceneFor(stars: number, theme?: string | null): { plants: string[]; ghost: string | null; base: boolean } {
-  const t = kidTheme(theme);
-  const plants = t.stages[stageFor(stars)].layers.slice(1);
-  const base = BASE[t.id];
-  const useBase = plants.length === 0 && Boolean(base);
-  return { plants: useBase ? [base!] : [...plants], ghost: nextStep(stars, t.id)?.icon ?? null, base: useBase };
+// The kid page's "what's next": this week's picture, and how many stars to the next one, by name
+// (owner, 2026-10-01: "5 more stars" alone, just after a new picture, read as going backwards).
+export function stepLines(stars: number, theme?: string | null): { now: string; next: string | null } {
+  const now = themeStages(theme)[stageFor(stars)];
+  const next = nextStep(stars, theme);
+  return {
+    now: `${now.label} ${now.icon}`,
+    next: next && `${next.left} more ${next.left === 1 ? "star" : "stars"} to ${next.label[0].toLowerCase()}${next.label.slice(1)} ${next.icon}`,
+  };
 }
 
 // ideas/kid-view-next.md: when it starts over (the family group's first day of the week) and how the

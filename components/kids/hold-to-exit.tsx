@@ -8,10 +8,13 @@ const HOLD_MS = 1500;
 // Leaving the kid view takes a 1.5s press-and-hold, so a child's taps don't close it. A ring fills
 // while held (motion-safe); with reduced motion the text counts instead. Releasing early cancels.
 // Space/Enter held down work the same. (A parent PIN comes later, per the spec.)
+// It closes the moment the hold is done, finger still down (owner, 2026-10-01): the kid page is
+// prefetched, and the button says "Closing…" at once in case the page is slow.
 export function HoldToExit({ href, childName }: { href: string; childName: string }) {
   const router = useRouter();
   const [holding, setHolding] = useState(false);
   const [step, setStep] = useState(0);
+  const [leaving, setLeaving] = useState(false);
   const timers = useRef<number[]>([]);
 
   const clear = () => {
@@ -19,6 +22,7 @@ export function HoldToExit({ href, childName }: { href: string; childName: strin
     timers.current = [];
   };
   const cancel = () => {
+    if (leaving) return;
     clear();
     setHolding(false);
     setStep(0);
@@ -32,11 +36,15 @@ export function HoldToExit({ href, childName }: { href: string; childName: strin
       window.setTimeout(() => setStep(2), (HOLD_MS * 2) / 3),
       window.setTimeout(() => {
         timers.current = [];
+        setLeaving(true);
         router.push(href);
       }, HOLD_MS),
     ];
   };
 
+  useEffect(() => {
+    router.prefetch(href);
+  }, [router, href]);
   useEffect(() => () => clear(), []);
 
   return (
@@ -83,7 +91,9 @@ export function HoldToExit({ href, childName }: { href: string; childName: strin
         )}
       </svg>
       <span aria-live="polite">
-        {!holding ? (
+        {leaving ? (
+          "Closing…"
+        ) : !holding ? (
           "Hold to exit"
         ) : (
           <>

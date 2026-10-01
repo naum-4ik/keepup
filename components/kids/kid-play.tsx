@@ -8,7 +8,7 @@ import { Confetti } from "@/components/celebrations/confetti";
 import { GardenPicture } from "@/components/kids/garden";
 import { NewWeekCard } from "@/components/kids/new-week-card";
 import { HoldToExit } from "@/components/kids/hold-to-exit";
-import { stageFor } from "@/lib/garden";
+import { stageFor, themeStages } from "@/lib/garden";
 import { isMuted, playKidSound, setMuted } from "@/lib/kid-sound";
 import { MAX_ITEMS, sceneItems } from "@/lib/scene-items";
 import type { CheckInState } from "@/lib/schedule";
@@ -17,6 +17,11 @@ import { cn } from "@/lib/utils";
 type PlayHabit = { id: string; title: string; emoji: string; target: number; done: number; state: CheckInState };
 type Child = { id: string; name: string; emoji: string | null; color: string | null; theme: string };
 type Flying = { key: number; emoji: string; x: number; y: number; dx: number; dy: number };
+type Milestone = { key: number; emoji: string; dx: number; dy: number };
+
+// The new-picture moment: how long it stays big, and its size on screen (it lands at text-8xl, 96px).
+const MILESTONE_MS = 2000;
+const MILESTONE_PX = 240;
 
 // Two quick taps on the same card (a toddler's double tap) count once.
 const SAME_CARD_GAP_MS = 2000;
@@ -65,6 +70,7 @@ export function KidPlay({
   const [flying, setFlying] = useState<Flying[]>([]);
   const [bumped, setBumped] = useState<string | null>(null);
   const [party, setParty] = useState<number | null>(null);
+  const [milestone, setMilestone] = useState<Milestone | null>(null);
   const [dancing, setDancing] = useState(false);
   const picture = useRef<HTMLDivElement>(null);
   const seq = useRef(0);
@@ -90,12 +96,23 @@ export function KidPlay({
     window.setTimeout(() => setFlying((f) => f.filter((s) => s.key !== key)), 800);
   };
 
+  // A new picture zooms in big in the middle of the screen, then shrinks into its place in the scene.
+  const zoomIn = (stars: number) => {
+    const b = picture.current?.querySelector("[data-hero]")?.getBoundingClientRect();
+    const dx = b ? b.left + b.width / 2 - window.innerWidth / 2 : 0;
+    const dy = b ? b.top + b.height / 2 - window.innerHeight / 2 : 0;
+    const key = ++seq.current;
+    setMilestone({ key, emoji: themeStages(child.theme)[stageFor(stars)].icon, dx, dy });
+    window.setTimeout(() => setMilestone((m) => (m?.key === key ? null : m)), MILESTONE_MS);
+  };
+
   const celebrate = (stars: number, allDone: boolean) => {
     if (stageFor(stars + 1) > stageFor(stars)) {
       playKidSound("chime");
       const key = ++seq.current;
       setParty(key);
-      window.setTimeout(() => setParty((p) => (p === key ? null : p)), 1200);
+      window.setTimeout(() => setParty((p) => (p === key ? null : p)), MILESTONE_MS);
+      zoomIn(stars + 1);
     } else {
       playKidSound("pop");
     }
@@ -129,7 +146,7 @@ export function KidPlay({
       {weekStart && lastStars ? <NewWeekCard childId={child.id} weekStart={weekStart} lastStars={lastStars} theme={child.theme} /> : null}
 
       <div ref={picture} className="relative">
-        <GardenPicture stars={view.stars} size="lg" theme={child.theme} interactive dancing={dancing} />
+        <GardenPicture stars={view.stars} size="lg" theme={child.theme} interactive dancing={dancing} settling={milestone !== null} />
         {party !== null && <Confetti key={party} />}
         <p className="sr-only" aria-live="polite">
           {view.stars} {view.stars === 1 ? "star" : "stars"} this week
@@ -163,11 +180,12 @@ export function KidPlay({
                   const before = view.stars;
                   const allDone = view.habits.every((x) => (x.id === h.id ? x.done + 1 >= x.target : x.state !== "open"));
                   setError(null);
+                  // Outside the transition: its updates wait for the save, and these must show at once.
+                  fly(el, before);
+                  celebrate(before, allDone);
+                  if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
                   startTransition(async () => {
                     tap(h.id);
-                    fly(el, before);
-                    celebrate(before, allDone);
-                    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
                     try {
                       const r = await checkInFor(h.id, child.id, true);
                       if (!r.ok) setError(r.message);
@@ -212,6 +230,28 @@ export function KidPlay({
           );
         })}
       </ul>
+
+      {milestone && (
+        <span
+          key={milestone.key}
+          aria-hidden
+          data-milestone
+          className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center motion-reduce:hidden"
+        >
+          <span
+            className="relative block leading-none select-none motion-safe:animate-hero-zoom"
+            style={{
+              fontSize: MILESTONE_PX,
+              ["--to-x" as string]: `${milestone.dx}px`,
+              ["--to-y" as string]: `${milestone.dy}px`,
+              ["--to-scale" as string]: String(96 / MILESTONE_PX),
+            }}
+          >
+            <span className="absolute inset-[-25%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.9)_0%,rgba(255,255,255,0.4)_45%,rgba(255,255,255,0)_70%)]" />
+            <span className="relative">{milestone.emoji}</span>
+          </span>
+        </span>
+      )}
 
       {flying.map((s) => (
         <span
