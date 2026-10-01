@@ -1,7 +1,7 @@
 -- supabase/tests/database/push_events.test.sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(24);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -24,8 +24,16 @@ set local session_replication_role = origin;
 select private.check_in_impl((select v from t where k = 'dinner'), '00000000-0000-0000-0000-0000000000a1', now());
 select ok((select push and category = 'group_activity' from public.notifications where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'group_check_in'),
   '#1 a group check-in is pushed under Group activity');
+select isnt(public.push_job((select id from public.notifications where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'group_check_in'), now()), null,
+  'a non-final check-in''s group_check_in is a normal job');
 select private.check_in_impl((select v from t where k = 'dinner'), '00000000-0000-0000-0000-0000000000b1', now());
 select is((select count(*)::int from public.notifications where kind = 'everyone_done' and push), 2, '#10 Everyone did it is pushed to each member');
+select ok((select bool_and(public.push_job(id, now()) is null) from public.notifications where kind = 'group_check_in' and habit_id = (select v from t where k = 'dinner')),
+  'once everyone is done the group_check_in jobs are skipped');
+select ok((select bool_and(pushed_at is not null) from public.notifications where kind = 'group_check_in' and habit_id = (select v from t where k = 'dinner')),
+  'and marked sent');
+select isnt(public.push_job((select id from public.notifications where kind = 'everyone_done' and user_id = '00000000-0000-0000-0000-0000000000a1'), now()), null,
+  'while Everyone did it is a normal job');
 
 -- #2, #4, #5
 insert into t select 'gym1', (private.check_in_impl('00000000-0000-0000-0000-0000000000d9', '00000000-0000-0000-0000-0000000000b1', now())).id;
@@ -68,6 +76,10 @@ select ok((select push and category = 'group_updates' from public.notifications 
 select ok((select bool_and(private.push_allowed('00000000-0000-0000-0000-0000000000b1', k, (select v from t where k = 'walk'), (select v from t where k = 'fam'), '{}', now()))
              from unnest(array['group_habit_paused', 'group_habit_resumed']) k),
   '#13 paused and resumed are pushed');
+
+select ok(not private.push_allowed('00000000-0000-0000-0000-0000000000b1', 'group_streak_ended', null, (select v from t where k = 'fam'), '{}', now())
+          and not private.push_allowed('00000000-0000-0000-0000-0000000000b1', 'group_streak_ended', null, (select v from t where k = 'fam'), '{"streak": "x"}', now()),
+  '#9 a missing or non-integer streak is feed only, without an error');
 
 -- #9: pushed only from a 3-period streak, never naming anyone
 select ok(not private.push_allowed('00000000-0000-0000-0000-0000000000b1', 'group_streak_ended', (select v from t where k = 'dinner'), (select v from t where k = 'fam'), '{"streak": 2}', now()),

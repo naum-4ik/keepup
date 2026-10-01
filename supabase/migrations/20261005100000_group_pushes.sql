@@ -45,7 +45,8 @@ as $$
        and not coalesce(s.muted, false)
        and not (c.category = 'reminders' and p_habit_id is not null and not coalesce(s.reminders, true))
        and (c.category = 'always' or coalesce(np.enabled, true))
-       and (p_kind <> 'group_streak_ended' or coalesce((p_payload ->> 'streak')::int, 0) >= 3)
+       and (p_kind <> 'group_streak_ended'
+            or (case when p_payload ->> 'streak' ~ '^\d{1,9}$' then (p_payload ->> 'streak')::int else 0 end) >= 3)
        and (p_kind <> 'member_joined' or private.is_admin(p_group_id, p_user))
        and (p_kind <> 'streak_back' or p_group_id is not null)
       from (select private.push_category(p_kind) as category) c
@@ -53,3 +54,65 @@ as $$
       left join public.habit_user_settings s on s.user_id = p_user and s.habit_id = p_habit_id
       left join public.notification_prefs np on np.user_id = p_user and np.category = c.category), false);
 $$;
+
+-- The last check-in writes group_check_in (to the others) and everyone_done (to all) in one transaction;
+-- both would push under tag habit:<id> and buzz twice. The superseded group_check_in is marked sent
+-- and reported as null, which send-push skips. Body copied from 20261002100000 (now private.push_job_build).
+create function private.push_job_build(p_id uuid, p_now timestamptz default now())
+returns jsonb
+language sql
+stable
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'id', n.id, 'kind', n.kind, 'user_id', n.user_id, 'pushed', n.pushed_at is not null,
+    'group_id', n.group_id, 'group', g.name, 'habit_id', n.habit_id, 'habit', h.title, 'period', h.period,
+    'target', h.target_count, 'check_in_id', n.check_in_id, 'check_in_status', c.status,
+    'actor', a.display_name, 'subject_id', n.subject_id, 'subject', s.display_name, 'payload', n.payload,
+    'names', case when n.kind = 'group_check_in' then (
+      select coalesce(jsonb_agg(x.name order by x.first), '[]'::jsonb)
+        from (select ap.display_name as name, min(o.created_at) as first
+                from public.notifications o
+                join public.check_ins oc on oc.id = o.check_in_id
+                join public.profiles ap on ap.id = o.actor_id
+               where o.user_id = n.user_id and o.kind = 'group_check_in' and o.habit_id = n.habit_id
+                 and oc.local_date = c.local_date
+               group by ap.id, ap.display_name) x)
+      else '[]'::jsonb end,
+    'pending', case when n.kind in ('approval_needed', 'approval_expiring') then (
+      select coalesce(jsonb_agg(jsonb_build_object('check_in_id', pa.check_in_id, 'author', pa.author_name, 'habit', pa.habit_title)
+                                order by pa.created_at), '[]'::jsonb)
+        from private.pending_approvals_impl(n.user_id, p_now) pa)
+      else '[]'::jsonb end,
+    'subscriptions', (
+      select coalesce(jsonb_agg(jsonb_build_object('endpoint', ps.endpoint, 'p256dh', ps.p256dh, 'auth', ps.auth)), '[]'::jsonb)
+        from public.push_subscriptions ps where ps.user_id = n.user_id))
+    from public.notifications n
+    left join public.groups g on g.id = n.group_id
+    left join public.habits h on h.id = n.habit_id
+    left join public.check_ins c on c.id = n.check_in_id
+    left join public.profiles a on a.id = n.actor_id
+    left join public.profiles s on s.id = n.subject_id
+   where n.id = p_id and n.push;
+$$;
+
+create or replace function public.push_job(p_id uuid, p_now timestamptz default now())
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if exists (select 1 from public.notifications n
+              where n.id = p_id and n.push and n.kind = 'group_check_in'
+                and exists (select 1 from public.notifications d
+                             where d.kind = 'everyone_done' and d.user_id = n.user_id and d.habit_id = n.habit_id
+                               and d.created_at >= n.created_at)) then
+    update public.notifications set pushed_at = now() where id = p_id and pushed_at is null;
+    return null;
+  end if;
+  return private.push_job_build(p_id, p_now);
+end;
+$$;
+
+revoke execute on function private.push_job_build(uuid, timestamptz) from public, anon, authenticated;
