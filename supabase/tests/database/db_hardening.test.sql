@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(36);
+select plan(40);
 
 -- Follow-ups from the M3 final review (20261001100000_db_hardening.sql). Lock-order fixes can't be
 -- raced in one session; their behaviour is covered by the existing tests and argued in the migration.
@@ -147,46 +147,75 @@ select ok((select prosrc not like '%last_admin%' from pg_proc where oid = 'priva
 select throws_ok($$select private.remove_member_impl('00000000-0000-0000-0000-0000000000a1', (select v::uuid from t where k = 'fam'), '00000000-0000-0000-0000-0000000000a1', now())$$,
   'P0001', 'keepup:use_leave', 'removing yourself still says use Leave');
 
--- 5. Restoring an approval habit inside its archive day's review window leaves that day to finalize.
+-- 5. Restoring an approval habit inside its archive day's review window. The archive day is settled
+-- as skipped (never missed); approving its check-ins before the deadline upgrades it to done.
 insert into t select 'pair', (private.create_group_impl('00000000-0000-0000-0000-0000000000a1', 'Pair', 'couple')).id;
 select private.accept_invite_impl('00000000-0000-0000-0000-0000000000b1',
   (private.create_invite_impl('00000000-0000-0000-0000-0000000000a1', (select v::uuid from t where k = 'pair'), now())).token, now());
 update public.group_members set joined_at = '2026-09-01T00:00:00Z' where group_id = (select v::uuid from t where k = 'pair');
-set local session_replication_role = replica;
-insert into public.habits (id, owner_id, group_id, title, category, emoji, target_count, period, starts_on, week_start, requires_approval, created_at, created_by)
-values ('00000000-0000-0000-0000-0000000000d5', null, (select v::uuid from t where k = 'pair'), 'Gym', 'fitness', '🏋️', 1, 'day',
-        '2026-10-05', 1, true, '2026-10-04T00:00:00Z', '00000000-0000-0000-0000-0000000000a1');
-set local session_replication_role = origin;
-insert into t select 'gymci', (private.check_in_impl('00000000-0000-0000-0000-0000000000d5', '00000000-0000-0000-0000-0000000000b1', '2026-10-05T09:00:00Z')).id;
-insert into t select 'gymci2', (private.check_in_impl('00000000-0000-0000-0000-0000000000d5', '00000000-0000-0000-0000-0000000000a1', '2026-10-05T10:00:00Z')).id;
+
+-- A daily approval habit from 5 Oct (UTC): Dan and Anna check in that day (both pending), and it is
+-- archived at 18:00. The review deadline for 5 Oct is 6 Oct 12:00.
+create function pg_temp.archived_gym(p_id uuid, p_key text) returns void language plpgsql as $$
+begin
+  set local session_replication_role = replica;
+  insert into public.habits (id, owner_id, group_id, title, category, emoji, target_count, period, starts_on, week_start, requires_approval, created_at, created_by)
+  values (p_id, null, (select v::uuid from t where k = 'pair'), 'Gym ' || p_key, 'fitness', '🏋️', 1, 'day',
+          '2026-10-05', 1, true, '2026-10-04T00:00:00Z', '00000000-0000-0000-0000-0000000000a1');
+  set local session_replication_role = origin;
+  insert into t select p_key || ':dan', (private.check_in_impl(p_id, '00000000-0000-0000-0000-0000000000b1', '2026-10-05T09:00:00Z')).id;
+  insert into t select p_key || ':anna', (private.check_in_impl(p_id, '00000000-0000-0000-0000-0000000000a1', '2026-10-05T10:00:00Z')).id;
+  -- habit_rules stamps the real clock, so pin the archive time.
+  set local session_replication_role = replica;
+  update public.habits set archived_at = '2026-10-05T18:00:00Z' where id = p_id;
+  set local session_replication_role = origin;
+end;
+$$;
+
+-- (1) Restored in the window, approved in time: done.
+select pg_temp.archived_gym('00000000-0000-0000-0000-0000000000d5', 'g1');
 select is((select array_agg(status) from public.check_ins where habit_id = '00000000-0000-0000-0000-0000000000d5'), array['pending', 'pending'],
   'both check-ins wait for the other''s approval');
--- Archived on 5 Oct (habit_rules stamps the real clock, so pin it), restored 6 Oct 08:00, before the 12:00 deadline.
-set local session_replication_role = replica;
-update public.habits set archived_at = '2026-10-05T18:00:00Z' where id = '00000000-0000-0000-0000-0000000000d5';
-set local session_replication_role = origin;
 select private.restore_habit_impl('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000d5', '2026-10-06T08:00:00Z');
-select is_empty($$select * from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d5'$$,
-  'the archive day, still in review, is not settled by the restore');
-select private.review_check_in_impl((select v::uuid from t where k = 'gymci'), '00000000-0000-0000-0000-0000000000a1', true, '2026-10-06T09:00:00Z');
-select private.review_check_in_impl((select v::uuid from t where k = 'gymci2'), '00000000-0000-0000-0000-0000000000b1', true, '2026-10-06T09:05:00Z');
+select results_eq($$select period_start::text, outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d5'$$,
+  $$values ('2026-10-05', 'skipped')$$, 'restored in the window: the archive day is skipped, as before');
+select private.review_check_in_impl((select v::uuid from t where k = 'g1:dan'), '00000000-0000-0000-0000-0000000000a1', true, '2026-10-06T09:00:00Z');
+select is((select outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d5'), 'skipped',
+  'one approval of two does not complete the day');
+select private.review_check_in_impl((select v::uuid from t where k = 'g1:anna'), '00000000-0000-0000-0000-0000000000b1', true, '2026-10-06T09:05:00Z');
+select is((select outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d5'), 'done',
+  'the approval that completes the day upgrades it to done');
 select private.finalize_periods('2026-10-06T13:00:00Z');
 select results_eq($$select period_start::text, outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d5'$$,
-  $$values ('2026-10-05', 'done')$$, 'approved in the window, the day ends done');
+  $$values ('2026-10-05', 'done')$$, 'and finalize keeps it done');
 
--- Only the archive day waits: a later day that was archived throughout is skipped at once, even while
--- its own window is open, and finalize leaves it skipped.
+-- (2) Restored in the window, not approved: skipped, never missed.
+select pg_temp.archived_gym('00000000-0000-0000-0000-0000000000d7', 'g2');
+select private.restore_habit_impl('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000d7', '2026-10-06T08:00:00Z');
+select private.review_check_in_impl((select v::uuid from t where k = 'g2:dan'), '00000000-0000-0000-0000-0000000000a1', true, '2026-10-06T09:00:00Z');
+select private.review_check_in_impl((select v::uuid from t where k = 'g2:anna'), '00000000-0000-0000-0000-0000000000b1', false, '2026-10-06T09:05:00Z');
+select private.finalize_periods('2026-10-06T13:00:00Z');
+select results_eq($$select period_start::text, outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d7'$$,
+  $$values ('2026-10-05', 'skipped')$$, 'restored in the window but not completed: skipped, not missed');
+
+-- (3) Restored after the window: skipped, and the check-ins can no longer be reviewed.
+select pg_temp.archived_gym('00000000-0000-0000-0000-0000000000d8', 'g3');
+select private.restore_habit_impl('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000d8', '2026-10-06T13:00:00Z');
+select throws_ok($$select private.review_check_in_impl((select v::uuid from t where k = 'g3:dan'), '00000000-0000-0000-0000-0000000000a1', true, '2026-10-06T13:30:00Z')$$,
+  'P0001', 'keepup:review_closed', 'after the window there is nothing left to approve');
+select results_eq($$select period_start::text, outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d8'$$,
+  $$values ('2026-10-05', 'skipped')$$, 'restored after the window: skipped');
+
+-- A day archived throughout is skipped too, even while its own window is open, and stays skipped.
 set local session_replication_role = replica;
 insert into public.habits (id, owner_id, group_id, title, category, emoji, target_count, period, starts_on, week_start, requires_approval, created_at, created_by, archived_at)
 values ('00000000-0000-0000-0000-0000000000d6', null, (select v::uuid from t where k = 'pair'), 'Run', 'fitness', '🏃', 1, 'day',
         '2026-10-04', 1, true, '2026-10-03T00:00:00Z', '00000000-0000-0000-0000-0000000000a1', '2026-10-04T18:00:00Z');
 set local session_replication_role = origin;
 select private.restore_habit_impl('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000d6', '2026-10-06T08:00:00Z');
-select results_eq($$select period_start::text, outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d6' order by 1$$,
-  $$values ('2026-10-04', 'skipped'), ('2026-10-05', 'skipped')$$, 'archived the day before: both days are skipped at once');
 select private.finalize_periods('2026-10-06T13:00:00Z');
 select results_eq($$select period_start::text, outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d6' order by 1$$,
-  $$values ('2026-10-04', 'skipped'), ('2026-10-05', 'skipped')$$, 'and finalize never turns the archived day into missed');
+  $$values ('2026-10-04', 'skipped'), ('2026-10-05', 'skipped')$$, 'a day archived throughout stays skipped');
 
 -- 10. invite_membership: the group id for a current member, null for anyone else, signed-in only.
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');

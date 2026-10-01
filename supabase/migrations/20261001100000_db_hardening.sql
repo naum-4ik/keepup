@@ -282,44 +282,61 @@ begin
 end;
 $$;
 
--- 5. Restore (copied from 20260930170000_restore_habit.sql). An approval habit's archive-day period
--- that is still in its review window isn't settled here: a pending check-in may still be approved,
--- and finalize_periods settles the period once the window closes. Any other period in the gap was
--- archived throughout and is skipped as before, even if its window is still open.
-create or replace function private.restore_habit_impl(p_actor uuid, p_habit_id uuid, p_now timestamptz)
-returns public.habits
+-- 5. Restore and the approval grace. restore_habit_impl (20260930170000) is unchanged: it settles
+-- the archive-day period as skipped (the archived gap is never missed). That period may still be in
+-- its review window with a pending check-in; approving it in time must not leave the day worse off
+-- than it should be, so review_check_in_impl upgrades a skipped result to done when the approval
+-- completes the period. Never the other way round. Copied from 20260930100400_kid_rewards_celebrations.sql;
+-- only the upgrade after the update is new. It runs under the habit lock the review already holds
+-- (habit → check-in → period_results). Finalize never settles a period still in grace, so a skipped
+-- row inside the window only comes from a restore (or keep_going's gap, which has no check-ins).
+-- The upgrade is an update, so the insert-only period_results feed (milestones) doesn't fire for it.
+create or replace function private.review_check_in_impl(p_check_in_id uuid, p_actor uuid, p_approve boolean, p_now timestamptz)
+returns public.check_ins
 language plpgsql
 set search_path = ''
 as $$
 declare
-  v_habit public.habits := private.habit_for_update(p_habit_id);
-  v_step interval;
-  v_from date;
-  v_current date;
+  v_check_in public.check_ins;
+  v_habit public.habits;
+  v_habit_id uuid;
 begin
-  perform private.require_habit_manager(p_actor, v_habit);
-  if v_habit.archived_at is null then
-    raise exception 'keepup:not_archived' using errcode = 'P0001';
+  select c.habit_id into v_habit_id from public.check_ins c where c.id = p_check_in_id;
+  if not found then
+    raise exception 'keepup:check_in_not_found' using errcode = 'P0002';
   end if;
-  if v_habit.finished_at is not null then
-    raise exception 'keepup:habit_finished' using errcode = 'P0001';
+  perform 1 from public.habits h where h.id = v_habit_id for update;
+
+  select c.* into v_check_in from public.check_ins c where c.id = p_check_in_id for update;
+  if not found then
+    raise exception 'keepup:check_in_not_found' using errcode = 'P0002';
   end if;
-  v_step := private.period_step(v_habit.period);
-  -- From the period it was archived in (unless done by then) up to the one before today's.
-  v_from := greatest(private.habit_period_start(v_habit, private.habit_today(v_habit, v_habit.archived_at)),
-                     private.first_period_start(v_habit));
-  v_current := private.habit_period_start(v_habit, private.habit_today(v_habit, p_now));
-  insert into public.period_results (habit_id, period_start, outcome, finalized_at)
-  select v_habit.id, s.d::date,
-         case when private.period_outcome(v_habit, s.d::date) = 'done' then 'done' else 'skipped' end, p_now
-    from generate_series(v_from::timestamp, v_current::timestamp - v_step, v_step) as s(d)
-   where not (s.d::date = private.habit_period_start(v_habit, private.habit_today(v_habit, v_habit.archived_at))
-              and private.in_grace(v_habit, s.d::date, p_now))
-  on conflict (habit_id, period_start) do nothing;
-  perform set_config('keepup.restoring', 'on', true);
-  update public.habits set archived_at = null where id = p_habit_id returning * into v_habit;
-  perform set_config('keepup.restoring', '', true);
-  return v_habit;
+  select h.* into v_habit from public.habits h where h.id = v_check_in.habit_id;
+  if v_habit.group_id is null or not private.is_member(v_habit.group_id, p_actor) then
+    raise exception 'keepup:check_in_not_found' using errcode = 'P0002';
+  end if;
+  if v_check_in.user_id = p_actor then
+    raise exception 'keepup:own_check_in' using errcode = 'P0001';
+  end if;
+  if v_check_in.status <> 'pending' then
+    raise exception 'keepup:already_reviewed' using errcode = 'P0001';
+  end if;
+  if p_now >= private.review_deadline(v_habit, v_check_in.period_start) then
+    raise exception 'keepup:review_closed' using errcode = 'P0001';
+  end if;
+
+  update public.check_ins
+     set status = case when p_approve then 'approved' else 'rejected' end,
+         reviewed_by = p_actor, reviewed_at = p_now
+   where id = p_check_in_id
+  returning * into v_check_in;
+
+  if p_approve then
+    update public.period_results r set outcome = 'done'
+     where r.habit_id = v_habit.id and r.period_start = v_check_in.period_start and r.outcome = 'skipped'
+       and private.period_outcome(v_habit, v_check_in.period_start) = 'done';
+  end if;
+  return v_check_in;
 end;
 $$;
 
