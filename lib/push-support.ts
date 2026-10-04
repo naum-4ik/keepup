@@ -69,17 +69,33 @@ export function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
 export const SIGN_OUT_FLUSH_MS = 5_000;
 export const SIGN_OUT_DELETE_MS = 2_000;
 
+// Sign-out never drops check-ins without asking. Queued ones get one try to send (bounded: a slow
+// server doesn't hold the sign-out). Anything still waiting (always, offline) is named in a
+// confirm; "Stay signed in" leaves everything as it was. An empty queue signs out without asking.
+// If the queue can't be read there is nothing to name: it signs out as before.
+export async function signOutWithQueue(deps: {
+  flushQueue(): Promise<void>;
+  pendingCount(): Promise<number>;
+  confirmDrop(count: number): Promise<boolean>;
+  cleanup(): Promise<void>;
+  signOut(): Promise<void>;
+}): Promise<"signed_out" | "stayed"> {
+  await withTimeout(deps.flushQueue(), SIGN_OUT_FLUSH_MS).catch(() => undefined);
+  const left = await deps.pendingCount().catch(() => 0);
+  if (left > 0 && !(await deps.confirmDrop(left))) return "stayed";
+  await deps.cleanup();
+  await deps.signOut();
+  return "signed_out";
+}
+
 // A phone shared by two accounts: signing out must stop this account's pushes here, and take its
-// saved pages and queued check-ins off the phone. Queued check-ins get one try to send first
-// (bounded: offline, or a slow server, they're dropped). Nothing here stops the sign-out.
+// saved pages and queued check-ins off the phone. Nothing here stops the sign-out.
 export async function signOutCleanup(deps: {
   getSubscription(): Promise<{ endpoint: string; unsubscribe(): Promise<boolean> } | null>;
   forget(endpoint: string): Promise<void>;
   clearCaches(): Promise<void>;
-  flushQueue(): Promise<void>;
   deleteQueue(): Promise<void>;
 }): Promise<void> {
-  await withTimeout(deps.flushQueue(), SIGN_OUT_FLUSH_MS).catch(() => undefined);
   try {
     const sub = await deps.getSubscription();
     if (sub) {

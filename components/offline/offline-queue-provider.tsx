@@ -26,13 +26,14 @@ export function useOfflineNotice() {
   return { notice, dismiss: dismissNotice };
 }
 
-// Sign-out (lib/push-support.ts signOutCleanup): send what's waiting once, then delete this person's
-// queue from the phone. Outside the provider there is nothing to send or delete.
+// Sign-out (lib/push-support.ts signOutWithQueue): send what's waiting once, say what's left, then
+// delete this person's queue from the phone. Outside the provider there is nothing to send or delete.
 export function useOfflineSignOut() {
   const { client, userId } = useContext(OfflineQueueContext);
   return useMemo(
     () => ({
       flushQueue: async () => void (await client?.flush()),
+      pendingCount: async () => (client ? client.pending() : 0),
       deleteQueue: async () => {
         client?.stop();
         if (userId) await deleteOfflineQueue(offlineDbName(userId));

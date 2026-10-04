@@ -1,7 +1,7 @@
 // lib/push-support.test.ts
 import { describe, expect, it, vi } from "vitest";
 import {
-  deviceLabel, iosVersion, pushSupport, removeDevice, resaveOncePerLoad, signOutCleanup, subscribeAndSave, urlBase64ToUint8Array, withTimeout,
+  deviceLabel, iosVersion, pushSupport, removeDevice, resaveOncePerLoad, signOutCleanup, signOutWithQueue, subscribeAndSave, urlBase64ToUint8Array, withTimeout,
   type PushEnv,
 } from "./push-support";
 
@@ -66,7 +66,7 @@ describe("urlBase64ToUint8Array", () => {
 });
 
 describe("signOutCleanup", () => {
-  const quiet = { flushQueue: async () => undefined, deleteQueue: async () => undefined };
+  const quiet = { deleteQueue: async () => undefined };
 
   it("unsubscribes this device before signing out, so the next account's pushes don't reach the last one", async () => {
     const calls: string[] = [];
@@ -91,47 +91,20 @@ describe("signOutCleanup", () => {
     expect(clearCaches).toHaveBeenCalledTimes(2);
   });
 
-  it("sends the queued check-ins once first, and deletes the queue last", async () => {
+  it("deletes the queue last, and a blocked delete never stops the sign-out", async () => {
     const calls: string[] = [];
     await signOutCleanup({
-      flushQueue: async () => void calls.push("flush"),
       getSubscription: async () => ({ endpoint: "e", unsubscribe: async () => (calls.push("unsubscribe"), true) }),
       forget: async () => void calls.push("forget"),
       clearCaches: async () => void calls.push("caches"),
       deleteQueue: async () => void calls.push("delete queue"),
     });
-    expect(calls).toEqual(["flush", "forget", "unsubscribe", "caches", "delete queue"]);
-  });
+    expect(calls).toEqual(["forget", "unsubscribe", "caches", "delete queue"]);
 
-  it("waits at most 5 seconds for the send, then deletes the queue anyway", async () => {
-    vi.useFakeTimers();
-    try {
-      const deleteQueue = vi.fn(async () => undefined);
-      const done = signOutCleanup({
-        flushQueue: () => new Promise<void>(() => {}), // a server that never answers
-        getSubscription: async () => null,
-        forget: async () => undefined,
-        clearCaches: async () => undefined,
-        deleteQueue,
-      });
-      await vi.advanceTimersByTimeAsync(4_999);
-      expect(deleteQueue).not.toHaveBeenCalled();
-      await vi.advanceTimersByTimeAsync(1);
-      await done;
-      expect(deleteQueue).toHaveBeenCalledTimes(1);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("a failed send or a blocked delete never stops the sign-out", async () => {
     vi.useFakeTimers();
     try {
       const done = signOutCleanup({
-        flushQueue: async () => { throw new TypeError("Failed to fetch"); },
-        getSubscription: async () => null,
-        forget: async () => undefined,
-        clearCaches: async () => undefined,
+        getSubscription: async () => null, forget: async () => undefined, clearCaches: async () => undefined,
         deleteQueue: () => new Promise<void>(() => {}), // another tab holds the database
       });
       await vi.advanceTimersByTimeAsync(2_000);
@@ -139,6 +112,61 @@ describe("signOutCleanup", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("signOutWithQueue", () => {
+  // A queue with `left` check-ins after the send, and a person who answers the confirm with `answer`.
+  function flow(o: { left: number; answer?: boolean; flushQueue?: () => Promise<void> }) {
+    const calls: string[] = [];
+    const deps = {
+      flushQueue: o.flushQueue ?? (async () => void calls.push("flush")),
+      pendingCount: async () => (calls.push("count"), o.left),
+      confirmDrop: vi.fn(async (n: number) => (calls.push(`confirm ${n}`), o.answer ?? false)),
+      cleanup: async () => void calls.push("cleanup"),
+      signOut: async () => void calls.push("sign out"),
+    };
+    return { calls, deps };
+  }
+
+  it("an empty queue after the send: signs out without asking", async () => {
+    const { calls, deps } = flow({ left: 0 });
+    expect(await signOutWithQueue(deps)).toBe("signed_out");
+    expect(calls).toEqual(["flush", "count", "cleanup", "sign out"]);
+    expect(deps.confirmDrop).not.toHaveBeenCalled();
+  });
+
+  it("check-ins left: asks first; Stay signed in touches nothing", async () => {
+    const { calls, deps } = flow({ left: 2, answer: false });
+    expect(await signOutWithQueue(deps)).toBe("stayed");
+    expect(calls).toEqual(["flush", "count", "confirm 2"]);
+  });
+
+  it("check-ins left: Sign out anyway removes them and signs out", async () => {
+    const { calls, deps } = flow({ left: 1, answer: true });
+    expect(await signOutWithQueue(deps)).toBe("signed_out");
+    expect(calls).toEqual(["flush", "count", "confirm 1", "cleanup", "sign out"]);
+  });
+
+  it("waits at most 5 seconds for the send, then asks", async () => {
+    vi.useFakeTimers();
+    try {
+      const { deps } = flow({ left: 1, answer: false, flushQueue: () => new Promise<void>(() => {}) });
+      const done = signOutWithQueue(deps);
+      await vi.advanceTimersByTimeAsync(4_999);
+      expect(deps.confirmDrop).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(await done).toBe("stayed");
+      expect(deps.confirmDrop).toHaveBeenCalledWith(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a send that fails (offline) still asks about what's left", async () => {
+    const { deps } = flow({ left: 3, answer: false, flushQueue: async () => { throw new TypeError("Failed to fetch"); } });
+    expect(await signOutWithQueue(deps)).toBe("stayed");
+    expect(deps.confirmDrop).toHaveBeenCalledWith(3);
   });
 });
 
