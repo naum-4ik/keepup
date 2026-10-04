@@ -1,6 +1,6 @@
 // lib/offline-queue.test.ts
 import { describe, expect, it, vi } from "vitest";
-import { addCheckIn, addUndo, flush, pendingCounts, pendingHabitIds, type QueueEntry, type QueuedCheckIn, type Sender } from "./offline-queue";
+import { addCheckIn, addUndo, flush, pendingCounts, pendingHabitIds, queueKey, type QueueEntry, type QueuedCheckIn, type Sender } from "./offline-queue";
 
 const tap = (clientId: string, habitId = "h1"): QueuedCheckIn => ({
   kind: "check_in",
@@ -41,9 +41,13 @@ describe("adding to the queue", () => {
     expect(pendingHabitIds([])).toEqual(new Set());
   });
 
-  it("counts queued check-ins per habit, undos not included", () => {
-    const q: QueueEntry[] = [tap("a", "h1"), tap("b", "h1"), tap("c", "h2"), { kind: "undo", clientId: "z", habitId: "h3" }];
-    expect(pendingCounts(q)).toEqual(new Map([["h1", 2], ["h2", 1]]));
+  it("counts queued check-ins per habit and person, undos not included", () => {
+    const q: QueueEntry[] = [
+      tap("a", "h1"), tap("b", "h1"), tap("c", "h2"), { ...tap("d", "h2"), subjectId: "kid1" },
+      { kind: "undo", clientId: "z", habitId: "h3" },
+    ];
+    expect(pendingCounts(q)).toEqual(new Map([["h1", 2], ["h2", 1], [queueKey("h2", "kid1"), 1]]));
+    expect(queueKey("h2", "kid1")).not.toBe(queueKey("h2"));
   });
 });
 

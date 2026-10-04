@@ -28,10 +28,17 @@ export function pendingHabitIds(queue: QueueEntry[]): Set<string> {
   return new Set(queue.map((e) => e.habitId));
 }
 
-// How many check-ins wait per habit (a habit done 3 times a day can have two queued taps).
+// Whose check-in on which habit: a group habit can be mine and a child's at once.
+export const queueKey = (habitId: string, subjectId: string | null = null) => (subjectId ? `${habitId}/${subjectId}` : habitId);
+
+// How many check-ins wait per habit and person (queueKey); a habit done 3 times a day can have two.
 export function pendingCounts(queue: QueueEntry[]): Map<string, number> {
   const counts = new Map<string, number>();
-  for (const e of queue) if (e.kind === "check_in") counts.set(e.habitId, (counts.get(e.habitId) ?? 0) + 1);
+  for (const e of queue) {
+    if (e.kind !== "check_in") continue;
+    const k = queueKey(e.habitId, e.subjectId);
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+  }
   return counts;
 }
 

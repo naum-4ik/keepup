@@ -1,6 +1,6 @@
 // lib/offline-sync.test.ts
 import { describe, expect, it } from "vitest";
-import { httpSender, outcomeFor, parseEntry, withQueuedTaps } from "./offline-sync";
+import { httpSender, isTap, newTap, outcomeFor, parseEntry, tapArgs, withQueuedTaps } from "./offline-sync";
 
 const H = "00000000-0000-0000-0000-0000000000d1";
 const C = "c0000000-0000-4000-8000-000000000001";
@@ -73,6 +73,12 @@ describe("withQueuedTaps", () => {
     });
   });
 
+  it("in the kid view, only the child's queued taps count", () => {
+    const habits = [{ id: "a", done: 0, target: 1, state: "open" }];
+    expect(withQueuedTaps(habits, new Map([["a", 1]]), "kid1").added).toBe(0);
+    expect(withQueuedTaps(habits, new Map([["a/kid1", 1]]), "kid1").added).toBe(1);
+  });
+
   it("two queued taps on a 3-a-day habit count twice, never past the target", () => {
     const habits = [
       { id: "b", done: 1, target: 3, state: "open" },
@@ -85,5 +91,24 @@ describe("withQueuedTaps", () => {
       ],
       added: 3,
     });
+  });
+});
+
+describe("a tap's id and time", () => {
+  it("every tap gets a fresh id and the time it was made", () => {
+    const tap = newTap(new Date("2026-10-05T20:58:00.000Z"));
+    expect(isTap(tap)).toBe(true);
+    expect(tap.tappedAt).toBe("2026-10-05T20:58:00.000Z");
+    expect(newTap().clientId).not.toBe(tap.clientId);
+  });
+
+  it("the server actions take none, or a valid one only", () => {
+    expect(isTap(undefined)).toBe(true);
+    expect(isTap({ clientId: C, tappedAt: "2026-10-05T20:58:00Z" })).toBe(true);
+    expect(isTap({ clientId: "x", tappedAt: "2026-10-05T20:58:00Z" })).toBe(false);
+    expect(isTap({ clientId: C, tappedAt: "soon" })).toBe(false);
+    expect(isTap(null)).toBe(false);
+    expect(tapArgs(undefined)).toEqual({});
+    expect(tapArgs({ clientId: C, tappedAt: "2026-10-05T20:58:00Z" })).toEqual({ p_client_id: C, p_tapped_at: "2026-10-05T20:58:00.000Z" });
   });
 });

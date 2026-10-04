@@ -6,12 +6,16 @@ import { createOfflineQueue, indexedDbStorage, memoryStorage, type Locks } from 
 import { httpSender } from "@/lib/offline-sync";
 
 type Queue = ReturnType<typeof createOfflineQueue>;
-// queued: check-ins waiting on this phone, per habit.
-type Ctx = { queue: Queue | null; queued: ReadonlyMap<string, number> };
+// queued: check-ins waiting on this phone, per habit and person (lib/offline-queue.ts queueKey).
+// ready: the saved queue has been read (until then `queued` is empty, not "nothing waiting").
+type Ctx = { queue: Queue | null; queued: ReadonlyMap<string, number>; ready: boolean };
 const NONE: ReadonlyMap<string, number> = new Map();
-const OfflineQueueContext = createContext<Ctx>({ queue: null, queued: NONE });
+const OfflineQueueContext = createContext<Ctx>({ queue: null, queued: NONE, ready: false });
 
-export const useOfflineQueue = () => ({ queued: useContext(OfflineQueueContext).queued });
+export function useOfflineQueue() {
+  const { queued, ready } = useContext(OfflineQueueContext);
+  return { queued, ready };
+}
 
 type Counts = ReadonlyMap<string, number>;
 // Who the saved pages (sw.js "keepup-pages") belong to, on this device.
@@ -53,6 +57,7 @@ function makeQueue(userId: string, onChange: (counts: Counts) => void) {
 export function OfflineQueueProvider({ userId, children }: { userId: string; children: React.ReactNode }) {
   const router = useRouter();
   const [queued, setQueued] = useState<Counts>(NONE);
+  const [ready, setReady] = useState(false);
   const offline = useMemo(() => (typeof window === "undefined" ? null : makeQueue(userId, setQueued)), [userId]);
 
   // A shared phone: if someone else's saved Today or kid view is still here (their session ended
@@ -88,7 +93,14 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
     const onVisible = () => {
       if (document.visibilityState === "visible") void flush();
     };
-    void offline.queue.counts().then((c) => alive && setQueued(c));
+    void offline.queue.counts().then(
+      (c) => {
+        if (!alive) return;
+        setQueued(c);
+        setReady(true);
+      },
+      () => alive && setReady(true),
+    );
     void flush();
     window.addEventListener("online", flush);
     document.addEventListener("visibilitychange", onVisible);
@@ -99,7 +111,7 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
     };
   }, [offline, router]);
 
-  const value = useMemo(() => ({ queue: offline?.queue ?? null, queued }), [offline, queued]);
+  const value = useMemo(() => ({ queue: offline?.queue ?? null, queued, ready }), [offline, queued, ready]);
   return <OfflineQueueContext.Provider value={value}>{children}</OfflineQueueContext.Provider>;
 }
 

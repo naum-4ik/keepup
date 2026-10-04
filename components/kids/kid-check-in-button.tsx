@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Check, Clock, Plus, Snowflake, Undo2 } from "lucide-react";
 import { checkInFor, undoForChild } from "@/app/(app)/kids/actions";
+import { useOfflineQueue, useQueueTap } from "@/components/offline/offline-queue-provider";
+import { GENERIC_ERROR } from "@/lib/habit-errors";
+import { queueKey } from "@/lib/offline-queue";
+import { newTap } from "@/lib/offline-sync";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +20,8 @@ const LABEL: Record<CheckInState, string> = {
 };
 
 // An adult checks in for a child (Today's kid section, the kid page). On success a ⭐ bounces next
-// to the button (motion-safe only; with reduced motion it just appears).
+// to the button (motion-safe only; with reduced motion it just appears). Offline, the tap waits on
+// this phone with "Saving… ☁️" (ideas/offline.md, "taps in the car").
 export function KidCheckInButton({
   habitId,
   title,
@@ -36,7 +41,11 @@ export function KidCheckInButton({
   const [error, setError] = useState<string | null>(null);
   const [star, setStar] = useState(0);
   const timer = useRef<number | null>(null);
-  const Icon = state === "frozen" ? Snowflake : state === "not-started" || state === "pending" ? Clock : state === "open" && multi ? Plus : Check;
+  const { queued } = useOfflineQueue();
+  const queueTap = useQueueTap();
+  const saving = queued.has(queueKey(habitId, childId));
+  const shown: CheckInState = saving && state === "open" && !multi ? "checked-today" : state;
+  const Icon = shown === "frozen" ? Snowflake : shown === "not-started" || shown === "pending" ? Clock : shown === "open" && multi ? Plus : Check;
 
   useEffect(() => () => {
     if (timer.current) window.clearTimeout(timer.current);
@@ -47,30 +56,49 @@ export function KidCheckInButton({
       <div className="relative">
         <button
           type="button"
-          aria-label={`${LABEL[state]} ${childName}: ${title}`}
-          disabled={state !== "open" || pending}
+          aria-label={`${LABEL[shown]} ${childName}: ${title}`}
+          disabled={shown !== "open" || pending}
           onClick={() => {
             setError(null);
             startTransition(async () => {
-              const result = await checkInFor(habitId, childId, false);
+              const celebrate = () => {
+                if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
+                setStar((n) => n + 1);
+                if (timer.current) window.clearTimeout(timer.current);
+                timer.current = window.setTimeout(() => setStar(0), 1200);
+              };
+              // Offline, or the request never came back: the tap waits under the same id and time.
+              const tap = newTap();
+              const queueIt = async () => {
+                try {
+                  await queueTap({ habitId, subjectId: childId, ...tap });
+                  celebrate();
+                } catch {
+                  setError(GENERIC_ERROR);
+                }
+              };
+              if (!navigator.onLine) return queueIt();
+              let result: Awaited<ReturnType<typeof checkInFor>>;
+              try {
+                result = await checkInFor(habitId, childId, false, tap);
+              } catch {
+                return queueIt();
+              }
               if (!result.ok) {
                 setError(result.message);
                 return;
               }
-              if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
-              setStar((n) => n + 1);
-              if (timer.current) window.clearTimeout(timer.current);
-              timer.current = window.setTimeout(() => setStar(0), 1200);
+              celebrate();
             });
           }}
           className={cn(
             "flex size-11 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-            state === "done" && "border-done bg-done text-done-foreground",
-            state === "pending" && "border-pending text-pending",
-            state === "checked-today" && "border-done text-done",
-            state === "frozen" && "border-border text-frozen",
-            state === "not-started" && "border-border text-muted-foreground",
-            state === "open" && "border-input text-primary hover:bg-accent",
+            shown === "done" && "border-done bg-done text-done-foreground",
+            shown === "pending" && "border-pending text-pending",
+            shown === "checked-today" && "border-done text-done",
+            shown === "frozen" && "border-border text-frozen",
+            shown === "not-started" && "border-border text-muted-foreground",
+            shown === "open" && "border-input text-primary hover:bg-accent",
             pending && "opacity-60",
           )}
         >
@@ -87,6 +115,7 @@ export function KidCheckInButton({
           {error}
         </p>
       )}
+      {saving && <p className="text-xs text-muted-foreground">Saving… ☁️</p>}
     </div>
   );
 }

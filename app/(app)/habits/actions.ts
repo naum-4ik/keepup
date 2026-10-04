@@ -8,6 +8,7 @@ import { startAgainEnd } from "@/lib/habit-finish";
 import { todayIn } from "@/lib/dates";
 import { getGroupDetail } from "@/lib/groups";
 import { GENERIC_ERROR, habitErrorMessage } from "@/lib/habit-errors";
+import { isTap, tapArgs, type TapId } from "@/lib/offline-sync";
 import { reminderError } from "@/lib/reminder-mode";
 import { isUuid, LOCAL_DATE, parseHabit, parseHabitDetails, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 
@@ -60,10 +61,11 @@ export async function createHabit(_prev: HabitFormState, formData: FormData): Pr
   redirect("/today");
 }
 
-export async function checkIn(habitId: string): Promise<ActionResult> {
-  if (!isUuid(habitId)) return NOT_FOUND;
+// tap: the id and time the phone gave this tap (lib/offline-sync.ts), so a resend never counts twice.
+export async function checkIn(habitId: string, tap?: TapId): Promise<ActionResult> {
+  if (!isUuid(habitId) || !isTap(tap)) return NOT_FOUND;
   const { supabase } = await requireUser();
-  const { error } = await supabase.rpc("check_in", { p_habit_id: habitId });
+  const { error } = await supabase.rpc("check_in", { p_habit_id: habitId, ...tapArgs(tap) });
   if (error) {
     const code = error.message?.match(/keepup:([a-z_]+)/)?.[1];
     if (code && REFRESH_ON_ERROR.has(code)) refresh(habitId);

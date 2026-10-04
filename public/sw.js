@@ -1,11 +1,87 @@
 // public/sw.js
-// Keepup's one service worker (ideas/installable-app.md). PR 4: push and notification taps.
-// PR 10 adds the offline app shell and sync messages. Plain JS, not bundled; keep it small.
+// Keepup's one service worker (ideas/installable-app.md, ideas/offline.md): push, notification taps,
+// and the offline app shell. Plain JS, not bundled; keep it small. Queued check-ins live in the
+// page's IndexedDB and are sent by the page (no Background Sync, owner decision).
 // The version comes from the registration URL (/sw.js?v=<commit>), so every deploy installs anew.
 const VERSION = new URL(self.location.href).searchParams.get("v") || "dev";
+const SHELL = `keepup-shell-${VERSION}`; // the offline page and built assets of this version
+const PAGES = "keepup-pages"; // the last Today and kid view, on this device only; cleared at sign-out
+const OFFLINE_URL = "/offline";
+const OFFLINE_PAGES = [/^\/today$/, /^\/kids\/[0-9a-f-]{36}\/play$/];
 
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+// The offline page is saved up front, but a failure (installed while offline) must not hold the
+// update back: it is saved again on the next page load that works.
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(SHELL)
+      .then((c) => c.addAll([OFFLINE_URL, "/icons/icon-192.png"]))
+      .catch((e) => console.error("offline precache", e))
+      .then(() => self.skipWaiting()),
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith("keepup-shell-") && k !== SHELL).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
+  );
+});
+
+// Only same-origin GETs. API calls, server actions (POST) and Next's own data requests go straight to
+// the network. Built assets never change under one URL: cache first. Pages: always fresh when online;
+// the saved copy (Today, the kid view) or the offline page only when the network fails.
+self.addEventListener("fetch", (event) => {
+  const req = event.request;
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
+  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/")) {
+    event.respondWith(cacheFirst(event, req));
+    return;
+  }
+  if (req.mode === "navigate") event.respondWith(networkFirstPage(event, req, url));
+});
+
+async function cacheFirst(event, req) {
+  const cache = await caches.open(SHELL);
+  const hit = await cache.match(req);
+  if (hit) return hit;
+  const res = await fetch(req);
+  if (res.ok) event.waitUntil(cache.put(req, res.clone()).catch(() => undefined));
+  return res;
+}
+
+async function networkFirstPage(event, req, url) {
+  const keep = OFFLINE_PAGES.some((p) => p.test(url.pathname));
+  try {
+    const res = await fetch(req);
+    if (res.ok) {
+      // A redirect (signed out: to /login) is never saved as Today.
+      if (keep && !res.redirected) {
+        const copy = res.clone();
+        event.waitUntil(caches.open(PAGES).then((c) => c.put(url.pathname, copy)).catch(() => undefined));
+      }
+      event.waitUntil(saveOfflinePage());
+    }
+    return res;
+  } catch {
+    const saved = keep ? await (await caches.open(PAGES)).match(url.pathname) : undefined;
+    return saved || (await (await caches.open(SHELL)).match(OFFLINE_URL)) || Response.error();
+  }
+}
+
+// Sign-out clears every cache (lib/push-support.ts signOutCleanup); put the offline page back.
+async function saveOfflinePage() {
+  try {
+    const cache = await caches.open(SHELL);
+    if (!(await cache.match(OFFLINE_URL))) await cache.add(OFFLINE_URL);
+  } catch {
+    // offline again, or the page failed: next time
+  }
+}
 
 self.addEventListener("push", (event) => {
   let data = {};
