@@ -16,7 +16,8 @@ test("Settings: the daily reminder is back with its hint, and the choices stick"
   await expect(nudges.getByRole("radio", { name: "Silent" })).toBeChecked(); // the default: no sound, no vibration
   await nudges.getByRole("radio", { name: "Inbox only" }).check();
   await expect(nudges.getByRole("radio", { name: "Inbox only" })).toBeChecked();
-  await page.waitForLoadState("networkidle"); // both server actions have answered
+  await expect(nudges).not.toHaveAttribute("aria-busy"); // the delivery save (400 ms after the change) has answered
+  await page.waitForLoadState("networkidle"); // and the reminder hour's
   await page.reload();
   await expect(section.getByLabel("Daily reminder")).toHaveValue("7");
   await expect(nudges.getByRole("radio", { name: "Inbox only" })).toBeChecked();
@@ -24,6 +25,22 @@ test("Settings: the daily reminder is back with its hint, and the choices stick"
 
   await section.getByRole("group", { name: "Approvals" }).getByRole("radio", { name: "Inbox only" }).check();
   await expect(section.getByText("Approvals still wait in your Inbox.")).toBeVisible();
+});
+
+test("Settings: arrow keys move through a delivery group, keep focus, and save where they stop", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await page.goto("/profile/settings");
+  const group = page.getByRole("region", { name: "Notifications" }).getByRole("group", { name: "Reminders" });
+  await group.getByRole("radio", { name: "Sound" }).focus();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  const third = group.getByRole("radio", { name: "Inbox only" });
+  await expect(third).toBeFocused();
+  await expect(third).toBeChecked();
+  await expect(group).not.toHaveAttribute("aria-busy"); // saved
+  await expect(third).toBeFocused(); // the save didn't take focus away
+  await page.reload();
+  await expect(group.getByRole("radio", { name: "Inbox only" })).toBeChecked();
 });
 
 test("Pause all, then resume", async ({ page }) => {

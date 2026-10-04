@@ -6,8 +6,10 @@ import { forgetPushSubscription, pauseAll, setDelivery, setReminderHour } from "
 import { currentEndpoint, TurnOnReminders } from "@/components/notifications/turn-on-reminders";
 import { InfoHint } from "@/components/info-hint";
 import { Button } from "@/components/ui/button";
+import { GENERIC_ERROR } from "@/lib/habit-errors";
 import {
   APPROVALS_OFF_NOTE, DELIVERIES, IPHONE_SOUND_HINT, NOTIFICATION_CATEGORIES, PAUSE_CHOICES, reminderHourHint, reminderStatus,
+  type CategoryKey, type Delivery,
 } from "@/lib/notification-categories";
 import type { NotificationSettings } from "@/lib/notification-settings";
 import { browserSubscription, iosVersion, removeDevice } from "@/lib/push-support";
@@ -30,8 +32,6 @@ export function NotificationSettingsCard({ settings }: { settings: NotificationS
   const [here, setHere] = useState<string | null>(null);
   const [now, setNow] = useState<number | null>(null);
   const [iphone, setIphone] = useState(false);
-  // Bumped when a delivery change is refused, so the pills go back to what is saved.
-  const [refused, setRefused] = useState(0);
   // Turned on in this visit: the confirmation says when the summary comes, and takes focus (the
   // dialog it came from closes as this device appears under Devices).
   const [justOn, setJustOn] = useState(false);
@@ -113,27 +113,9 @@ export function NotificationSettingsCard({ settings }: { settings: NotificationS
 
       <fieldset className="flex flex-col gap-4">
         <legend className="mb-1 text-sm font-semibold">What to send</legend>
-        {NOTIFICATION_CATEGORIES.map((c) => {
-          const current = settings.delivery[c.key];
-          return (
-            <fieldset key={c.key} className="flex flex-col gap-2" aria-describedby={`delivery-${c.key}-hint`}>
-              <legend className="font-semibold">{c.label}</legend>
-              <p id={`delivery-${c.key}-hint`} className="text-xs text-muted-foreground">
-                {c.key === "approvals" && current === "inbox" ? APPROVALS_OFF_NOTE : c.hint}
-              </p>
-              <div className="grid grid-cols-3 gap-2" key={`${current}-${refused}`}>
-                {DELIVERIES.map((d) => (
-                  <label key={d.delivery} className={pillClass}>
-                    <input type="radio" name={`delivery-${c.key}`} value={d.delivery} defaultChecked={current === d.delivery} disabled={pending}
-                      className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0"
-                      onChange={() => run(() => setDelivery(c.key, d.delivery), () => setRefused((n) => n + 1))} />
-                    {d.label}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          );
-        })}
+        {NOTIFICATION_CATEGORIES.map((c) => (
+          <DeliveryChoice key={c.key} category={c.key} label={c.label} hint={c.hint} saved={settings.delivery[c.key]} onError={setError} />
+        ))}
         {iphone && <p className="text-sm text-muted-foreground">{IPHONE_SOUND_HINT}</p>}
       </fieldset>
 
@@ -167,5 +149,85 @@ export function NotificationSettingsCard({ settings }: { settings: NotificationS
 
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </section>
+  );
+}
+
+// How long arrowing through the pills waits before saving: one save for where the person stops.
+export const DELIVERY_SAVE_DELAY_MS = 400;
+
+// One category's three pills. Arrow keys move through them (a radio group): the pill moved to is
+// checked at once and keeps focus. Nothing is disabled or remounted while saving (a disabled radio
+// drops focus); the save goes 400 ms after the last change, and a refused one goes back to what is
+// saved. A save still waiting when the page is left is sent then.
+function DeliveryChoice({ category, label, hint, saved, onError }: {
+  category: CategoryKey;
+  label: string;
+  hint: string;
+  saved: Delivery;
+  onError: (message: string | null) => void;
+}) {
+  const [value, setValue] = useState<Delivery>(saved);
+  const [saving, setSaving] = useState(false);
+  // Another category's save refreshes the page: follow what is saved, unless a change here is waiting.
+  const [seen, setSeen] = useState(saved);
+  if (seen !== saved) {
+    setSeen(saved);
+    if (!saving) setValue(saved);
+  }
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const waiting = useRef<Delivery | null>(null);
+  const latest = useRef(0);
+  const savedRef = useRef(saved);
+  useEffect(() => {
+    savedRef.current = saved;
+  }, [saved]);
+
+  useEffect(
+    () => () => {
+      if (timer.current === null || waiting.current === null) return;
+      clearTimeout(timer.current);
+      void setDelivery(category, waiting.current);
+    },
+    [category],
+  );
+
+  function choose(next: Delivery) {
+    setValue(next);
+    setSaving(true);
+    onError(null);
+    waiting.current = next;
+    if (timer.current !== null) clearTimeout(timer.current);
+    timer.current = setTimeout(async () => {
+      timer.current = null;
+      waiting.current = null;
+      const n = ++latest.current;
+      const r = await setDelivery(category, next).catch(() => ({ ok: false as const, message: GENERIC_ERROR }));
+      // A newer change took over: its own save decides.
+      if (n !== latest.current || timer.current !== null) return;
+      if (!r.ok) {
+        onError(r.message);
+        setValue(savedRef.current);
+      }
+      setSaving(false);
+    }, DELIVERY_SAVE_DELAY_MS);
+  }
+
+  return (
+    <fieldset className="flex flex-col gap-2" aria-describedby={`delivery-${category}-hint`} aria-busy={saving || undefined}>
+      <legend className="font-semibold">{label}</legend>
+      <p id={`delivery-${category}-hint`} className="text-xs text-muted-foreground">
+        {category === "approvals" && value === "inbox" ? APPROVALS_OFF_NOTE : hint}
+      </p>
+      <div className="grid grid-cols-3 gap-2">
+        {DELIVERIES.map((d) => (
+          <label key={d.delivery} className={pillClass}>
+            <input type="radio" name={`delivery-${category}`} value={d.delivery} checked={value === d.delivery}
+              className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0"
+              onChange={() => choose(d.delivery)} />
+            {d.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
   );
 }
