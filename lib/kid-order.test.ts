@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { inOrder, orderForKid } from "@/lib/kid-order";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createTapGuard, inOrder, orderForKid } from "@/lib/kid-order";
 import type { CheckInState } from "@/lib/schedule";
 
 const h = (id: string, state: CheckInState) => ({ id, state });
@@ -30,5 +30,33 @@ describe("inOrder: the list in the last settled order", () => {
   it("follows the order, appends new habits and drops gone ones", () => {
     const habits = [h("a", "open"), h("b", "done"), h("c", "open"), h("d", "open")];
     expect(ids(inOrder(["c", "x", "a", "b"], habits))).toEqual(["c", "a", "b", "d"]);
+  });
+});
+
+describe("createTapGuard: only cards that are sliding skip a tap, and only while they slide", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("lets every card through until a slide is armed", () => {
+    const guard = createTapGuard();
+    expect(guard.blocks("a")).toBe(false);
+  });
+  it("blocks the moving cards for the slide's length, never the others", () => {
+    const guard = createTapGuard();
+    guard.arm(["a", "b"], 350);
+    expect(guard.blocks("a")).toBe(true);
+    expect(guard.blocks("b")).toBe(true);
+    expect(guard.blocks("c")).toBe(false);
+    vi.advanceTimersByTime(349);
+    expect(guard.blocks("a")).toBe(true);
+    vi.advanceTimersByTime(1);
+    expect(guard.blocks("a")).toBe(false);
+  });
+  it("a new slide replaces the moving cards", () => {
+    const guard = createTapGuard();
+    guard.arm(["a"], 350);
+    guard.arm(["c"], 350);
+    expect(guard.blocks("a")).toBe(false);
+    expect(guard.blocks("c")).toBe(true);
   });
 });

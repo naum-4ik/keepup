@@ -10,7 +10,7 @@ import { NewWeekCard } from "@/components/kids/new-week-card";
 import { HoldToExit } from "@/components/kids/hold-to-exit";
 import { useReducedMotion } from "@/components/kids/use-calm";
 import { stageFor, themeStages } from "@/lib/garden";
-import { inOrder, orderForKid } from "@/lib/kid-order";
+import { createTapGuard, inOrder, orderForKid } from "@/lib/kid-order";
 import { isMuted, playKidSound, setMuted } from "@/lib/kid-sound";
 import { MAX_ITEMS, sceneItems } from "@/lib/scene-items";
 import type { CheckInState } from "@/lib/schedule";
@@ -29,10 +29,11 @@ const MILESTONE_PX = 240;
 const SAME_CARD_GAP_MS = 2000;
 
 // A card that turns green stays put a moment (the star flies, the scene grows), then slides down to the
-// done ones; taps wait out the slide, so a toddler's next tap doesn't land on a card that just moved in.
+// done ones. While it slides, the moving cards don't take taps (lib/kid-order.ts createTapGuard). A
+// finger on the list holds the slide back, up to MAX_HOLD_MS after the tap.
 const SETTLE_MS = 1000;
 const SLIDE_MS = 350;
-const AFTER_SLIDE_MS = 250;
+const MAX_HOLD_MS = 3000;
 
 // Once the picture sticks to the top, it shrinks as the list scrolls on, down to this size, so the
 // cards under it stay in view; the strip above the cards always closes up with it.
@@ -67,9 +68,9 @@ function slideHome(el: HTMLElement) {
 
 // The picture at `scale` (from its top), with the page behind it ending 8px under it (the wrapper's
 // 8px top padding included). Written straight to the elements on scroll, no re-render.
-function shrinkTo(wrap: HTMLElement, pic: HTMLElement, backdrop: HTMLElement, scale: number) {
+function shrinkTo(wrap: HTMLElement, pic: HTMLElement, backdrop: HTMLElement, height: number, scale: number) {
   pic.style.scale = scale === 1 ? "" : String(scale);
-  backdrop.style.bottom = `${pic.offsetHeight * (1 - scale) - 8}px`;
+  backdrop.style.bottom = `${height * (1 - scale) - 8}px`;
   if (scale < 1) wrap.dataset.shrunk = "";
   else delete wrap.dataset.shrunk;
 }
@@ -130,7 +131,7 @@ export function KidPlay({
   const rows = useRef(new Map<string, HTMLLIElement>());
   const slideFrom = useRef<Map<string, number> | null>(null);
   const refocus = useRef<HTMLElement | null>(null);
-  const slideUntil = useRef(0);
+  const [guard] = useState(createTapGuard);
   // A finger on the list: the cards wait until it lifts.
   const held = useRef(false);
   const waiting = useRef<string | null>(null);
@@ -141,19 +142,26 @@ export function KidPlay({
     // Moving a card in the DOM drops its focus; give it back without scrolling.
     const active = document.activeElement;
     refocus.current = active instanceof HTMLElement && list.current?.contains(active) ? active : null;
-    slideUntil.current = Date.now() + SLIDE_MS + AFTER_SLIDE_MS;
     setOrder(next.split(" ").filter(Boolean));
   });
 
   // Several taps in a row settle once: each new target restarts the wait.
   useEffect(() => {
     if (target === current) return;
+    let fallback = 0;
     const t = window.setTimeout(() => {
-      if (held.current) waiting.current = target;
-      else settle(target);
+      if (!held.current) return settle(target);
+      waiting.current = target;
+      // A pointerup that never comes (the finger slid off the screen) can't hold the list forever.
+      fallback = window.setTimeout(() => {
+        held.current = false;
+        waiting.current = null;
+        settle(target);
+      }, MAX_HOLD_MS - SETTLE_MS);
     }, SETTLE_MS);
     return () => {
       window.clearTimeout(t);
+      window.clearTimeout(fallback);
       waiting.current = null;
     };
   }, [target, current]);
@@ -165,11 +173,16 @@ export function KidPlay({
       waiting.current = null;
       if (next !== null) settle(next);
     };
+    // No pointerup when the app goes to the background or loses focus mid-touch: count it as lifted.
     window.addEventListener("pointerup", lift);
     window.addEventListener("pointercancel", lift);
+    window.addEventListener("blur", lift);
+    document.addEventListener("visibilitychange", lift);
     return () => {
       window.removeEventListener("pointerup", lift);
       window.removeEventListener("pointercancel", lift);
+      window.removeEventListener("blur", lift);
+      document.removeEventListener("visibilitychange", lift);
     };
   }, []);
 
@@ -181,6 +194,7 @@ export function KidPlay({
     if (back?.isConnected && document.activeElement !== back) back.focus({ preventScroll: true });
     if (!from || reduce) return;
     const moved: HTMLLIElement[] = [];
+    const movedIds: string[] = [];
     for (const [id, el] of rows.current) {
       const before = from.get(id);
       if (before === undefined) continue;
@@ -188,11 +202,13 @@ export function KidPlay({
       if (Math.abs(dy) < 1) continue;
       placeAt(el, dy);
       moved.push(el);
+      movedIds.push(id);
     }
     if (moved.length === 0) return;
+    guard.arm(movedIds, SLIDE_MS);
     list.current?.getBoundingClientRect(); // apply the start positions before the transition
     moved.forEach(slideHome);
-  }, [order, reduce]);
+  }, [order, reduce, guard]);
 
   // The picture sticks to the top; past that, it shrinks with the scroll (see MIN_SCALE).
   const sentinel = useRef<HTMLDivElement>(null);
@@ -204,23 +220,36 @@ export function KidPlay({
     const pic = picture.current;
     const bg = backdrop.current;
     if (!mark || !wrap || !pic || !bg) return;
+    // Where the picture sticks and how tall it is, read once and again on resize (not on every scroll).
+    // `|| 0`: a top Safari can't parse must not make the scale NaN.
+    let stuckAt = 0;
+    let height = 1;
+    const measure = () => {
+      const style = getComputedStyle(wrap);
+      stuckAt = (parseFloat(style.top) || 0) + (parseFloat(style.paddingTop) || 0);
+      height = pic.offsetHeight || 1;
+    };
     let frame = 0;
     const update = () => {
       frame = 0;
-      const style = getComputedStyle(wrap);
       // How far the list has scrolled past the point where the picture stuck.
-      const past = parseFloat(style.top) + parseFloat(style.paddingTop) - mark.getBoundingClientRect().top;
-      shrinkTo(wrap, pic, bg, Math.max(MIN_SCALE, Math.min(1, 1 - past / (pic.offsetHeight || 1))));
+      const past = stuckAt - mark.getBoundingClientRect().top;
+      shrinkTo(wrap, pic, bg, height, Math.max(MIN_SCALE, Math.min(1, 1 - past / height)));
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(update);
     };
+    const onResize = () => {
+      measure();
+      onScroll();
+    };
+    measure();
     update();
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    window.addEventListener("resize", onResize);
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("resize", onResize);
       cancelAnimationFrame(frame);
     };
   }, []);
@@ -342,8 +371,12 @@ export function KidPlay({
                 disabled={saving.has(h.id)}
                 aria-busy={saving.has(h.id) || undefined}
                 onClick={(e) => {
-                  // A card just slid into place under the finger: let it land first.
-                  if (Date.now() < slideUntil.current) return;
+                  // This card is sliding to its new place: a wiggle, nothing counted, so the tap isn't silent.
+                  if (guard.blocks(h.id)) {
+                    setBumped(h.id);
+                    playKidSound("boop");
+                    return;
+                  }
                   // Done already: a happy wiggle, nothing counted.
                   if (done) {
                     setBumped(h.id);

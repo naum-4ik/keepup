@@ -9,7 +9,7 @@ type Sparkle = { key: number; item: number | null };
 
 // The scene's idle extras (lib/kid-idle.ts): now and then something drifts across the sky, and a sparkle
 // fades in and out on a random item. Timers run only while the tab is visible, motion is allowed and
-// nothing else plays (`paused`); under Reduce Motion nothing is drawn. Decorative only.
+// nothing else plays (`paused`: what's showing goes away); under Reduce Motion nothing is drawn. Decorative only.
 export function SceneIdle({ items, theme, paused }: { items: SceneItem[]; theme: string; paused: boolean }) {
   const reduce = useReducedMotion();
   const visible = usePageVisible();
@@ -32,13 +32,14 @@ export function SceneIdle({ items, theme, paused }: { items: SceneItem[]; theme:
     return () => {
       window.clearTimeout(driftTimer);
       window.clearTimeout(sparkleTimer);
+      // A tap (or a hidden tab) clears what's on screen rather than freezing it mid-way.
+      setDrift(null);
+      setSparkle(null);
     };
   }, [active, count]);
 
-  if (reduce) return null;
+  if (reduce || paused) return null;
   const spot = sparkle ? spotFor(sparkle.item === null ? undefined : items[sparkle.item]) : null;
-  // Inline, so it wins over the animation shorthand.
-  const still = { animationPlayState: paused ? "paused" : "running" } as const;
   return (
     <span aria-hidden className="pointer-events-none absolute inset-0">
       {drift !== null && (
@@ -46,7 +47,6 @@ export function SceneIdle({ items, theme, paused }: { items: SceneItem[]; theme:
           key={drift}
           data-idle="drift"
           className="absolute inset-x-0 top-[12%] z-[5] block animate-idle-drift opacity-0"
-          style={still}
           onAnimationEnd={() => setDrift((d) => (d === drift ? null : d))}
         >
           <span className="block w-fit text-4xl leading-none select-none">{drifterFor(theme)}</span>
@@ -59,7 +59,7 @@ export function SceneIdle({ items, theme, paused }: { items: SceneItem[]; theme:
           className="absolute z-[200] -translate-x-1/2 -translate-y-1/2 text-2xl leading-none select-none"
           style={{ left: `${spot.x}%`, top: `${spot.y}%` }}
         >
-          <span className="block animate-idle-sparkle opacity-0" style={still} onAnimationEnd={() => setSparkle((s) => (s?.key === sparkle.key ? null : s))}>
+          <span className="block animate-idle-sparkle opacity-0" onAnimationEnd={() => setSparkle((s) => (s?.key === sparkle.key ? null : s))}>
             ✨
           </span>
         </span>

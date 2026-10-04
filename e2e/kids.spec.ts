@@ -446,3 +446,23 @@ test("the kid view's idle motion: the scene moves gently, and not at all with Re
   expect(await idleRunning()).toBe(0);
   await expect(page.locator('[data-idle="drift"], [data-idle="sparkle"]')).toHaveCount(0);
 });
+
+test("the kid view: while a done card slides down, a card that isn't moving still takes a tap", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChildWithFiveHabits(page, "Family", "Mary");
+  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  const cards = page.getByRole("listitem");
+  await expect(cards).toHaveCount(5);
+  // A one-tap card below the first, so the first card stays where it is when it slides down.
+  const titles = (await cards.allInnerTexts()).map((t) => t.trim().split("\n").pop()!.trim());
+  const second = titles.findIndex((t, i) => i > 0 && t !== "Brush teeth");
+  await cards.nth(second).getByRole("button").click();
+  await expect(page.getByText("1 star this week")).toBeAttached();
+  // The slide starts (the list order changes at once; the cards move for ~350 ms)…
+  await expect(cards.last()).toContainText(titles[second], { timeout: 2500 });
+  // …and the first card, which isn't moving, counts a tap right away.
+  await cards.first().getByRole("button").click();
+  await expect(page.getByText("2 stars this week")).toBeAttached();
+});

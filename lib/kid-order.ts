@@ -17,3 +17,20 @@ export function inOrder<T extends { id: string }>(order: readonly string[], habi
   const seen = new Set(known);
   return [...known.map((id) => byId.get(id)!), ...habits.filter((h) => !seen.has(h.id))];
 }
+
+// While a slide plays, the cards that are moving don't take taps (a toddler's tap could land on a card
+// that is sliding in under the finger); every other card stays tappable. Armed only when a slide
+// actually plays, for its length.
+export type TapGuard = { arm: (ids: Iterable<string>, ms: number) => void; blocks: (id: string) => boolean };
+
+export function createTapGuard(now: () => number = Date.now): TapGuard {
+  let moving: ReadonlySet<string> = new Set();
+  let until = 0;
+  return {
+    arm(ids, ms) {
+      moving = new Set(ids);
+      until = now() + ms;
+    },
+    blocks: (id) => now() < until && moving.has(id),
+  };
+}
