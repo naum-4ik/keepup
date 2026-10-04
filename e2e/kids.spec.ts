@@ -371,3 +371,78 @@ test("the kid view: the third star brings the sprout, and the last habit of the 
   await expect(page.locator("[data-items] .animate-dance").first()).toBeAttached();
   await expect(page.locator("[data-items] .animate-dance")).toHaveCount(0, { timeout: 4000 }); // ~2 seconds, then still
 });
+
+// A child with five habits: the three starters, plus Bath time and Play outside.
+async function addChildWithFiveHabits(page: Page, groupName: string, name: string) {
+  await openGroup(page, groupName);
+  await page.getByRole("link", { name: "Add a child" }).click();
+  await page.getByLabel("Nickname").fill(name);
+  await page.getByRole("group", { name: "Avatar" }).getByRole("button", { name: "🐼" }).click();
+  const habits = page.getByRole("region", { name: "Habits to start" });
+  await habits.getByRole("button", { name: "Choose more habits" }).click();
+  const dialog = page.getByRole("dialog", { name: "Habits to start" });
+  await dialog.getByRole("button", { name: /Bath time/ }).click();
+  await dialog.getByRole("button", { name: /Play outside/ }).click();
+  await dialog.getByRole("button", { name: "Done · 5 picked" }).click();
+  await expect(habits.getByRole("listitem")).toHaveCount(5);
+  await page.getByLabel("I'm this child's parent or guardian").check();
+  await page.getByRole("button", { name: `Add ${name}` }).click();
+  await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/);
+}
+
+test("the kid view with five habits: a done card slides to the bottom, and the picture stays in sight", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChildWithFiveHabits(page, "Family", "Mary");
+  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await expect(page).toHaveURL(/\/play$/);
+  const cards = page.getByRole("listitem");
+  await expect(cards).toHaveCount(5);
+  // The first card that one tap finishes (Brush teeth is 2× a day).
+  const titles = await cards.allInnerTexts();
+  const first = titles.findIndex((t) => !t.includes("Brush teeth"));
+  const title = titles[first].trim().split("\n").pop()!.trim(); // the emoji comes first
+  await cards.nth(first).getByRole("button").click();
+  // It turns green and stays put while the star flies…
+  await expect(page.getByRole("button", { name: `${title} , done` })).toBeVisible();
+  await expect(cards.nth(first)).toContainText(title);
+  // …then about a second later it slides to the bottom. The move doesn't take the focus.
+  const sound = page.getByRole("button", { name: "Sound" });
+  await sound.focus();
+  await expect(cards.last()).toContainText(title, { timeout: 2500 });
+  await expect(sound).toBeFocused();
+  // A reload keeps the order: open first, done last.
+  await page.reload();
+  await expect(cards.last()).toContainText(title);
+
+  // Scrolled down to the last card, the picture stays at the top of the screen, smaller.
+  await cards.last().scrollIntoViewIfNeeded();
+  await expect(page.locator("[data-shrunk]")).toBeAttached();
+  const picture = (await page.getByRole("img", { name: "A seed in the soil" }).boundingBox())!;
+  expect(picture.y).toBeGreaterThanOrEqual(0);
+  expect(picture.y + picture.height).toBeLessThanOrEqual(844);
+  await expect(cards.last()).toBeInViewport();
+  // Back at the top, it's full size again.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(page.locator("[data-shrunk]")).toHaveCount(0);
+});
+
+test("the kid view's idle motion: the scene moves gently, and not at all with Reduce Motion", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("button", { name: /Tidy my toys/ }).click();
+  await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "1");
+  const idleRunning = () =>
+    page.evaluate(() => document.getAnimations().filter((a) => a instanceof CSSAnimation && a.animationName.startsWith("idle-") && a.playState === "running").length);
+  await expect.poll(idleRunning, { timeout: 4000 }).toBeGreaterThan(0);
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.reload();
+  await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "1");
+  await page.waitForTimeout(500);
+  expect(await idleRunning()).toBe(0);
+  await expect(page.locator('[data-idle="drift"], [data-idle="sparkle"]')).toHaveCount(0);
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useOptimistic, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { Check, Volume2, VolumeX } from "lucide-react";
 import { checkInFor } from "@/app/(app)/kids/actions";
 import { Avatar } from "@/components/avatar";
@@ -8,7 +8,9 @@ import { Confetti } from "@/components/celebrations/confetti";
 import { GardenPicture } from "@/components/kids/garden";
 import { NewWeekCard } from "@/components/kids/new-week-card";
 import { HoldToExit } from "@/components/kids/hold-to-exit";
+import { useReducedMotion } from "@/components/kids/use-calm";
 import { stageFor, themeStages } from "@/lib/garden";
+import { inOrder, orderForKid } from "@/lib/kid-order";
 import { isMuted, playKidSound, setMuted } from "@/lib/kid-sound";
 import { MAX_ITEMS, sceneItems } from "@/lib/scene-items";
 import type { CheckInState } from "@/lib/schedule";
@@ -17,7 +19,7 @@ import { cn } from "@/lib/utils";
 type PlayHabit = { id: string; title: string; emoji: string; target: number; done: number; state: CheckInState };
 type Child = { id: string; name: string; emoji: string | null; color: string | null; theme: string };
 type Flying = { key: number; emoji: string; x: number; y: number; dx: number; dy: number };
-type Milestone = { key: number; emoji: string; dx: number; dy: number };
+type Milestone = { key: number; emoji: string; dx: number; dy: number; scale: number };
 
 // The new-picture moment: how long it stays big, and its size on screen (it lands at text-8xl, 96px).
 const MILESTONE_MS = 2000;
@@ -26,6 +28,16 @@ const MILESTONE_PX = 240;
 // Two quick taps on the same card (a toddler's double tap) count once.
 const SAME_CARD_GAP_MS = 2000;
 
+// A card that turns green stays put a moment (the star flies, the scene grows), then slides down to the
+// done ones; taps wait out the slide, so a toddler's next tap doesn't land on a card that just moved in.
+const SETTLE_MS = 1000;
+const SLIDE_MS = 350;
+const AFTER_SLIDE_MS = 250;
+
+// Once the picture sticks to the top, it shrinks as the list scrolls on, down to this size, so the
+// cards under it stay in view; the strip above the cards always closes up with it.
+const MIN_SCALE = 0.6;
+
 // The mute setting lives in localStorage; this keeps the button in step (and renders "on" on the server).
 const soundListeners = new Set<() => void>();
 const subscribeSound = (cb: () => void) => {
@@ -33,11 +45,43 @@ const subscribeSound = (cb: () => void) => {
   return () => soundListeners.delete(cb);
 };
 
+// FLIP for the list: a card is drawn back where it was (no transition), then slides to its new place.
+function placeAt(el: HTMLElement, dy: number) {
+  el.style.transition = "none";
+  el.style.transform = `translateY(${dy}px)`;
+  // The card going down passes over the others.
+  el.style.zIndex = dy < 0 ? "1" : "";
+}
+
+function slideHome(el: HTMLElement) {
+  el.style.transition = `transform ${SLIDE_MS}ms cubic-bezier(0.2, 0.8, 0.2, 1)`;
+  el.style.transform = "";
+  const done = (e: TransitionEvent) => {
+    if (e.target !== el) return; // the button's colour change bubbles up too
+    el.style.transition = "";
+    el.style.zIndex = "";
+    el.removeEventListener("transitionend", done);
+  };
+  el.addEventListener("transitionend", done);
+}
+
+// The picture at `scale` (from its top), with the page behind it ending 8px under it (the wrapper's
+// 8px top padding included). Written straight to the elements on scroll, no re-render.
+function shrinkTo(wrap: HTMLElement, pic: HTMLElement, backdrop: HTMLElement, scale: number) {
+  pic.style.scale = scale === 1 ? "" : String(scale);
+  backdrop.style.bottom = `${pic.offsetHeight * (1 - scale) - 8}px`;
+  if (scale < 1) wrap.dataset.shrunk = "";
+  else delete wrap.dataset.shrunk;
+}
+
 // The full-screen kid view (ideas/kid-view-next.md §4), for children as young as 2–3: a tap counts at
 // once (logged as by the child), with a pop sound, and the thing it adds flies from the card into the
 // week's scene. A new picture brings a chime and confetti; the last habit of the day makes the scene
 // dance. Tapping a done card or the scene is play: a wiggle and a sound, nothing counted.
 // No numbers or text for the child; the star count and "what's next" are on the kid page.
+// With more habits than fit (ideas/kid-view-next.md, 2026-10-04): open ones come first and done ones
+// slide to the bottom, and the picture sticks to the top (smaller once scrolled), so every tap's effect
+// stays in sight. When nothing happens, the scene moves gently by itself.
 export function KidPlay({
   child,
   habits,
@@ -75,6 +119,111 @@ export function KidPlay({
   const picture = useRef<HTMLDivElement>(null);
   const seq = useRef(0);
   const muted = useSyncExternalStore(subscribeSound, isMuted, () => false);
+  const reduce = useReducedMotion();
+
+  // The list order: open first, done last, settled a moment after a card turns green (see SETTLE_MS).
+  const [order, setOrder] = useState(() => orderForKid(habits).map((h) => h.id));
+  const shown = inOrder(order, view.habits);
+  const current = shown.map((h) => h.id).join(" ");
+  const target = orderForKid(view.habits).map((h) => h.id).join(" ");
+  const list = useRef<HTMLUListElement>(null);
+  const rows = useRef(new Map<string, HTMLLIElement>());
+  const slideFrom = useRef<Map<string, number> | null>(null);
+  const refocus = useRef<HTMLElement | null>(null);
+  const slideUntil = useRef(0);
+  // A finger on the list: the cards wait until it lifts.
+  const held = useRef(false);
+  const waiting = useRef<string | null>(null);
+
+  const settle = useEffectEvent((next: string) => {
+    // FLIP: where each card is now, so the layout effect can slide it from there to its new place.
+    slideFrom.current = new Map([...rows.current].map(([id, el]) => [id, el.getBoundingClientRect().top]));
+    // Moving a card in the DOM drops its focus; give it back without scrolling.
+    const active = document.activeElement;
+    refocus.current = active instanceof HTMLElement && list.current?.contains(active) ? active : null;
+    slideUntil.current = Date.now() + SLIDE_MS + AFTER_SLIDE_MS;
+    setOrder(next.split(" ").filter(Boolean));
+  });
+
+  // Several taps in a row settle once: each new target restarts the wait.
+  useEffect(() => {
+    if (target === current) return;
+    const t = window.setTimeout(() => {
+      if (held.current) waiting.current = target;
+      else settle(target);
+    }, SETTLE_MS);
+    return () => {
+      window.clearTimeout(t);
+      waiting.current = null;
+    };
+  }, [target, current]);
+
+  useEffect(() => {
+    const lift = () => {
+      held.current = false;
+      const next = waiting.current;
+      waiting.current = null;
+      if (next !== null) settle(next);
+    };
+    window.addEventListener("pointerup", lift);
+    window.addEventListener("pointercancel", lift);
+    return () => {
+      window.removeEventListener("pointerup", lift);
+      window.removeEventListener("pointercancel", lift);
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const from = slideFrom.current;
+    slideFrom.current = null;
+    const back = refocus.current;
+    refocus.current = null;
+    if (back?.isConnected && document.activeElement !== back) back.focus({ preventScroll: true });
+    if (!from || reduce) return;
+    const moved: HTMLLIElement[] = [];
+    for (const [id, el] of rows.current) {
+      const before = from.get(id);
+      if (before === undefined) continue;
+      const dy = before - el.getBoundingClientRect().top;
+      if (Math.abs(dy) < 1) continue;
+      placeAt(el, dy);
+      moved.push(el);
+    }
+    if (moved.length === 0) return;
+    list.current?.getBoundingClientRect(); // apply the start positions before the transition
+    moved.forEach(slideHome);
+  }, [order, reduce]);
+
+  // The picture sticks to the top; past that, it shrinks with the scroll (see MIN_SCALE).
+  const sentinel = useRef<HTMLDivElement>(null);
+  const sticky = useRef<HTMLDivElement>(null);
+  const backdrop = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const mark = sentinel.current;
+    const wrap = sticky.current;
+    const pic = picture.current;
+    const bg = backdrop.current;
+    if (!mark || !wrap || !pic || !bg) return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const style = getComputedStyle(wrap);
+      // How far the list has scrolled past the point where the picture stuck.
+      const past = parseFloat(style.top) + parseFloat(style.paddingTop) - mark.getBoundingClientRect().top;
+      shrinkTo(wrap, pic, bg, Math.max(MIN_SCALE, Math.min(1, 1 - past / (pic.offsetHeight || 1))));
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
 
   const toggleSound = () => {
     setMuted(!muted);
@@ -101,8 +250,10 @@ export function KidPlay({
     const b = picture.current?.querySelector("[data-hero]")?.getBoundingClientRect();
     const dx = b ? b.left + b.width / 2 - window.innerWidth / 2 : 0;
     const dy = b ? b.top + b.height / 2 - window.innerHeight / 2 : 0;
+    // Its size there: smaller while the picture is shrunk.
+    const scale = b ? b.height / MILESTONE_PX : 96 / MILESTONE_PX;
     const key = ++seq.current;
-    setMilestone({ key, emoji: themeStages(child.theme)[stageFor(stars)].icon, dx, dy });
+    setMilestone({ key, emoji: themeStages(child.theme)[stageFor(stars)].icon, dx, dy, scale });
     window.setTimeout(() => setMilestone((m) => (m?.key === key ? null : m)), MILESTONE_MS);
   };
 
@@ -145,26 +296,54 @@ export function KidPlay({
 
       {weekStart && lastStars ? <NewWeekCard childId={child.id} weekStart={weekStart} lastStars={lastStars} theme={child.theme} /> : null}
 
-      <div ref={picture} className="relative">
-        <GardenPicture stars={view.stars} size="lg" theme={child.theme} interactive dancing={dancing} settling={milestone !== null} />
-        {party !== null && <Confetti key={party} />}
-        <p className="sr-only" aria-live="polite">
-          {view.stars} {view.stars === 1 ? "star" : "stars"} this week
-        </p>
+      {/* The app draws under the iPhone status bar: cards scrolling up pass under this strip. */}
+      <div aria-hidden className="fixed inset-x-0 top-0 z-20 h-[env(safe-area-inset-top)] bg-background" />
+      {/* Where the picture sits before it sticks (the negative margin cancels the column's gap). */}
+      <div ref={sentinel} aria-hidden className="-mb-5 h-0" />
+      <div ref={sticky} className="sticky top-[env(safe-area-inset-top)] z-20 -mt-2 pt-2">
+        {/* The page behind the picture, so cards slide under it cleanly; it closes up as the picture shrinks. */}
+        <div ref={backdrop} aria-hidden className="absolute -inset-x-4 top-0 -bottom-2 bg-background" />
+        <div ref={picture} className="relative origin-top">
+          <GardenPicture
+            stars={view.stars}
+            size="lg"
+            theme={child.theme}
+            interactive
+            dancing={dancing}
+            settling={milestone !== null}
+            idle={dancing || milestone !== null || party !== null || flying.length > 0 ? "pause" : "play"}
+          />
+          {party !== null && <Confetti key={party} />}
+          <p className="sr-only" aria-live="polite">
+            {view.stars} {view.stars === 1 ? "star" : "stars"} this week
+          </p>
+        </div>
       </div>
 
       {error && <p role="alert" className="text-center text-base text-destructive">{error}</p>}
 
-      <ul className="grid grid-cols-1 gap-3 pb-4">
-        {view.habits.map((h) => {
+      {/* No scroll anchoring: the page must not follow a card as it slides down. */}
+      <ul ref={list} className="grid grid-cols-1 gap-3 pb-4 [overflow-anchor:none]" onPointerDown={() => (held.current = true)}>
+        {shown.map((h) => {
           const done = h.state !== "open";
           return (
-            <li key={h.id}>
+            <li
+              key={h.id}
+              className="relative"
+              ref={(el) => {
+                rows.current.set(h.id, el!);
+                return () => {
+                  rows.current.delete(h.id);
+                };
+              }}
+            >
               <button
                 type="button"
                 disabled={saving.has(h.id)}
                 aria-busy={saving.has(h.id) || undefined}
                 onClick={(e) => {
+                  // A card just slid into place under the finger: let it land first.
+                  if (Date.now() < slideUntil.current) return;
                   // Done already: a happy wiggle, nothing counted.
                   if (done) {
                     setBumped(h.id);
@@ -244,7 +423,7 @@ export function KidPlay({
               fontSize: MILESTONE_PX,
               ["--to-x" as string]: `${milestone.dx}px`,
               ["--to-y" as string]: `${milestone.dy}px`,
-              ["--to-scale" as string]: String(96 / MILESTONE_PX),
+              ["--to-scale" as string]: String(milestone.scale),
             }}
           >
             <span className="absolute inset-[-25%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.9)_0%,rgba(255,255,255,0.4)_45%,rgba(255,255,255,0)_70%)]" />
