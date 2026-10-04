@@ -4,13 +4,16 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isAvatarColor, isAvatarEmoji } from "@/lib/avatars";
-import { habitErrorMessage } from "@/lib/habit-errors";
+import { errorCode, habitErrorMessage } from "@/lib/habit-errors";
 import { isOneEmoji, isUuid, parseHabit } from "@/lib/habit-schema";
 import { isKidTheme } from "@/lib/garden";
+import { isTap, tapArgs, type TapId } from "@/lib/offline-sync";
 import { isKidTemplateId, KID_TEMPLATES } from "@/lib/kid-templates";
 import { parseChildName, parseGoal } from "@/lib/kid-schema";
 
-export type KidActionResult = { ok: true } | { ok: false; message: string };
+// code: the database rule that refused it ("keepup:<code>"), when there was one (an offline-queued
+// tap is dropped only for a rule refusal; anything else keeps it queued).
+export type KidActionResult = { ok: true } | { ok: false; message: string; code?: string };
 export type KidFormState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string };
 
 const NO_CHILD = "That child isn't available.";
@@ -26,9 +29,14 @@ function refresh(childId?: string) {
   }
 }
 
+const codeOf = (error: { message?: string }) => {
+  const code = errorCode(error);
+  return code ? { code } : {};
+};
+
 async function call(childId: string | undefined, run: () => PromiseLike<{ error: { message: string } | null }>): Promise<KidActionResult> {
   const { error } = await run();
-  if (error) return { ok: false, message: habitErrorMessage(error) };
+  if (error) return { ok: false, message: habitErrorMessage(error), ...codeOf(error) };
   refresh(childId);
   return { ok: true };
 }
@@ -137,12 +145,12 @@ export async function addChildHabit(childId: string, _prev: KidFormState, formDa
   return { status: "saved" };
 }
 
-// byChild: a tap in the kid view (logged_by stays null, "Mary did it").
-export async function checkInFor(habitId: string, childId: string, byChild: boolean): Promise<KidActionResult> {
-  if (!isUuid(habitId) || !isUuid(childId)) return NOT_FOUND;
+// byChild: a tap in the kid view (logged_by stays null, "Mary did it"). tap: see checkIn (habits/actions.ts).
+export async function checkInFor(habitId: string, childId: string, byChild: boolean, tap?: TapId): Promise<KidActionResult> {
+  if (!isUuid(habitId) || !isUuid(childId) || !isTap(tap)) return NOT_FOUND;
   const { supabase } = await requireUser();
   const result = await call(childId, () =>
-    supabase.rpc("check_in_for", { p_habit_id: habitId, p_child_id: childId, p_by_child: byChild === true }),
+    supabase.rpc("check_in_for", { p_habit_id: habitId, p_child_id: childId, p_by_child: byChild === true, ...tapArgs(tap) }),
   );
   if (result.ok) revalidatePath(`/habits/${habitId}`);
   return result;

@@ -8,6 +8,7 @@ import { startAgainEnd } from "@/lib/habit-finish";
 import { todayIn } from "@/lib/dates";
 import { getGroupDetail } from "@/lib/groups";
 import { GENERIC_ERROR, habitErrorMessage } from "@/lib/habit-errors";
+import { isTap, tapArgs, type TapId } from "@/lib/offline-sync";
 import { reminderError } from "@/lib/reminder-mode";
 import { isUuid, LOCAL_DATE, parseHabit, parseHabitDetails, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 
@@ -16,7 +17,9 @@ const NOT_FOUND: ActionResult = { ok: false, message: "That habit isn't availabl
 // stops showing stale data.
 const REFRESH_ON_ERROR = new Set(["target_reached", "already_checked_in_today", "habit_frozen", "habit_archived", "habit_not_found"]);
 
-export type ActionResult = { ok: true } | { ok: false; message: string };
+// code: the database rule that refused it ("keepup:<code>"), when there was one (an offline-queued
+// tap is dropped only for a rule refusal; anything else keeps it queued).
+export type ActionResult = { ok: true } | { ok: false; message: string; code?: string };
 export type FormActionState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string };
 
 function refresh(habitId?: string) {
@@ -60,14 +63,15 @@ export async function createHabit(_prev: HabitFormState, formData: FormData): Pr
   redirect("/today");
 }
 
-export async function checkIn(habitId: string): Promise<ActionResult> {
-  if (!isUuid(habitId)) return NOT_FOUND;
+// tap: the id and time the phone gave this tap (lib/offline-sync.ts), so a resend never counts twice.
+export async function checkIn(habitId: string, tap?: TapId): Promise<ActionResult> {
+  if (!isUuid(habitId) || !isTap(tap)) return NOT_FOUND;
   const { supabase } = await requireUser();
-  const { error } = await supabase.rpc("check_in", { p_habit_id: habitId });
+  const { error } = await supabase.rpc("check_in", { p_habit_id: habitId, ...tapArgs(tap) });
   if (error) {
     const code = error.message?.match(/keepup:([a-z_]+)/)?.[1];
     if (code && REFRESH_ON_ERROR.has(code)) refresh(habitId);
-    return { ok: false, message: habitErrorMessage(error) };
+    return { ok: false, message: habitErrorMessage(error), ...(code ? { code } : {}) };
   }
   refresh(habitId);
   return { ok: true };

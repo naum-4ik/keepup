@@ -8,6 +8,7 @@ import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard } from "@/components/habits/habit-card";
 import { LiveRefresh } from "@/components/habits/live-refresh";
 import { KidSection } from "@/components/kids/kid-section";
+import { NeedsConnection } from "@/components/offline/needs-connection";
 import { GentleCard } from "@/components/today/gentle-card";
 import { TodayCard } from "@/components/today/today-card";
 import { Button } from "@/components/ui/button";
@@ -167,23 +168,31 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       {milestones.map((n) => (
         <GroupMilestoneCard key={n.id} id={n.id} group={n.group_name ?? "Your group"} text={feedCopy(n).body} members={membersFor([n.habit_id])} />
       ))}
+      {/* Offline (the saved page), cards whose buttons need the server say so (ideas/offline.md §3). */}
       {shownRecaps.map((r) => (
-        <FamilyRecapCard key={recapKey(r)} cardKey={recapKey(r)} group={r.group_name} line={recapLine(r, milestones.some((n) => n.group_id === r.group_id))} />
+        <NeedsConnection key={recapKey(r)} label={`${r.group_name} recap`}>
+          <FamilyRecapCard cardKey={recapKey(r)} group={r.group_name} line={recapLine(r, milestones.some((n) => n.group_id === r.group_id))} />
+        </NeedsConnection>
       ))}
-      {gentle && <GentleCard key={gentle.key} card={gentle} />}
+      {gentle && (
+        <NeedsConnection key={gentle.key} label={gentle.key.startsWith("add_child") ? "Add a child" : "Invite"}>
+          <GentleCard card={gentle} />
+        </NeedsConnection>
+      )}
       {finishes.map(({ h, summary }) => (
-        <FinishCard
-          key={h.habit_id}
-          habitId={h.habit_id}
-          endsOn={ends.get(h.habit_id) ?? ""}
-          quiet={finishQuiet}
-          title={h.title}
-          emoji={h.emoji}
-          category={h.category}
-          line={summary && celebrates(summary) ? finishLine(summary, h.period, Boolean(h.group_id)) : ANOTHER_GO}
-          celebrate={Boolean(summary && celebrates(summary))}
-          canDecide={!h.group_id || h.my_role === "admin"}
-        />
+        <NeedsConnection key={h.habit_id} label={`${h.title} is finished`}>
+          <FinishCard
+            habitId={h.habit_id}
+            endsOn={ends.get(h.habit_id) ?? ""}
+            quiet={finishQuiet}
+            title={h.title}
+            emoji={h.emoji}
+            category={h.category}
+            line={summary && celebrates(summary) ? finishLine(summary, h.period, Boolean(h.group_id)) : ANOTHER_GO}
+            celebrate={Boolean(summary && celebrates(summary))}
+            canDecide={!h.group_id || h.my_role === "admin"}
+          />
+        </NeedsConnection>
       ))}
       {/* Nothing due today: the week still shows on its own. */}
       {progress.total === 0 && overview && hasWeekData(overview) && (

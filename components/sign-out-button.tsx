@@ -5,6 +5,7 @@ import { useTransition } from "react";
 import { signOut } from "@/app/auth/actions";
 import { forgetPushSubscription } from "@/app/(app)/profile/settings/notification-actions";
 import { Button } from "@/components/ui/button";
+import { clearOfflineCaches } from "@/lib/offline-pages";
 import { browserSubscription, signOutCleanup } from "@/lib/push-support";
 
 export function SignOutButton() {
@@ -20,9 +21,7 @@ export function SignOutButton() {
           await signOutCleanup({
             getSubscription: browserSubscription,
             forget: async (endpoint) => void (await forgetPushSubscription(endpoint)),
-            clearCaches: async () => {
-              if ("caches" in window) await Promise.all((await caches.keys()).map((k) => caches.delete(k)));
-            },
+            clearCaches: clearOfflineCaches,
           });
           await signOut();
         })

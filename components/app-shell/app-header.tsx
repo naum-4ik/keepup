@@ -7,11 +7,14 @@ export function AppHeader({
   avatarEmoji,
   avatarColor,
   unread = 0,
+  children,
 }: {
   displayName: string;
   avatarEmoji?: string | null;
   avatarColor?: string | null;
   unread?: number;
+  // Under the logo row, sticky with it (the offline banner).
+  children?: React.ReactNode;
 }) {
   return (
     <header
@@ -54,6 +57,7 @@ export function AppHeader({
           </Link>
         </div>
       </div>
+      {children}
     </header>
   );
 }

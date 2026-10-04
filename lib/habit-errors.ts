@@ -52,6 +52,7 @@ const MESSAGES: Record<string, string> = {
   invalid_choice: "Pick one of the options.",
   invalid_subscription: "This device couldn't be set up for notifications.",
   invalid_time: "Pick a time on the quarter hour.",
+  tap_in_future: "This phone's clock seems to be ahead. Check the time and try again.",
 };
 
 // The rule name a database function raised ("keepup:<code>"), if any.

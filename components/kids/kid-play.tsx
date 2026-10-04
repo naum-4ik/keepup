@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useLayoutEffect, useOptimistic, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useOptimistic, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { Check, Volume2, VolumeX } from "lucide-react";
 import { checkInFor } from "@/app/(app)/kids/actions";
 import { Avatar } from "@/components/avatar";
@@ -9,9 +9,11 @@ import { GardenPicture } from "@/components/kids/garden";
 import { NewWeekCard } from "@/components/kids/new-week-card";
 import { HoldToExit } from "@/components/kids/hold-to-exit";
 import { useReducedMotion } from "@/components/kids/use-calm";
+import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
 import { stageFor, themeStages } from "@/lib/garden";
 import { createTapGuard, inOrder, orderForKid } from "@/lib/kid-order";
 import { isMuted, playKidSound, setMuted } from "@/lib/kid-sound";
+import { withQueuedTaps } from "@/lib/offline-sync";
 import { MAX_ITEMS, sceneItems } from "@/lib/scene-items";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
@@ -20,6 +22,8 @@ type PlayHabit = { id: string; title: string; emoji: string; target: number; don
 type Child = { id: string; name: string; emoji: string | null; color: string | null; theme: string };
 type Flying = { key: number; emoji: string; x: number; y: number; dx: number; dy: number };
 type Milestone = { key: number; emoji: string; dx: number; dy: number; scale: number };
+// A tap still saving, and the habit's count (without it) when it was made.
+type Tap = { habitId: string; doneAtTap: number };
 
 // The new-picture moment: how long it stays big, and its size on screen (it lands at text-8xl, 96px).
 const MILESTONE_MS = 2000;
@@ -103,14 +107,26 @@ export function KidPlay({
   const [saving, setSaving] = useState<ReadonlySet<string>>(() => new Set());
   const inFlight = useRef(new Set<string>());
   const lastTap = useRef(new Map<string, number>());
-  const [view, tap] = useOptimistic({ habits, stars }, (s, habitId: string) => ({
-    stars: s.stars + 1,
-    habits: s.habits.map((h) => {
-      if (h.id !== habitId) return h;
-      const done = h.done + 1;
-      return { ...h, done, state: (done >= h.target ? "done" : "open") as CheckInState };
-    }),
-  }));
+  const { queued, ready } = useOfflineQueue();
+  const submitTap = useSubmitTap();
+  // Taps saved on the phone count on screen until they sync, so the star doesn't vanish in the car,
+  // and a queued card counts as done for the order (it still sinks).
+  const base = useMemo(() => {
+    const q = withQueuedTaps(habits, queued, child.id);
+    return { habits: q.habits, stars: stars + q.added };
+  }, [habits, stars, queued, child.id]);
+  // A tap shows at once and until the new count arrives, from the server or from the queue: a tap is
+  // drawn only while its habit's count hasn't moved past where it was, so it never counts twice.
+  const [taps, tap] = useOptimistic<Tap[], Tap>([], (s, t) => [...s, t]);
+  const view = useMemo(() => {
+    const shown = base.habits.map((h) => {
+      const mine = taps.filter((t) => t.habitId === h.id && h.done <= t.doneAtTap).length;
+      const done = h.done + Math.min(mine, Math.max(0, h.target - h.done));
+      return done === h.done ? h : { ...h, done, state: (done >= h.target ? "done" : "open") as CheckInState };
+    });
+    const extra = shown.reduce((n, h, i) => n + h.done - base.habits[i].done, 0);
+    return { habits: shown, stars: base.stars + extra };
+  }, [base, taps]);
   const [error, setError] = useState<string | null>(null);
   const [flying, setFlying] = useState<Flying[]>([]);
   const [bumped, setBumped] = useState<string | null>(null);
@@ -123,7 +139,14 @@ export function KidPlay({
   const reduce = useReducedMotion();
 
   // The list order: open first, done last, settled a moment after a card turns green (see SETTLE_MS).
-  const [order, setOrder] = useState(() => orderForKid(habits).map((h) => h.id));
+  const [order, setOrder] = useState(() => orderForKid(base.habits).map((h) => h.id));
+  // The saved queue arrives just after the first render: a card already queued (offline, after a
+  // reload) takes its place at once, without the slide.
+  const [placedQueue, setPlacedQueue] = useState(ready);
+  if (ready && !placedQueue) {
+    setPlacedQueue(true);
+    setOrder(orderForKid(base.habits).map((h) => h.id));
+  }
   const shown = inOrder(order, view.habits);
   const current = shown.map((h) => h.id).join(" ");
   const target = orderForKid(view.habits).map((h) => h.id).join(" ");
@@ -396,10 +419,13 @@ export function KidPlay({
                   fly(el, before);
                   celebrate(before, allDone);
                   if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
+                  const doneAtTap = base.habits.find((x) => x.id === h.id)?.done ?? h.done;
                   startTransition(async () => {
-                    tap(h.id);
+                    tap({ habitId: h.id, doneAtTap });
+                    // Saved on this phone first, then tried online; offline it just waits (the effect
+                    // above already played). lib/offline-client.ts submitTap.
                     try {
-                      const r = await checkInFor(h.id, child.id, true);
+                      const r = await submitTap({ habitId: h.id, subjectId: child.id, byChild: true }, (id) => checkInFor(h.id, child.id, true, id));
                       if (!r.ok) setError(r.message);
                     } finally {
                       inFlight.current.delete(h.id);

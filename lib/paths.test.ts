@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { isPublicPath, safeNextPath, withNext } from "./paths";
 
 describe("isPublicPath", () => {
-  it.each(["/", "/login", "/signup", "/auth/callback", "/auth/error", "/whats-new"])("%s is public", (p) => {
+  it.each(["/", "/login", "/signup", "/auth/callback", "/auth/error", "/whats-new", "/offline"])("%s is public", (p) => {
     expect(isPublicPath(p)).toBe(true);
   });
 

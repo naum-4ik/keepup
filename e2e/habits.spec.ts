@@ -343,7 +343,7 @@ test.describe("Habit detail", () => {
     await page.getByRole("button", { name: "Choose emoji (now 🏋️)" }).click();
     await page.getByRole("button", { name: "💪", exact: true }).click();
     await page.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByRole("status")).toHaveText("Saved");
+    await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");
     await expect(page.getByRole("heading", { name: "Work out at home" })).toBeVisible();
     await expect(page.locator("header").filter({ hasText: "Work out at home" })).toContainText("💪");
   });

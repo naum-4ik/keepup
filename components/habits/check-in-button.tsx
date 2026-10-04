@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Check, Clock, Plus, Snowflake } from "lucide-react";
 import { checkIn, checkInWith } from "@/app/(app)/habits/actions";
 import { dismissFirstCheckinTip } from "@/components/first-checkin-tip";
+import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
+import { GENERIC_ERROR } from "@/lib/habit-errors";
+import { NEEDS_CONNECTION, SAVING } from "@/lib/offline-copy";
+import { queueKey } from "@/lib/offline-queue";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
@@ -39,24 +43,52 @@ export function CheckInButton({
   const [burst, setBurst] = useState(0);
   const celebrateTimeout = useRef<number | null>(null);
   const [choosing, setChoosing] = useState(false);
-  const Icon = state === "frozen" ? Snowflake : state === "not-started" || state === "pending" ? Clock : state === "open" && multi ? Plus : Check;
+  const { queued } = useOfflineQueue();
+  const submitTap = useSubmitTap();
+  const savingId = useId();
+  // A tap waiting on this phone (ideas/offline.md §1): it looks checked and says it's saving. While
+  // the online try runs, the button's own busy state says enough.
+  const saving = queued.has(queueKey(habitId));
+  const savingShown = saving && !pending;
+  const shown: CheckInState = saving && state === "open" && !multi ? "checked-today" : state;
+  const Icon = shown === "frozen" ? Snowflake : shown === "not-started" || shown === "pending" ? Clock : shown === "open" && multi ? Plus : Check;
+
+  function celebrate() {
+    dismissFirstCheckinTip();
+    // The check-in moment: a soft haptic tick where supported (Android; iPhone Safari has none)
+    // and a short bounce. CSS drops the animation under prefers-reduced-motion.
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
+    setBurst((b) => b + 1);
+    setCelebrating(true);
+    if (celebrateTimeout.current) window.clearTimeout(celebrateTimeout.current);
+    celebrateTimeout.current = window.setTimeout(() => setCelebrating(false), 450);
+  }
 
   function run(childIds: string[]) {
     setChoosing(false);
     startTransition(async () => {
-      const result = childIds.length > 0 ? await checkInWith(habitId, childIds) : await checkIn(habitId);
+      if (childIds.length > 0) {
+        // "Me + Mary" stays online-only (owner decision).
+        if (!navigator.onLine) {
+          setError(NEEDS_CONNECTION);
+          return;
+        }
+        try {
+          const result = await checkInWith(habitId, childIds);
+          if (!result.ok) setError(result.message);
+          else celebrate();
+        } catch {
+          setError(navigator.onLine ? GENERIC_ERROR : NEEDS_CONNECTION);
+        }
+        return;
+      }
+      // Saved on this phone first, then tried online (offline it just waits): lib/offline-client.ts.
+      const result = await submitTap({ habitId }, (tap) => checkIn(habitId, tap));
       if (!result.ok) {
         setError(result.message);
         return;
       }
-      dismissFirstCheckinTip();
-      // The check-in moment: a soft haptic tick where supported (Android; iPhone Safari has none)
-      // and a short bounce. CSS drops the animation under prefers-reduced-motion.
-      if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
-      setBurst((b) => b + 1);
-      setCelebrating(true);
-      if (celebrateTimeout.current) window.clearTimeout(celebrateTimeout.current);
-      celebrateTimeout.current = window.setTimeout(() => setCelebrating(false), 450);
+      celebrate();
     });
   }
 
@@ -71,10 +103,11 @@ export function CheckInButton({
       <button
         key={burst}
         type="button"
-        aria-label={`${LABEL[state]}: ${title}`}
+        aria-label={`${LABEL[shown]}: ${title}`}
+        aria-describedby={savingShown ? savingId : undefined}
         // Disabled while the request runs, so a double tap sends one check-in.
-        disabled={state !== "open" || pending}
-        aria-expanded={withChildren.length > 0 && state === "open" ? choosing : undefined}
+        disabled={shown !== "open" || pending}
+        aria-expanded={withChildren.length > 0 && shown === "open" ? choosing : undefined}
         onClick={() => {
           setError(null);
           if (withChildren.length > 0) setChoosing((c) => !c);
@@ -82,21 +115,21 @@ export function CheckInButton({
         }}
         className={cn(
           "flex size-11 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-          state === "done" && "border-done bg-done text-done-foreground",
+          shown === "done" && "border-done bg-done text-done-foreground",
           celebrating && "animate-checkin",
           // Finishing check-in: the target was just reached.
-          celebrating && state === "done" && "motion-safe:shadow-[0_0_0_6px_color-mix(in_srgb,var(--done)_18%,transparent)]",
-          state === "pending" && "border-pending text-pending",
-          state === "checked-today" && "border-done text-done",
-          state === "frozen" && "border-border text-frozen",
-          state === "not-started" && "border-border text-muted-foreground",
-          state === "open" && "border-input text-primary hover:bg-accent",
+          celebrating && shown === "done" && "motion-safe:shadow-[0_0_0_6px_color-mix(in_srgb,var(--done)_18%,transparent)]",
+          shown === "pending" && "border-pending text-pending",
+          shown === "checked-today" && "border-done text-done",
+          shown === "frozen" && "border-border text-frozen",
+          shown === "not-started" && "border-border text-muted-foreground",
+          shown === "open" && "border-input text-primary hover:bg-accent",
           pending && "opacity-60",
         )}
       >
         <Icon className="size-5" strokeWidth={2.5} aria-hidden />
       </button>
-      {choosing && state === "open" && (
+      {choosing && shown === "open" && (
         <div
           role="group"
           aria-label={`Who did ${title}?`}
@@ -115,6 +148,11 @@ export function CheckInButton({
       {error && (
         <p role="alert" className="max-w-40 text-right text-xs text-destructive">
           {error}
+        </p>
+      )}
+      {savingShown && (
+        <p id={savingId} className="text-xs text-muted-foreground">
+          {SAVING}
         </p>
       )}
     </div>

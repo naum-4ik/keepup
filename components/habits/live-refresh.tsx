@@ -21,7 +21,9 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
     const supabase = createClient();
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let closed = false;
+    // Offline, a refresh would replace the saved page with an error.
     const refreshSoon = () => {
+      if (!navigator.onLine) return;
       if (timer.current) window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => router.refresh(), 400);
     };

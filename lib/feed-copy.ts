@@ -20,6 +20,7 @@ export const FEED_KINDS = [
   "group_habit_archived", "member_paused", "member_joined", "member_left", "role_changed", "nudge", "cheer",
   "kid_check_in", "kid_streak", "kid_goal_reached", "kid_garden_full",
   "private_streak_ended", "daily_summary", "habit_reminder", "approval_expiring",
+  "streak_back", "already_logged", "sync_dropped", "undo_dropped",
 ] as const;
 type Kind = (typeof FEED_KINDS)[number];
 
@@ -112,5 +113,16 @@ export function feedCopy(n: FeedItem): { title: string; body: string; href: stri
     // A habit's own reminder has no group: the line names only the habit.
     case "habit_reminder": return { ...copy.habitReminder(habit), href: habitHref };
     case "approval_expiring": return { ...copy.approvalExpiring(group, who, habit), href: "/inbox" };
+    // Offline sync notes (ideas/offline.md §4). A private habit's streak note has no group: the habit is the title.
+    case "streak_back": return { ...copy.groupStreakBack(n.group_name ?? habit, habit), href: habitHref };
+    case "already_logged": return { ...copy.alreadyLogged(kid, n.actor_name, habit), href: kidHref ?? habitHref };
+    case "sync_dropped": {
+      // tapped_on is the habit's local date; read it as a plain date (UTC), so the weekday never shifts.
+      const day = typeof n.payload.tapped_on === "string" && /^\d{4}-\d{2}-\d{2}$/.test(n.payload.tapped_on)
+        ? new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "short" }).format(new Date(`${n.payload.tapped_on}T00:00:00Z`))
+        : "earlier";
+      return { ...copy.syncDropped(habit, day), href: habitHref };
+    }
+    case "undo_dropped": return { ...copy.undoDropped(habit, n.payload.reason === "approved" ? "approved" : "period_closed"), href: habitHref };
   }
 }
