@@ -48,3 +48,24 @@ describe("reminder kinds in the Inbox", () => {
       .toEqual({ title: "Family", body: "Anna's Gym check-in needs a yes within 2 hours", href: "/inbox" });
   });
 });
+
+describe("sync notes in the Inbox (ideas/offline.md)", () => {
+  it("streak is back, for a group and for a private habit", () => {
+    expect(feedCopy(item({ kind: "streak_back", group_name: "Family", habit_title: "Family dinner" }))).toMatchObject({
+      title: "Family", body: "A late check-in arrived. Family dinner streak is back 🔥" });
+    expect(feedCopy(item({ kind: "streak_back", habit_title: "Read" })).title).toBe("Read");
+  });
+
+  it("a quiet merge, a dropped tap and a refused undo", () => {
+    expect(feedCopy(item({ kind: "already_logged", actor_name: "Anna", subject_name: "Mary", habit_title: "Brush teeth" })))
+      .toMatchObject({ title: "Mary", body: "Anna already logged Brush teeth for Mary ✓" });
+    expect(feedCopy(item({ kind: "sync_dropped", habit_title: "Read", payload: { tapped_on: "2026-10-05" } })).body)
+      .toBe("A check-in from Mon couldn't sync. You can add it from the habit page if it's still editable.");
+    expect(feedCopy(item({ kind: "sync_dropped", habit_title: "Read", payload: {} })).body)
+      .toBe("A check-in from earlier couldn't sync. You can add it from the habit page if it's still editable.");
+    expect(feedCopy(item({ kind: "undo_dropped", habit_title: "Gym", payload: { reason: "approved" } })).body)
+      .toBe("Couldn't undo Gym, it was already approved.");
+    expect(feedCopy(item({ kind: "undo_dropped", habit_title: "Gym", payload: { reason: "period_closed" } })).body)
+      .toBe("Couldn't undo Gym, its time has passed.");
+  });
+});

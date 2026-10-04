@@ -84,6 +84,22 @@ describe("createOfflineQueue", () => {
     expect(await queue.pending()).toEqual(new Set());
   });
 
+  it("keeps the client id of a tap already tried online, and marks kid-view taps", async () => {
+    const storage = memoryStorage();
+    const queue = createOfflineQueue({ storage, send: async () => "retry", now: fixedNow, newId: ids() });
+    expect(await queue.checkIn("h1", "kid1", { clientId: "tried-online", byChild: true })).toBe("tried-online");
+    expect(await storage.load()).toEqual([
+      { kind: "check_in", clientId: "tried-online", habitId: "h1", subjectId: "kid1", tappedAt: "2026-10-05T20:58:00.000Z", byChild: true },
+    ]);
+  });
+
+  it("keeps the time of the tap, not the time it was queued", async () => {
+    const storage = memoryStorage();
+    const queue = createOfflineQueue({ storage, send: async () => "retry", now: fixedNow, newId: ids() });
+    await queue.checkIn("h1", null, { clientId: "c1", tappedAt: "2026-10-05T20:57:30.000Z" });
+    expect((await storage.load())[0]).toMatchObject({ clientId: "c1", tappedAt: "2026-10-05T20:57:30.000Z" });
+  });
+
   it("a tap during a flush is not lost", async () => {
     let release!: () => void;
     const gate = new Promise<void>((r) => (release = r));

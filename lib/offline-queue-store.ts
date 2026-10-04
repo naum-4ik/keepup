@@ -125,9 +125,16 @@ export function createOfflineQueue(deps: {
   }
 
   return {
-    async checkIn(habitId: string, subjectId: string | null = null): Promise<string> {
-      const clientId = newId();
-      await update((q) => addCheckIn(q, { kind: "check_in", clientId, habitId, subjectId, tappedAt: now().toISOString() }));
+    // opts.clientId and opts.tappedAt: a tap that was already sent once (the request never came back)
+    // keeps its id, so the server can tell a resend from a new tap, and the time it was tapped.
+    async checkIn(
+      habitId: string,
+      subjectId: string | null = null,
+      opts: { clientId?: string; byChild?: boolean; tappedAt?: string } = {},
+    ): Promise<string> {
+      const clientId = opts.clientId ?? newId();
+      const tappedAt = opts.tappedAt ?? now().toISOString();
+      await update((q) => addCheckIn(q, { kind: "check_in", clientId, habitId, subjectId, tappedAt, ...(opts.byChild ? { byChild: true } : {}) }));
       return clientId;
     },
     undo: undoEntry,

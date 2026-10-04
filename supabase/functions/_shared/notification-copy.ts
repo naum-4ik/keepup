@@ -123,3 +123,19 @@ export const kidStreak = (kid: string, length: number, habit: string): Copy => (
   title: kid,
   body: `${kid}: ${plural(length, "day")} in a row: ${habit} 🔥`,
 });
+
+// Offline sync notes (ideas/offline.md §4), feed only. `day` is the tap's weekday ("Mon"), or "earlier".
+export const alreadyLogged = (kid: string, adult: string | null, habit: string): Copy => ({
+  title: kid,
+  body: adult ? `${adult} already logged ${habit} for ${kid} ✓` : `${kid} already did ${habit} ✓`,
+});
+
+export const syncDropped = (habit: string, day: string): Copy => ({
+  title: habit,
+  body: `A check-in from ${day} couldn't sync. You can add it from the habit page if it's still editable.`,
+});
+
+export const undoDropped = (habit: string, reason: "approved" | "period_closed"): Copy => ({
+  title: habit,
+  body: reason === "approved" ? `Couldn't undo ${habit}, it was already approved.` : `Couldn't undo ${habit}, its time has passed.`,
+});

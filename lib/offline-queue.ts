@@ -2,7 +2,8 @@
 // Check-ins and undos made without a connection, kept in order until they reach the server.
 // The server decides whether each one counts (ideas/offline.md); this module only stores and sends.
 
-export type QueuedCheckIn = { kind: "check_in"; clientId: string; habitId: string; subjectId: string | null; tappedAt: string };
+// byChild: a tap in the kid view (logged as by the child, "Mary did it").
+export type QueuedCheckIn = { kind: "check_in"; clientId: string; habitId: string; subjectId: string | null; tappedAt: string; byChild?: boolean };
 export type QueuedUndo = { kind: "undo"; clientId: string; habitId: string };
 export type QueueEntry = QueuedCheckIn | QueuedUndo;
 

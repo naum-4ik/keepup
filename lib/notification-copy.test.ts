@@ -36,6 +36,11 @@ const samples: Copy[] = [
   copy.kidFullGarden("Mary"),
   copy.kidStreak("Mary", 7, "Brush teeth"),
   copy.kidTreatGoal("Mary", "Trip to the park", ""),
+  copy.alreadyLogged("Mary", "Anna", "Brush teeth"),
+  copy.alreadyLogged("Mary", null, "Brush teeth"),
+  copy.syncDropped("Read", "Mon"),
+  copy.undoDropped("Gym", "approved"),
+  copy.undoDropped("Gym", "period_closed"),
   { title: "milestone", body: copy.milestoneCard("Read 20 min", 30, "day") },
   { title: "milestone", body: copy.milestoneCard("Family dinner", 1, "week") },
 ];
