@@ -39,6 +39,8 @@ const samples: Copy[] = [
   copy.alreadyLogged("Mary", "Anna", "Brush teeth"),
   copy.alreadyLogged("Mary", null, "Brush teeth"),
   copy.syncDropped("Read", "Mon"),
+  copy.privateStreakEnded("Read", 12, "day", 21),
+  copy.privateStreakEnded("Read", 3, "week", 3),
   copy.undoDropped("Gym", "approved"),
   copy.undoDropped("Gym", "period_closed"),
   { title: "milestone", body: copy.milestoneCard("Read 20 min", 30, "day") },

@@ -38,7 +38,12 @@ function openDb(name: string): Promise<IDBDatabase> {
     if (typeof indexedDB === "undefined") return reject(new Error("no IndexedDB"));
     const req = indexedDB.open(name, 1);
     req.onupgradeneeded = () => req.result.createObjectStore(STORE);
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      // Sign-out deletes this database: let go of it, here and in every other tab, so the delete
+      // isn't blocked by an open connection.
+      req.result.onversionchange = () => req.result.close();
+      resolve(req.result);
+    };
     req.onerror = () => reject(req.error);
   });
 }
@@ -47,6 +52,20 @@ function run<T>(db: IDBDatabase, mode: IDBTransactionMode, op: (s: IDBObjectStor
   return new Promise((resolve, reject) => {
     const req = op(db.transaction(STORE, mode).objectStore(STORE));
     req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// One queue database per signed-in person, so a phone shared by two accounts keeps their taps apart.
+export const offlineDbName = (userId: string) => `keepup-offline-${userId}`;
+
+// Sign-out: this person's queued taps leave the phone. Resolves once deleted (or there is no
+// IndexedDB); while another connection still holds it, it waits, so callers bound it.
+export function deleteOfflineQueue(dbName: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === "undefined") return resolve();
+    const req = indexedDB.deleteDatabase(dbName);
+    req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });
 }

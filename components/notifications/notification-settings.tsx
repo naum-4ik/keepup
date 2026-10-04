@@ -6,7 +6,9 @@ import { forgetPushSubscription, pauseAll, setDelivery, setReminderHour } from "
 import { currentEndpoint, TurnOnReminders } from "@/components/notifications/turn-on-reminders";
 import { InfoHint } from "@/components/info-hint";
 import { Button } from "@/components/ui/button";
-import { APPROVALS_OFF_NOTE, DELIVERIES, IPHONE_SOUND_HINT, NOTIFICATION_CATEGORIES, PAUSE_CHOICES } from "@/lib/notification-categories";
+import {
+  APPROVALS_OFF_NOTE, DELIVERIES, IPHONE_SOUND_HINT, NOTIFICATION_CATEGORIES, PAUSE_CHOICES, reminderHourHint, reminderStatus,
+} from "@/lib/notification-categories";
 import type { NotificationSettings } from "@/lib/notification-settings";
 import { browserSubscription, iosVersion, removeDevice } from "@/lib/push-support";
 
@@ -17,9 +19,9 @@ const pillClass =
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const hourLabel = (h: number) => `${String(h).padStart(2, "0")}:00`;
 
-function pausedLabel(until: string, timeZone: string): string {
-  if (until === "infinity") return "Paused until you turn them back on";
-  return `Paused until ${new Intl.DateTimeFormat("en-GB", { timeZone, weekday: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(until))}`;
+function pausedUntil(until: string, timeZone: string): string {
+  if (until === "infinity") return "you turn them back on";
+  return new Intl.DateTimeFormat("en-GB", { timeZone, weekday: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(until));
 }
 
 export function NotificationSettingsCard({ settings }: { settings: NotificationSettings }) {
@@ -66,7 +68,7 @@ export function NotificationSettingsCard({ settings }: { settings: NotificationS
       <div className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-1">
           <label htmlFor="reminderHour" className="text-sm font-semibold">Daily reminder</label>
-          <InfoHint text="When your daily summary arrives." />
+          <InfoHint text={reminderHourHint(settings.devices.length > 0)} />
         </div>
         <select id="reminderHour" className={selectClass} defaultValue={settings.reminderHour} key={settings.reminderHour}
           disabled={pending} onChange={(e) => run(() => setReminderHour(Number(e.target.value)))}>
@@ -74,7 +76,11 @@ export function NotificationSettingsCard({ settings }: { settings: NotificationS
         </select>
         {thisDeviceOn ? (
           <p ref={confirmation} tabIndex={-1} role="status" className="text-sm text-muted-foreground outline-none">
-            {justOn ? `Reminders are on for this device ✓ Your daily summary arrives at ${hourLabel(settings.reminderHour)}.` : "Reminders are on for this device ✓"}
+            {reminderStatus({
+              pausedUntil: paused ? pausedUntil(settings.mutedUntil!, settings.timezone) : null,
+              delivery: settings.delivery.reminders,
+              arrivesAt: justOn ? hourLabel(settings.reminderHour) : null,
+            })}
           </p>
         ) : (
           <TurnOnReminders
@@ -91,7 +97,7 @@ export function NotificationSettingsCard({ settings }: { settings: NotificationS
         <h3 className="text-sm font-semibold">Pause all</h3>
         {paused ? (
           <div className="flex flex-wrap items-center gap-3">
-            <p className="text-sm">{pausedLabel(settings.mutedUntil!, settings.timezone)}</p>
+            <p className="text-sm">Paused until {pausedUntil(settings.mutedUntil!, settings.timezone)}</p>
             <Button type="button" variant="outline" className="h-11" disabled={pending} onClick={() => run(() => pauseAll("resume"))}>Resume</Button>
           </div>
         ) : (

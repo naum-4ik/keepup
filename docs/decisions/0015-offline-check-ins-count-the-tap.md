@@ -11,7 +11,8 @@ People check in on a phone in a lift, on a plane, or in the car with a child. A 
 - A late tap or approval can upgrade a settled `missed` period to done and sends "streak is back". A late arrival on an approval habit gets 12 hours from arrival to be approved. Late group check-ins stay in the Inbox and don't push.
 - A duplicate for a child from another adult merges quietly. An undo is applied by `client_id` under the rules at sync time.
 - The queue lives in IndexedDB. Online taps are queue-first: saved, then sent, and removed only on success or a known rule code. One sender at a time (Web Locks). A tap is given up only after 5 counted failures over more than 24 hours; timeouts, 401 and no network don't count.
-- The service worker keeps the last Today and kid view, with their scripts, so they open offline. Saved pages are purged on sign-out.
+- The service worker keeps the last Today and kid view, with their scripts, so they open offline.
+- Sign-out tries one send of the queue (at most 5 seconds), then deletes that person's queue database (`keepup-offline-<userId>`) and the saved pages from the phone. Taps that still couldn't go are dropped.
 
 ## Consequences
 - No conflict dialogs; every client and job sees the same result.

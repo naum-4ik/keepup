@@ -66,9 +66,12 @@ describe("urlBase64ToUint8Array", () => {
 });
 
 describe("signOutCleanup", () => {
+  const quiet = { flushQueue: async () => undefined, deleteQueue: async () => undefined };
+
   it("unsubscribes this device before signing out, so the next account's pushes don't reach the last one", async () => {
     const calls: string[] = [];
     await signOutCleanup({
+      ...quiet,
       getSubscription: async () => ({ endpoint: "https://push.example/abc", unsubscribe: async () => (calls.push("unsubscribe"), true) }),
       forget: async (e) => void calls.push(`forget ${e}`),
       clearCaches: async () => void calls.push("caches"),
@@ -78,13 +81,64 @@ describe("signOutCleanup", () => {
 
   it("still clears caches when there is no worker or the server can't be reached", async () => {
     const clearCaches = vi.fn(async () => undefined);
-    await signOutCleanup({ getSubscription: async () => { throw new Error("no worker"); }, forget: async () => undefined, clearCaches });
+    await signOutCleanup({ ...quiet, getSubscription: async () => { throw new Error("no worker"); }, forget: async () => undefined, clearCaches });
     await signOutCleanup({
+      ...quiet,
       getSubscription: async () => ({ endpoint: "e", unsubscribe: async () => true }),
       forget: async () => { throw new TypeError("Failed to fetch"); },
       clearCaches,
     });
     expect(clearCaches).toHaveBeenCalledTimes(2);
+  });
+
+  it("sends the queued check-ins once first, and deletes the queue last", async () => {
+    const calls: string[] = [];
+    await signOutCleanup({
+      flushQueue: async () => void calls.push("flush"),
+      getSubscription: async () => ({ endpoint: "e", unsubscribe: async () => (calls.push("unsubscribe"), true) }),
+      forget: async () => void calls.push("forget"),
+      clearCaches: async () => void calls.push("caches"),
+      deleteQueue: async () => void calls.push("delete queue"),
+    });
+    expect(calls).toEqual(["flush", "forget", "unsubscribe", "caches", "delete queue"]);
+  });
+
+  it("waits at most 5 seconds for the send, then deletes the queue anyway", async () => {
+    vi.useFakeTimers();
+    try {
+      const deleteQueue = vi.fn(async () => undefined);
+      const done = signOutCleanup({
+        flushQueue: () => new Promise<void>(() => {}), // a server that never answers
+        getSubscription: async () => null,
+        forget: async () => undefined,
+        clearCaches: async () => undefined,
+        deleteQueue,
+      });
+      await vi.advanceTimersByTimeAsync(4_999);
+      expect(deleteQueue).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      await done;
+      expect(deleteQueue).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a failed send or a blocked delete never stops the sign-out", async () => {
+    vi.useFakeTimers();
+    try {
+      const done = signOutCleanup({
+        flushQueue: async () => { throw new TypeError("Failed to fetch"); },
+        getSubscription: async () => null,
+        forget: async () => undefined,
+        clearCaches: async () => undefined,
+        deleteQueue: () => new Promise<void>(() => {}), // another tab holds the database
+      });
+      await vi.advanceTimersByTimeAsync(2_000);
+      await expect(done).resolves.toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

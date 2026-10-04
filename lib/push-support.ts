@@ -65,12 +65,21 @@ export function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(raw, (c) => c.charCodeAt(0));
 }
 
-// A phone shared by two accounts: signing out must stop this account's pushes here.
+// Sign-out may wait this long for the queued check-ins to go out, and then for their database to go.
+export const SIGN_OUT_FLUSH_MS = 5_000;
+export const SIGN_OUT_DELETE_MS = 2_000;
+
+// A phone shared by two accounts: signing out must stop this account's pushes here, and take its
+// saved pages and queued check-ins off the phone. Queued check-ins get one try to send first
+// (bounded: offline, or a slow server, they're dropped). Nothing here stops the sign-out.
 export async function signOutCleanup(deps: {
   getSubscription(): Promise<{ endpoint: string; unsubscribe(): Promise<boolean> } | null>;
   forget(endpoint: string): Promise<void>;
   clearCaches(): Promise<void>;
+  flushQueue(): Promise<void>;
+  deleteQueue(): Promise<void>;
 }): Promise<void> {
+  await withTimeout(deps.flushQueue(), SIGN_OUT_FLUSH_MS).catch(() => undefined);
   try {
     const sub = await deps.getSubscription();
     if (sub) {
@@ -81,6 +90,7 @@ export async function signOutCleanup(deps: {
     // No service worker here: nothing to unsubscribe.
   }
   await deps.clearCaches().catch(() => undefined);
+  await withTimeout(deps.deleteQueue(), SIGN_OUT_DELETE_MS).catch(() => undefined);
 }
 
 export function readPushEnv(): PushEnv {

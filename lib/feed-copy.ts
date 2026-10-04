@@ -89,16 +89,8 @@ export function feedCopy(n: FeedItem): { title: string; body: string; href: stri
       return { ...goal, body: goal.body.trim(), href: kidHref };
     }
     case "kid_garden_full": return { ...copy.kidFullGarden(kid), href: kidHref };
-    case "private_streak_ended": {
-      // ideas/achievements-and-rewards.md §5: "Read streak ended at 12 days. Your best is still 21."
-      const best = Number(n.payload.best ?? 0);
-      const ended = `${habit} streak ended at ${streak} ${unit(streak, n.payload.period)}.`;
-      return {
-        title: habit,
-        body: best > streak ? `${ended} Your best is still ${best}.` : `${ended} Start a new one ${THIS[String(n.payload.period)] ?? "today"}.`,
-        href: habitHref,
-      };
-    }
+    case "private_streak_ended":
+      return { ...copy.privateStreakEnded(habit, streak, asPeriod(n.payload.period, "day"), Number(n.payload.best ?? 0)), href: habitHref };
     case "daily_summary": {
       const rows = (v: unknown) => (Array.isArray(v) ? (v as Record<string, unknown>[]) : []);
       const summary = copy.dailySummary({

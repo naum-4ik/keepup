@@ -7,10 +7,15 @@ import { describe, expect, it, vi } from "vitest";
 const SOURCE = readFileSync(join(__dirname, "../public/sw.js"), "utf8");
 const ORIGIN = "https://keepup.test";
 
-type Win = { url: string; focus: ReturnType<typeof vi.fn>; navigate: ReturnType<typeof vi.fn> };
+type Win = {
+  url: string; focused: boolean; visibilityState: "visible" | "hidden";
+  focus: ReturnType<typeof vi.fn>; navigate: ReturnType<typeof vi.fn>;
+};
 
-function win(path: string, navigate?: (url: string) => Promise<unknown>): Win {
-  const w: Win = { url: `${ORIGIN}${path}`, focus: vi.fn(async () => w), navigate: vi.fn() };
+function win(path: string, navigate?: (url: string) => Promise<unknown>, front = false): Win {
+  const w: Win = {
+    url: `${ORIGIN}${path}`, focused: front, visibilityState: front ? "visible" : "hidden", focus: vi.fn(async () => w), navigate: vi.fn(),
+  };
   w.navigate.mockImplementation(navigate ?? (async (url: string) => ({ ...w, url, focus: w.focus })));
   return w;
 }
@@ -167,6 +172,42 @@ describe("sw.js notification taps", () => {
   it("never rejects, even when opening a window fails", async () => {
     const { click } = worker([], vi.fn(async () => Promise.reject(new Error("no"))));
     await expect(click({ url: "/inbox" })).resolves.toBeUndefined();
+  });
+
+  it("a kid view in front is only focused: a kid moment opens nothing new", async () => {
+    const play = win("/kids/k1/play", undefined, true);
+    const { click, openWindow } = worker([play]);
+    await click({ url: "/kids/k1" });
+    expect(play.focus).toHaveBeenCalled();
+    expect(play.navigate).not.toHaveBeenCalled();
+    expect(openWindow).not.toHaveBeenCalled();
+  });
+
+  it("any other push doesn't move a child's kid view away either", async () => {
+    const today = win("/today");
+    const play = win("/kids/k1/play/", undefined, true);
+    const { click, openWindow } = worker([play, today]);
+    await click({ url: "/habits/h1" });
+    expect(play.focus).toHaveBeenCalled();
+    expect(play.navigate).not.toHaveBeenCalled();
+    expect(today.navigate).not.toHaveBeenCalled();
+    expect(openWindow).not.toHaveBeenCalled();
+  });
+
+  it("a kid view in the background is never the window that gets moved", async () => {
+    const play = win("/kids/k1/play");
+    const today = win("/today");
+    const { click } = worker([play, today]);
+    await click({ url: "/habits/h1" });
+    expect(play.navigate).not.toHaveBeenCalled();
+    expect(today.navigate).toHaveBeenCalledWith(`${ORIGIN}/habits/h1`);
+  });
+
+  it("a kid's page that isn't the play view moves as usual", async () => {
+    const kid = win("/kids/k1", undefined, true);
+    const { click } = worker([kid]);
+    await click({ url: "/inbox" });
+    expect(kid.navigate).toHaveBeenCalledWith(`${ORIGIN}/inbox`);
   });
 
   it("a failed Approve opens the Inbox", async () => {

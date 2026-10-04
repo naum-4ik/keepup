@@ -5,16 +5,16 @@ import { usePathname, useRouter } from "next/navigation";
 import { createOfflineClient, type Channel, type Counts, type TapResult } from "@/lib/offline-client";
 import { GENERIC_ERROR } from "@/lib/habit-errors";
 import { claimSavedPages, savePageOffline } from "@/lib/offline-pages";
-import { indexedDbStorage, type Locks } from "@/lib/offline-queue-store";
+import { deleteOfflineQueue, indexedDbStorage, offlineDbName, type Locks } from "@/lib/offline-queue-store";
 import { httpSender } from "@/lib/offline-sync";
 
 type Client = ReturnType<typeof createOfflineClient>;
 // queued: check-ins waiting on this phone, per habit and person (lib/offline-queue.ts queueKey).
 // ready: the saved queue has been read (until then `queued` is empty, not "nothing waiting").
 // notice: a queued check-in was given up after repeated failures (lib/offline-queue.ts MAX_ATTEMPTS).
-type Ctx = { client: Client | null; queued: Counts; ready: boolean; notice: boolean; dismissNotice: () => void };
+type Ctx = { client: Client | null; userId: string | null; queued: Counts; ready: boolean; notice: boolean; dismissNotice: () => void };
 const NONE: Counts = new Map();
-const OfflineQueueContext = createContext<Ctx>({ client: null, queued: NONE, ready: false, notice: false, dismissNotice: () => {} });
+const OfflineQueueContext = createContext<Ctx>({ client: null, userId: null, queued: NONE, ready: false, notice: false, dismissNotice: () => {} });
 
 export function useOfflineQueue() {
   const { queued, ready } = useContext(OfflineQueueContext);
@@ -24,6 +24,22 @@ export function useOfflineQueue() {
 export function useOfflineNotice() {
   const { notice, dismissNotice } = useContext(OfflineQueueContext);
   return { notice, dismiss: dismissNotice };
+}
+
+// Sign-out (lib/push-support.ts signOutCleanup): send what's waiting once, then delete this person's
+// queue from the phone. Outside the provider there is nothing to send or delete.
+export function useOfflineSignOut() {
+  const { client, userId } = useContext(OfflineQueueContext);
+  return useMemo(
+    () => ({
+      flushQueue: async () => void (await client?.flush()),
+      deleteQueue: async () => {
+        client?.stop();
+        if (userId) await deleteOfflineQueue(offlineDbName(userId));
+      },
+    }),
+    [client, userId],
+  );
 }
 
 function broadcast(userId: string): Channel | null {
@@ -53,7 +69,7 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
   const client = useMemo(() => {
     if (typeof window === "undefined") return null;
     return createOfflineClient({
-      storage: indexedDbStorage(`keepup-offline-${userId}`),
+      storage: indexedDbStorage(offlineDbName(userId)),
       send: httpSender(),
       locks: (navigator as Navigator & { locks?: Locks }).locks ?? null,
       isOnline: () => navigator.onLine,
@@ -106,7 +122,7 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
   }, [claimed, pathname]);
 
   const dismissNotice = useCallback(() => setNotice(false), []);
-  const value = useMemo(() => ({ client, queued, ready, notice, dismissNotice }), [client, queued, ready, notice, dismissNotice]);
+  const value = useMemo(() => ({ client, userId, queued, ready, notice, dismissNotice }), [client, userId, queued, ready, notice, dismissNotice]);
   return <OfflineQueueContext.Provider value={value}>{children}</OfflineQueueContext.Provider>;
 }
 

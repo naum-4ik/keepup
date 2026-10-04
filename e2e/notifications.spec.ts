@@ -9,7 +9,7 @@ test("Settings: the daily reminder is back with its hint, and the choices stick"
   await page.goto("/profile/settings");
   const section = page.getByRole("region", { name: "Notifications" });
   await section.getByRole("button", { name: "What is this?" }).click();
-  await expect(section.getByText("When your daily summary arrives.")).toBeVisible();
+  await expect(section.getByText("When your daily summary arrives, once reminders are on.")).toBeVisible();
 
   await section.getByLabel("Daily reminder").selectOption("7");
   const nudges = section.getByRole("group", { name: "Nudges" });
@@ -23,7 +23,7 @@ test("Settings: the daily reminder is back with its hint, and the choices stick"
   await expect(section.getByText(/On iPhone and iPad, sound is one switch/)).toHaveCount(0);
 
   await section.getByRole("group", { name: "Approvals" }).getByRole("radio", { name: "Inbox only" }).check();
-  await expect(section.getByText("Your group can't complete habits that need your approval.")).toBeVisible();
+  await expect(section.getByText("Approvals still wait in your Inbox.")).toBeVisible();
 });
 
 test("Pause all, then resume", async ({ page }) => {
@@ -108,6 +108,23 @@ test.describe("with push stood in for", () => {
     await page.reload();
     await expect(section.getByRole("button", { name: "Turn on reminders" })).toBeVisible();
     await expect(section.getByRole("heading", { name: "Devices" })).toHaveCount(0);
+  });
+
+  test("this device's reminder line follows Pause all and Inbox only", async ({ page }) => {
+    await signUpAndOnboard(page);
+    await page.goto("/profile/settings");
+    const section = page.getByRole("region", { name: "Notifications" });
+    await section.getByRole("button", { name: "Turn on reminders" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Allow notifications" }).click();
+    await expect(section.getByText(/^Reminders are on for this device ✓/)).toBeVisible();
+
+    await section.getByRole("button", { name: "Until I turn them back on" }).click();
+    await expect(section.getByText("Reminders are paused until you turn them back on.")).toBeVisible();
+    await section.getByRole("button", { name: "Resume" }).click();
+    await expect(section.getByText(/^Reminders are on for this device ✓/)).toBeVisible();
+
+    await section.getByRole("group", { name: "Reminders" }).getByRole("radio", { name: "Inbox only" }).check();
+    await expect(section.getByText("Reminders go to your Inbox.")).toBeVisible();
   });
 
   test("the re-save on open never saves a device this account doesn't have", async ({ page }) => {
