@@ -1,4 +1,5 @@
-import { SceneItems } from "@/components/kids/scene-items";
+import { SceneIdle } from "@/components/kids/scene-idle";
+import { SceneItems, type Idle } from "@/components/kids/scene-items";
 import { kidTheme, nextStep, restartDay, restartLine, stageFor, stepLines } from "@/lib/garden";
 import { isFloatingTheme, sceneItems } from "@/lib/scene-items";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,7 @@ export function GardenPicture({
   interactive = false,
   dancing = false,
   settling = false,
+  idle,
 }: {
   stars: number;
   size?: "sm" | "md" | "lg";
@@ -24,6 +26,8 @@ export function GardenPicture({
   dancing?: boolean;
   // A new picture is zooming in over the screen (KidPlay); it lands here when that's over.
   settling?: boolean;
+  // The kid view only: the scene moves gently by itself ("play"), held still while a tap plays ("pause").
+  idle?: Idle;
 }) {
   const t = kidTheme(theme);
   const stage = t.stages[stageFor(stars)];
@@ -43,7 +47,8 @@ export function GardenPicture({
       )}
     >
       {/* One item per star this week (not on album thumbnails, which show only the picture). */}
-      {size !== "sm" && <SceneItems items={sceneItems(stars, t.id)} size={size} interactive={interactive} dancing={dancing} />}
+      {size !== "sm" && <SceneItems items={sceneItems(stars, t.id)} size={size} interactive={interactive} dancing={dancing} idle={idle} />}
+      {idle && size !== "sm" && <SceneIdle items={sceneItems(stars, t.id)} theme={t.id} paused={idle === "pause"} />}
       {ghost && (
         <span
           aria-hidden
@@ -61,18 +66,25 @@ export function GardenPicture({
           settling && "motion-safe:opacity-0",
         )}
       >
-        {/* A soft glow behind it, so it reads as the main thing on any sky. */}
-        <span className="absolute inset-[-30%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.8)_0%,rgba(255,255,255,0.35)_45%,rgba(255,255,255,0)_70%)] dark:bg-[radial-gradient(circle,rgba(255,255,255,0.4)_0%,rgba(255,255,255,0.15)_45%,rgba(255,255,255,0)_70%)]" />
+        {/* It bobs gently when idle, glow and all. */}
         <span
-          key={stage.min}
-          data-hero
-          className={cn(
-            "relative block leading-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.18)] select-none",
-            { sm: "text-4xl", md: "text-7xl", lg: "text-8xl" }[size],
-            !settling && size !== "sm" && "motion-safe:animate-item-pop",
-          )}
+          data-idle={idle ? "hero" : undefined}
+          className={cn("relative block", idle && "animate-idle-bob")}
+          style={idle ? { animationDuration: "5s", animationPlayState: idle === "pause" ? "paused" : "running" } : undefined}
         >
-          {stage.icon}
+          {/* A soft glow behind it, so it reads as the main thing on any sky. */}
+          <span className="absolute inset-[-30%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.8)_0%,rgba(255,255,255,0.35)_45%,rgba(255,255,255,0)_70%)] dark:bg-[radial-gradient(circle,rgba(255,255,255,0.4)_0%,rgba(255,255,255,0.15)_45%,rgba(255,255,255,0)_70%)]" />
+          <span
+            key={stage.min}
+            data-hero
+            className={cn(
+              "relative block leading-none drop-shadow-[0_2px_6px_rgba(0,0,0,0.18)] select-none",
+              { sm: "text-4xl", md: "text-7xl", lg: "text-8xl" }[size],
+              !settling && size !== "sm" && "motion-safe:animate-item-pop",
+            )}
+          >
+            {stage.icon}
+          </span>
         </span>
       </span>
       <span

@@ -2,22 +2,28 @@
 
 import { useEffect, useState } from "react";
 import { playKidSound } from "@/lib/kid-sound";
+import { idleMotion } from "@/lib/kid-idle";
 import type { SceneItem } from "@/lib/scene-items";
 import { cn } from "@/lib/utils";
 
 // The week's items on the picture (lib/scene-items.ts). New ones spring up after the flying item from
 // the tapped card lands; in the kid view each one wiggles when tapped, just for fun (it counts for
-// nothing). `dancing`: everything done today.
+// nothing). `dancing`: everything done today. `idle` (kid view only): each item sways or bobs gently on
+// its own, paused while a tap plays.
+export type Idle = "play" | "pause";
+
 export function SceneItems({
   items,
   size,
   interactive = false,
   dancing = false,
+  idle,
 }: {
   items: SceneItem[];
   size: "md" | "lg";
   interactive?: boolean;
   dancing?: boolean;
+  idle?: Idle;
 }) {
   // Items there on the first render are drawn still; only ones added after it pop. Once a pop has
   // played (or after an undo), the current count becomes the new "seen" mark.
@@ -38,25 +44,36 @@ export function SceneItems({
           // Standing things touch the ground at y; floating ones are centred on it.
           style={{ left: `${item.x}%`, top: `${item.y}%`, transform: `translate(-50%, ${item.standing ? "-100%" : "-50%"}) scale(${item.scale})`, transformOrigin: item.standing ? "bottom" : "center", zIndex: Math.round(item.y) }}
         >
+          {/* Idle motion lives on its own wrapper, so it never fights the wiggle, dance or pop below. */}
           <span
-            onPointerDown={
-              interactive
-                ? () => {
-                    setWiggling(i);
-                    playKidSound("wiggle");
-                  }
-                : undefined
-            }
-            onAnimationEnd={() => setWiggling((w) => (w === i ? null : w))}
+            data-idle={idle ? "item" : undefined}
             className={cn(
-              "block leading-none select-none",
-              size === "lg" ? "text-5xl" : "text-3xl",
-              interactive && "cursor-pointer touch-manipulation",
-              wiggling === i ? "animate-wiggle" : dancing ? "animate-dance" : i >= fresh && "animate-item-pop [animation-delay:600ms]",
+              "block",
+              idle && (idleMotion(i).kind === "sway" ? "animate-idle-sway" : "animate-idle-bob"),
+              item.standing ? "origin-bottom" : "origin-center",
             )}
-            style={dancing ? { animationDelay: `${(i % 5) * 80}ms` } : undefined}
+            style={idle ? { animationDuration: `${idleMotion(i).seconds}s`, animationDelay: `${idleMotion(i).delay}s`, animationPlayState: idle === "pause" ? "paused" : "running" } : undefined}
           >
-            {item.emoji}
+            <span
+              onPointerDown={
+                interactive
+                  ? () => {
+                      setWiggling(i);
+                      playKidSound("wiggle");
+                    }
+                  : undefined
+              }
+              onAnimationEnd={() => setWiggling((w) => (w === i ? null : w))}
+              className={cn(
+                "block leading-none select-none",
+                size === "lg" ? "text-5xl" : "text-3xl",
+                interactive && "cursor-pointer touch-manipulation",
+                wiggling === i ? "animate-wiggle" : dancing ? "animate-dance" : i >= fresh && "animate-item-pop [animation-delay:600ms]",
+              )}
+              style={dancing ? { animationDelay: `${(i % 5) * 80}ms` } : undefined}
+            >
+              {item.emoji}
+            </span>
           </span>
         </span>
       ))}

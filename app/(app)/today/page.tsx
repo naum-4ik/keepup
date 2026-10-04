@@ -168,7 +168,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         <GroupMilestoneCard key={n.id} id={n.id} group={n.group_name ?? "Your group"} text={feedCopy(n).body} members={membersFor([n.habit_id])} />
       ))}
       {shownRecaps.map((r) => (
-        <FamilyRecapCard key={recapKey(r)} cardKey={recapKey(r)} group={r.group_name} line={recapLine(r)} />
+        <FamilyRecapCard key={recapKey(r)} cardKey={recapKey(r)} group={r.group_name} line={recapLine(r, milestones.some((n) => n.group_id === r.group_id))} />
       ))}
       {gentle && <GentleCard key={gentle.key} card={gentle} />}
       {finishes.map(({ h, summary }) => (

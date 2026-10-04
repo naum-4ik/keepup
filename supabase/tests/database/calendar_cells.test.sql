@@ -8,14 +8,23 @@ update public.profiles set timezone = 'UTC' where id in ('00000000-0000-0000-000
 
 create temp table t (k text primary key, v uuid) on commit drop;
 with h as (insert into public.habits (owner_id, title, category, target_count, period, starts_on)
-           values ('00000000-0000-0000-0000-0000000000a1', 'Read', 'learning', 1, 'day', '2026-10-01') returning id)
+           values ('00000000-0000-0000-0000-0000000000a1', 'Read', 'learning', 1, 'day', current_date) returning id)
 insert into t select 'read', id from h;
+set local session_replication_role = replica; -- the rules refuse a past start: backdate without triggers
+update public.habits set starts_on = '2026-10-01', created_at = '2026-09-30T08:00:00Z' where id = (select v from t where k = 'read');
+set local session_replication_role = origin;
 with h as (insert into public.habits (owner_id, title, category, target_count, period, starts_on)
-           values ('00000000-0000-0000-0000-0000000000a1', 'Laundry', 'home', 2, 'week', '2026-10-01') returning id)
+           values ('00000000-0000-0000-0000-0000000000a1', 'Laundry', 'home', 2, 'week', current_date) returning id)
 insert into t select 'laundry', id from h;
+set local session_replication_role = replica; -- the rules refuse a past start: backdate without triggers
+update public.habits set starts_on = '2026-10-01', created_at = '2026-09-30T08:00:00Z' where id = (select v from t where k = 'laundry');
+set local session_replication_role = origin;
 with h as (insert into public.habits (owner_id, title, category, target_count, period, starts_on)
-           values ('00000000-0000-0000-0000-0000000000b1', 'Dan reads', 'learning', 1, 'day', '2026-10-01') returning id)
+           values ('00000000-0000-0000-0000-0000000000b1', 'Dan reads', 'learning', 1, 'day', current_date) returning id)
 insert into t select 'dan', id from h;
+set local session_replication_role = replica; -- the rules refuse a past start: backdate without triggers
+update public.habits set starts_on = '2026-10-01', created_at = '2026-09-30T08:00:00Z' where id = (select v from t where k = 'dan');
+set local session_replication_role = origin;
 
 select private.check_in_impl((select v from t where k = 'read'), '00000000-0000-0000-0000-0000000000a1', '2026-10-01T09:00:00Z');
 select private.check_in_impl((select v from t where k = 'read'), '00000000-0000-0000-0000-0000000000a1', '2026-10-03T09:00:00Z');
