@@ -37,7 +37,10 @@ test("Settings: arrow keys move through a delivery group, keep focus, and save w
   const third = group.getByRole("radio", { name: "Inbox only" });
   await expect(third).toBeFocused();
   await expect(third).toBeChecked();
+  const cue = page.getByTestId("delivery-reminders-saving");
+  await expect(cue).toBeVisible(); // a visible "Saving…" while the change waits and saves
   await expect(group).not.toHaveAttribute("aria-busy"); // saved
+  await expect(cue).toBeHidden();
   await expect(third).toBeFocused(); // the save didn't take focus away
   await page.reload();
   await expect(group.getByRole("radio", { name: "Inbox only" })).toBeChecked();

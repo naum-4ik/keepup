@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { Loader2 } from "lucide-react";
 import { forgetPushSubscription, pauseAll, setDelivery, setReminderHour } from "@/app/(app)/profile/settings/notification-actions";
 import { currentEndpoint, TurnOnReminders } from "@/components/notifications/turn-on-reminders";
 import { InfoHint } from "@/components/info-hint";
@@ -13,6 +14,7 @@ import {
 } from "@/lib/notification-categories";
 import type { NotificationSettings } from "@/lib/notification-settings";
 import { browserSubscription, iosVersion, removeDevice } from "@/lib/push-support";
+import { cn } from "@/lib/utils";
 
 const selectClass = "h-11 rounded-xl border border-input bg-transparent px-3 text-base";
 // A segmented row of three pills (radios): fits 390px, each a 44px target. Same look as the habit form's chips.
@@ -215,10 +217,19 @@ function DeliveryChoice({ category, label, hint, saved, onError }: {
   return (
     <fieldset className="flex flex-col gap-2" aria-describedby={`delivery-${category}-hint`} aria-busy={saving || undefined}>
       <legend className="font-semibold">{label}</legend>
-      <p id={`delivery-${category}-hint`} className="text-xs text-muted-foreground">
-        {category === "approvals" && value === "inbox" ? APPROVALS_OFF_NOTE : hint}
-      </p>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="flex items-start gap-2">
+        <p id={`delivery-${category}-hint`} className="flex-1 text-xs text-muted-foreground">
+          {category === "approvals" && value === "inbox" ? APPROVALS_OFF_NOTE : hint}
+        </p>
+        {/* Seen while the change waits or is being saved (screen readers get aria-busy). */}
+        {saving && (
+          <span aria-hidden data-testid={`delivery-${category}-saving`} className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+            <Loader2 className="size-3 animate-spin motion-reduce:animate-none" />
+            Saving…
+          </span>
+        )}
+      </div>
+      <div className={cn("grid grid-cols-3 gap-2 transition-opacity", saving && "opacity-70")}>
         {DELIVERIES.map((d) => (
           <label key={d.delivery} className={pillClass}>
             <input type="radio" name={`delivery-${category}`} value={d.delivery} checked={value === d.delivery}
