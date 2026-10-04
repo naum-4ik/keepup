@@ -34,10 +34,14 @@ export function TodayCard({
   const { queued } = useOfflineQueue();
   const { done, total, items } = useMemo(() => todayProgress(withQueuedProgress(habits, queued)), [habits, queued]);
   const allDone = total > 0 && done >= total;
+  // The confetti waits for the server's word: a tap is queued for a moment even online (saved on the
+  // phone first), and "Everyone did it" (quiet) only arrives with the page's refresh.
+  const saved = useMemo(() => todayProgress(habits), [habits]);
+  const allSaved = saved.total > 0 && saved.done >= saved.total;
   const [celebrate, setCelebrate] = useState(false);
 
   useEffect(() => {
-    if (!allDone) return;
+    if (!allSaved) return;
     try {
       if (localStorage.getItem(SEEN_KEY) === dayKey) return;
       localStorage.setItem(SEEN_KEY, dayKey);
@@ -46,7 +50,7 @@ export function TodayCard({
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect -- plays once, after the day's last check-in
     if (!quiet) setCelebrate(true);
-  }, [allDone, dayKey, quiet]);
+  }, [allSaved, dayKey, quiet]);
 
   return (
     <section
