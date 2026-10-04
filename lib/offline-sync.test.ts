@@ -29,6 +29,17 @@ describe("outcomeFor", () => {
     expect(outcomeFor(200, { outcome: "rejected" })).toBe("rejected");
   });
 
+  it("a 200 that isn't the sync route's answer (a captive portal) is tried again, never synced", () => {
+    expect(outcomeFor(200, null)).toBe("retry");
+    expect(outcomeFor(200, { ok: true })).toBe("retry");
+    expect(outcomeFor(200, "<html>Log in to the Wi-Fi</html>")).toBe("retry");
+  });
+
+  it("403 and 405 can never succeed: dropped, not retried", () => {
+    expect(outcomeFor(403, { error: "forbidden" })).toBe("rejected");
+    expect(outcomeFor(405, null)).toBe("rejected");
+  });
+
   it("a rule refusal is rejected, not retried (archived, period closed, already done)", () => {
     expect(outcomeFor(409, { error: "habit_archived" })).toBe("rejected");
     expect(outcomeFor(409, { error: "tap_in_future" })).toBe("rejected");
@@ -53,6 +64,23 @@ describe("httpSender", () => {
     expect(await httpSender(fake)(entry)).toBe("synced");
     expect(calls[0][0]).toBe("/api/check-ins/sync");
     expect(JSON.parse(String(calls[0][1].body))).toEqual(entry);
+  });
+
+  it("keeps the attempt count on the phone", async () => {
+    let body = "";
+    const fake = (async (_url: string, init: RequestInit) => ((body = String(init.body)), new Response(JSON.stringify({ outcome: "synced" })))) as unknown as typeof fetch;
+    await httpSender(fake)({ kind: "undo", clientId: C, habitId: H, attempts: 3 });
+    expect(JSON.parse(body)).toEqual({ kind: "undo", clientId: C, habitId: H });
+  });
+
+  it("a request that hangs is given up and counts as a retry; no network throws", async () => {
+    const hang = ((_url: string, init: RequestInit) =>
+      new Promise((_, reject) => init.signal!.addEventListener("abort", () => reject(init.signal!.reason)))) as unknown as typeof fetch;
+    expect(await httpSender(hang, 20)({ kind: "undo", clientId: C, habitId: H })).toBe("retry");
+    const offline = (async () => {
+      throw new TypeError("Failed to fetch");
+    }) as unknown as typeof fetch;
+    await expect(httpSender(offline)({ kind: "undo", clientId: C, habitId: H })).rejects.toThrow("Failed to fetch");
   });
 });
 
@@ -100,6 +128,11 @@ describe("a tap's id and time", () => {
     expect(isTap(tap)).toBe(true);
     expect(tap.tappedAt).toBe("2026-10-05T20:58:00.000Z");
     expect(newTap().clientId).not.toBe(tap.clientId);
+  });
+
+  it("an online tap sends its id only; the server uses its own clock", () => {
+    expect(isTap({ clientId: C })).toBe(true);
+    expect(tapArgs({ clientId: C })).toEqual({ p_client_id: C });
   });
 
   it("the server actions take none, or a valid one only", () => {

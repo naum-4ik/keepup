@@ -1,6 +1,6 @@
 // lib/offline-queue.test.ts
 import { describe, expect, it, vi } from "vitest";
-import { addCheckIn, addUndo, flush, pendingCounts, pendingHabitIds, queueKey, type QueueEntry, type QueuedCheckIn, type Sender } from "./offline-queue";
+import { addCheckIn, addUndo, flush, MAX_ATTEMPTS, pendingCounts, pendingHabitIds, queueKey, type QueueEntry, type QueuedCheckIn, type Sender } from "./offline-queue";
 
 const tap = (clientId: string, habitId = "h1"): QueuedCheckIn => ({
   kind: "check_in",
@@ -94,5 +94,26 @@ describe("flush", () => {
     expect(sent).toEqual(["check_in:a", "undo:a", "check_in:b"]);
     expect(result.dropped.map((e) => `${e.kind}:${e.clientId}`)).toEqual(["check_in:a"]);
     expect(result.remaining).toEqual([]);
+  });
+
+  it("a retry counts against the entry and stops there; no network doesn't count", async () => {
+    const retry = await flush([tap("a"), tap("b")], async () => "retry");
+    expect(retry.attempted).toMatchObject({ clientId: "a", attempts: 1 });
+    expect(retry.remaining.map((e) => [e.clientId, e.attempts])).toEqual([["a", 1], ["b", undefined]]);
+    const offline = await flush([{ ...tap("a"), attempts: 2 }], async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    expect(offline.attempted).toBeNull();
+    expect(offline.remaining[0].attempts).toBe(2);
+  });
+
+  it(`an entry that fails ${MAX_ATTEMPTS} times is given up, and the flush goes on past it`, async () => {
+    const sent: string[] = [];
+    const send: Sender = async (e) => (sent.push(e.clientId), e.clientId === "a" ? "retry" : "synced");
+    const result = await flush([{ ...tap("a"), attempts: MAX_ATTEMPTS - 1 }, tap("b")], send);
+    expect(result.poisoned.map((e) => e.clientId)).toEqual(["a"]);
+    expect(result.synced.map((e) => e.clientId)).toEqual(["b"]);
+    expect(result.remaining).toEqual([]);
+    expect(sent).toEqual(["a", "b"]);
   });
 });

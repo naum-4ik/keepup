@@ -2,15 +2,28 @@
 // Check-ins and undos made without a connection, kept in order until they reach the server.
 // The server decides whether each one counts (ideas/offline.md); this module only stores and sends.
 
-// byChild: a tap in the kid view (logged as by the child, "Mary did it").
-export type QueuedCheckIn = { kind: "check_in"; clientId: string; habitId: string; subjectId: string | null; tappedAt: string; byChild?: boolean };
-export type QueuedUndo = { kind: "undo"; clientId: string; habitId: string };
+// byChild: a tap in the kid view (logged as by the child, "Mary did it"). attempts: sends the server
+// answered but couldn't take (see MAX_ATTEMPTS); kept on the phone, never sent to the server.
+export type QueuedCheckIn = {
+  kind: "check_in"; clientId: string; habitId: string; subjectId: string | null; tappedAt: string; byChild?: boolean; attempts?: number;
+};
+export type QueuedUndo = { kind: "undo"; clientId: string; habitId: string; attempts?: number };
 export type QueueEntry = QueuedCheckIn | QueuedUndo;
 
+// synced: the server has it. rejected: a rule refused it (final; the server's feed note explains).
+// retry: the server was reached but couldn't take it (5xx, a captive portal's page, a timeout); it
+// counts toward MAX_ATTEMPTS. A thrown error (no network at all) stops the flush and isn't counted.
 export type SendOutcome = "synced" | "rejected" | "retry";
 export type Sender = (entry: QueueEntry) => Promise<SendOutcome>;
+// After this many retries in a row an entry is given up (poisoned), so one bad entry can't hold the
+// queue behind it forever.
+export const MAX_ATTEMPTS = 5;
 // dropped: a check-in whose undo already reached the server in this run; it is never sent again.
-export type FlushResult = { remaining: QueueEntry[]; synced: QueueEntry[]; rejected: QueueEntry[]; dropped: QueueEntry[] };
+// poisoned: given up after MAX_ATTEMPTS. attempted: the entry the flush stopped at, with its new count.
+export type FlushResult = {
+  remaining: QueueEntry[]; synced: QueueEntry[]; rejected: QueueEntry[]; dropped: QueueEntry[]; poisoned: QueueEntry[];
+  attempted: QueueEntry | null;
+};
 
 const same = (a: QueueEntry, b: QueueEntry) => a.kind === b.kind && a.clientId === b.clientId;
 
@@ -52,6 +65,7 @@ export async function flush(queue: QueueEntry[], send: Sender): Promise<FlushRes
   const synced: QueueEntry[] = [];
   const rejected: QueueEntry[] = [];
   const dropped: QueueEntry[] = [];
+  const poisoned: QueueEntry[] = [];
   const undone = new Set<string>();
   for (let i = 0; i < queue.length; i++) {
     const entry = queue[i];
@@ -63,11 +77,20 @@ export async function flush(queue: QueueEntry[], send: Sender): Promise<FlushRes
     try {
       outcome = await send(entry);
     } catch {
-      outcome = "retry";
+      // No network: keep this entry and everything after it, uncounted.
+      return { remaining: queue.slice(i), synced, rejected, dropped, poisoned, attempted: null };
     }
-    if (outcome === "retry") return { remaining: queue.slice(i), synced, rejected, dropped };
+    if (outcome === "retry") {
+      const attempts = (entry.attempts ?? 0) + 1;
+      if (attempts >= MAX_ATTEMPTS) {
+        poisoned.push(entry);
+        continue;
+      }
+      const attempted = { ...entry, attempts };
+      return { remaining: [attempted, ...queue.slice(i + 1)], synced, rejected, dropped, poisoned, attempted };
+    }
     (outcome === "synced" ? synced : rejected).push(entry);
     if (entry.kind === "undo") undone.add(entry.clientId);
   }
-  return { remaining: [], synced, rejected, dropped };
+  return { remaining: [], synced, rejected, dropped, poisoned, attempted: null };
 }

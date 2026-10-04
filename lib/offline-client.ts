@@ -1,0 +1,152 @@
+// lib/offline-client.ts
+// The page's offline queue runner (used by components/offline/offline-queue-provider.tsx): when to
+// send, how a tap is saved before it is tried online, and how the UI hears about it. Browser-agnostic
+// (everything comes in as deps), so it is unit-tested in Node.
+import { pendingCounts, type FlushResult, type Sender } from "@/lib/offline-queue";
+import { createOfflineQueue, type Locks, type QueueStorage } from "@/lib/offline-queue-store";
+import { newTap } from "@/lib/offline-sync";
+
+export type Counts = ReadonlyMap<string, number>;
+export type Flushed = { counts: Counts; changed: boolean; poisoned: number };
+export type TapResult = { ok: true; queued: boolean } | { ok: false; message: string };
+type Online = (tap: { clientId: string }) => Promise<{ ok: true } | { ok: false; message: string }>;
+// Another tab of this app (BroadcastChannel), told when this one changed the queue.
+export type Channel = { post(): void; listen(onMessage: () => void): () => void };
+
+// An online tap that takes longer than this is left to the queue (it may still land: client_id).
+export const TAP_TIMEOUT_MS = 10_000;
+// After a tap falls back to the queue while the phone says it's online: try again in 3 s, then 6, 12…
+const RETRY_FIRST_MS = 3_000;
+const RETRY_MAX_MS = 60_000;
+
+export function createOfflineClient(deps: {
+  storage: QueueStorage;
+  send: Sender;
+  locks?: Locks | null;
+  isOnline: () => boolean;
+  // A tap saved or forgotten: show it now.
+  onCounts: (counts: Counts) => void;
+  // A flush finished (or another tab's did): apply the counts together with a page refresh.
+  onFlushed: (flushed: Flushed) => void;
+  channel?: Channel | null;
+  now?: () => Date;
+  setTimer?: (fn: () => void, ms: number) => unknown;
+  clearTimer?: (t: unknown) => void;
+  tapTimeoutMs?: number;
+}) {
+  const setTimer = deps.setTimer ?? ((fn, ms) => setTimeout(fn, ms));
+  const clearTimer = deps.clearTimer ?? ((t) => clearTimeout(t as ReturnType<typeof setTimeout>));
+  let flushing = false;
+  let held: Counts | null = null;
+  let last: Counts = new Map();
+  let timer: unknown = null;
+  let delay = RETRY_FIRST_MS;
+
+  const emit = (counts: Counts) => {
+    last = counts;
+    deps.onCounts(counts);
+  };
+  const queue = createOfflineQueue({
+    storage: deps.storage,
+    send: deps.send,
+    locks: deps.locks ?? null,
+    now: deps.now,
+    onChange: (counts) => {
+      if (flushing) held = counts;
+      else emit(counts);
+    },
+  });
+
+  function scheduleFlush() {
+    if (timer !== null) return;
+    timer = setTimer(() => {
+      timer = null;
+      void flush();
+    }, delay);
+    delay = Math.min(delay * 2, RETRY_MAX_MS);
+  }
+
+  async function flush(): Promise<FlushResult | null> {
+    if (!deps.isOnline()) return null;
+    flushing = true;
+    held = null;
+    let r: FlushResult;
+    try {
+      r = await queue.flush();
+    } finally {
+      flushing = false;
+    }
+    const counts = held ?? pendingCounts(await deps.storage.load());
+    const changed = r.synced.length + r.rejected.length + r.dropped.length + r.poisoned.length > 0;
+    last = counts;
+    deps.onFlushed({ counts, changed, poisoned: r.poisoned.length });
+    if (changed) deps.channel?.post();
+    // Still waiting while the phone says it's online (a server problem, or a network that lies): try
+    // again later, backing off. Offline, the `online` event brings the next flush.
+    if (r.remaining.length === 0) delay = RETRY_FIRST_MS;
+    else if (deps.isOnline()) scheduleFlush();
+    return r;
+  }
+
+  // Another tab sent (or added) some: if anything this tab shows as waiting is gone, refresh.
+  const onOtherTab = () => {
+    void (async () => {
+      const counts = pendingCounts(await deps.storage.load());
+      const dropped = [...last].some(([k, n]) => (counts.get(k) ?? 0) < n);
+      last = counts;
+      deps.onFlushed({ counts, changed: dropped, poisoned: 0 });
+    })();
+  };
+  let stopListening: (() => void) | undefined;
+
+  // A tap is saved on the phone first, so closing the app mid-request never loses it. Offline it
+  // just waits. Online it is tried at once with its id only (the server's clock decides the day); on
+  // an answer it leaves the queue (it landed, or a rule refused it). No answer (thrown, or slower than
+  // TAP_TIMEOUT_MS): it stays queued with the phone's tap time and a flush is scheduled; if the first
+  // try did land, the server returns that row for the resend (client_id), so it never counts twice.
+  async function submitTap(t: { habitId: string; subjectId?: string | null; byChild?: boolean }, online: Online): Promise<TapResult> {
+    const tap = newTap(deps.now?.());
+    await queue.checkIn(t.habitId, t.subjectId ?? null, { clientId: tap.clientId, byChild: t.byChild, tappedAt: tap.tappedAt });
+    if (!deps.isOnline()) return { ok: true, queued: true };
+    let result: Awaited<ReturnType<Online>>;
+    try {
+      result = await withTimeout(online({ clientId: tap.clientId }), deps.tapTimeoutMs ?? TAP_TIMEOUT_MS, setTimer, clearTimer);
+    } catch {
+      scheduleFlush();
+      return { ok: true, queued: true };
+    }
+    await queue.forget(tap.clientId);
+    return result.ok ? { ok: true, queued: false } : { ok: false, message: result.message };
+  }
+
+  return {
+    queue,
+    flush,
+    submitTap,
+    counts: async () => {
+      const counts = pendingCounts(await deps.storage.load());
+      emit(counts);
+      return counts;
+    },
+    // While the page is open: hear other tabs. stop() also cancels a scheduled flush.
+    start() {
+      stopListening ??= deps.channel?.listen(onOtherTab);
+    },
+    stop() {
+      if (timer !== null) clearTimer(timer);
+      timer = null;
+      stopListening?.();
+      stopListening = undefined;
+    },
+  };
+}
+
+function withTimeout<T>(p: Promise<T>, ms: number, setTimer: (fn: () => void, ms: number) => unknown, clearTimer: (t: unknown) => void): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimer(() => reject(new Error("timeout")), ms);
+    p.then(
+      (v) => (clearTimer(t), resolve(v)),
+      (e: unknown) => (clearTimer(t), reject(e)),
+    );
+  });
+}

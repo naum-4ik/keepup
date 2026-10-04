@@ -11,19 +11,26 @@ type Db = Awaited<ReturnType<typeof createClient>>;
 
 // One queued entry. The RPC decides everything (ideas/offline.md): which day counts, duplicates,
 // the 3-day window, undo rules.
-async function send(db: Db, entry: QueueEntry): Promise<{ landed: boolean; error: { message: string; code?: string } | null }> {
+type Sent = { landed: boolean; error: { message: string; code?: string } | null };
+
+async function checkIn(db: Db, entry: Extract<QueueEntry, { kind: "check_in" }>, tappedAt: string | undefined): Promise<Sent> {
+  const tap = { p_client_id: entry.clientId, ...(tappedAt ? { p_tapped_at: tappedAt } : {}) };
+  const { data, error } = entry.subjectId
+    ? await db.rpc("check_in_for", { p_habit_id: entry.habitId, p_child_id: entry.subjectId, p_by_child: entry.byChild === true, ...tap })
+    : await db.rpc("check_in", { p_habit_id: entry.habitId, ...tap });
+  // Too old (over 3 days): the RPC keeps nothing and returns no row; its feed note explains.
+  return { landed: Boolean((data as { id?: string | null } | null)?.id), error };
+}
+
+async function send(db: Db, entry: QueueEntry): Promise<Sent> {
   if (entry.kind === "undo") {
     const { data, error } = await db.rpc("undo_check_in_by_client", { p_client_id: entry.clientId });
     return { landed: data === true, error };
   }
-  const { data, error } = entry.subjectId
-    ? await db.rpc("check_in_for", {
-        p_habit_id: entry.habitId, p_child_id: entry.subjectId, p_by_child: entry.byChild === true,
-        p_client_id: entry.clientId, p_tapped_at: entry.tappedAt,
-      })
-    : await db.rpc("check_in", { p_habit_id: entry.habitId, p_client_id: entry.clientId, p_tapped_at: entry.tappedAt });
-  // Too old (over 3 days): the RPC keeps nothing and returns no row; its feed note explains.
-  return { landed: Boolean((data as { id?: string | null } | null)?.id), error };
+  const first = await checkIn(db, entry, entry.tappedAt);
+  // The phone's clock runs ahead (over 5 minutes): rather than lose the tap, count it now, once.
+  if (errorCode(first.error) === "tap_in_future") return checkIn(db, entry, undefined);
+  return first;
 }
 
 // The page's offline queue posts here, one entry at a time (lib/offline-sync.ts outcomeFor reads

@@ -35,6 +35,7 @@ const KEY = "entries";
 
 function openDb(name: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
+    if (typeof indexedDB === "undefined") return reject(new Error("no IndexedDB"));
     const req = indexedDB.open(name, 1);
     req.onupgradeneeded = () => req.result.createObjectStore(STORE);
     req.onsuccess = () => resolve(req.result);
@@ -50,8 +51,27 @@ function run<T>(db: IDBDatabase, mode: IDBTransactionMode, op: (s: IDBObjectStor
   });
 }
 
-export function indexedDbStorage(dbName = "keepup-offline"): QueueStorage {
-  const db = openDb(dbName);
+// IndexedDB when it opens; if it can't (blocked, private mode, a broken profile), the queue lives in
+// memory for this page instead of failing every tap.
+export function indexedDbStorage(dbName = "keepup-offline", open: (name: string) => Promise<IDBDatabase> = openDb): QueueStorage {
+  const db = open(dbName);
+  const memory = memoryStorage();
+  const idb = idbStorage(db);
+  const pick = db.then(
+    () => idb,
+    (e: unknown) => {
+      console.error("offline queue: IndexedDB unavailable, keeping taps in memory", e);
+      return memory;
+    },
+  );
+  return {
+    load: async () => (await pick).load(),
+    save: async (q) => (await pick).save(q),
+    update: async (change) => (await pick).update(change),
+  };
+}
+
+function idbStorage(db: Promise<IDBDatabase>): QueueStorage {
   return {
     load: async () => ((await run(await db, "readonly", (s) => s.get(KEY))) as QueueEntry[] | undefined) ?? [],
     save: async (queue) => void (await run(await db, "readwrite", (s) => s.put(queue, KEY))),
@@ -106,11 +126,16 @@ export function createOfflineQueue(deps: {
     // Read inside the lock: another tab may have just sent (and removed) some of it.
     const snapshot = await deps.storage.load();
     const result = await flushQueue(snapshot, deps.send);
-    const finished = new Set([...result.synced, ...result.rejected, ...result.dropped].map(key));
+    const finished = new Set([...result.synced, ...result.rejected, ...result.dropped, ...result.poisoned].map(key));
     const undone = undoneIds([...result.synced, ...result.rejected]);
+    const attempted = result.attempted;
     // Entries added while sending stay; only what this run finished leaves, and any check-in whose
-    // undo the server already has (it must not be sent again).
-    await update((q) => q.filter((e) => !finished.has(key(e)) && !(e.kind === "check_in" && undone.has(e.clientId))));
+    // undo the server already has (it must not be sent again). The entry it stopped at keeps its count.
+    await update((q) =>
+      q
+        .filter((e) => !finished.has(key(e)) && !(e.kind === "check_in" && undone.has(e.clientId)))
+        .map((e) => (attempted && key(e) === key(attempted) ? { ...e, attempts: attempted.attempts } : e)),
+    );
     return result;
   }
 
@@ -138,6 +163,9 @@ export function createOfflineQueue(deps: {
       return clientId;
     },
     undo: undoEntry,
+    // A tap that was saved here first and then reached the server online (or was refused): it needn't
+    // wait any more. If a flush is sending it at the same time, the server keeps one (client_id).
+    forget: (clientId: string) => update((q) => q.filter((e) => !(e.kind === "check_in" && e.clientId === clientId))),
     flush(): Promise<FlushResult> {
       running ??= (deps.locks ? deps.locks.request(LOCK, {}, flushOnce) : flushOnce()).finally(() => (running = null));
       return running;

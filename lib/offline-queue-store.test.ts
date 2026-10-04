@@ -54,7 +54,33 @@ describe("IndexedDB storage", () => {
   });
 });
 
+describe("IndexedDB that won't open", () => {
+  it("keeps the queue in memory instead of failing taps", async () => {
+    const storage = indexedDbStorage("test-broken", () => Promise.reject(new Error("blocked")));
+    await storage.update((q) => [...q, { kind: "undo", clientId: "a", habitId: "h1" }]);
+    expect(await storage.load()).toEqual([{ kind: "undo", clientId: "a", habitId: "h1" }]);
+  });
+});
+
 describe("createOfflineQueue", () => {
+  it("a failed send's count is kept on the phone for the next flush", async () => {
+    const storage = memoryStorage();
+    const queue = createOfflineQueue({ storage, send: async () => "retry", now: fixedNow, newId: ids() });
+    await queue.checkIn("h1");
+    await queue.flush();
+    await queue.flush();
+    expect((await storage.load())[0].attempts).toBe(2);
+  });
+
+  it("forget removes a tap that reached the server online", async () => {
+    const storage = memoryStorage();
+    const queue = createOfflineQueue({ storage, send: async () => "retry", now: fixedNow, newId: ids() });
+    const a = await queue.checkIn("h1");
+    await queue.checkIn("h2");
+    await queue.forget(a);
+    expect((await storage.load()).map((e) => e.habitId)).toEqual(["h2"]);
+  });
+
   it("records the tap time and a fresh clientId", async () => {
     const storage = memoryStorage();
     const queue = createOfflineQueue({ storage, send: async () => "retry", now: fixedNow, newId: ids() });
