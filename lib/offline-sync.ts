@@ -23,12 +23,12 @@ export function parseEntry(body: unknown): QueueEntry | null {
 
 // A rule refusal is final (the server's feed note explains it). Only a real answer from the sync route
 // counts: a 200 without its JSON (a captive portal's login page) is a counted retry, like a server
-// problem. An expired session (401) just waits: the next signed-in flush sends it. 403/405 can never
-// succeed from this page, so they're dropped rather than retried.
+// problem. An expired session (401) just waits: the next signed-in flush sends it. 403/405/413 can
+// never succeed from this page, so they're dropped rather than retried.
 export function outcomeFor(status: number, body: unknown): SendOutcome {
   const outcome = (body as { outcome?: unknown } | null)?.outcome;
   if (status === 200) return outcome === "synced" ? "synced" : outcome === "rejected" ? "rejected" : "retry";
-  if (status === 400 || status === 403 || status === 405 || status === 409) return "rejected";
+  if (status === 400 || status === 403 || status === 405 || status === 409 || status === 413) return "rejected";
   if (status === 401) return "wait";
   return "retry";
 }

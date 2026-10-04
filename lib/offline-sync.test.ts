@@ -35,9 +35,10 @@ describe("outcomeFor", () => {
     expect(outcomeFor(200, "<html>Log in to the Wi-Fi</html>")).toBe("retry");
   });
 
-  it("403 and 405 can never succeed: dropped, not retried", () => {
+  it("403, 405 and 413 can never succeed: dropped, not retried", () => {
     expect(outcomeFor(403, { error: "forbidden" })).toBe("rejected");
     expect(outcomeFor(405, null)).toBe("rejected");
+    expect(outcomeFor(413, { error: "too_large" })).toBe("rejected");
   });
 
   it("a rule refusal is rejected, not retried (archived, period closed, already done)", () => {

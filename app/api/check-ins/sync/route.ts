@@ -33,13 +33,40 @@ async function send(db: Db, entry: QueueEntry): Promise<Sent> {
   return first;
 }
 
+// One entry is a few hundred bytes; anything near this is not from the app.
+const MAX_BODY_BYTES = 16 * 1024;
+
+// The body as text, or null when it is over MAX_BODY_BYTES (by its Content-Length, or by what arrives:
+// a chunked body has no length).
+async function readBody(request: Request): Promise<string | null> {
+  const declared = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) return null;
+  const text = await request.text().catch(() => "");
+  return new TextEncoder().encode(text).length > MAX_BODY_BYTES ? null : text;
+}
+
+function parseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 // The page's offline queue posts here, one entry at a time (lib/offline-sync.ts outcomeFor reads
-// the answer): 200 synced or rejected, 400/409 never retried, 401/503 tried again later.
+// the answer): 200 synced or rejected, 400/409/413 never retried, 401/503 tried again later.
+// No per-user rate limit, on purpose: each request carries exactly one entry (at most 16 KB), needs a
+// signed-in session, and is idempotent (client_id: a resend never counts twice), and the client backs
+// off (3 s, 9 s, 30 s, then every 5 min). An in-memory counter means nothing on serverless (each
+// instance has its own) and a database one would cost a write per request; the RPCs' own rules are
+// the limit that matters.
 export async function POST(request: Request) {
   if (!isSameOrigin(request.headers.get("origin"), request.headers.get("host"))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
-  const entry = parseEntry(await request.json().catch(() => null));
+  const text = await readBody(request);
+  if (text === null) return NextResponse.json({ error: "too_large" }, { status: 413 });
+  const entry = parseEntry(parseJson(text));
   if (!entry) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
   const supabase = await createClient();
