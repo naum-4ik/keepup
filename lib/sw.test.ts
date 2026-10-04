@@ -30,7 +30,10 @@ function fakeCaches() {
       keys: async () => [...c.keys()],
       delete: async (r: string | { url: string }) => c.delete(keyOf(r)),
       match: async (r: string | { url: string }) => c.get(keyOf(r)),
-      put: async (r: string | { url: string }, v: Res) => void c.set(keyOf(r), v),
+      put: async (r: string | { url: string }, v: Res) => {
+        c.delete(keyOf(r)); // the Cache API keeps insertion order; a replaced entry goes last
+        c.set(keyOf(r), v);
+      },
       add: async (r: string) => {
         const v = await fetchForAdd(r);
         if (!v.ok) throw new TypeError("bad response");
@@ -71,7 +74,8 @@ function worker(windows: Win[], openWindow = vi.fn(async () => null), fetchImpl 
     registration: { pushManager: { subscribe }, showNotification },
   };
   cacheStore.useFetch((url) => fetchImpl(url));
-  const ResponseStub = { error: () => ({ ok: false, error: true }) };
+  // new Response(body) in the worker: a constructor that returns a stand-in response.
+  const ResponseStub = Object.assign(function (body: string) { return res(String(body)); }, { error: () => ({ ok: false, error: true }) });
   runInNewContext(SOURCE, { self, URL, fetch: fetchImpl, caches: cacheStore.api, Response: ResponseStub, console: { error: () => {} } });
   // A fetch event: undefined when the worker leaves it to the network, else what it answered.
   async function request(path: string, init: { method?: string; mode?: string } = {}) {
@@ -216,6 +220,10 @@ describe("sw.js pushsubscriptionchange", () => {
   });
 });
 
+// The saved pages, without each one's list of scripts (stored next to it).
+const savedPages = (sw: { caches: ReturnType<typeof fakeCaches> }) =>
+  [...(sw.caches.store.get("keepup-pages")?.keys() ?? [])].filter((k) => !k.includes("/__keepup-assets__/"));
+
 describe("sw.js offline shell", () => {
   // The network: each path's page, or a thrown TypeError when offline.
   function network() {
@@ -284,7 +292,7 @@ describe("sw.js offline shell", () => {
     await sw.request("/kids/00000000-0000-0000-0000-0000000000f1/play");
     await sw.request("/kids/00000000-0000-0000-0000-0000000000f1");
     await sw.request("/progress");
-    expect([...(sw.caches.store.get("keepup-pages")?.keys() ?? [])]).toEqual([`${ORIGIN}/kids/00000000-0000-0000-0000-0000000000f1/play`]);
+    expect(savedPages(sw)).toEqual([`${ORIGIN}/kids/00000000-0000-0000-0000-0000000000f1/play`]);
   });
 
   it("never touches the API, POSTs (server actions), other sites or Next's data requests", async () => {
@@ -363,7 +371,7 @@ describe("sw.js offline shell", () => {
     await sw.message({ type: "keepup:save-page", path: "/progress" });
     await sw.message({ type: "keepup:save-page", path: "https://evil.example/kids/00000000-0000-0000-0000-0000000000f1/play" });
     await sw.message({ type: "keepup:save-page", path: 42 });
-    expect([...sw.caches.store.get("keepup-pages")!.keys()]).toEqual([`${ORIGIN}/today`]);
+    expect(savedPages(sw)).toEqual([`${ORIGIN}/today`]);
     net.pages["/today"] = res("login page", { redirected: true });
     await sw.message({ type: "keepup:save-page", path: "/today" });
     expect((await sw.caches.api.match("/today"))?.body).toBe("today now");
@@ -428,5 +436,27 @@ describe("sw.js offline shell", () => {
       `${ORIGIN}/_next/static/chunks/late-card.js`,
       `${ORIGIN}/_next/static/chunks/main.js`,
     ]);
+  });
+
+  it("the prune never drops a script a saved page needs, and drops the least recently used first", async () => {
+    const net = network();
+    const sw = worker([], undefined, net.fetchImpl);
+    net.pages["/today"] = res('"static/chunks/today-a.js" "static/chunks/today-b.js"');
+    await sw.message({ type: "keepup:save-page", path: "/today" });
+    await sw.request("/_next/static/chunks/old-but-used.js", { mode: "no-cors" });
+    for (let i = 0; i < 330; i++) {
+      await sw.request(`/_next/static/chunks/other-${i}.js`, { mode: "no-cors" });
+      if (i % 50 === 0) await sw.request("/_next/static/chunks/old-but-used.js", { mode: "no-cors" }); // a hit keeps it recent
+    }
+    const keys = [...sw.caches.store.get("keepup-assets")!.keys()];
+    expect(keys).toContain(`${ORIGIN}/_next/static/chunks/today-a.js`);
+    expect(keys).toContain(`${ORIGIN}/_next/static/chunks/today-b.js`);
+    expect(keys).toContain(`${ORIGIN}/_next/static/chunks/old-but-used.js`);
+    expect(keys).not.toContain(`${ORIGIN}/_next/static/chunks/other-0.js`);
+    expect(keys.length).toBeLessThanOrEqual(300 + 24);
+    // The list lives in the cache, so a restarted worker still knows it.
+    const restarted = worker([], undefined, net.fetchImpl, undefined, sw.caches);
+    for (let i = 0; i < 50; i++) await restarted.request(`/_next/static/chunks/more-${i}.js`, { mode: "no-cors" });
+    expect([...sw.caches.store.get("keepup-assets")!.keys()]).toContain(`${ORIGIN}/_next/static/chunks/today-a.js`);
   });
 });

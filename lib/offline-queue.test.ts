@@ -107,13 +107,26 @@ describe("flush", () => {
     expect(offline.remaining[0].attempts).toBe(2);
   });
 
-  it(`an entry that fails ${MAX_ATTEMPTS} times is given up, and the flush goes on past it`, async () => {
+  it(`an entry is given up only after ${MAX_ATTEMPTS} counted failures over more than a day; the flush goes on past it`, async () => {
     const sent: string[] = [];
     const send: Sender = async (e) => (sent.push(e.clientId), e.clientId === "a" ? "retry" : "synced");
-    const result = await flush([{ ...tap("a"), attempts: MAX_ATTEMPTS - 1 }, tap("b")], send);
-    expect(result.poisoned.map((e) => e.clientId)).toEqual(["a"]);
-    expect(result.synced.map((e) => e.clientId)).toEqual(["b"]);
-    expect(result.remaining).toEqual([]);
-    expect(sent).toEqual(["a", "b"]);
+    const now = () => new Date("2026-10-06T22:00:00.000Z");
+    const recent = await flush([{ ...tap("a"), attempts: MAX_ATTEMPTS - 1, firstFailedAt: "2026-10-06T21:59:15.000Z" }, tap("b")], send, now);
+    expect(recent.poisoned).toEqual([]);
+    expect(recent.remaining[0]).toMatchObject({ clientId: "a", attempts: MAX_ATTEMPTS });
+    const old = await flush([{ ...tap("a"), attempts: MAX_ATTEMPTS - 1, firstFailedAt: "2026-10-05T21:00:00.000Z" }, tap("b")], send, now);
+    expect(old.poisoned.map((e) => e.clientId)).toEqual(["a"]);
+    expect(old.synced.map((e) => e.clientId)).toEqual(["b"]);
+    expect(old.remaining).toEqual([]);
+  });
+
+  it("the first counted failure's time is kept; a wait (timeout, expired session) changes nothing", async () => {
+    const now = () => new Date("2026-10-06T22:00:00.000Z");
+    const first = await flush([tap("a")], async () => "retry", now);
+    expect(first.attempted).toMatchObject({ attempts: 1, firstFailedAt: "2026-10-06T22:00:00.000Z" });
+    const waited = await flush([{ ...tap("a"), attempts: 4, firstFailedAt: "2026-10-01T00:00:00.000Z" }], async () => "wait", now);
+    expect(waited.attempted).toBeNull();
+    expect(waited.poisoned).toEqual([]);
+    expect(waited.remaining[0]).toMatchObject({ attempts: 4 });
   });
 });

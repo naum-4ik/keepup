@@ -46,8 +46,8 @@ describe("outcomeFor", () => {
     expect(outcomeFor(400, { error: "bad_request" })).toBe("rejected");
   });
 
-  it("a signed-out session or a server problem waits for the next try", () => {
-    expect(outcomeFor(401, null)).toBe("retry");
+  it("an expired session waits (not counted); a server problem is a counted retry", () => {
+    expect(outcomeFor(401, null)).toBe("wait");
     expect(outcomeFor(503, null)).toBe("retry");
     expect(outcomeFor(500, null)).toBe("retry");
   });
@@ -73,10 +73,10 @@ describe("httpSender", () => {
     expect(JSON.parse(body)).toEqual({ kind: "undo", clientId: C, habitId: H });
   });
 
-  it("a request that hangs is given up and counts as a retry; no network throws", async () => {
+  it("a request that hangs is given up and waits (not counted); no network throws", async () => {
     const hang = ((_url: string, init: RequestInit) =>
       new Promise((_, reject) => init.signal!.addEventListener("abort", () => reject(init.signal!.reason)))) as unknown as typeof fetch;
-    expect(await httpSender(hang, 20)({ kind: "undo", clientId: C, habitId: H })).toBe("retry");
+    expect(await httpSender(hang, 20)({ kind: "undo", clientId: C, habitId: H })).toBe("wait");
     const offline = (async () => {
       throw new TypeError("Failed to fetch");
     }) as unknown as typeof fetch;

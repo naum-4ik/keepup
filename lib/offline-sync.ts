@@ -22,23 +22,27 @@ export function parseEntry(body: unknown): QueueEntry | null {
 }
 
 // A rule refusal is final (the server's feed note explains it). Only a real answer from the sync route
-// counts: a 200 without its JSON (a captive portal's login page) is a retry, like a server problem or
-// an expired session. 403/405 can never succeed from this page, so they're dropped rather than retried.
+// counts: a 200 without its JSON (a captive portal's login page) is a counted retry, like a server
+// problem. An expired session (401) just waits: the next signed-in flush sends it. 403/405 can never
+// succeed from this page, so they're dropped rather than retried.
 export function outcomeFor(status: number, body: unknown): SendOutcome {
   const outcome = (body as { outcome?: unknown } | null)?.outcome;
   if (status === 200) return outcome === "synced" ? "synced" : outcome === "rejected" ? "rejected" : "retry";
   if (status === 400 || status === 403 || status === 405 || status === 409) return "rejected";
+  if (status === 401) return "wait";
   return "retry";
 }
 
-// A request that hangs is given up after this long and tried again later (it counts as a retry).
+// A request that hangs is given up after this long and tried again later (not counted: a slow
+// network isn't the entry's fault).
 export const SEND_TIMEOUT_MS = 10_000;
 
 export function httpSender(fetchImpl: typeof fetch = (input, init) => fetch(input, init), timeoutMs = SEND_TIMEOUT_MS): Sender {
   return async (entry) => {
-    // The phone's own bookkeeping (attempts) stays here.
+    // The phone's own bookkeeping stays here.
     const body = { ...entry };
     delete body.attempts;
+    delete body.firstFailedAt;
     let res: Response;
     try {
       res = await fetchImpl("/api/check-ins/sync", {
@@ -49,8 +53,8 @@ export function httpSender(fetchImpl: typeof fetch = (input, init) => fetch(inpu
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (e) {
-      // Timed out: the server may be stuck; counts. Anything else is no network: thrown, not counted.
-      if (e instanceof DOMException && (e.name === "TimeoutError" || e.name === "AbortError")) return "retry";
+      // Timed out: try later. Anything else is no network: thrown (also not counted).
+      if (e instanceof DOMException && (e.name === "TimeoutError" || e.name === "AbortError")) return "wait";
       throw e;
     }
     return outcomeFor(res.status, await res.json().catch(() => null));

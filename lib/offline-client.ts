@@ -9,15 +9,18 @@ import { newTap } from "@/lib/offline-sync";
 export type Counts = ReadonlyMap<string, number>;
 export type Flushed = { counts: Counts; changed: boolean; poisoned: number };
 export type TapResult = { ok: true; queued: boolean } | { ok: false; message: string };
-type Online = (tap: { clientId: string }) => Promise<{ ok: true } | { ok: false; message: string }>;
+type Online = (tap: { clientId: string }) => Promise<{ ok: true } | { ok: false; message: string; code?: string }>;
+
+// A database rule refused it: final, the same answers the sync route maps to 409. An expired session
+// isn't one (the next signed-in flush sends it).
+export const isRuleRefusal = (code: string | undefined) => Boolean(code) && code !== "not_authenticated";
 // Another tab of this app (BroadcastChannel), told when this one changed the queue.
 export type Channel = { post(): void; listen(onMessage: () => void): () => void };
 
 // An online tap that takes longer than this is left to the queue (it may still land: client_id).
 export const TAP_TIMEOUT_MS = 10_000;
-// After a tap falls back to the queue while the phone says it's online: try again in 3 s, then 6, 12…
-const RETRY_FIRST_MS = 3_000;
-const RETRY_MAX_MS = 60_000;
+// While entries wait and the phone says it's online: try again after 3 s, 9 s, 30 s, then every 5 min.
+export const RETRY_DELAYS_MS = [3_000, 9_000, 30_000, 300_000] as const;
 
 export function createOfflineClient(deps: {
   storage: QueueStorage;
@@ -40,7 +43,7 @@ export function createOfflineClient(deps: {
   let held: Counts | null = null;
   let last: Counts = new Map();
   let timer: unknown = null;
-  let delay = RETRY_FIRST_MS;
+  let step = 0;
 
   const emit = (counts: Counts) => {
     last = counts;
@@ -62,8 +65,8 @@ export function createOfflineClient(deps: {
     timer = setTimer(() => {
       timer = null;
       void flush();
-    }, delay);
-    delay = Math.min(delay * 2, RETRY_MAX_MS);
+    }, RETRY_DELAYS_MS[step]);
+    step = Math.min(step + 1, RETRY_DELAYS_MS.length - 1);
   }
 
   async function flush(): Promise<FlushResult | null> {
@@ -83,7 +86,7 @@ export function createOfflineClient(deps: {
     if (changed) deps.channel?.post();
     // Still waiting while the phone says it's online (a server problem, or a network that lies): try
     // again later, backing off. Offline, the `online` event brings the next flush.
-    if (r.remaining.length === 0) delay = RETRY_FIRST_MS;
+    if (r.remaining.length === 0) step = 0;
     else if (deps.isOnline()) scheduleFlush();
     return r;
   }
@@ -100,9 +103,10 @@ export function createOfflineClient(deps: {
   let stopListening: (() => void) | undefined;
 
   // A tap is saved on the phone first, so closing the app mid-request never loses it. Offline it
-  // just waits. Online it is tried at once with its id only (the server's clock decides the day); on
-  // an answer it leaves the queue (it landed, or a rule refused it). No answer (thrown, or slower than
-  // TAP_TIMEOUT_MS): it stays queued with the phone's tap time and a flush is scheduled; if the first
+  // just waits. Online it is tried at once with its id only (the server's clock decides the day); it
+  // leaves the queue when it landed or a database rule refused it (a keepup: code). Anything else (no
+  // answer, slower than TAP_TIMEOUT_MS, an error without a rule): it stays queued with the phone's tap
+  // time and a flush is scheduled; if the first
   // try did land, the server returns that row for the resend (client_id), so it never counts twice.
   async function submitTap(t: { habitId: string; subjectId?: string | null; byChild?: boolean }, online: Online): Promise<TapResult> {
     const tap = newTap(deps.now?.());
@@ -115,8 +119,17 @@ export function createOfflineClient(deps: {
       scheduleFlush();
       return { ok: true, queued: true };
     }
-    await queue.forget(tap.clientId);
-    return result.ok ? { ok: true, queued: false } : { ok: false, message: result.message };
+    if (result.ok) {
+      await queue.forget(tap.clientId);
+      return { ok: true, queued: false };
+    }
+    if (isRuleRefusal(result.code)) {
+      await queue.forget(tap.clientId);
+      return { ok: false, message: result.message };
+    }
+    // An error without a rule (the database had a problem, the session expired): it stays queued.
+    scheduleFlush();
+    return { ok: true, queued: true };
   }
 
   return {

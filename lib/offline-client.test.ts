@@ -39,11 +39,22 @@ describe("an online tap", () => {
     expect(await storage.load()).toEqual([]);
   });
 
-  it("a rule refusal says why and leaves nothing queued", async () => {
+  it("a rule refusal (a keepup: code) says why and leaves nothing queued", async () => {
     const { client, storage } = setup();
-    expect(await client.submitTap({ habitId: "h1" }, async () => ({ ok: false, message: "This habit is paused." }))).toEqual({
+    expect(await client.submitTap({ habitId: "h1" }, async () => ({ ok: false, message: "This habit is paused.", code: "habit_frozen" }))).toEqual({
       ok: false, message: "This habit is paused.",
     });
+    expect(await storage.load()).toEqual([]);
+  });
+
+  it("an error without a rule, or an expired session, keeps it queued and schedules a flush", async () => {
+    const sent: string[] = [];
+    const { client, storage } = setup({ send: async (e) => (sent.push(e.clientId), "synced") });
+    expect(await client.submitTap({ habitId: "h1" }, async () => ({ ok: false, message: "Something went wrong. Try again." }))).toEqual({ ok: true, queued: true });
+    expect(await client.submitTap({ habitId: "h2" }, async () => ({ ok: false, message: "Please sign in again.", code: "not_authenticated" }))).toEqual({ ok: true, queued: true });
+    expect((await storage.load()).map((e) => e.habitId)).toEqual(["h1", "h2"]);
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(sent).toHaveLength(2);
     expect(await storage.load()).toEqual([]);
   });
 
@@ -92,16 +103,68 @@ describe("flush and the UI", () => {
     expect(flushed).toEqual([]);
   });
 
-  it("a server that keeps failing: backs off, then gives the entry up and says so", async () => {
-    const send = vi.fn<Sender>(async () => "retry");
-    const { client, flushed, setOnline } = setup({ send });
+  it("a 45-second outage drops nothing: it backs off and sends once the server is back", async () => {
+    vi.setSystemTime(new Date("2026-10-06T22:00:00.000Z"));
+    let down = true;
+    const send = vi.fn<Sender>(async () => (down ? "retry" : "synced"));
+    const { client, flushed, setOnline, storage } = setup({ send });
     setOnline(false);
     await client.submitTap({ habitId: "h1" }, vi.fn());
     setOnline(true);
-    await client.flush(); // 1
-    await vi.advanceTimersByTimeAsync(3_000 + 6_000 + 12_000 + 24_000); // 2..5
-    expect(send).toHaveBeenCalledTimes(5);
-    expect(flushed.at(-1)).toEqual({ counts: new Map(), changed: true, poisoned: 1 });
+    await client.flush();
+    await vi.advanceTimersByTimeAsync(45_000);
+    down = false;
+    await vi.advanceTimersByTimeAsync(300_000);
+    expect(await storage.load()).toEqual([]);
+    expect(flushed.every((f) => f.poisoned === 0)).toBe(true);
+    expect(send.mock.results.length).toBeGreaterThan(3);
+  });
+
+  it("backs off 3 s, 9 s, 30 s, then every 5 minutes", async () => {
+    const send = vi.fn<Sender>(async () => "retry");
+    const { client, setOnline } = setup({ send });
+    setOnline(false);
+    await client.submitTap({ habitId: "h1" }, vi.fn());
+    setOnline(true);
+    await client.flush();
+    for (const [ms, calls] of [[3_000, 2], [9_000, 3], [30_000, 4], [300_000, 5], [300_000, 6]] as const) {
+      await vi.advanceTimersByTimeAsync(ms - 1);
+      expect(send).toHaveBeenCalledTimes(calls - 1);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(send).toHaveBeenCalledTimes(calls);
+    }
+  });
+
+  it("5 failures over 25 hours: the entry is given up and the UI is told", async () => {
+    vi.setSystemTime(new Date("2026-10-06T00:00:00.000Z"));
+    const send = vi.fn<Sender>(async () => "retry");
+    const { client, flushed, setOnline, storage } = setup({ send });
+    setOnline(false);
+    await client.submitTap({ habitId: "h1" }, vi.fn());
+    setOnline(true);
+    for (let i = 0; i < 4; i++) {
+      await client.flush();
+      vi.setSystemTime(Date.now() + 6 * 60 * 60 * 1000); // the app opened again, hours later
+    }
+    vi.setSystemTime(new Date("2026-10-07T01:00:00.000Z"));
+    await client.flush(); // the 5th, 25 h after the first
+    expect(await storage.load()).toEqual([]);
+    expect(flushed.at(-1)).toMatchObject({ poisoned: 1, changed: true });
+  });
+
+  it("timeouts never drop an entry", async () => {
+    vi.setSystemTime(new Date("2026-10-06T00:00:00.000Z"));
+    const { client, flushed, setOnline, storage } = setup({ send: async () => "wait" });
+    setOnline(false);
+    await client.submitTap({ habitId: "h1" }, vi.fn());
+    setOnline(true);
+    for (let i = 0; i < 10; i++) {
+      await client.flush();
+      vi.setSystemTime(Date.now() + 6 * 60 * 60 * 1000);
+    }
+    expect(await storage.load()).toHaveLength(1);
+    expect((await storage.load())[0].attempts).toBeUndefined();
+    expect(flushed.every((f) => f.poisoned === 0)).toBe(true);
   });
 
   it("tells other tabs, and refreshes when another tab sent what this one shows as waiting", async () => {

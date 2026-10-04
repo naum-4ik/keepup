@@ -2,22 +2,25 @@
 // Check-ins and undos made without a connection, kept in order until they reach the server.
 // The server decides whether each one counts (ideas/offline.md); this module only stores and sends.
 
-// byChild: a tap in the kid view (logged as by the child, "Mary did it"). attempts: sends the server
-// answered but couldn't take (see MAX_ATTEMPTS); kept on the phone, never sent to the server.
+// byChild: a tap in the kid view (logged as by the child, "Mary did it"). attempts / firstFailedAt:
+// counted failures and when the first was (see GIVE_UP_AFTER); kept on the phone, never sent.
+type Failures = { attempts?: number; firstFailedAt?: string };
 export type QueuedCheckIn = {
-  kind: "check_in"; clientId: string; habitId: string; subjectId: string | null; tappedAt: string; byChild?: boolean; attempts?: number;
-};
-export type QueuedUndo = { kind: "undo"; clientId: string; habitId: string; attempts?: number };
+  kind: "check_in"; clientId: string; habitId: string; subjectId: string | null; tappedAt: string; byChild?: boolean;
+} & Failures;
+export type QueuedUndo = { kind: "undo"; clientId: string; habitId: string } & Failures;
 export type QueueEntry = QueuedCheckIn | QueuedUndo;
 
 // synced: the server has it. rejected: a rule refused it (final; the server's feed note explains).
-// retry: the server was reached but couldn't take it (5xx, a captive portal's page, a timeout); it
-// counts toward MAX_ATTEMPTS. A thrown error (no network at all) stops the flush and isn't counted.
-export type SendOutcome = "synced" | "rejected" | "retry";
+// retry: something answered but couldn't take it (a 5xx, a captive portal's page): counted.
+// wait: try later, not counted (a timeout, an expired session: the next signed-in flush sends it).
+// A thrown error (no network at all) is a wait too.
+export type SendOutcome = "synced" | "rejected" | "retry" | "wait";
 export type Sender = (entry: QueueEntry) => Promise<SendOutcome>;
-// After this many retries in a row an entry is given up (poisoned), so one bad entry can't hold the
-// queue behind it forever.
+// An entry is given up (poisoned) only after MAX_ATTEMPTS counted failures AND a day since the first,
+// so an outage never costs a tap, and one entry the server can never take can't block the queue forever.
 export const MAX_ATTEMPTS = 5;
+export const GIVE_UP_AFTER_MS = 24 * 60 * 60 * 1000;
 // dropped: a check-in whose undo already reached the server in this run; it is never sent again.
 // poisoned: given up after MAX_ATTEMPTS. attempted: the entry the flush stopped at, with its new count.
 export type FlushResult = {
@@ -61,7 +64,7 @@ export function undoneIds(entries: QueueEntry[]): Set<string> {
   return new Set(entries.filter((e) => e.kind === "undo").map((e) => e.clientId));
 }
 
-export async function flush(queue: QueueEntry[], send: Sender): Promise<FlushResult> {
+export async function flush(queue: QueueEntry[], send: Sender, now: () => Date = () => new Date()): Promise<FlushResult> {
   const synced: QueueEntry[] = [];
   const rejected: QueueEntry[] = [];
   const dropped: QueueEntry[] = [];
@@ -77,16 +80,19 @@ export async function flush(queue: QueueEntry[], send: Sender): Promise<FlushRes
     try {
       outcome = await send(entry);
     } catch {
-      // No network: keep this entry and everything after it, uncounted.
-      return { remaining: queue.slice(i), synced, rejected, dropped, poisoned, attempted: null };
+      outcome = "wait"; // no network
     }
+    // Keep this entry and everything after it, uncounted.
+    if (outcome === "wait") return { remaining: queue.slice(i), synced, rejected, dropped, poisoned, attempted: null };
     if (outcome === "retry") {
+      const at = now();
       const attempts = (entry.attempts ?? 0) + 1;
-      if (attempts >= MAX_ATTEMPTS) {
+      const firstFailedAt = entry.firstFailedAt ?? at.toISOString();
+      if (attempts >= MAX_ATTEMPTS && at.getTime() - Date.parse(firstFailedAt) > GIVE_UP_AFTER_MS) {
         poisoned.push(entry);
         continue;
       }
-      const attempted = { ...entry, attempts };
+      const attempted = { ...entry, attempts, firstFailedAt };
       return { remaining: [attempted, ...queue.slice(i + 1)], synced, rejected, dropped, poisoned, attempted };
     }
     (outcome === "synced" ? synced : rejected).push(entry);

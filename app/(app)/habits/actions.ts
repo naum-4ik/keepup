@@ -17,7 +17,9 @@ const NOT_FOUND: ActionResult = { ok: false, message: "That habit isn't availabl
 // stops showing stale data.
 const REFRESH_ON_ERROR = new Set(["target_reached", "already_checked_in_today", "habit_frozen", "habit_archived", "habit_not_found"]);
 
-export type ActionResult = { ok: true } | { ok: false; message: string };
+// code: the database rule that refused it ("keepup:<code>"), when there was one (an offline-queued
+// tap is dropped only for a rule refusal; anything else keeps it queued).
+export type ActionResult = { ok: true } | { ok: false; message: string; code?: string };
 export type FormActionState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string };
 
 function refresh(habitId?: string) {
@@ -69,7 +71,7 @@ export async function checkIn(habitId: string, tap?: TapId): Promise<ActionResul
   if (error) {
     const code = error.message?.match(/keepup:([a-z_]+)/)?.[1];
     if (code && REFRESH_ON_ERROR.has(code)) refresh(habitId);
-    return { ok: false, message: habitErrorMessage(error) };
+    return { ok: false, message: habitErrorMessage(error), ...(code ? { code } : {}) };
   }
   refresh(habitId);
   return { ok: true };

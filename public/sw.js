@@ -19,8 +19,13 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(SHELL)
-      .then((c) => c.addAll([OFFLINE_URL, "/icons/icon-192.png"]).then(() => c.match(OFFLINE_URL)))
-      .then((page) => page && page.text().then(saveAssetsOf))
+      .then((c) =>
+        c
+          .addAll([OFFLINE_URL, "/icons/icon-192.png"])
+          .then(() => c.match(OFFLINE_URL))
+          .then((page) => page && page.text().then(saveAssetsOf))
+          .then((assets) => assets && c.put(MANIFEST + OFFLINE_URL, manifestFor(assets))),
+      )
       .catch((e) => console.error("offline precache", e))
       .then(() => self.skipWaiting()),
   );
@@ -57,20 +62,67 @@ self.addEventListener("fetch", (event) => {
 async function cacheFirst(event, req, name) {
   const cache = await caches.open(name);
   const hit = await cache.match(req);
-  if (hit) return hit;
+  if (hit) {
+    // Least recently used goes first when pruning: a hit moves to the end (keys keep insertion order).
+    if (name === ASSETS) event.waitUntil(touch(cache, req, hit.clone()));
+    return hit;
+  }
   const res = await fetch(req);
   if (res.ok) event.waitUntil(cache.put(req, res.clone()).then(() => name === ASSETS && prune(cache)).catch(() => undefined));
   return res;
 }
 
-// Every 25th save (listing a few hundred keys on every asset would slow the page's first load).
+async function touch(cache, req, res) {
+  try {
+    await cache.delete(req);
+    await cache.put(req, res);
+  } catch {
+    // not worth failing a page load over
+  }
+}
+
+// Each saved page (and the offline page) stores the list of scripts it needs next to it, under
+// MANIFEST + its path, so the prune knows what it must keep, even after the worker restarts.
+const MANIFEST = "/__keepup-assets__";
+const urlOf = (k) => new URL(typeof k === "string" ? k : k.url, self.location.origin);
+
+async function referencedAssets() {
+  const keep = new Set();
+  for (const name of [PAGES, SHELL]) {
+    const cache = await caches.open(name);
+    for (const k of await cache.keys()) {
+      if (!urlOf(k).pathname.startsWith(MANIFEST)) continue;
+      try {
+        for (const p of JSON.parse(await (await cache.match(k)).text())) keep.add(urlOf(p).pathname);
+      } catch {
+        // a broken list protects nothing
+      }
+    }
+  }
+  return keep;
+}
+
+// Every 25th save (listing a few hundred keys on every asset would slow the page's first load):
+// drop the least recently used scripts past MAX_ASSETS, never one a saved page needs.
 let sincePrune = 0;
 async function prune(cache) {
   if (++sincePrune < 25) return;
   sincePrune = 0;
   const keys = await cache.keys();
-  await Promise.all(keys.slice(0, Math.max(0, keys.length - MAX_ASSETS)).map((k) => cache.delete(k)));
+  let excess = keys.length - MAX_ASSETS;
+  if (excess <= 0) return;
+  const keep = await referencedAssets();
+  const drop = [];
+  for (const k of keys) {
+    if (excess <= 0) break;
+    if (keep.has(urlOf(k).pathname)) continue;
+    drop.push(k);
+    excess--;
+  }
+  await Promise.all(drop.map((k) => cache.delete(k)));
 }
+
+const manifestFor = (assets) => new Response(JSON.stringify(assets), { headers: { "Content-Type": "application/json" } });
 
 const isSaved = (pathname) => OFFLINE_PAGES.some((p) => p.test(pathname));
 
@@ -84,9 +136,12 @@ function nextSave(pathname) {
 }
 async function putIfLatest(pathname, res, isLatest) {
   if (!isLatest()) return;
-  // Its scripts first: a saved page always has what it needs.
-  await saveAssetsOf(await res.clone().text());
-  if (isLatest()) await (await caches.open(PAGES)).put(pathname, res);
+  // Its scripts first: a saved page always has what it needs, and its list keeps them from the prune.
+  const assets = await saveAssetsOf(await res.clone().text());
+  if (!isLatest()) return;
+  const cache = await caches.open(PAGES);
+  await cache.put(MANIFEST + pathname, manifestFor(assets));
+  await cache.put(pathname, res);
 }
 
 // A saved page needs every script it may load offline, including ones loaded only on demand (a card
@@ -105,6 +160,7 @@ async function saveAssetsOf(html) {
       }
     }),
   );
+  return [...paths];
 }
 
 async function networkFirstPage(event, req, url) {
@@ -185,7 +241,7 @@ async function saveOfflinePage() {
     const res = await fetch(OFFLINE_URL);
     if (!res.ok) return;
     // Its scripts first, as for any saved page (the offline page has its own).
-    await saveAssetsOf(await res.clone().text());
+    await cache.put(MANIFEST + OFFLINE_URL, manifestFor(await saveAssetsOf(await res.clone().text())));
     await cache.put(OFFLINE_URL, res);
   } catch {
     // offline again, or the page failed: next time

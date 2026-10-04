@@ -10,12 +10,13 @@ const BANNER = "Offline · showing your last update";
 // The worker must control the page before a page can be saved for offline use; the reload goes
 // through it, and the test waits until the copy (saved after its scripts) is in the cache.
 // expect.poll + evaluate, not waitForFunction: that one doesn't await an async predicate.
-async function waitForWorker(page: Page, path: string) {
+// `containing`: text the saved copy must have (an older copy, from before the habit, may be there).
+async function waitForWorker(page: Page, path: string, containing?: string) {
   await expect
     .poll(() => page.evaluate(async () => (await navigator.serviceWorker.ready, navigator.serviceWorker.controller !== null)))
     .toBe(true);
   await page.reload();
-  await waitForSaved(page, path);
+  await waitForSaved(page, path, containing);
 }
 
 async function waitForSaved(page: Page, path: string, containing?: string) {
@@ -42,7 +43,7 @@ test("a check-in queued offline survives a reload and syncs once, for the day it
   await signUpAndOnboard(page);
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
   const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
-  await waitForWorker(page, "/today");
+  await waitForWorker(page, "/today", "Check in: Walk");
 
   await context.setOffline(true);
   await page.getByRole("button", { name: "Check in: Walk" }).click();
@@ -121,7 +122,7 @@ test("offline, Me + Mary needs a connection; Just me waits on the phone", async 
   await dialog.getByRole("switch", { name: "Include Mary" }).click();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
   await expect(page).toHaveURL(/\/today$/);
-  await waitForWorker(page, "/today");
+  await waitForWorker(page, "/today", "Check in: Walk the dog");
 
   await context.setOffline(true);
   await page.getByRole("button", { name: "Check in: Walk the dog" }).click();
@@ -137,7 +138,7 @@ test("offline, Me + Mary needs a connection; Just me waits on the phone", async 
 test("Today reached by client-side navigation is saved for offline use, and kept fresh after a check-in", async ({ page, context }) => {
   await signUpAndOnboard(page);
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
-  await waitForWorker(page, "/today");
+  await waitForWorker(page, "/today", "Check in: Walk");
   await page.goto("/progress");
   await page.evaluate(() => caches.delete("keepup-pages"));
   await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Today" }).click();

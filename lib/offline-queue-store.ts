@@ -125,7 +125,7 @@ export function createOfflineQueue(deps: {
   async function flushOnce(): Promise<FlushResult> {
     // Read inside the lock: another tab may have just sent (and removed) some of it.
     const snapshot = await deps.storage.load();
-    const result = await flushQueue(snapshot, deps.send);
+    const result = await flushQueue(snapshot, deps.send, now);
     const finished = new Set([...result.synced, ...result.rejected, ...result.dropped, ...result.poisoned].map(key));
     const undone = undoneIds([...result.synced, ...result.rejected]);
     const attempted = result.attempted;
@@ -134,7 +134,7 @@ export function createOfflineQueue(deps: {
     await update((q) =>
       q
         .filter((e) => !finished.has(key(e)) && !(e.kind === "check_in" && undone.has(e.clientId)))
-        .map((e) => (attempted && key(e) === key(attempted) ? { ...e, attempts: attempted.attempts } : e)),
+        .map((e) => (attempted && key(e) === key(attempted) ? { ...e, attempts: attempted.attempts, firstFailedAt: attempted.firstFailedAt } : e)),
     );
     return result;
   }
