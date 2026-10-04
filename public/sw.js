@@ -248,27 +248,35 @@ async function saveOfflinePage() {
   }
 }
 
-self.addEventListener("push", (event) => {
-  let data = {};
+// Any payload shows something: a missing, empty, non-JSON or non-object one (or a null JSON body) is a
+// plain "Keepup" notification that opens the Inbox. Never rejects, so waitUntil doesn't either.
+function pushPayload(event) {
   try {
-    data = event.data ? event.data.json() : {};
+    const data = event.data ? event.data.json() : null;
+    return data && typeof data === "object" && !Array.isArray(data) ? data : {};
   } catch {
-    data = {};
+    return {};
   }
+}
+
+self.addEventListener("push", (event) => {
+  const data = pushPayload(event);
   event.waitUntil(
-    self.registration.showNotification(data.title || "Keepup", {
-      body: data.body || "",
-      tag: data.tag || undefined,
-      // Silent unless the person chose Sound (send-push says silent: false). Android Chrome and desktop
-      // browsers honour it; iPhone Safari ignores it (one Sounds switch per app in iOS Settings).
-      // renotify only with a tag (Chrome throws otherwise) and only when it may ring.
-      silent: data.silent !== false,
-      renotify: Boolean(data.tag) && data.silent === false,
-      icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
-      data: { url: data.url || "/inbox", checkInId: data.checkInId || null, version: VERSION },
-      actions: Array.isArray(data.actions) ? data.actions : [],
-    }),
+    self.registration
+      .showNotification(typeof data.title === "string" && data.title ? data.title : "Keepup", {
+        body: typeof data.body === "string" ? data.body : "",
+        tag: typeof data.tag === "string" && data.tag ? data.tag : undefined,
+        // Silent unless the person chose Sound (send-push says silent: false). Android Chrome and desktop
+        // browsers honour it; iPhone Safari ignores it (one Sounds switch per app in iOS Settings).
+        // renotify only with a tag (Chrome throws otherwise) and only when it may ring.
+        silent: data.silent !== false,
+        renotify: typeof data.tag === "string" && Boolean(data.tag) && data.silent === false,
+        icon: "/icons/icon-192.png",
+        badge: "/icons/icon-192.png",
+        data: { url: typeof data.url === "string" && data.url ? data.url : "/inbox", checkInId: data.checkInId || null, version: VERSION },
+        actions: Array.isArray(data.actions) ? data.actions : [],
+      })
+      .catch((e) => console.error("show notification", e)),
   );
 });
 
