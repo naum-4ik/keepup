@@ -4,7 +4,11 @@
 // page's IndexedDB and are sent by the page (no Background Sync, owner decision).
 // The version comes from the registration URL (/sw.js?v=<commit>), so every deploy installs anew.
 const VERSION = new URL(self.location.href).searchParams.get("v") || "dev";
-const SHELL = `keepup-shell-${VERSION}`; // the offline page and built assets of this version
+const SHELL = `keepup-shell-${VERSION}`; // the offline page and icons of this version
+// Built assets (/_next/static, content-hashed): one cache across versions, so a page saved before a
+// deploy still finds its scripts after the new worker takes over. Oldest dropped past MAX_ASSETS.
+const ASSETS = "keepup-assets";
+const MAX_ASSETS = 300;
 const PAGES = "keepup-pages"; // the last Today and kid view, on this device only; cleared at sign-out
 const OFFLINE_URL = "/offline";
 const OFFLINE_PAGES = [/^\/today$/, /^\/kids\/[0-9a-f-]{36}\/play$/];
@@ -15,7 +19,8 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(SHELL)
-      .then((c) => c.addAll([OFFLINE_URL, "/icons/icon-192.png"]))
+      .then((c) => c.addAll([OFFLINE_URL, "/icons/icon-192.png"]).then(() => c.match(OFFLINE_URL)))
+      .then((page) => page && page.text().then(saveAssetsOf))
       .catch((e) => console.error("offline precache", e))
       .then(() => self.skipWaiting()),
   );
@@ -38,31 +43,82 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
-  if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/")) {
-    event.respondWith(cacheFirst(event, req));
+  if (url.pathname.startsWith("/_next/static/")) {
+    event.respondWith(cacheFirst(event, req, ASSETS));
+    return;
+  }
+  if (url.pathname.startsWith("/icons/")) {
+    event.respondWith(cacheFirst(event, req, SHELL));
     return;
   }
   if (req.mode === "navigate") event.respondWith(networkFirstPage(event, req, url));
 });
 
-async function cacheFirst(event, req) {
-  const cache = await caches.open(SHELL);
+async function cacheFirst(event, req, name) {
+  const cache = await caches.open(name);
   const hit = await cache.match(req);
   if (hit) return hit;
   const res = await fetch(req);
-  if (res.ok) event.waitUntil(cache.put(req, res.clone()).catch(() => undefined));
+  if (res.ok) event.waitUntil(cache.put(req, res.clone()).then(() => name === ASSETS && prune(cache)).catch(() => undefined));
   return res;
 }
 
+// Every 25th save (listing a few hundred keys on every asset would slow the page's first load).
+let sincePrune = 0;
+async function prune(cache) {
+  if (++sincePrune < 25) return;
+  sincePrune = 0;
+  const keys = await cache.keys();
+  await Promise.all(keys.slice(0, Math.max(0, keys.length - MAX_ASSETS)).map((k) => cache.delete(k)));
+}
+
+const isSaved = (pathname) => OFFLINE_PAGES.some((p) => p.test(pathname));
+
+// Saves of one page can overlap (a navigation, then a save after a check-in): only the one asked for
+// last may write, so a slow older answer never replaces a newer copy.
+const lastSave = new Map();
+function nextSave(pathname) {
+  const n = (lastSave.get(pathname) || 0) + 1;
+  lastSave.set(pathname, n);
+  return () => lastSave.get(pathname) === n;
+}
+async function putIfLatest(pathname, res, isLatest) {
+  if (!isLatest()) return;
+  // Its scripts first: a saved page always has what it needs.
+  await saveAssetsOf(await res.clone().text());
+  if (isLatest()) await (await caches.open(PAGES)).put(pathname, res);
+}
+
+// A saved page needs every script it may load offline, including ones loaded only on demand (a card
+// that shows after a check-in). Next lists them in the page (its flight data); save the missing ones.
+async function saveAssetsOf(html) {
+  const paths = new Set((html.match(/static\/(?:chunks|css|media)\/[\w.~-]+/g) || []).map((p) => `/_next/${p}`));
+  const cache = await caches.open(ASSETS);
+  await Promise.all(
+    [...paths].map(async (p) => {
+      if (await cache.match(p)) return;
+      try {
+        const res = await fetch(p);
+        if (res.ok) await cache.put(p, res);
+      } catch {
+        // offline again: the next save tries
+      }
+    }),
+  );
+}
+
 async function networkFirstPage(event, req, url) {
-  const keep = OFFLINE_PAGES.some((p) => p.test(url.pathname));
+  const keep = isSaved(url.pathname);
+  const isLatest = keep && url.search === "" ? nextSave(url.pathname) : null;
   try {
     const res = await fetch(req);
     if (res.ok) {
-      // A redirect (signed out: to /login) is never saved as Today.
-      if (keep && !res.redirected) {
-        const copy = res.clone();
-        event.waitUntil(caches.open(PAGES).then((c) => c.put(url.pathname, copy)).catch(() => undefined));
+      // A redirect (signed out: to /login) is never saved as Today. With a query (/today?joined=…,
+      // a one-time welcome), the plain page is fetched and saved instead.
+      if (isLatest && !res.redirected) {
+        event.waitUntil(track(putIfLatest(url.pathname, res.clone(), isLatest)));
+      } else if (keep && !res.redirected) {
+        event.waitUntil(track(savePage(url.pathname)));
       }
       event.waitUntil(saveOfflinePage());
     }
@@ -73,11 +129,64 @@ async function networkFirstPage(event, req, url) {
   }
 }
 
+// Page saves in progress: sign-out waits for them before clearing, so none lands after it.
+const saving = new Set();
+function track(p) {
+  const t = Promise.resolve(p)
+    .catch(() => undefined)
+    .finally(() => saving.delete(t));
+  saving.add(t);
+  return t;
+}
+
+// The page asks for a save when it was reached by client-side navigation (no navigation request came
+// through here), and again after a check-in so the offline copy isn't stale. Same rules as above:
+// same origin, Today or a kid view only, the plain path, an ok answer that isn't a redirect.
+async function savePage(path) {
+  let url;
+  try {
+    url = new URL(path, self.location.origin);
+  } catch {
+    return;
+  }
+  if (url.origin !== self.location.origin || !isSaved(url.pathname)) return;
+  const isLatest = nextSave(url.pathname);
+  try {
+    const res = await fetch(url.pathname, { credentials: "same-origin" });
+    if (res.ok && !res.redirected) await putIfLatest(url.pathname, res, isLatest);
+  } catch {
+    // offline: keep the copy there is
+  }
+}
+
+// Sign-out (components/sign-out-button.tsx): wait for saves in flight, then clear every cache, then
+// answer on the port the page gave.
+async function clearAll() {
+  await Promise.all([...saving]);
+  const keys = await caches.keys();
+  await Promise.all(keys.map((k) => caches.delete(k)));
+}
+
+self.addEventListener("message", (event) => {
+  const data = event.data || {};
+  if (data.type === "keepup:save-page" && typeof data.path === "string") {
+    event.waitUntil(track(savePage(data.path)));
+  } else if (data.type === "keepup:clear") {
+    const port = event.ports && event.ports[0];
+    event.waitUntil(clearAll().then(() => port && port.postMessage("cleared")));
+  }
+});
+
 // Sign-out clears every cache (lib/push-support.ts signOutCleanup); put the offline page back.
 async function saveOfflinePage() {
   try {
     const cache = await caches.open(SHELL);
-    if (!(await cache.match(OFFLINE_URL))) await cache.add(OFFLINE_URL);
+    if (await cache.match(OFFLINE_URL)) return;
+    const res = await fetch(OFFLINE_URL);
+    if (!res.ok) return;
+    // Its scripts first, as for any saved page (the offline page has its own).
+    await saveAssetsOf(await res.clone().text());
+    await cache.put(OFFLINE_URL, res);
   } catch {
     // offline again, or the page failed: next time
   }

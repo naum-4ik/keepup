@@ -16,9 +16,9 @@ function win(path: string, navigate?: (url: string) => Promise<unknown>): Win {
 }
 
 // A stand-in CacheStorage: caches by name, entries by absolute URL (a path is read against ORIGIN).
-type Res = { ok: boolean; redirected?: boolean; body: string; clone(): Res };
+type Res = { ok: boolean; redirected?: boolean; body: string; clone(): Res; text(): Promise<string> };
 const res = (body: string, o: { ok?: boolean; redirected?: boolean } = {}): Res => ({
-  ok: o.ok ?? true, redirected: o.redirected ?? false, body, clone: () => res(body, o),
+  ok: o.ok ?? true, redirected: o.redirected ?? false, body, clone: () => res(body, o), text: async () => body,
 });
 function fakeCaches() {
   const store = new Map<string, Map<string, Res>>();
@@ -27,6 +27,8 @@ function fakeCaches() {
     if (!store.has(name)) store.set(name, new Map());
     const c = store.get(name)!;
     return {
+      keys: async () => [...c.keys()],
+      delete: async (r: string | { url: string }) => c.delete(keyOf(r)),
       match: async (r: string | { url: string }) => c.get(keyOf(r)),
       put: async (r: string | { url: string }, v: Res) => void c.set(keyOf(r), v),
       add: async (r: string) => {
@@ -58,11 +60,11 @@ function fakeCaches() {
   };
 }
 
-function worker(windows: Win[], openWindow = vi.fn(async () => null), fetchImpl = vi.fn(), subscribe = vi.fn(), cacheStore = fakeCaches()) {
+function worker(windows: Win[], openWindow = vi.fn(async () => null), fetchImpl = vi.fn(), subscribe = vi.fn(), cacheStore = fakeCaches(), version = "test") {
   const handlers: Record<string, (e: unknown) => void> = {};
   const showNotification = vi.fn(async () => undefined);
   const self = {
-    location: { href: `${ORIGIN}/sw.js?v=test`, origin: ORIGIN },
+    location: { href: `${ORIGIN}/sw.js?v=${version}`, origin: ORIGIN },
     addEventListener: (type: string, fn: (e: unknown) => void) => void (handlers[type] = fn),
     clients: { matchAll: async () => windows, openWindow, claim: async () => {} },
     skipWaiting: () => {},
@@ -83,6 +85,11 @@ function worker(windows: Win[], openWindow = vi.fn(async () => null), fetchImpl 
     const out = answer ? await answer : undefined;
     await Promise.all(waits);
     return out as Res | { ok: false; error: true } | undefined;
+  }
+  async function message(data: unknown, ports: { postMessage: (m: unknown) => void }[] = []) {
+    let pending: Promise<unknown> = Promise.resolve();
+    handlers.message({ data, ports, waitUntil: (p: Promise<unknown>) => (pending = p) });
+    await pending;
   }
   async function lifecycle(type: "install" | "activate") {
     let pending: Promise<unknown> = Promise.resolve();
@@ -105,7 +112,7 @@ function worker(windows: Win[], openWindow = vi.fn(async () => null), fetchImpl 
     await pending;
     return showNotification.mock.calls.at(-1) as unknown as [string, Record<string, unknown>];
   }
-  return { click, openWindow, subscriptionChange, push, request, lifecycle, caches: cacheStore };
+  return { click, openWindow, subscriptionChange, push, request, lifecycle, message, caches: cacheStore };
 }
 
 describe("sw.js push", () => {
@@ -229,8 +236,20 @@ describe("sw.js offline shell", () => {
     await (await sw.caches.api.open("keepup-pages")).put("/today", res("today"));
     await sw.lifecycle("install");
     await sw.lifecycle("activate");
-    expect([...sw.caches.store.keys()].sort()).toEqual(["keepup-pages", "keepup-shell-test"]);
+    expect([...sw.caches.store.keys()].sort()).toEqual(["keepup-assets", "keepup-pages", "keepup-shell-test"]);
     expect((await sw.caches.api.match("/offline"))?.body).toBe("offline page");
+  });
+
+  it("the offline page's own scripts are saved with it, at install and when it is saved again", async () => {
+    const net = network();
+    net.pages["/offline"] = res('offline page "static/chunks/offline-icon.js"');
+    const sw = worker([], undefined, net.fetchImpl);
+    await sw.lifecycle("install");
+    expect(await sw.caches.api.match("/_next/static/chunks/offline-icon.js")).toBeDefined();
+    sw.caches.clear(); // sign-out
+    await sw.request("/progress");
+    expect(await sw.caches.api.match("/offline")).toBeDefined();
+    expect(await sw.caches.api.match("/_next/static/chunks/offline-icon.js")).toBeDefined();
   });
 
   it("installs (and takes over) even when the offline page can't be saved", async () => {
@@ -307,5 +326,107 @@ describe("sw.js offline shell", () => {
     const sw = worker([], undefined, net.fetchImpl);
     net.setOnline(false);
     expect(await sw.request("/progress")).toEqual({ ok: false, error: true });
+  });
+
+  it("a page saved before a deploy still finds its scripts after the new worker takes over", async () => {
+    const net = network();
+    const store = fakeCaches();
+    const before = worker([], undefined, net.fetchImpl, undefined, store, "v1");
+    await before.lifecycle("install");
+    await before.lifecycle("activate");
+    await before.request("/today");
+    await before.request("/_next/static/chunks/v1-app.js", { mode: "no-cors" });
+    const after = worker([], undefined, net.fetchImpl, undefined, store, "v2");
+    await after.lifecycle("install");
+    await after.lifecycle("activate");
+    expect([...store.store.keys()].sort()).toEqual(["keepup-assets", "keepup-pages", "keepup-shell-v2"]);
+    net.setOnline(false);
+    expect((await after.request("/today")) as Res).toMatchObject({ body: "page /today" });
+    expect((await after.request("/_next/static/chunks/v1-app.js", { mode: "no-cors" })) as Res).toMatchObject({ body: "page /_next/static/chunks/v1-app.js" });
+  });
+
+  it("keeps the assets cache bounded, dropping the oldest", async () => {
+    const net = network();
+    const sw = worker([], undefined, net.fetchImpl);
+    // Pruned every 25th save: after 325, the 300 newest are left.
+    for (let i = 0; i < 325; i++) await sw.request(`/_next/static/chunks/${i}.js`, { mode: "no-cors" });
+    const keys = [...sw.caches.store.get("keepup-assets")!.keys()];
+    expect(keys).toHaveLength(300);
+    expect(keys[0]).toBe(`${ORIGIN}/_next/static/chunks/25.js`);
+  });
+
+  it("a page reached by client-side navigation asks to be saved: Today and kid views only, same site, not a redirect", async () => {
+    const net = network();
+    const sw = worker([], undefined, net.fetchImpl);
+    net.pages["/today"] = res("today now");
+    await sw.message({ type: "keepup:save-page", path: "/today" });
+    await sw.message({ type: "keepup:save-page", path: "/progress" });
+    await sw.message({ type: "keepup:save-page", path: "https://evil.example/kids/00000000-0000-0000-0000-0000000000f1/play" });
+    await sw.message({ type: "keepup:save-page", path: 42 });
+    expect([...sw.caches.store.get("keepup-pages")!.keys()]).toEqual([`${ORIGIN}/today`]);
+    net.pages["/today"] = res("login page", { redirected: true });
+    await sw.message({ type: "keepup:save-page", path: "/today" });
+    expect((await sw.caches.api.match("/today"))?.body).toBe("today now");
+    net.setOnline(false);
+    await expect(sw.message({ type: "keepup:save-page", path: "/today" })).resolves.toBeUndefined();
+  });
+
+  it("Today with a one-time query (?joined=…) is saved as the plain page", async () => {
+    const net = network();
+    const sw = worker([], undefined, net.fetchImpl);
+    net.pages["/today"] = res("plain today");
+    await sw.request("/today?joined=abc");
+    expect((await sw.caches.api.match("/today"))?.body).toBe("plain today");
+  });
+
+  it("sign-out: waits for a save in flight, then clears every cache and says so", async () => {
+    const net = network();
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const slow = vi.fn(async (r: string | { url: string }) => {
+      await gate;
+      return net.fetchImpl(r);
+    });
+    const sw = worker([], undefined, slow);
+    const saving = sw.message({ type: "keepup:save-page", path: "/today" });
+    const port = { postMessage: vi.fn() };
+    const clearing = sw.message({ type: "keepup:clear" }, [port]);
+    release();
+    await Promise.all([saving, clearing]);
+    expect(sw.caches.store.size).toBe(0);
+    expect(port.postMessage).toHaveBeenCalledWith("cleared");
+  });
+
+  it("overlapping saves of one page: a slow older answer never replaces the newer copy", async () => {
+    const net = network();
+    let releaseOld!: () => void;
+    const oldGate = new Promise<void>((r) => (releaseOld = r));
+    let calls = 0;
+    const fetchImpl = vi.fn(async (r: string | { url: string }) => {
+      calls++;
+      if (calls === 1) {
+        await oldGate;
+        return res("today before the check-in");
+      }
+      return net.fetchImpl(r);
+    });
+    const sw = worker([], undefined, fetchImpl);
+    net.pages["/today"] = res("today after the check-in");
+    const older = sw.message({ type: "keepup:save-page", path: "/today" });
+    await sw.message({ type: "keepup:save-page", path: "/today" });
+    releaseOld();
+    await older;
+    expect((await sw.caches.api.match("/today"))?.body).toBe("today after the check-in");
+  });
+
+  it("saving a page also saves the scripts it lists, even ones it loads only on demand", async () => {
+    const net = network();
+    const sw = worker([], undefined, net.fetchImpl);
+    net.pages["/today"] = res('<script src="/_next/static/chunks/main.js"></script><script>self.__next_f.push([1,"static/chunks/late-card.js"])</script>');
+    await sw.message({ type: "keepup:save-page", path: "/today" });
+    expect([...sw.caches.store.get("keepup-assets")!.keys()].sort()).toEqual([
+      `${ORIGIN}/_next/static/chunks/late-card.js`,
+      `${ORIGIN}/_next/static/chunks/main.js`,
+    ]);
   });
 });
