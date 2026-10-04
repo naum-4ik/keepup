@@ -1,3 +1,4 @@
+import { FamilyRecapCard } from "@/components/celebrations/family-recap-card";
 import { ApprovalList, type ApprovalRow } from "@/components/inbox/approval-list";
 import { FeedList } from "@/components/inbox/feed-list";
 import { InboxTabs } from "@/components/inbox/inbox-tabs";
@@ -6,9 +7,16 @@ import { LiveRefresh } from "@/components/habits/live-refresh";
 import { getProfile } from "@/lib/auth";
 import { dayLabel, reviewBy, todayIn } from "@/lib/dates";
 import { getFeed, getPendingApprovals } from "@/lib/inbox";
+import { recapKey, recapLine, visibleRecaps } from "@/lib/today-cards";
+import { getDismissedCards, getFamilyRecaps } from "@/lib/today-cards-data";
 
 export default async function InboxPage() {
-  const [{ profile, userId }, approvals, feed] = await Promise.all([getProfile(), getPendingApprovals(), getFeed()]);
+  const [{ profile, userId }, approvals, feed, recaps, dismissed] = await Promise.all([
+    getProfile(), getPendingApprovals(), getFeed(), getFamilyRecaps(), getDismissedCards(),
+  ]);
+  // The weekly family recap (first day of the group's week), dismissible. Dismissals couldn't be read:
+  // none shown, rather than bring back closed ones.
+  const shownRecaps = dismissed ? visibleRecaps(recaps, dismissed) : [];
   const tz = profile.timezone;
   const now = new Date();
   const today = todayIn(tz, now);
@@ -31,6 +39,9 @@ export default async function InboxPage() {
         approvals={<ApprovalList rows={rows} />}
         activity={
           <>
+            {shownRecaps.map((r) => (
+              <FamilyRecapCard key={recapKey(r)} cardKey={recapKey(r)} group={r.group_name} line={recapLine(r)} />
+            ))}
             <FeedList items={feed} timeZone={tz} now={now} />
             <MarkReadOnView ids={feed.filter((n) => !n.read_at).map((n) => n.id)} />
           </>

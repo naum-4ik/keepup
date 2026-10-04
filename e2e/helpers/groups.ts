@@ -85,3 +85,31 @@ export async function seedGroupMilestone(groupId: string, habitId: string, strea
   const res = await fetch(`${url}/rest/v1/notifications`, { method: "POST", headers, body: JSON.stringify(rows) });
   expect(res.ok, await res.text()).toBe(true);
 }
+
+// The weekly family recap shows on the first day of the group's week (family_recaps(), the database's
+// own clock). Moves the group to a time zone where today is a Sunday or Monday, starts its week then,
+// and seeds one approved check-in last week (triggers off: a past day). False when no time zone has
+// today as a Sunday or Monday. Local stack only.
+export function seedRecapWeek(groupId: string, habitId: string): boolean {
+  if (!/^[0-9a-f-]{36}$/.test(groupId) || !/^[0-9a-f-]{36}$/.test(habitId)) throw new Error("Not an id");
+  const zones = ["Pacific/Kiritimati", "Pacific/Auckland", "Asia/Tokyo", "Asia/Kolkata", "Europe/Rome", "UTC",
+    "America/New_York", "America/Los_Angeles", "Pacific/Honolulu", "Pacific/Pago_Pago"];
+  const now = new Date();
+  for (const tz of zones) {
+    const weekday = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short" }).format(now);
+    const weekStart = weekday === "Sun" ? 0 : weekday === "Mon" ? 1 : null;
+    if (weekStart === null) continue;
+    execSync(`docker exec -i supabase_db_keepup psql -U postgres -d postgres -tA -v ON_ERROR_STOP=1`, {
+      input: `
+        update public.groups set timezone = '${tz}', week_start = ${weekStart} where id = '${groupId}';
+        set session_replication_role = replica;
+        insert into public.check_ins (habit_id, user_id, local_date, period_start, status, created_at, logged_by)
+        select '${habitId}', m.user_id, d, d, 'approved', now() - interval '3 days', m.user_id
+          from (select user_id from public.group_members where group_id = '${groupId}' and left_at is null limit 1) m,
+               (select (now() at time zone '${tz}')::date - 3 as d) x;`,
+      encoding: "utf8",
+    });
+    return true;
+  }
+  return false;
+}

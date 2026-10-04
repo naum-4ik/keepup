@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, Clock } from "lucide-react";
 import { EveryoneDidIt, type CardMember } from "@/components/celebrations/everyone-did-it";
-import { FamilyRecapCard } from "@/components/celebrations/family-recap-card";
-import { GroupMilestoneCard } from "@/components/celebrations/group-milestone-card";
 import { FirstCheckinTip } from "@/components/first-checkin-tip";
 import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard } from "@/components/habits/habit-card";
@@ -13,7 +11,6 @@ import { GentleCard } from "@/components/today/gentle-card";
 import { TodayCard } from "@/components/today/today-card";
 import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
-import { feedCopy } from "@/lib/feed-copy";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
 import { getFinishSummary, getGroupTimezones, getHabitEnds, getHabitSummaries, getWeekOverview, type HabitSummary } from "@/lib/habits";
@@ -26,14 +23,14 @@ import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { parsePurpose } from "@/lib/profile-schema";
 import { allCheckedOffKey, groupForToday } from "@/lib/today";
 import { todayProgress } from "@/lib/today-progress";
-import { chooseGentleCard, milestoneToday, recapKey, recapLine, visibleRecaps } from "@/lib/today-cards";
-import { getCelebrations, getDismissedCards, getFamilyRecaps, hasCheckedIn } from "@/lib/today-cards-data";
+import { chooseGentleCard } from "@/lib/today-cards";
+import { getCelebrations, getDismissedCards, hasCheckedIn } from "@/lib/today-cards-data";
 import { membersOf, sectionsForToday } from "@/lib/today-sections";
 import { hasWeekData } from "@/lib/week-overview";
 
 export default async function TodayPage({ searchParams }: { searchParams: Promise<{ joined?: string }> }) {
   const { joined } = await searchParams;
-  const [summaries, overview, groups, approvals, children, { profile }, celebrations, recaps, dismissed, checkedIn] = await Promise.all([
+  const [summaries, overview, groups, approvals, children, { profile }, celebrations, dismissed, checkedIn] = await Promise.all([
     getHabitSummaries(),
     getWeekOverview(),
     getMyGroups(),
@@ -41,7 +38,6 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     getMyChildren(),
     getProfile(),
     getCelebrations(),
-    getFamilyRecaps(),
     getDismissedCards(),
     hasCheckedIn(),
   ]);
@@ -104,7 +100,9 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     if (p) endLines.set(h.habit_id, endLabel(p, h.period));
   }
 
-  // Celebration cards (ideas/achievements-and-rewards.md §7), then at most one gentle card.
+  // "Everyone did it" (ideas/achievements-and-rewards.md §7), then at most one gentle card. No other
+  // group cards on Today (owner 2026-10-04): a group milestone is an Inbox row and a push, the weekly
+  // family recap tops the Inbox's Activity tab.
   const membersFor = (habitIds: (string | null)[]): CardMember[] => {
     const seen = new Map<string, CardMember>();
     for (const id of habitIds) {
@@ -116,16 +114,13 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   };
   const everyone = celebrations.filter((n) => n.kind === "everyone_done" && !n.seen_at);
   const everyoneHabits = [...new Map(everyone.map((n) => [n.habit_id ?? n.id, n.habit_title ?? "A habit"])).entries()];
-  const milestones = celebrations.filter((n) => n.kind === "group_milestone" && !n.seen_at);
   // Dismissals couldn't be read: show no dismissible cards rather than bring back closed ones.
-  const shownRecaps = dismissed ? visibleRecaps(recaps, dismissed) : [];
   const purpose = parsePurpose(profile.purpose ?? "");
   const gentle = dismissed && chooseGentleCard({
     purpose: purpose.ok ? purpose.value : null,
     hasCheckedIn: checkedIn,
     groups,
     dismissed,
-    milestoneToday: milestoneToday(celebrations, profile.timezone),
   });
 
   // Never two bursts at once: no finish-card confetti when "Everyone did it" or the Today card's
@@ -168,15 +163,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           members={membersFor(everyoneHabits.map(([id]) => id))}
         />
       )}
-      {milestones.map((n) => (
-        <GroupMilestoneCard key={n.id} id={n.id} group={n.group_name ?? "Your group"} text={feedCopy(n).body} members={membersFor([n.habit_id])} />
-      ))}
       {/* Offline (the saved page), cards whose buttons need the server say so (ideas/offline.md §3). */}
-      {shownRecaps.map((r) => (
-        <NeedsConnection key={recapKey(r)} label={`${r.group_name} recap`}>
-          <FamilyRecapCard cardKey={recapKey(r)} group={r.group_name} line={recapLine(r, milestones.some((n) => n.group_id === r.group_id))} />
-        </NeedsConnection>
-      ))}
       {gentle && (
         <NeedsConnection key={gentle.key} label={gentle.key.startsWith("add_child") ? "Add a child" : "Invite"}>
           <GentleCard card={gentle} />
