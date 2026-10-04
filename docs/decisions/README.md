@@ -18,3 +18,6 @@ Short records of the choices that shape Keepup: what was decided, why, and what 
 | [0012](0012-adults-always-take-part-children-opt-in.md) | Adults always take part in group habits; children opt in | Accepted |
 | [0013](0013-approval-grace-only-for-approval-habits.md) | Approval grace only for approval habits | Accepted |
 | [0014](0014-the-feed-is-written-by-triggers.md) | The feed is written by triggers | Accepted |
+| [0015](0015-offline-check-ins-count-the-tap.md) | Offline check-ins count the tap | Accepted |
+| [0016](0016-the-database-decides-push-tags-coalesce.md) | The database decides push; tags coalesce | Accepted |
+| [0017](0017-reminders-only-for-devices-that-asked.md) | Reminders only for devices that asked | Accepted |
