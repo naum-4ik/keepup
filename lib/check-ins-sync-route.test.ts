@@ -36,6 +36,30 @@ describe("POST /api/check-ins/sync", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it("a body over 16 KB is refused (413) before anything is read or called, by its length or by what arrives", async () => {
+    const big = { ...TAP, padding: "x".repeat(16 * 1024) };
+    expect((await post(big)).status).toBe(413);
+    // No Content-Length (a chunked body): measured as it arrives.
+    const chunked = new ReadableStream({
+      start(c) {
+        c.enqueue(new TextEncoder().encode(JSON.stringify(big)));
+        c.close();
+      },
+    });
+    const res = await POST(new Request("https://keepup.test/api/check-ins/sync", {
+      method: "POST", headers: { host: "keepup.test", origin: "https://keepup.test" }, body: chunked, duplex: "half",
+    } as RequestInit));
+    expect(res.status).toBe(413);
+    expect(getClaims).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("a body just under the limit is read as usual", async () => {
+    rpc.mockResolvedValue({ data: { id: "row" }, error: null });
+    const padded = { ...TAP, padding: "x".repeat(16 * 1024 - JSON.stringify(TAP).length - 20) };
+    expect((await post(padded)).status).toBe(200);
+  });
+
   it("a queued tap is sent with its id and time, and the pages it changes are refreshed", async () => {
     rpc.mockResolvedValue({ data: { id: "row" }, error: null });
     const res = await post({ ...TAP, subjectId: K, byChild: true });

@@ -35,9 +35,10 @@ describe("outcomeFor", () => {
     expect(outcomeFor(200, "<html>Log in to the Wi-Fi</html>")).toBe("retry");
   });
 
-  it("403 and 405 can never succeed: dropped, not retried", () => {
+  it("403, 405 and 413 can never succeed: dropped, not retried", () => {
     expect(outcomeFor(403, { error: "forbidden" })).toBe("rejected");
     expect(outcomeFor(405, null)).toBe("rejected");
+    expect(outcomeFor(413, { error: "too_large" })).toBe("rejected");
   });
 
   it("a rule refusal is rejected, not retried (archived, period closed, already done)", () => {
@@ -64,6 +65,17 @@ describe("httpSender", () => {
     expect(await httpSender(fake)(entry)).toBe("synced");
     expect(calls[0][0]).toBe("/api/check-ins/sync");
     expect(JSON.parse(String(calls[0][1].body))).toEqual(entry);
+  });
+
+  it("keeps the phone's bookkeeping (attempts, maybe sent) on the phone", async () => {
+    let body = "";
+    const fake = (async (_url: string, init: RequestInit) => {
+      body = String(init.body);
+      return new Response(JSON.stringify({ outcome: "synced" }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const tap = { kind: "check_in" as const, clientId: C, habitId: H, subjectId: null, tappedAt: "2026-10-05T21:58:00.000Z" };
+    await httpSender(fake)({ ...tap, maybeSent: true, attempts: 2, firstFailedAt: "2026-10-05T22:00:00.000Z" });
+    expect(JSON.parse(body)).toEqual(tap);
   });
 
   it("keeps the attempt count on the phone", async () => {

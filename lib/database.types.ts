@@ -840,6 +840,9 @@ isOneToOne: false
 "push_job":
 { Args: { "p_id": string,"p_now"?: string }; Returns: Json
                            },
+"refresh_push_subscription":
+{ Args: { "p_auth": string,"p_endpoint": string,"p_p256dh": string,"p_user_agent"?: string }; Returns: boolean
+                           },
 "remove_member":
 { Args: { "p_group_id": string,"p_user_id": string }; Returns: undefined
                            },
@@ -897,6 +900,9 @@ isOneToOne: false
                            },
 "revoke_invites":
 { Args: { "p_group_id": string }; Returns: undefined
+                           },
+"rotate_push_subscription":
+{ Args: { "p_auth": string,"p_endpoint": string,"p_old_endpoint": string,"p_p256dh": string,"p_user_agent"?: string }; Returns: boolean
                            },
 "save_push_subscription":
 { Args: { "p_auth": string,"p_endpoint": string,"p_p256dh": string,"p_user_agent"?: string }; Returns: undefined

@@ -140,11 +140,19 @@ export function createOfflineQueue(deps: {
   }
 
   const key = (e: QueueEntry) => `${e.kind}:${e.clientId}`;
+  // No onChange: what is waiting doesn't change.
+  const markMaybeSent = async (clientId: string): Promise<void> =>
+    void (await deps.storage.update((q) => q.map((e) => (e.kind === "check_in" && e.clientId === clientId && !e.maybeSent ? { ...e, maybeSent: true } : e))));
 
   async function flushOnce(): Promise<FlushResult> {
     // Read inside the lock: another tab may have just sent (and removed) some of it.
     const snapshot = await deps.storage.load();
-    const result = await flushQueue(snapshot, deps.send, now);
+    // A check-in is marked maybe sent before its request goes: from then on an Undo asks the server.
+    const send: Sender = async (e) => {
+      if (e.kind === "check_in" && !e.maybeSent) await markMaybeSent(e.clientId);
+      return deps.send(e);
+    };
+    const result = await flushQueue(snapshot, send, now);
     const finished = new Set([...result.synced, ...result.rejected, ...result.dropped, ...result.poisoned].map(key));
     const undone = undoneIds([...result.synced, ...result.rejected]);
     const attempted = result.attempted;
@@ -182,6 +190,8 @@ export function createOfflineQueue(deps: {
       return clientId;
     },
     undo: undoEntry,
+    // About to be tried online (lib/offline-client.ts submitTap): the server may get it from now on.
+    markMaybeSent,
     // A tap that was saved here first and then reached the server online (or was refused): it needn't
     // wait any more. If a flush is sending it at the same time, the server keeps one (client_id).
     forget: (clientId: string) => update((q) => q.filter((e) => !(e.kind === "check_in" && e.clientId === clientId))),

@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { Check, ChevronRight, Flame } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Confetti } from "@/components/celebrations/confetti";
 import { HabitEmoji } from "@/components/habits/category-icon";
+import { useOfflineQueue } from "@/components/offline/offline-queue-provider";
 import { ProgressRing } from "@/components/overview/week-overview";
-import { todayLine, type TodayItem } from "@/lib/today-progress";
+import { todayLine, todayProgress, withQueuedProgress, type ProgressHabit } from "@/lib/today-progress";
 import { cn } from "@/lib/utils";
 
 const SEEN_KEY = "keepup:all-done-celebrated";
@@ -14,29 +15,33 @@ const SEEN_KEY = "keepup:all-done-celebrated";
 // The top of Today (ideas/today-card.md): today's ring, a line that moves with you, the day's habits
 // as emoji that light up when done, and this week in one line. The last check-in of the day gets a
 // small confetti burst, once per day on this device (the day counts as celebrated even when quiet).
+// Taps still waiting on this phone (offline) count too, as the check-ins they will be.
 export function TodayCard({
   date,
   dayKey,
-  done,
-  total,
-  items,
+  habits,
   week,
   quiet = false,
 }: {
   date: string;
   dayKey: string;
-  done: number;
-  total: number;
-  items: TodayItem[];
+  // Today's adult habits, as the page lists them (lib/today-progress.ts todayProgress).
+  habits: ProgressHabit[];
   week: { done: number; possible: number; streak: number } | null;
   // Another celebration (e.g. "Everyone did it") is already on screen: don't burst twice.
   quiet?: boolean;
 }) {
+  const { queued } = useOfflineQueue();
+  const { done, total, items } = useMemo(() => todayProgress(withQueuedProgress(habits, queued)), [habits, queued]);
   const allDone = total > 0 && done >= total;
+  // The confetti waits for the server's word: a tap is queued for a moment even online (saved on the
+  // phone first), and "Everyone did it" (quiet) only arrives with the page's refresh.
+  const saved = useMemo(() => todayProgress(habits), [habits]);
+  const allSaved = saved.total > 0 && saved.done >= saved.total;
   const [celebrate, setCelebrate] = useState(false);
 
   useEffect(() => {
-    if (!allDone) return;
+    if (!allSaved) return;
     try {
       if (localStorage.getItem(SEEN_KEY) === dayKey) return;
       localStorage.setItem(SEEN_KEY, dayKey);
@@ -45,7 +50,7 @@ export function TodayCard({
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect -- plays once, after the day's last check-in
     if (!quiet) setCelebrate(true);
-  }, [allDone, dayKey, quiet]);
+  }, [allSaved, dayKey, quiet]);
 
   return (
     <section

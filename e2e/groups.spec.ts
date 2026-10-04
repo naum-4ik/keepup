@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { completeOnboarding, signUp, signUpAndOnboard, uniqueEmail } from "./helpers/auth";
-import { addChild, createGroup, createGroupHabitVia, inviteLink, joinByLink, seedGroupMilestone } from "./helpers/groups";
+import { addChild, createGroup, createGroupHabitVia, inviteLink, joinByLink, seedGroupMilestone, seedRecapWeek } from "./helpers/groups";
 import { createHabit } from "./helpers/habits";
 
 test("create a group, get an invite link, rename it, and see it in Groups", async ({ page }) => {
@@ -430,7 +430,7 @@ test("Everyone did it shows once, with confetti, then not again", async ({ page 
   await expect(card).toBeHidden();
 });
 
-test("a group milestone card shows the streak with avatars, keeps gentle cards away that day, and dismisses", async ({ page }) => {
+test("a group milestone is an Inbox row, not a card on Today", async ({ page }) => {
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   const groupId = page.url().match(/\/groups\/([0-9a-f-]{36})/)![1];
@@ -440,20 +440,39 @@ test("a group milestone card shows the streak with avatars, keeps gentle cards a
   await seedGroupMilestone(groupId, habitId, 7, "day");
   await page.getByRole("button", { name: "Check in: Family dinner" }).click();
   await page.goto("/today");
+  await expect(page.getByRole("button", { name: "Done: Family dinner" })).toBeVisible();
+  await expect(page.getByText("🔥 Family dinner: 7 days in a row, together")).toHaveCount(0);
+  // No milestone card any more, so no "milestone day" rule: the gentle card may show.
+  await expect(page.getByText("Add a child? 🐼")).toBeVisible();
+  await page.goto("/inbox");
+  await page.getByRole("tab", { name: "Activity" }).click();
   await expect(page.getByText("🔥 Family dinner: 7 days in a row, together")).toBeVisible();
-  const milestone = page.getByText("🔥 Family dinner: 7 days in a row, together").locator("..");
-  await expect(milestone.getByRole("img", { name: "Ana", exact: true })).toBeVisible(); // the members' avatars
-  // An admin of a family group without children would get "Add a child?", but not on a milestone day.
-  await expect(page.getByText("Add a child? 🐼")).toBeHidden();
-  await page.getByRole("button", { name: "Dismiss", exact: true }).click();
-  await expect(page.getByText("🔥 Family dinner: 7 days in a row, together")).toBeHidden();
-  // Dismissed, the milestone is gone for good, but it's still a milestone day: no gentle card.
-  await expect(async () => {
-    await page.reload();
-    await expect(page.getByRole("button", { name: "Done: Family dinner" })).toBeVisible({ timeout: 2_000 });
-    await expect(page.getByText("🔥 Family dinner: 7 days in a row, together")).toBeHidden({ timeout: 500 });
-  }).toPass();
-  await expect(page.getByText("Add a child? 🐼")).toBeHidden();
+});
+
+test("the weekly family recap tops the Inbox's Activity tab, not Today, and Dismiss sticks", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const groupId = page.url().match(/\/groups\/([0-9a-f-]{36})/)![1];
+  await createGroupHabitVia(page, "Family", "Family dinner");
+  const href = await page.getByRole("link", { name: /Family dinner/ }).first().getAttribute("href");
+  const habitId = href!.match(/\/habits\/([0-9a-f-]{36})/)![1];
+  // family_recaps() runs on the database's clock: only on a day some time zone starts its week
+  // (Sunday or Monday) can the group be made to start its week today.
+  test.skip(!seedRecapWeek(groupId, habitId), "no time zone starts its week today (Sunday or Monday somewhere)");
+  await page.goto("/today");
+  await expect(page.getByRole("button", { name: /Family dinner/ }).first()).toBeVisible();
+  await expect(page.getByText(/Together last week/)).toHaveCount(0);
+  await page.goto("/inbox");
+  await page.getByRole("tab", { name: "Activity" }).click();
+  const recap = page.getByText(/^Together last week: 1 check-in/);
+  await expect(recap).toBeVisible();
+  await recap.locator("../..").getByRole("button", { name: "Dismiss" }).click();
+  await expect(recap).toHaveCount(0);
+  await page.waitForLoadState("networkidle"); // the dismissal has been saved
+  await page.reload();
+  await page.getByRole("tab", { name: "Activity" }).click();
+  await expect(page.getByRole("tabpanel")).toBeVisible();
+  await expect(page.getByText(/Together last week/)).toHaveCount(0); // server-rendered: there or not at once
 });
 
 test("with reduced motion, Everyone did it shows without confetti", async ({ page }) => {

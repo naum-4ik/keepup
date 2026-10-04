@@ -183,3 +183,63 @@ describe("flush and the UI", () => {
     expect(post).toHaveBeenCalled();
   });
 });
+
+describe("Undo for a queued tap", () => {
+  it("offline: the tap leaves the queue and nothing is sent when the phone is back online", async () => {
+    const sent: string[] = [];
+    const { client, storage, setOnline } = setup({ online: false, send: async (e) => (sent.push(`${e.kind}:${e.habitId}`), "synced") });
+    await client.submitTap({ habitId: "h1" }, async () => ({ ok: true }));
+    await client.submitTap({ habitId: "h2" }, async () => ({ ok: true }));
+    expect(await client.undoQueued("h1")).toBe(true);
+    expect((await storage.load()).map((e) => e.habitId)).toEqual(["h2"]);
+    setOnline(true);
+    await client.flush();
+    expect(sent).toEqual(["check_in:h2"]);
+  });
+
+  it("takes back only the latest tap on that habit, and only mine (not a child's)", async () => {
+    const { client, storage } = setup({ online: false });
+    await client.submitTap({ habitId: "h1" }, async () => ({ ok: true }));
+    await client.submitTap({ habitId: "h1", subjectId: "kid" }, async () => ({ ok: true }));
+    await client.submitTap({ habitId: "h1" }, async () => ({ ok: true }));
+    const [first] = await storage.load();
+    await client.undoQueued("h1");
+    expect((await storage.load()).map((e) => e.clientId)).toEqual([first.clientId, expect.any(String)]);
+    expect((await storage.load()).map((e) => (e.kind === "check_in" ? e.subjectId : "undo"))).toEqual([null, "kid"]);
+  });
+
+  it("nothing waiting: false, nothing queued", async () => {
+    const { client, storage } = setup({ online: false });
+    expect(await client.undoQueued("h1")).toBe(false);
+    expect(await storage.load()).toEqual([]);
+  });
+});
+
+describe("Undo for a tap the server may have", () => {
+  it("an online try that timed out: Undo shows it open and queues a server undo (by client id)", async () => {
+    const sent: string[] = [];
+    const { client, storage } = setup({ tapTimeoutMs: 100, send: async (e) => (sent.push(`${e.kind}:${e.clientId}`), "synced") });
+    const done = client.submitTap({ habitId: "h1" }, () => new Promise(() => undefined)); // the answer never comes
+    await vi.advanceTimersByTimeAsync(100);
+    expect(await done).toEqual({ ok: true, queued: true });
+    const [tap] = await storage.load();
+    expect(tap).toMatchObject({ kind: "check_in", maybeSent: true });
+    expect(await client.undoQueued("h1")).toBe(true);
+    expect(await storage.load()).toEqual([{ kind: "undo", clientId: tap.clientId, habitId: "h1" }]);
+    expect(await client.counts()).toEqual(new Map()); // open again
+    await client.flush();
+    expect(sent).toEqual([`undo:${tap.clientId}`]); // the check-in isn't sent again, only its undo
+  });
+
+  it("a check-in a flush tried (no answer) is maybe sent too", async () => {
+    const { client, storage, setOnline } = setup({ online: false, send: async () => "wait" });
+    await client.submitTap({ habitId: "h1" }, async () => ({ ok: true }));
+    expect((await storage.load())[0]).not.toHaveProperty("maybeSent");
+    setOnline(true);
+    await client.flush();
+    client.stop();
+    expect((await storage.load())[0]).toMatchObject({ maybeSent: true });
+    await client.undoQueued("h1");
+    expect((await storage.load()).map((e) => e.kind)).toEqual(["undo"]);
+  });
+});

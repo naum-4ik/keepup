@@ -220,7 +220,10 @@ describe("one sender across tabs (Web Locks)", () => {
     release();
     await running;
     await tabB.flush();
-    expect(sent).toEqual(["check_in:id-1", "undo:id-1"]);
+    // The check-in left the queue before tab A read it: only the undo goes (a no-op on the server if
+    // the check-in never arrived). Either way the server ends without it.
+    expect(sent).toEqual(["undo:id-1"]);
+    expect(await storage.load()).toEqual([]);
   });
 
   it("an undo with no tab sending removes the unsent check-in", async () => {

@@ -28,44 +28,39 @@ describe("parsePushSubscriptionRequest", () => {
   });
 });
 
-function deps(owned: string[]) {
+function deps(saved = true) {
   return {
-    owns: vi.fn(async (e: string) => owned.includes(e)),
-    save: vi.fn(async () => ({ ok: true as const })),
-    forget: vi.fn(async () => undefined),
+    refresh: vi.fn(async () => ({ ok: true as const, saved })),
+    rotate: vi.fn(async () => ({ ok: true as const, saved })),
   };
 }
 
 describe("applyPushSubscriptionUpdate", () => {
-  it("a rotation of a device this account has: the new one is saved, the old row dropped", async () => {
-    const d = deps([`${FCM}old`]);
+  it("a rotation is one call with the old endpoint: saved means 200", async () => {
+    const d = deps(true);
     expect(await applyPushSubscriptionUpdate({ sub, oldEndpoint: `${FCM}old`, refresh: false }, d)).toEqual({ status: 200 });
-    expect(d.save).toHaveBeenCalledWith(sub);
-    expect(d.forget).toHaveBeenCalledWith(`${FCM}old`);
+    expect(d.rotate).toHaveBeenCalledWith(`${FCM}old`, sub);
+    expect(d.refresh).not.toHaveBeenCalled();
   });
 
-  it("a rotation of a removed device, or with no old endpoint, saves nothing", async () => {
-    const d = deps([]);
-    expect(await applyPushSubscriptionUpdate({ sub, oldEndpoint: `${FCM}old`, refresh: false }, d)).toEqual({ status: 204 });
-    expect(await applyPushSubscriptionUpdate({ sub, oldEndpoint: null, refresh: false }, deps([`${FCM}new`]))).toEqual({ status: 204 });
-    expect(d.save).not.toHaveBeenCalled();
-    expect(d.forget).not.toHaveBeenCalled();
+  it("a rotation of a removed device (the database saved nothing) is 204; without an old endpoint nothing is called", async () => {
+    expect(await applyPushSubscriptionUpdate({ sub, oldEndpoint: `${FCM}old`, refresh: false }, deps(false))).toEqual({ status: 204 });
+    const d = deps(true);
+    expect(await applyPushSubscriptionUpdate({ sub, oldEndpoint: null, refresh: false }, d)).toEqual({ status: 204 });
+    expect(d.rotate).not.toHaveBeenCalled();
+    expect(d.refresh).not.toHaveBeenCalled();
   });
 
-  it("the re-save on open saves only an endpoint already saved for this account", async () => {
-    const removed = deps([`${FCM}other`]);
-    expect(await applyPushSubscriptionUpdate({ sub, oldEndpoint: null, refresh: true }, removed)).toEqual({ status: 204 });
-    expect(removed.save).not.toHaveBeenCalled();
-
-    const kept = deps([`${FCM}new`]);
+  it("the re-save on open is one refresh call; a removed device stays removed (204)", async () => {
+    const kept = deps(true);
     expect(await applyPushSubscriptionUpdate({ sub, oldEndpoint: null, refresh: true }, kept)).toEqual({ status: 200 });
-    expect(kept.save).toHaveBeenCalledWith(sub);
-    expect(kept.forget).not.toHaveBeenCalled();
+    expect(kept.refresh).toHaveBeenCalledWith(sub);
+    expect(kept.rotate).not.toHaveBeenCalled();
+    expect(await applyPushSubscriptionUpdate({ sub, oldEndpoint: null, refresh: true }, deps(false))).toEqual({ status: 204 });
   });
 
-  it("a refused save keeps the old row and says why", async () => {
-    const d = { ...deps([`${FCM}old`]), save: vi.fn(async () => ({ ok: false as const, code: "invalid_subscription" })) };
+  it("a refused save says why", async () => {
+    const d = { ...deps(), rotate: vi.fn(async () => ({ ok: false as const, code: "invalid_subscription" })) };
     expect(await applyPushSubscriptionUpdate({ sub, oldEndpoint: `${FCM}old`, refresh: false }, d)).toEqual({ status: 409, code: "invalid_subscription" });
-    expect(d.forget).not.toHaveBeenCalled();
   });
 });

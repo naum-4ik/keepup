@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, Clock } from "lucide-react";
 import { EveryoneDidIt, type CardMember } from "@/components/celebrations/everyone-did-it";
-import { FamilyRecapCard } from "@/components/celebrations/family-recap-card";
-import { GroupMilestoneCard } from "@/components/celebrations/group-milestone-card";
 import { FirstCheckinTip } from "@/components/first-checkin-tip";
 import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard } from "@/components/habits/habit-card";
@@ -13,7 +11,6 @@ import { GentleCard } from "@/components/today/gentle-card";
 import { TodayCard } from "@/components/today/today-card";
 import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
-import { feedCopy } from "@/lib/feed-copy";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
 import { getFinishSummary, getGroupTimezones, getHabitEnds, getHabitSummaries, getWeekOverview, type HabitSummary } from "@/lib/habits";
@@ -26,14 +23,14 @@ import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { parsePurpose } from "@/lib/profile-schema";
 import { allCheckedOffKey, groupForToday } from "@/lib/today";
 import { todayProgress } from "@/lib/today-progress";
-import { chooseGentleCard, milestoneToday, recapKey, recapLine, visibleRecaps } from "@/lib/today-cards";
-import { getCelebrations, getDismissedCards, getFamilyRecaps, hasCheckedIn } from "@/lib/today-cards-data";
+import { chooseGentleCard } from "@/lib/today-cards";
+import { getCelebrations, getDismissedCards, hasCheckedIn } from "@/lib/today-cards-data";
 import { membersOf, sectionsForToday } from "@/lib/today-sections";
 import { hasWeekData } from "@/lib/week-overview";
 
 export default async function TodayPage({ searchParams }: { searchParams: Promise<{ joined?: string }> }) {
   const { joined } = await searchParams;
-  const [summaries, overview, groups, approvals, children, { profile }, celebrations, recaps, dismissed, checkedIn] = await Promise.all([
+  const [summaries, overview, groups, approvals, children, { profile }, celebrations, dismissed, checkedIn] = await Promise.all([
     getHabitSummaries(),
     getWeekOverview(),
     getMyGroups(),
@@ -41,7 +38,6 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     getMyChildren(),
     getProfile(),
     getCelebrations(),
-    getFamilyRecaps(),
     getDismissedCards(),
     hasCheckedIn(),
   ]);
@@ -87,7 +83,12 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   // The first-check-in tip is for people who have never checked in (not for someone on a new device).
   const isNewUser = habits.every((h) => h.done_count === 0 && h.best_streak === 0);
   // The Today card: every adult section's to-do and done habits (kids have their own stars).
-  const progress = todayProgress(sections.flatMap((s) => s.habits));
+  const progressHabits = sections.flatMap((s) => s.habits).map((h) => ({
+    habit_id: h.habit_id, title: h.title, emoji: h.emoji, category: h.category, target_count: h.target_count, period: h.period,
+    done_count: h.done_count, checked_in_today: h.checked_in_today, frozen: h.frozen, not_started: h.not_started,
+    pending_count: h.pending_count, requires_approval: h.requires_approval,
+  }));
+  const progress = todayProgress(progressHabits);
   const now = new Date();
   const date = new Intl.DateTimeFormat("en-GB", { timeZone: profile.timezone, weekday: "long", day: "numeric", month: "long" }).format(now);
   const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: profile.timezone }).format(now);
@@ -99,7 +100,9 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     if (p) endLines.set(h.habit_id, endLabel(p, h.period));
   }
 
-  // Celebration cards (ideas/achievements-and-rewards.md §7), then at most one gentle card.
+  // "Everyone did it" (ideas/achievements-and-rewards.md §7), then at most one gentle card. No other
+  // group cards on Today (owner 2026-10-04): a group milestone is an Inbox row and a push, the weekly
+  // family recap tops the Inbox's Activity tab.
   const membersFor = (habitIds: (string | null)[]): CardMember[] => {
     const seen = new Map<string, CardMember>();
     for (const id of habitIds) {
@@ -111,16 +114,13 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   };
   const everyone = celebrations.filter((n) => n.kind === "everyone_done" && !n.seen_at);
   const everyoneHabits = [...new Map(everyone.map((n) => [n.habit_id ?? n.id, n.habit_title ?? "A habit"])).entries()];
-  const milestones = celebrations.filter((n) => n.kind === "group_milestone" && !n.seen_at);
   // Dismissals couldn't be read: show no dismissible cards rather than bring back closed ones.
-  const shownRecaps = dismissed ? visibleRecaps(recaps, dismissed) : [];
   const purpose = parsePurpose(profile.purpose ?? "");
   const gentle = dismissed && chooseGentleCard({
     purpose: purpose.ok ? purpose.value : null,
     hasCheckedIn: checkedIn,
     groups,
     dismissed,
-    milestoneToday: milestoneToday(celebrations, profile.timezone),
   });
 
   // Never two bursts at once: no finish-card confetti when "Everyone did it" or the Today card's
@@ -135,9 +135,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         <TodayCard
           date={date}
           dayKey={dayKey}
-          done={progress.done}
-          total={progress.total}
-          items={progress.items}
+          habits={progressHabits}
           week={overview && hasWeekData(overview) ? { done: overview.done, possible: overview.possible, streak: overview.best_current_streak } : null}
           quiet={everyone.length > 0}
         />
@@ -165,15 +163,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           members={membersFor(everyoneHabits.map(([id]) => id))}
         />
       )}
-      {milestones.map((n) => (
-        <GroupMilestoneCard key={n.id} id={n.id} group={n.group_name ?? "Your group"} text={feedCopy(n).body} members={membersFor([n.habit_id])} />
-      ))}
       {/* Offline (the saved page), cards whose buttons need the server say so (ideas/offline.md §3). */}
-      {shownRecaps.map((r) => (
-        <NeedsConnection key={recapKey(r)} label={`${r.group_name} recap`}>
-          <FamilyRecapCard cardKey={recapKey(r)} group={r.group_name} line={recapLine(r, milestones.some((n) => n.group_id === r.group_id))} />
-        </NeedsConnection>
-      ))}
       {gentle && (
         <NeedsConnection key={gentle.key} label={gentle.key.startsWith("add_child") ? "Add a child" : "Invite"}>
           <GentleCard card={gentle} />
@@ -196,7 +186,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       ))}
       {/* Nothing due today: the week still shows on its own. */}
       {progress.total === 0 && overview && hasWeekData(overview) && (
-        <TodayCard date={date} dayKey={dayKey} done={0} total={0} items={[]} week={{ done: overview.done, possible: overview.possible, streak: overview.best_current_streak }} />
+        <TodayCard date={date} dayKey={dayKey} habits={[]} week={{ done: overview.done, possible: overview.possible, streak: overview.best_current_streak }} />
       )}
       {habits.length === 0 && kids.length === 0 && finishes.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">

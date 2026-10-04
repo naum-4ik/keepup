@@ -43,6 +43,8 @@ const samples: Copy[] = [
   copy.privateStreakEnded("Read", 3, "week", 3),
   copy.undoDropped("Gym", "approved"),
   copy.undoDropped("Gym", "period_closed"),
+  copy.groupMilestone("Family", "Family dinner", 7, "day"),
+  copy.groupMilestone("Family", "Family dinner", 1, "week"),
   { title: "milestone", body: copy.milestoneCard("Read 20 min", 30, "day") },
   { title: "milestone", body: copy.milestoneCard("Family dinner", 1, "week") },
 ];
@@ -184,6 +186,8 @@ describe("copy sheet rows", () => {
     expect(copy.badgeUnlocked("Bookworm")).toEqual({ title: "Unlocked", body: "Bookworm" });
     expect(copy.milestoneCard("Read 20 min", 30, "day")).toBe("🔥 Read 20 min: 30 days in a row");
     expect(copy.milestoneCard("Family dinner", 1, "week")).toBe("🔥 Family dinner: 1 week in a row");
+    expect(copy.groupMilestone("Family", "Family dinner", 7, "day")).toEqual({ title: "Family", body: "🔥 Family dinner: 7 days in a row, together" });
+    expect(copy.groupMilestone("Family", "Family dinner", 1, "week").body).toBe("🔥 Family dinner: 1 week in a row, together");
   });
 
   it("kid special moments", () => {

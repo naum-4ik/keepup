@@ -74,7 +74,10 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
       send: httpSender(),
       locks: (navigator as Navigator & { locks?: Locks }).locks ?? null,
       isOnline: () => navigator.onLine,
-      onCounts: setQueued,
+      // In a transition, like the flush below: when an online tap lands, the queue forgets it while the
+      // check-in's own page refresh is still on its way. Applied together, the Today card and the
+      // buttons never count that tap twice (the refreshed count plus the queued one).
+      onCounts: (counts) => startTransition(() => setQueued(counts)),
       onFlushed: ({ counts, changed, poisoned }) => {
         // The saved state and the fresh page land together: clearing "Saving…" before the refresh
         // would flip the card back to open for a moment (and slide it in the kid view).
@@ -125,6 +128,21 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
   const dismissNotice = useCallback(() => setNotice(false), []);
   const value = useMemo(() => ({ client, userId, queued, ready, notice, dismissNotice }), [client, userId, queued, ready, notice, dismissNotice]);
   return <OfflineQueueContext.Provider value={value}>{children}</OfflineQueueContext.Provider>;
+}
+
+// Undo next to "Saving…" (lib/offline-client.ts undoQueued): the card shows open again at once.
+export function useUndoQueuedTap() {
+  const { client } = useContext(OfflineQueueContext);
+  return useCallback(
+    async (habitId: string, subjectId: string | null = null): Promise<void> => {
+      try {
+        await client?.undoQueued(habitId, subjectId);
+      } catch (e) {
+        console.error("undo queued tap", e);
+      }
+    },
+    [client],
+  );
 }
 
 type Online = (tap: { clientId: string }) => Promise<{ ok: true } | { ok: false; message: string }>;

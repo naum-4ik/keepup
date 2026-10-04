@@ -99,9 +99,9 @@ select ok(private.push_allowed('00000000-0000-0000-0000-0000000000b1', 'streak_b
   '"streak is back" is pushed for a group, feed only for a private habit');
 
 select ok(not (select bool_or(private.push_allowed('00000000-0000-0000-0000-0000000000b1', k, (select v from t where k = 'dinner'), (select v from t where k = 'fam'), '{}', now()))
-                 from unnest(array['group_habit_archived', 'member_paused', 'member_left', 'role_changed', 'group_milestone',
+                 from unnest(array['group_habit_archived', 'member_paused', 'member_left', 'role_changed',
                                    'private_streak_ended', 'already_logged', 'sync_dropped', 'undo_dropped']) k),
-  'the feed-only events stay feed-only');
+  'the feed-only events stay feed-only (a group milestone is pushed since 20261008100000: m4_followups.test.sql)');
 
 -- Mutes still win
 select private.set_habit_mute_impl('00000000-0000-0000-0000-0000000000b1', (select v from t where k = 'walk'), true);

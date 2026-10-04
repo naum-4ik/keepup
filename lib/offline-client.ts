@@ -2,7 +2,7 @@
 // The page's offline queue runner (used by components/offline/offline-queue-provider.tsx): when to
 // send, how a tap is saved before it is tried online, and how the UI hears about it. Browser-agnostic
 // (everything comes in as deps), so it is unit-tested in Node.
-import { pendingCounts, type FlushResult, type Sender } from "@/lib/offline-queue";
+import { pendingCounts, queueKey, type FlushResult, type Sender } from "@/lib/offline-queue";
 import { createOfflineQueue, type Locks, type QueueStorage } from "@/lib/offline-queue-store";
 import { newTap } from "@/lib/offline-sync";
 
@@ -112,6 +112,7 @@ export function createOfflineClient(deps: {
     const tap = newTap(deps.now?.());
     await queue.checkIn(t.habitId, t.subjectId ?? null, { clientId: tap.clientId, byChild: t.byChild, tappedAt: tap.tappedAt });
     if (!deps.isOnline()) return { ok: true, queued: true };
+    await queue.markMaybeSent(tap.clientId);
     let result: Awaited<ReturnType<Online>>;
     try {
       result = await withTimeout(online({ clientId: tap.clientId }), deps.tapTimeoutMs ?? TAP_TIMEOUT_MS, setTimer, clearTimer);
@@ -132,10 +133,23 @@ export function createOfflineClient(deps: {
     return { ok: true, queued: true };
   }
 
+  // Undo next to "Saving…": the latest tap on this habit still waiting here is taken back. Never
+  // tried, it is simply removed (nothing reaches the server); one the server may have (tried online,
+  // or sent by a flush) is replaced by an undo the server applies by its client id (addUndo). Either
+  // way it shows open at once. False when nothing is waiting.
+  async function undoQueued(habitId: string, subjectId: string | null = null): Promise<boolean> {
+    const key = queueKey(habitId, subjectId);
+    const last = (await deps.storage.load()).findLast((e) => e.kind === "check_in" && queueKey(e.habitId, e.subjectId) === key);
+    if (!last) return false;
+    await queue.undo(last.clientId, habitId);
+    return true;
+  }
+
   return {
     queue,
     flush,
     submitTap,
+    undoQueued,
     counts: async () => {
       const counts = pendingCounts(await deps.storage.load());
       emit(counts);

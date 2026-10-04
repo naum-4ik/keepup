@@ -14,6 +14,7 @@ export async function dismissCard(card: string): Promise<void> {
   const { error } = await supabase.rpc("dismiss_card", { p_card: String(card) });
   if (error) console.error("dismiss_card failed", error.message);
   revalidatePath("/today");
+  revalidatePath("/inbox"); // the weekly family recap
 }
 
 // No revalidate: the card stays on screen while it's being read and is gone from the next render.

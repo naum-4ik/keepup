@@ -68,9 +68,11 @@ function fakeCaches() {
   };
 }
 
-function worker(windows: Win[], openWindow = vi.fn(async () => null), fetchImpl = vi.fn(), subscribe = vi.fn(), cacheStore = fakeCaches(), version = "test") {
+function worker(
+  windows: Win[], openWindow = vi.fn(async () => null), fetchImpl = vi.fn(), subscribe = vi.fn(), cacheStore = fakeCaches(), version = "test",
+  showNotification = vi.fn<(...args: unknown[]) => Promise<void>>(async () => undefined),
+) {
   const handlers: Record<string, (e: unknown) => void> = {};
-  const showNotification = vi.fn(async () => undefined);
   const self = {
     location: { href: `${ORIGIN}/sw.js?v=${version}`, origin: ORIGIN },
     addEventListener: (type: string, fn: (e: unknown) => void) => void (handlers[type] = fn),
@@ -116,12 +118,16 @@ function worker(windows: Win[], openWindow = vi.fn(async () => null), fetchImpl 
     await pending;
   }
   async function push(data: Record<string, unknown>) {
+    return pushRaw({ json: () => data });
+  }
+  // event.data as the browser gives it: null (no payload), or an object whose json() may throw.
+  async function pushRaw(data: { json(): unknown } | null) {
     let pending: Promise<unknown> = Promise.resolve();
-    handlers.push({ data: { json: () => data }, waitUntil: (p: Promise<unknown>) => (pending = p) });
+    handlers.push({ data, waitUntil: (p: Promise<unknown>) => (pending = p) });
     await pending;
     return showNotification.mock.calls.at(-1) as unknown as [string, Record<string, unknown>];
   }
-  return { click, openWindow, subscriptionChange, push, request, lifecycle, message, caches: cacheStore };
+  return { click, openWindow, subscriptionChange, push, pushRaw, request, lifecycle, message, caches: cacheStore };
 }
 
 describe("sw.js push", () => {
@@ -139,6 +145,24 @@ describe("sw.js push", () => {
   it("never asks to renotify without a tag", async () => {
     const [, options] = await worker([]).push({ title: "Family", body: "Hi", silent: false });
     expect(options).toMatchObject({ silent: false, renotify: false });
+  });
+});
+
+describe("sw.js push payloads", () => {
+  const generic = ["Keepup", expect.objectContaining({ body: "", data: expect.objectContaining({ url: "/inbox" }) })];
+
+  it("no payload, a null JSON body, or one that isn't JSON: a plain Keepup notification that opens the Inbox", async () => {
+    expect(await worker([]).pushRaw(null)).toEqual(generic);
+    expect(await worker([]).pushRaw({ json: () => null })).toEqual(generic);
+    expect(await worker([]).pushRaw({ json: () => { throw new SyntaxError("not JSON"); } })).toEqual(generic);
+    expect(await worker([]).pushRaw({ json: () => "just text" })).toEqual(generic);
+  });
+
+  it("a notification the browser refuses to show never rejects waitUntil", async () => {
+    const refuse = vi.fn<(...args: unknown[]) => Promise<void>>(async () => { throw new TypeError("no permission"); });
+    const sw = worker([], undefined, undefined, undefined, undefined, undefined, refuse);
+    await expect(sw.push({ title: "Family" })).resolves.toBeDefined();
+    expect(refuse).toHaveBeenCalled();
   });
 });
 

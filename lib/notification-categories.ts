@@ -5,7 +5,7 @@ export const NOTIFICATION_CATEGORIES = [
   { key: "group_activity", label: "Group activity", hint: "Check-ins, “Everyone did it” and your kids' big moments in your groups." },
   { key: "approvals", label: "Approvals", hint: "Check-ins waiting for your OK." },
   { key: "nudges", label: "Nudges", hint: "When someone in your group thinks of you." },
-  { key: "group_updates", label: "Group updates", hint: "New habits, pauses, new members and streaks." },
+  { key: "group_updates", label: "Group updates", hint: "New habits, pauses, new members, streaks and milestones." },
 ] as const;
 export type CategoryKey = (typeof NOTIFICATION_CATEGORIES)[number]["key"];
 

@@ -4,9 +4,11 @@
 
 // byChild: a tap in the kid view (logged as by the child, "Mary did it"). attempts / firstFailedAt:
 // counted failures and when the first was (see GIVE_UP_AFTER); kept on the phone, never sent.
+// maybeSent: it was tried online or sent by a flush, so the server may have it although no answer
+// came back; an Undo then has to ask the server (addUndo). Kept on the phone, never sent.
 type Failures = { attempts?: number; firstFailedAt?: string };
 export type QueuedCheckIn = {
-  kind: "check_in"; clientId: string; habitId: string; subjectId: string | null; tappedAt: string; byChild?: boolean;
+  kind: "check_in"; clientId: string; habitId: string; subjectId: string | null; tappedAt: string; byChild?: boolean; maybeSent?: boolean;
 } & Failures;
 export type QueuedUndo = { kind: "undo"; clientId: string; habitId: string } & Failures;
 export type QueueEntry = QueuedCheckIn | QueuedUndo;
@@ -34,10 +36,16 @@ export function addCheckIn(queue: QueueEntry[], entry: QueuedCheckIn): QueueEntr
   return queue.some((e) => same(e, entry)) ? queue : [...queue, entry];
 }
 
+// An Undo. A check-in never tried (not maybe sent, not in a flush running now) is simply removed:
+// nothing reaches the server. One the server may have (maybeSent, or in flight) leaves the queue too,
+// so it shows open at once, and an undo is queued: the server removes it by its client id if it
+// arrived (and does nothing if it didn't). An undo of a check-in no longer here (it synced) is queued.
 export function addUndo(queue: QueueEntry[], undo: QueuedUndo, inFlight: ReadonlySet<string> = new Set()): QueueEntry[] {
-  const unsent = !inFlight.has(undo.clientId) && queue.some((e) => e.kind === "check_in" && e.clientId === undo.clientId);
-  if (unsent) return queue.filter((e) => !(e.kind === "check_in" && e.clientId === undo.clientId));
-  return queue.some((e) => same(e, undo)) ? queue : [...queue, undo];
+  const isTap = (e: QueueEntry) => e.kind === "check_in" && e.clientId === undo.clientId;
+  const tap = queue.find(isTap) as QueuedCheckIn | undefined;
+  const rest = queue.filter((e) => !isTap(e));
+  if (tap && !tap.maybeSent && !inFlight.has(undo.clientId)) return rest;
+  return rest.some((e) => same(e, undo)) ? rest : [...rest, undo];
 }
 
 export function pendingHabitIds(queue: QueueEntry[]): Set<string> {
