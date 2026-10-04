@@ -62,6 +62,9 @@ describe("family recap", () => {
     expect(recapLine(recap)).toBe("Together last week: 34 check-ins · Family dinner 5 weeks 🔥");
     expect(recapLine({ ...recap, check_ins: 1, best_streak: 1, best_period: "day" })).toBe("Together last week: 1 check-in · Family dinner 1 day 🔥");
   });
+  it("leaves the streak to a milestone card showing for the same group", () => {
+    expect(recapLine(recap, true)).toBe("Together last week: 34 check-ins");
+  });
   it("leaves out the streak part when there is none", () => {
     expect(recapLine({ ...recap, best_title: null, best_emoji: null, best_streak: null, best_period: null })).toBe("Together last week: 34 check-ins");
   });

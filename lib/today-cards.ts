@@ -57,8 +57,10 @@ export function visibleRecaps<R extends FamilyRecap>(recaps: R[], dismissed: Set
   return recaps.filter((r) => r.check_ins > 0 && !dismissed.has(recapKey(r)));
 }
 
-export function recapLine(r: FamilyRecap): string {
+// `streakShown`: a group milestone card for this group is on Today too, so the recap leaves the
+// streak to it instead of saying it twice.
+export function recapLine(r: FamilyRecap, streakShown = false): string {
   const line = `Together last week: ${plural(r.check_ins, ["check-in", "check-ins"])}`;
-  if (!r.best_title || !r.best_streak) return line;
+  if (streakShown || !r.best_title || !r.best_streak) return line;
   return `${line} · ${r.best_title} ${plural(r.best_streak, UNIT[r.best_period ?? "day"] ?? UNIT.day)} 🔥`;
 }
