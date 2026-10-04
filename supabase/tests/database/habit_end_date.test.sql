@@ -9,8 +9,11 @@ update public.profiles set timezone = 'UTC' where id in ('00000000-0000-0000-000
 create temp table t (k text primary key, v uuid) on commit drop;
 -- Anna's daily "Read", from 1 Oct.
 with h as (insert into public.habits (owner_id, title, category, target_count, period, starts_on)
-           values ('00000000-0000-0000-0000-0000000000a1', 'Read', 'learning', 1, 'day', '2026-10-01') returning id)
+           values ('00000000-0000-0000-0000-0000000000a1', 'Read', 'learning', 1, 'day', current_date) returning id)
 insert into t select 'read', id from h;
+set local session_replication_role = replica; -- the rules refuse a past start: backdate without triggers
+update public.habits set starts_on = '2026-10-01', created_at = '2026-09-30T08:00:00Z' where id = (select v from t where k = 'read');
+set local session_replication_role = origin;
 
 -- Setting the end
 select throws_ok($$select private.set_habit_end_impl('00000000-0000-0000-0000-0000000000b1', (select v from t where k = 'read'), '2026-10-03', '2026-10-01T08:00:00Z')$$,
@@ -52,8 +55,11 @@ select lives_ok($$select private.check_in_impl((select v from t where k = 'read'
 
 -- Finish (a second habit, ended the same way)
 with h as (insert into public.habits (owner_id, title, category, target_count, period, starts_on, ends_on)
-           values ('00000000-0000-0000-0000-0000000000a1', 'Stretch', 'fitness', 1, 'day', '2026-10-01', '2026-10-02') returning id)
+           values ('00000000-0000-0000-0000-0000000000a1', 'Stretch', 'fitness', 1, 'day', current_date, null) returning id)
 insert into t select 'stretch', id from h;
+set local session_replication_role = replica; -- the rules refuse a past start: backdate without triggers
+update public.habits set starts_on = '2026-10-01', ends_on = '2026-10-02', created_at = '2026-09-30T08:00:00Z' where id = (select v from t where k = 'stretch');
+set local session_replication_role = origin;
 select lives_ok($$select private.finish_habit_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'stretch'), '2026-10-04T09:00:00Z')$$, 'finish');
 select ok((select archived_at is not null and finished_at is not null from public.habits where id = (select v from t where k = 'stretch')),
   'a finished habit is archived and marked finished, history kept');
