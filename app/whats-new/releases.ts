@@ -18,7 +18,18 @@ export function releaseLabel(r: Release, appVersion: string): string {
 
 export const RELEASES: Release[] = [
   {
+    version: "0.5.0",
+    notes: [
+      "Keepup is now an app: add it to your Home Screen and it opens full screen with the sprout icon.",
+      "Reminders: one daily summary at the hour you choose, or a habit's own time with “Remind me at…”. For each kind, pick Sound, Silent or Inbox only.",
+      "Your group's check-ins, approvals and nudges now reach your phone, and you choose which ones.",
+      "No signal? Check in anyway. It's saved on your phone and counts for the day you tapped, once you're back online.",
+      "In the kid view, the picture stays in sight and moves gently.",
+    ],
+  },
+  {
     version: "0.4.0",
+    date: "2026-10-01",
     notes: [
       "Keep habits together: make a group for your family or friends, invite them with a link, and share habits you all check in on.",
       "Add your kids, no account needed. They tap their own habits, earn stars, grow a garden (or an aquarium, space, dino or town), and save up for treats you choose together.",
