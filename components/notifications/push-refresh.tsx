@@ -5,8 +5,8 @@ import { useEffect } from "react";
 import { browserSubscription, resaveOncePerLoad } from "@/lib/push-support";
 
 // Module scope, so it runs once per page load, not once per mount. A plain fetch, not a server action:
-// it must never queue ahead of the person's first tap. The route saves only a device this account
-// still has (a removed one stays removed).
+// it must never queue ahead of the person's first tap. The route saves only a device that is still
+// saved (a removed one stays removed); one left signed in by someone else moves to this account.
 const resave = resaveOncePerLoad({
   permission: () => ("Notification" in window ? Notification.permission : "unsupported"),
   getSubscription: browserSubscription,

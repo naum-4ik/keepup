@@ -339,8 +339,8 @@ self.addEventListener("notificationclick", (event) => {
 });
 
 // The browser replaced this device's subscription (expired or rotated keys). Subscribe again with the
-// old one's options and save it, with the endpoint it replaces: the server saves it only while this
-// account still has that device. Without the old subscription there is nothing to go on, so nothing
+// old one's options and save it, with the endpoint it replaces: the server saves it, in one
+// transaction, only while this account still has that device. Without the old subscription there is nothing to go on, so nothing
 // is done. If anything fails, do nothing. Never rejects, so waitUntil doesn't either.
 async function resubscribe(event) {
   try {

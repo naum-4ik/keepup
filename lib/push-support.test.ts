@@ -232,6 +232,19 @@ describe("resaveOncePerLoad", () => {
   });
 });
 
+describe("a device removed under Devices on itself", () => {
+  it("has no browser subscription left, so the next open saves nothing", async () => {
+    // A browser with one subscription: unsubscribing it leaves none.
+    let current: ReturnType<typeof fakeSub> | null = fakeSub(`${FCM}me`);
+    current.unsubscribe.mockImplementation(async () => ((current = null), true));
+    const getSubscription = async () => current;
+    await removeDevice({ endpoint: `${FCM}me`, here: `${FCM}me`, forget: async () => ({ ok: true as const }), getSubscription });
+    const save = vi.fn(async () => undefined);
+    await resaveOncePerLoad({ permission: () => "granted", getSubscription, save })();
+    expect(save).not.toHaveBeenCalled();
+  });
+});
+
 describe("removeDevice", () => {
   const ok = async () => ({ ok: true as const });
 
