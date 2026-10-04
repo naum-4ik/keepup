@@ -1,7 +1,7 @@
 // lib/offline-queue-store.test.ts
 import "fake-indexeddb/auto";
 import { describe, expect, it } from "vitest";
-import { createOfflineQueue, indexedDbStorage, memoryStorage, type Locks } from "./offline-queue-store";
+import { createOfflineQueue, deleteOfflineQueue, indexedDbStorage, memoryStorage, offlineDbName, type Locks } from "./offline-queue-store";
 import type { Sender } from "./offline-queue";
 
 const fixedNow = () => new Date("2026-10-05T20:58:00.000Z");
@@ -51,6 +51,21 @@ describe("IndexedDB storage", () => {
     const entry = (clientId: string) => ({ kind: "check_in" as const, clientId, habitId: "h1", subjectId: null, tappedAt: "2026-10-05T20:58:00.000Z" });
     await Promise.all([a.update((q) => [...q, entry("a")]), b.update((q) => [...q, entry("b")])]);
     expect((await a.load()).map((e) => e.clientId).sort()).toEqual(["a", "b"]);
+  });
+});
+
+describe("deleting a person's queue (sign-out)", () => {
+  it("removes it even while a tab still has it open", async () => {
+    const open = indexedDbStorage(offlineDbName("u1"));
+    await open.save([{ kind: "undo", clientId: "a", habitId: "h1" }]);
+    await deleteOfflineQueue(offlineDbName("u1"));
+    expect(await indexedDbStorage(offlineDbName("u1")).load()).toEqual([]);
+  });
+
+  it("leaves another person's queue alone", async () => {
+    await indexedDbStorage(offlineDbName("u2")).save([{ kind: "undo", clientId: "b", habitId: "h1" }]);
+    await deleteOfflineQueue(offlineDbName("u3"));
+    expect(await indexedDbStorage(offlineDbName("u2")).load()).toEqual([{ kind: "undo", clientId: "b", habitId: "h1" }]);
   });
 });
 

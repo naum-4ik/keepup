@@ -64,6 +64,33 @@ test("a check-in queued offline survives a reload and syncs once, for the day it
   expect(countCheckIns(id)).toBe(1);
 });
 
+test("signing out with a check-in not yet saved asks first; Stay signed in keeps it", async ({ page, context }) => {
+  await signUpAndOnboard(page);
+  await createHabit(page, { title: "Walk", count: 1, period: "day" });
+  await context.setOffline(true);
+  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await expect(page.getByText("Saving… ☁️")).toBeVisible();
+  // Back online, but the server can't be reached: the tap stays on the phone.
+  await page.route("**/api/check-ins/sync", (route) => route.abort());
+  await context.setOffline(false);
+  await page.goto("/profile");
+
+  await page.getByRole("button", { name: "Sign out" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("1 check-in hasn't been saved yet. Sign out anyway? It'll be removed from this phone.");
+  await dialog.getByRole("button", { name: "Stay signed in" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(page).toHaveURL(/\/profile$/);
+  expect(await page.evaluate(async () => {
+    const dbs = await indexedDB.databases();
+    return dbs.some((d) => d.name?.startsWith("keepup-offline-"));
+  })).toBe(true);
+
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Sign out anyway" }).click();
+  await expect(page).toHaveURL(/\/$/);
+});
+
 test("offline, other pages say they need a connection", async ({ page, context }) => {
   await signUpAndOnboard(page);
   await waitForWorker(page, "/today");

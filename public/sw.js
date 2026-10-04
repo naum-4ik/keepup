@@ -272,21 +272,34 @@ self.addEventListener("push", (event) => {
   );
 });
 
-// A window already showing the url is focused; otherwise one of ours is moved there; failing that (it
-// isn't controlled by this worker, or navigate throws), a new window opens. Never rejects, so
-// waitUntil doesn't either.
+// A child playing in the kid view (/kids/<id>/play) is never moved away by a tap on a push: when that
+// window is the one in front, it is only focused and nothing else opens (a kid moment is on screen
+// already). Otherwise a window already showing the url is focused; else one of ours, not a kid view,
+// is moved there; failing that (it isn't controlled by this worker, or navigate throws), a new window
+// opens. Never rejects, so waitUntil doesn't either.
+const KID_PLAY = /^\/kids\/[^/]+\/play\/?$/;
+const isKidPlay = (w) => KID_PLAY.test(new URL(w.url).pathname);
+
 async function openOrFocus(url) {
   try {
     const target = new URL(url, self.location.origin).href;
     const windows = (await self.clients.matchAll({ type: "window", includeUncontrolled: true })).filter(
       (w) => new URL(w.url).origin === self.location.origin,
     );
+    // The window in front decides: a focused one, else a visible one. Only when that is a kid view is it
+    // just focused (the child stays in kid mode); a kid view merely visible behind the adult's window
+    // never swallows the tap.
+    const front = windows.find((w) => w.focused) ?? windows.find((w) => w.visibilityState === "visible");
+    if (front && isKidPlay(front)) {
+      await front.focus();
+      return;
+    }
     const there = windows.find((w) => w.url === target);
     if (there) {
       await there.focus();
       return;
     }
-    const w = windows[0];
+    const w = windows.find((x) => !isKidPlay(x));
     if (w && "navigate" in w) {
       try {
         const moved = await w.navigate(target);

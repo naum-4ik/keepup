@@ -75,6 +75,12 @@ export function groupStreakEnded(group: string, habit: string, length: number, p
   return { title: group, body: `${habit} streak ended at ${plural(length, period)}. Start a new one ${THIS[period]}.` };
 }
 
+// Feed only (ideas/achievements-and-rewards.md §5): "Read streak ended at 12 days. Your best is still 21."
+export function privateStreakEnded(habit: string, length: number, period: PeriodUnit, best: number): Copy {
+  const ended = `${habit} streak ended at ${plural(length, period)}.`;
+  return { title: habit, body: best > length ? `${ended} Your best is still ${best}.` : `${ended} Start a new one ${THIS[period]}.` };
+}
+
 export const groupStreakBack = (group: string, habit: string): Copy => ({
   title: group,
   body: `A late check-in arrived. ${habit} streak is back 🔥`,
@@ -132,7 +138,7 @@ export const alreadyLogged = (kid: string, adult: string | null, habit: string):
 
 export const syncDropped = (habit: string, day: string): Copy => ({
   title: habit,
-  body: `A check-in from ${day} couldn't sync. You can add it from the habit page if it's still editable.`,
+  body: `A check-in from ${day} couldn't count: it was more than 3 days old when it synced.`,
 });
 
 export const undoDropped = (habit: string, reason: "approved" | "period_closed"): Copy => ({

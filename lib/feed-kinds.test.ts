@@ -28,6 +28,10 @@ describe("#11 private streak ended (feed only)", () => {
   it("when this was the best, it invites a new one", () => {
     expect(feedCopy(item({ payload: { streak: 3, period: "week", best: 3 } })).body).toBe("Read streak ended at 3 weeks. Start a new one this week.");
   });
+
+  it("an unknown period reads as days", () => {
+    expect(feedCopy(item({ payload: { streak: 1, period: "fortnight" } })).body).toBe("Read streak ended at 1 day. Start a new one today.");
+  });
 });
 
 describe("reminder kinds in the Inbox", () => {
@@ -60,9 +64,9 @@ describe("sync notes in the Inbox (ideas/offline.md)", () => {
     expect(feedCopy(item({ kind: "already_logged", actor_name: "Anna", subject_name: "Mary", habit_title: "Brush teeth" })))
       .toMatchObject({ title: "Mary", body: "Anna already logged Brush teeth for Mary ✓" });
     expect(feedCopy(item({ kind: "sync_dropped", habit_title: "Read", payload: { tapped_on: "2026-10-05" } })).body)
-      .toBe("A check-in from Mon couldn't sync. You can add it from the habit page if it's still editable.");
+      .toBe("A check-in from Mon couldn't count: it was more than 3 days old when it synced.");
     expect(feedCopy(item({ kind: "sync_dropped", habit_title: "Read", payload: {} })).body)
-      .toBe("A check-in from earlier couldn't sync. You can add it from the habit page if it's still editable.");
+      .toBe("A check-in from earlier couldn't count: it was more than 3 days old when it synced.");
     expect(feedCopy(item({ kind: "undo_dropped", habit_title: "Gym", payload: { reason: "approved" } })).body)
       .toBe("Couldn't undo Gym, it was already approved.");
     expect(feedCopy(item({ kind: "undo_dropped", habit_title: "Gym", payload: { reason: "period_closed" } })).body)

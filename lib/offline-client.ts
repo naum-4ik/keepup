@@ -141,6 +141,8 @@ export function createOfflineClient(deps: {
       emit(counts);
       return counts;
     },
+    // Everything still waiting on this phone (check-ins and undos), for sign-out.
+    pending: async () => (await deps.storage.load()).length,
     // While the page is open: hear other tabs. stop() also cancels a scheduled flush.
     start() {
       stopListening ??= deps.channel?.listen(onOtherTab);
