@@ -39,7 +39,7 @@ on conflict (habit_id, period_start) do nothing;`;
   });
 }
 
-test("README screenshots", async ({ page }) => {
+test("README screenshots", async ({ page, context }) => {
   test.setTimeout(120_000);
   const email = uniqueEmail("readme");
   await signUp(page, email);
@@ -59,6 +59,14 @@ test("README screenshots", async ({ page }) => {
   await page.getByRole("button", { name: "Add Mary" }).click();
   await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/);
   const kidPage = page.url();
+  for (const title of ["Make my bed", "Eat a fruit"]) {
+    await page.getByRole("button", { name: "Add a habit" }).click();
+    const dialog = page.getByRole("dialog", { name: "Add a habit for Mary" });
+    await dialog.getByRole("button", { name: `Add ${title}` }).click();
+    await expect(dialog.getByRole("status")).toHaveText(`Added ${title} ✓`);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+  }
 
   // Today, half done.
   await page.goto("/today");
@@ -89,14 +97,68 @@ test("README screenshots", async ({ page }) => {
   await page.goto(kidPage);
   await page.getByRole("link", { name: "Open Mary's view" }).click();
   await expect(page.getByRole("button", { name: "Hold to exit Mary's view" })).toBeVisible();
-  // Tap each habit until it's done (Today already logged one): a few stars this week.
-  for (let i = 0; i < 6; i++) {
-    const open = page.locator("button:not([disabled])").filter({ hasText: /Brush teeth|Read a book together|Tidy my toys/ });
-    if ((await open.count()) === 0) break;
-    await open.first().click();
-    await page.waitForTimeout(300);
+  // Finish two habits, so the open ones stay on top and the done ones sink to the bottom.
+  for (const title of ["Read a book together", "Tidy my toys"]) {
+    await page.locator("button:not([disabled])").filter({ hasText: title }).first().click();
+    await page.waitForTimeout(400);
   }
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.waitForTimeout(800); // let the scene settle
+  await page.waitForTimeout(3500); // let the scene settle: the new sprout grows, then rests
   await page.screenshot({ path: `${OUT}/kid-view.png` });
+
+  // Settings → Notifications: a non-default choice, and this device listed (a stand-in push
+  // subscription, as in e2e/notifications.spec.ts: headless Chromium can't subscribe).
+  await page.addInitScript(() => {
+    const KEY = "readme-push-endpoint";
+    const make = (endpoint: string) => ({
+      endpoint,
+      options: {},
+      toJSON: () => ({ endpoint, keys: { p256dh: "readme-p256dh", auth: "readme-auth" } }),
+      unsubscribe: async () => (localStorage.removeItem(KEY), true),
+    });
+    PushManager.prototype.getSubscription = async function () {
+      const e = localStorage.getItem(KEY);
+      return (e ? make(e) : null) as unknown as PushSubscription;
+    };
+    PushManager.prototype.subscribe = async function () {
+      const e = `https://fcm.googleapis.com/fcm/send/readme-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem(KEY, e);
+      return make(e) as unknown as PushSubscription;
+    };
+    Notification.requestPermission = async () => "granted";
+    Object.defineProperty(Notification, "permission", { get: () => "granted" });
+  });
+  await page.goto("/profile/settings");
+  const section = page.getByRole("region", { name: "Notifications" });
+  await section.getByRole("button", { name: "Turn on reminders" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Daily summary at").selectOption("8");
+  await dialog.getByRole("button", { name: "Allow notifications" }).click();
+  await expect(section.getByText(/^Reminders are on for this device/)).toBeVisible();
+  await section.getByRole("group", { name: "Nudges" }).getByRole("radio", { name: "Inbox only" }).check();
+  await section.getByRole("group", { name: "Group activity" }).getByRole("radio", { name: "Sound" }).check();
+  await page.waitForLoadState("networkidle");
+  await page.setViewportSize({ width: 412, height: 1000 }); // tall enough for the pills and the device list
+  await section.getByText("What to send").scrollIntoViewIfNeeded();
+  await page.evaluate(() => window.scrollBy(0, 140));
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: `${OUT}/notifications.png` });
+
+  // Today offline: the banner, and one tap saved on the phone ("Saving…"). Same waits as e2e/offline.spec.ts.
+  await page.setViewportSize({ width: 412, height: 915 });
+  await page.goto("/today");
+  await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.ready, navigator.serviceWorker.controller !== null))).toBe(true);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Check in: Read 20 min" })).toBeVisible();
+  await expect.poll(() => page.evaluate(async () => {
+    const hit = await caches.match("/today");
+    return Boolean(hit) && (await hit!.text()).includes("Check in: Read 20 min");
+  })).toBe(true);
+  await context.setOffline(true);
+  await page.getByRole("button", { name: "Check in: Read 20 min" }).click();
+  await expect(page.getByText("Saving… ☁️")).toBeVisible();
+  await expect(page.getByText("Offline · showing your last update")).toBeVisible();
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: `${OUT}/offline.png` });
+  await context.setOffline(false);
 });
