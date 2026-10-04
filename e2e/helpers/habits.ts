@@ -45,3 +45,22 @@ update public.habits set starts_on = current_date - ${days} where id = '${habitI
     },
   );
 }
+
+// How many check-ins a habit has, read from the local test database. Local stack only.
+export function countCheckIns(habitId: string): number {
+  return countWhere("habit_id", habitId);
+}
+
+// How many check-ins a person (a child, say) has. Local stack only.
+export function countCheckInsOf(userId: string): number {
+  return countWhere("user_id", userId);
+}
+
+function countWhere(column: "habit_id" | "user_id", id: string): number {
+  if (!/^[0-9a-f-]{36}$/.test(id)) throw new Error(`Not an id: ${id}`);
+  const out = execSync(`docker exec -i supabase_db_keepup psql -U postgres -d postgres -tA -v ON_ERROR_STOP=1`, {
+    input: `select count(*) from public.check_ins where ${column} = '${id}';`,
+    encoding: "utf8",
+  });
+  return Number(out.trim());
+}
