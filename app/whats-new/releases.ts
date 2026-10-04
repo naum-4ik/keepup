@@ -19,6 +19,7 @@ export function releaseLabel(r: Release, appVersion: string): string {
 export const RELEASES: Release[] = [
   {
     version: "0.5.0",
+    date: "2026-10-04",
     notes: [
       "Keepup is now an app: add it to your Home Screen and it opens full screen with the sprout icon.",
       "Reminders: one daily summary at the hour you choose, or a habit's own time with “Remind me at…”. For each kind, pick Sound, Silent or Inbox only.",

@@ -4,14 +4,14 @@
 
 [![CI](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml)
 
-A warm, mobile-first habit tracker for one person and for families. Pick a habit, check in with one tap, and watch your streaks grow. Next up: an installable app, offline check-ins and push reminders.
+A warm, mobile-first habit tracker for one person and for families. Pick a habit, check in with one tap, and watch your streaks grow. Install it on your phone, check in even without signal, and get a nudge when it counts.
 
 **Status:** in development (v0.x). Try the staging build at **https://keepup-murex.vercel.app**: sign up with an email and a password.
 
 <p align="center">
   <img src="docs/screenshots/today.png" width="220" alt="Today: a progress card, then habits left to do, then Done for today">
+  <img src="docs/screenshots/offline.png" width="220" alt="Today offline: a banner says you're seeing the last update, and a tapped habit shows Saving until the phone is back online">
   <img src="docs/screenshots/progress.png" width="220" alt="Progress: your week, streaks, and habits by category">
-  <img src="docs/screenshots/calendar.png" width="220" alt="Calendar: a month of days, tap one to see what you did">
 </p>
 
 ## What works today
@@ -33,14 +33,21 @@ A warm, mobile-first habit tracker for one person and for families. Pick a habit
 - **Groups and kids:**
   - groups (family, friends, couple, roommates) with invite links and emoji avatars;
   - habits done together: a period is done when everyone required has checked in, with optional approval by another adult;
-  - kids without a login: an adult checks in for them, or they tap in a kid view; each approved check-in is a star, and the week's stars grow a garden (or an aquarium, space, a dino egg or a town);
+  - kids without a login: an adult checks in for them, or they tap in a kid view (open habits first, done ones sink; the picture stays in sight while scrolling and moves gently, and every tap grows the scene); each approved check-in is a star, and the week's stars grow a garden (or an aquarium, space, a dino egg or a town);
   - treat goals chosen with the child ("20 ⭐ for a trip to the zoo"), and a reset that keeps only the nickname and avatar;
   - an Inbox for activity, nudges and cheers, updating live.
+- **Installable app:** add it to the Home Screen; it opens full screen.
+- **Reminders and pushes:**
+  - a daily summary at your hour, or a habit's own time ("Remind me at…", on the quarter hour);
+  - group check-ins, approvals, nudges and kids' moments can reach your phone;
+  - per kind: Sound, Silent or Inbox only (Silent by default);
+  - pause all, and mute a habit.
+- **Offline:** check in without signal. It's saved on the phone and counts for the day you tapped once you're back online. The last Today and kid view open offline.
 
 <p align="center">
   <img src="docs/screenshots/habit.png" width="220" alt="A habit's page: today's check-in with undo, streaks, history">
-  <img src="docs/screenshots/new-habit.png" width="220" alt="New habit: categories and ready-made templates">
-  <img src="docs/screenshots/kid-view.png" width="220" alt="The kid view: big buttons, stars and a garden">
+  <img src="docs/screenshots/kid-view.png" width="220" alt="The kid view: a garden scene above big habit buttons, open habits first and a done one at the bottom">
+  <img src="docs/screenshots/notifications.png" width="220" alt="Settings, Notifications: Sound, Silent or Inbox only for each kind, and this phone listed as a device">
 </p>
 
 ## Interesting problems
@@ -49,6 +56,10 @@ A warm, mobile-first habit tracker for one person and for families. Pick a habit
 
 **Kids without accounts under RLS.** A child is a `profiles` row with no `auth.users` entry, so `auth.uid()` can never be the child. Adults act for them through one function, `can_act_for_profile`, that RLS and the RPCs share. Nobody can read another person's `profiles` row (it holds time zone and reminder hour), so names and avatars reach the screens only through `SECURITY DEFINER` functions that check group membership first. The one function callable without signing in is the invite preview, and a test fails if there is a second.
 
+**Push decided in the database.** Pushes start from many places: a check-in, an approval, a pause, a cron job. So the decision isn't in app code. A trigger on the feed table sets each row's category and `push` from the person's preferences (Pause all and mutes always win), then `pg_net` calls an Edge Function that sends one push per device. A missing secret only logs a warning and never blocks the action. Each push carries a tag, so a newer one replaces the older, and on the last check-in of a group habit the superseded push is skipped: the family buzzes once, not four times.
+
+**Offline taps count the tap day.** Every tap gets a client-made id, so a resend after a lost response can't count twice. A queued tap carries the phone's time, and the server uses `least(tap, arrival)` for the day, accepted from 3 days back, so a fast clock can't push a tap into tomorrow. Even online taps go queue-first: saved on the phone, then sent, and removed only once the server answers. The database stays the only judge of what counts.
+
 ## Roadmap
 
 | Milestone | What | Status |
@@ -56,7 +67,7 @@ A warm, mobile-first habit tracker for one person and for families. Pick a habit
 | M1 | Foundation: auth (Google, email and password), profiles, CI, staging deploys, versioning | ✅ v0.2.0 |
 | M2 | Private habits: templates, check-ins, streaks, pauses, habit page, progress, weekly overview, onboarding | ✅ v0.3.0 |
 | M3 | Groups and family: shared habits, approvals, kid profiles with a star garden, emoji avatars, backups | ✅ v0.4.0 |
-| M4 | Installable app (PWA), push reminders, offline check-ins | 🚧 In progress: installable app and push reminders on staging; offline check-ins next |
+| M4 | Installable app (PWA), push reminders, offline check-ins | ✅ v0.5.0 |
 | M5 | XP, levels, badges, rest days, weekly recaps | Planned |
 | M6 | Landing page, "Try it" demo, privacy page and data export → **v1.0.0** | Planned |
 
