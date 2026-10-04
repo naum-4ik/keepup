@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Check, Clock, Plus, Snowflake } from "lucide-react";
-import { checkIn, checkInWith, type ActionResult } from "@/app/(app)/habits/actions";
+import { checkIn, checkInWith } from "@/app/(app)/habits/actions";
 import { dismissFirstCheckinTip } from "@/components/first-checkin-tip";
-import { useOfflineQueue, useQueueTap } from "@/components/offline/offline-queue-provider";
+import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
 import { GENERIC_ERROR } from "@/lib/habit-errors";
+import { NEEDS_CONNECTION, SAVING } from "@/lib/offline-copy";
 import { queueKey } from "@/lib/offline-queue";
-import { newTap } from "@/lib/offline-sync";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
@@ -44,9 +44,12 @@ export function CheckInButton({
   const celebrateTimeout = useRef<number | null>(null);
   const [choosing, setChoosing] = useState(false);
   const { queued } = useOfflineQueue();
-  const queueTap = useQueueTap();
-  // A tap waiting on this phone (ideas/offline.md §1): it looks checked and says it's saving.
+  const submitTap = useSubmitTap();
+  const savingId = useId();
+  // A tap waiting on this phone (ideas/offline.md §1): it looks checked and says it's saving. While
+  // the online try runs, the button's own busy state says enough.
   const saving = queued.has(queueKey(habitId));
+  const savingShown = saving && !pending;
   const shown: CheckInState = saving && state === "open" && !multi ? "checked-today" : state;
   const Icon = shown === "frozen" ? Snowflake : shown === "not-started" || shown === "pending" ? Clock : shown === "open" && multi ? Plus : Check;
 
@@ -67,32 +70,20 @@ export function CheckInButton({
       if (childIds.length > 0) {
         // "Me + Mary" stays online-only (owner decision).
         if (!navigator.onLine) {
-          setError("Needs a connection");
+          setError(NEEDS_CONNECTION);
           return;
         }
-        const result = await checkInWith(habitId, childIds);
-        if (!result.ok) setError(result.message);
-        else celebrate();
+        try {
+          const result = await checkInWith(habitId, childIds);
+          if (!result.ok) setError(result.message);
+          else celebrate();
+        } catch {
+          setError(navigator.onLine ? GENERIC_ERROR : NEEDS_CONNECTION);
+        }
         return;
       }
-      // Offline, the tap waits on this phone. Online, if the request never comes back, it waits under
-      // the same id and time, so the server can tell a resend if the first try did land.
-      const tap = newTap();
-      const queueIt = async () => {
-        try {
-          await queueTap({ habitId, ...tap });
-          celebrate();
-        } catch {
-          setError(GENERIC_ERROR);
-        }
-      };
-      if (!navigator.onLine) return queueIt();
-      let result: ActionResult;
-      try {
-        result = await checkIn(habitId, tap);
-      } catch {
-        return queueIt();
-      }
+      // Saved on this phone first, then tried online (offline it just waits): lib/offline-client.ts.
+      const result = await submitTap({ habitId }, (tap) => checkIn(habitId, tap));
       if (!result.ok) {
         setError(result.message);
         return;
@@ -113,6 +104,7 @@ export function CheckInButton({
         key={burst}
         type="button"
         aria-label={`${LABEL[shown]}: ${title}`}
+        aria-describedby={savingShown ? savingId : undefined}
         // Disabled while the request runs, so a double tap sends one check-in.
         disabled={shown !== "open" || pending}
         aria-expanded={withChildren.length > 0 && shown === "open" ? choosing : undefined}
@@ -158,7 +150,11 @@ export function CheckInButton({
           {error}
         </p>
       )}
-      {saving && <p className="text-xs text-muted-foreground">Saving… ☁️</p>}
+      {savingShown && (
+        <p id={savingId} className="text-xs text-muted-foreground">
+          {SAVING}
+        </p>
+      )}
     </div>
   );
 }

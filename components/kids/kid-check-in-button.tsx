@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Check, Clock, Plus, Snowflake, Undo2 } from "lucide-react";
 import { checkInFor, undoForChild } from "@/app/(app)/kids/actions";
-import { useOfflineQueue, useQueueTap } from "@/components/offline/offline-queue-provider";
-import { GENERIC_ERROR } from "@/lib/habit-errors";
+import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
+import { SAVING } from "@/lib/offline-copy";
 import { queueKey } from "@/lib/offline-queue";
-import { newTap } from "@/lib/offline-sync";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +20,7 @@ const LABEL: Record<CheckInState, string> = {
 
 // An adult checks in for a child (Today's kid section, the kid page). On success a ⭐ bounces next
 // to the button (motion-safe only; with reduced motion it just appears). Offline, the tap waits on
-// this phone with "Saving… ☁️" (ideas/offline.md, "taps in the car").
+// this phone with "Saving…" (ideas/offline.md, "taps in the car").
 export function KidCheckInButton({
   habitId,
   title,
@@ -42,8 +41,10 @@ export function KidCheckInButton({
   const [star, setStar] = useState(0);
   const timer = useRef<number | null>(null);
   const { queued } = useOfflineQueue();
-  const queueTap = useQueueTap();
+  const submitTap = useSubmitTap();
+  const savingId = useId();
   const saving = queued.has(queueKey(habitId, childId));
+  const savingShown = saving && !pending;
   const shown: CheckInState = saving && state === "open" && !multi ? "checked-today" : state;
   const Icon = shown === "frozen" ? Snowflake : shown === "not-started" || shown === "pending" ? Clock : shown === "open" && multi ? Plus : Check;
 
@@ -57,6 +58,7 @@ export function KidCheckInButton({
         <button
           type="button"
           aria-label={`${LABEL[shown]} ${childName}: ${title}`}
+          aria-describedby={savingShown ? savingId : undefined}
           disabled={shown !== "open" || pending}
           onClick={() => {
             setError(null);
@@ -67,23 +69,8 @@ export function KidCheckInButton({
                 if (timer.current) window.clearTimeout(timer.current);
                 timer.current = window.setTimeout(() => setStar(0), 1200);
               };
-              // Offline, or the request never came back: the tap waits under the same id and time.
-              const tap = newTap();
-              const queueIt = async () => {
-                try {
-                  await queueTap({ habitId, subjectId: childId, ...tap });
-                  celebrate();
-                } catch {
-                  setError(GENERIC_ERROR);
-                }
-              };
-              if (!navigator.onLine) return queueIt();
-              let result: Awaited<ReturnType<typeof checkInFor>>;
-              try {
-                result = await checkInFor(habitId, childId, false, tap);
-              } catch {
-                return queueIt();
-              }
+              // Saved on this phone first, then tried online (offline it just waits): lib/offline-client.ts.
+              const result = await submitTap({ habitId, subjectId: childId }, (tap) => checkInFor(habitId, childId, false, tap));
               if (!result.ok) {
                 setError(result.message);
                 return;
@@ -115,7 +102,11 @@ export function KidCheckInButton({
           {error}
         </p>
       )}
-      {saving && <p className="text-xs text-muted-foreground">Saving… ☁️</p>}
+      {savingShown && (
+        <p id={savingId} className="text-xs text-muted-foreground">
+          {SAVING}
+        </p>
+      )}
     </div>
   );
 }

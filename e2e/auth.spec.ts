@@ -167,7 +167,7 @@ test("settings changes show on the profile", async ({ page }) => {
   await chooseTimezone(page, "Asia/Tokyo");
   await expect(page.getByText("Changes apply from your next day and week.")).toBeVisible();
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status")).toHaveText("Saved");
+  await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");
 
   await page.goto("/profile");
   await expect(page.getByText("Tokyo · weeks start Sunday")).toBeVisible();
@@ -200,7 +200,7 @@ test("the first day of the week can be changed in settings", async ({ page }) =>
   await expect(page.getByLabel("Week starts on")).toHaveValue("0"); // detected from the browser locale (en-US)
   await page.getByLabel("Week starts on").selectOption("1");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("status")).toHaveText("Saved");
+  await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");
   await page.reload();
   await expect(page.getByLabel("Week starts on")).toHaveValue("1");
 });
@@ -271,5 +271,5 @@ test("saving settings twice confirms both saves", async ({ page }) => {
   await page.getByLabel("Display name").fill("Bee");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("button", { name: "Saved" })).toBeVisible();
-  await expect(page.getByRole("status")).toHaveText("Saved");
+  await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");
 });

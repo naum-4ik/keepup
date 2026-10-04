@@ -140,7 +140,7 @@ test("an invited person joins from the link and lands on the group's habits", as
   await expect(guest.getByText("You're joining Family. A little about you first.")).toBeVisible();
   await expect(guest.getByText("Keepup is for")).toBeHidden();
   await completeOnboarding(guest, { name: "Grandma", invited: true });
-  await expect(guest.getByRole("status")).toContainText("You joined Family ✓");
+  await expect(guest.getByRole("main").getByRole("status")).toContainText("You joined Family ✓");
 
   await page.goto("/groups");
   await expect(page.getByRole("link", { name: /Family/ })).toContainText("2 members");
@@ -156,7 +156,7 @@ test("someone already using Keepup joins with one tap", async ({ page, browser }
   await friend.goto(url);
   await friend.getByRole("button", { name: "Join Flatmates" }).click();
   await expect(friend).toHaveURL(/\/today\?joined=/);
-  await expect(friend.getByRole("status")).toContainText("You joined Flatmates ✓");
+  await expect(friend.getByRole("main").getByRole("status")).toContainText("You joined Flatmates ✓");
   // Already in: the link now offers Open, not Join.
   await friend.goto(url);
   await expect(friend.getByRole("button", { name: /^Join / })).toHaveCount(0);

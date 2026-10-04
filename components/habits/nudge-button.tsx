@@ -5,6 +5,7 @@ import { DropdownMenu } from "radix-ui";
 import { nudge } from "@/app/(app)/inbox/actions";
 import { Button } from "@/components/ui/button";
 import { NUDGE_KINDS } from "@/lib/feed-copy";
+import { NEEDS_CONNECTION } from "@/lib/offline-copy";
 
 // Three preset messages, no free text (ideas/notifications-tone.md). One per person, habit and day.
 export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: string; recipientId: string; name: string; sent: boolean }) {
@@ -43,12 +44,18 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
                 onSelect={() =>
                   startTransition(async () => {
                     setError(null);
-                    const r = await nudge(habitId, recipientId, k.kind);
-                    if (r.ok || r.code === "already_nudged") setDone(true);
-                    else if (r.code === "cannot_nudge") {
-                      setClosed(true);
-                      setError(r.message ?? null);
-                    } else setError(r.message ?? null);
+                    // Offline, or the request never came back (a thrown action): it needs the server.
+                    if (!navigator.onLine) return setError(NEEDS_CONNECTION);
+                    try {
+                      const r = await nudge(habitId, recipientId, k.kind);
+                      if (r.ok || r.code === "already_nudged") setDone(true);
+                      else if (r.code === "cannot_nudge") {
+                        setClosed(true);
+                        setError(r.message ?? null);
+                      } else setError(r.message ?? null);
+                    } catch {
+                      setError(NEEDS_CONNECTION);
+                    }
                   })
                 }
                 className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm font-semibold outline-none select-none data-highlighted:bg-muted"

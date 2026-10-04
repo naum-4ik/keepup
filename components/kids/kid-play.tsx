@@ -9,12 +9,11 @@ import { GardenPicture } from "@/components/kids/garden";
 import { NewWeekCard } from "@/components/kids/new-week-card";
 import { HoldToExit } from "@/components/kids/hold-to-exit";
 import { useReducedMotion } from "@/components/kids/use-calm";
-import { useOfflineQueue, useQueueTap } from "@/components/offline/offline-queue-provider";
+import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
 import { stageFor, themeStages } from "@/lib/garden";
 import { createTapGuard, inOrder, orderForKid } from "@/lib/kid-order";
 import { isMuted, playKidSound, setMuted } from "@/lib/kid-sound";
-import { GENERIC_ERROR } from "@/lib/habit-errors";
-import { newTap, withQueuedTaps } from "@/lib/offline-sync";
+import { withQueuedTaps } from "@/lib/offline-sync";
 import { MAX_ITEMS, sceneItems } from "@/lib/scene-items";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
@@ -109,7 +108,7 @@ export function KidPlay({
   const inFlight = useRef(new Set<string>());
   const lastTap = useRef(new Map<string, number>());
   const { queued, ready } = useOfflineQueue();
-  const queueTap = useQueueTap();
+  const submitTap = useSubmitTap();
   // Taps saved on the phone count on screen until they sync, so the star doesn't vanish in the car,
   // and a queued card counts as done for the order (it still sinks).
   const base = useMemo(() => {
@@ -423,23 +422,11 @@ export function KidPlay({
                   const doneAtTap = base.habits.find((x) => x.id === h.id)?.done ?? h.done;
                   startTransition(async () => {
                     tap({ habitId: h.id, doneAtTap });
-                    // Offline, or the request never came back: the tap waits on this phone under the
-                    // same id and time (the effect above already played).
-                    const id = newTap();
-                    const queueIt = () => queueTap({ habitId: h.id, subjectId: child.id, byChild: true, ...id });
+                    // Saved on this phone first, then tried online; offline it just waits (the effect
+                    // above already played). lib/offline-client.ts submitTap.
                     try {
-                      if (!navigator.onLine) {
-                        await queueIt();
-                        return;
-                      }
-                      try {
-                        const r = await checkInFor(h.id, child.id, true, id);
-                        if (!r.ok) setError(r.message);
-                      } catch {
-                        await queueIt();
-                      }
-                    } catch {
-                      setError(GENERIC_ERROR);
+                      const r = await submitTap({ habitId: h.id, subjectId: child.id, byChild: true }, (id) => checkInFor(h.id, child.id, true, id));
+                      if (!r.ok) setError(r.message);
                     } finally {
                       inFlight.current.delete(h.id);
                       setSaving(new Set(inFlight.current));

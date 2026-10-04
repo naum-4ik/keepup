@@ -8,14 +8,23 @@ import { countCheckIns, countCheckInsOf, createHabit } from "./helpers/habits";
 const BANNER = "Offline · showing your last update";
 
 // The worker must control the page before a page can be saved for offline use; the reload goes
-// through it, and the test waits until the copy is actually saved.
+// through it, and the test waits until the copy (saved after its scripts) is in the cache.
+// expect.poll + evaluate, not waitForFunction: that one doesn't await an async predicate.
 async function waitForWorker(page: Page, path: string) {
-  await page.waitForFunction(async () => {
-    await navigator.serviceWorker.ready;
-    return navigator.serviceWorker.controller !== null;
-  });
+  await expect
+    .poll(() => page.evaluate(async () => (await navigator.serviceWorker.ready, navigator.serviceWorker.controller !== null)))
+    .toBe(true);
   await page.reload();
-  await page.waitForFunction(async (p) => Boolean(await caches.match(p)), path);
+  await waitForSaved(page, path);
+}
+
+async function waitForSaved(page: Page, path: string, containing?: string) {
+  await expect
+    .poll(() => page.evaluate(async ([p, text]) => {
+      const hit = await caches.match(p);
+      return Boolean(hit) && (!text || (await hit!.text()).includes(text));
+    }, [path, containing ?? ""] as const))
+    .toBe(true);
 }
 
 async function addChild(page: Page, name: string): Promise<string> {
@@ -123,4 +132,24 @@ test("offline, Me + Mary needs a connection; Just me waits on the phone", async 
   // Only my check-in waits: Mary's row for the same habit doesn't say it's saving.
   await expect(page.getByRole("region", { name: "Family" }).getByText("Saving… ☁️")).toBeVisible();
   await expect(page.getByText("Saving… ☁️")).toHaveCount(1);
+});
+
+test("Today reached by client-side navigation is saved for offline use, and kept fresh after a check-in", async ({ page, context }) => {
+  await signUpAndOnboard(page);
+  await createHabit(page, { title: "Walk", count: 1, period: "day" });
+  await waitForWorker(page, "/today");
+  await page.goto("/progress");
+  await page.evaluate(() => caches.delete("keepup-pages"));
+  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Today" }).click();
+  await expect(page).toHaveURL(/\/today$/);
+  await waitForSaved(page, "/today");
+
+  await page.getByRole("button", { name: "Check in: Walk" }).click(); // online
+  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await expect(page.getByText("Saving… ☁️")).toHaveCount(0);
+  await waitForSaved(page, "/today", "Done: Walk");
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByText(BANNER)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
 });

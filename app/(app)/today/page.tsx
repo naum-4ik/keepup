@@ -170,17 +170,17 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       ))}
       {/* Offline (the saved page), cards whose buttons need the server say so (ideas/offline.md §3). */}
       {shownRecaps.map((r) => (
-        <NeedsConnection key={recapKey(r)}>
+        <NeedsConnection key={recapKey(r)} label={`${r.group_name} recap`}>
           <FamilyRecapCard cardKey={recapKey(r)} group={r.group_name} line={recapLine(r, milestones.some((n) => n.group_id === r.group_id))} />
         </NeedsConnection>
       ))}
       {gentle && (
-        <NeedsConnection key={gentle.key}>
+        <NeedsConnection key={gentle.key} label={gentle.key.startsWith("add_child") ? "Add a child" : "Invite"}>
           <GentleCard card={gentle} />
         </NeedsConnection>
       )}
       {finishes.map(({ h, summary }) => (
-        <NeedsConnection key={h.habit_id}>
+        <NeedsConnection key={h.habit_id} label={`${h.title} is finished`}>
           <FinishCard
             habitId={h.habit_id}
             endsOn={ends.get(h.habit_id) ?? ""}
