@@ -216,3 +216,30 @@ test("offline: the Today card counts a queued tap; Undo takes it back and nothin
   expect(syncs).toHaveLength(0);
   expect(countCheckIns(id)).toBe(0);
 });
+
+test("Undo after an online try that got no answer in time: the server ends without the check-in", async ({ page }) => {
+  test.setTimeout(60_000);
+  await signUpAndOnboard(page);
+  await createHabit(page, { title: "Walk", count: 1, period: "day" });
+  const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
+  // The check-in reaches the server at once, but its answer is held past the 10 s tap timeout.
+  let held = false;
+  await page.route("**/today", async (route) => {
+    const req = route.request();
+    if (held || req.method() !== "POST" || !req.headers()["next-action"]) return route.continue();
+    held = true;
+    const res = await route.fetch();
+    await new Promise((r) => setTimeout(r, 12_000));
+    await route.fulfill({ response: res }).catch(() => undefined);
+  });
+  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await expect.poll(() => countCheckIns(id)).toBe(1); // the server has it
+  const undo = page.getByRole("button", { name: "Undo check-in for Walk" });
+  await expect(undo).toBeVisible({ timeout: 15_000 }); // the try timed out: it waits on the phone
+  await undo.click();
+  await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible(); // open again at once
+  await expect.poll(() => countCheckIns(id), { timeout: 20_000 }).toBe(0); // the queued undo reached the server
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible();
+});

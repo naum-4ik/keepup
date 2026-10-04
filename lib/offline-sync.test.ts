@@ -67,6 +67,17 @@ describe("httpSender", () => {
     expect(JSON.parse(String(calls[0][1].body))).toEqual(entry);
   });
 
+  it("keeps the phone's bookkeeping (attempts, maybe sent) on the phone", async () => {
+    let body = "";
+    const fake = (async (_url: string, init: RequestInit) => {
+      body = String(init.body);
+      return new Response(JSON.stringify({ outcome: "synced" }), { status: 200 });
+    }) as unknown as typeof fetch;
+    const tap = { kind: "check_in" as const, clientId: C, habitId: H, subjectId: null, tappedAt: "2026-10-05T21:58:00.000Z" };
+    await httpSender(fake)({ ...tap, maybeSent: true, attempts: 2, firstFailedAt: "2026-10-05T22:00:00.000Z" });
+    expect(JSON.parse(body)).toEqual(tap);
+  });
+
   it("keeps the attempt count on the phone", async () => {
     let body = "";
     const fake = (async (_url: string, init: RequestInit) => ((body = String(init.body)), new Response(JSON.stringify({ outcome: "synced" })))) as unknown as typeof fetch;

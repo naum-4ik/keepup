@@ -24,9 +24,16 @@ describe("adding to the queue", () => {
     expect(q).toEqual([]);
   });
 
-  it("undo while that check-in is being sent is queued, not dropped", () => {
+  it("undo while that check-in is being sent: it leaves the queue (shows open) and an undo is queued", () => {
     const q = addUndo(addCheckIn([], tap("a")), { kind: "undo", clientId: "a", habitId: "h1" }, new Set(["a"]));
-    expect(q.map((e) => `${e.kind}:${e.clientId}`)).toEqual(["check_in:a", "undo:a"]);
+    expect(q.map((e) => `${e.kind}:${e.clientId}`)).toEqual(["undo:a"]);
+  });
+
+  it("undo of a check-in the server may have (maybe sent) asks the server; a never-tried one is just dropped", () => {
+    const sent = addUndo(addCheckIn([], { ...tap("a"), maybeSent: true }), { kind: "undo", clientId: "a", habitId: "h1" });
+    expect(sent.map((e) => `${e.kind}:${e.clientId}`)).toEqual(["undo:a"]);
+    expect(pendingCounts(sent).size).toBe(0);
+    expect(addUndo(addCheckIn([], tap("a")), { kind: "undo", clientId: "a", habitId: "h1" })).toEqual([]);
   });
 
   it("undo of an already-synced check-in is queued once", () => {

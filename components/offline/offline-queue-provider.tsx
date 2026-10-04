@@ -74,7 +74,10 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
       send: httpSender(),
       locks: (navigator as Navigator & { locks?: Locks }).locks ?? null,
       isOnline: () => navigator.onLine,
-      onCounts: setQueued,
+      // In a transition, like the flush below: when an online tap lands, the queue forgets it while the
+      // check-in's own page refresh is still on its way. Applied together, the Today card and the
+      // buttons never count that tap twice (the refreshed count plus the queued one).
+      onCounts: (counts) => startTransition(() => setQueued(counts)),
       onFlushed: ({ counts, changed, poisoned }) => {
         // The saved state and the fresh page land together: clearing "Saving…" before the refresh
         // would flip the card back to open for a moment (and slide it in the kid view).
