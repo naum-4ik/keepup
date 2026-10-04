@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { todayLine, todayProgress } from "./today-progress";
+import { todayLine, todayProgress, withQueuedProgress } from "./today-progress";
 
 const h = (id: string, state: "open" | "done" | "later", period: "day" | "week" = "day") => ({
   habit_id: id,
@@ -58,5 +58,38 @@ describe("todayLine", () => {
   it("never uses guilt words", () => {
     const lines = [0, 1, 2, 3, 4, 5].map((d) => todayLine(d, 5)).join(" ").toLowerCase();
     for (const w of ["failed", "missed", "don't lose", "hurry", "last chance", "only", "lazy"]) expect(lines).not.toContain(w);
+  });
+});
+
+describe("withQueuedProgress", () => {
+  const q = (entries: [string, number][]) => new Map(entries);
+
+  it("a queued tap counts: the ring and 'N of M done' include it", () => {
+    const habits = [h("read", "done"), h("water", "open"), h("run", "open")];
+    expect(todayProgress(withQueuedProgress(habits, q([["water", 1]])))).toMatchObject({ done: 2, total: 3 });
+    expect(todayProgress(withQueuedProgress(habits, q([["water", 1], ["run", 1]]))).done).toBe(3);
+  });
+
+  it("never past the target, and only as many taps as it takes", () => {
+    const water = { ...h("water", "open"), target_count: 3, done_count: 1 };
+    expect(todayProgress(withQueuedProgress([water], q([["water", 1]]))).done).toBe(0);
+    expect(todayProgress(withQueuedProgress([water], q([["water", 5]]))).done).toBe(1);
+  });
+
+  it("a weekly habit tapped today is done for today", () => {
+    const weekly = { ...h("walk", "open", "week"), target_count: 3 };
+    const [shown] = withQueuedProgress([weekly], q([["walk", 1]]));
+    expect(shown).toMatchObject({ done_count: 1, checked_in_today: true });
+    expect(todayProgress([shown]).done).toBe(1);
+  });
+
+  it("a queued tap on an approval habit waits for a yes: not done, no early 'all done'", () => {
+    const gym = { ...h("gym", "open"), requires_approval: true };
+    const p = todayProgress(withQueuedProgress([h("read", "done"), gym], q([["gym", 1]])));
+    expect(p).toMatchObject({ done: 1, total: 2 });
+  });
+
+  it("someone else's queued taps (a child's, keyed with their id) don't count here", () => {
+    expect(todayProgress(withQueuedProgress([h("read", "open")], q([["read/kid-1", 1]]))).done).toBe(0);
   });
 });

@@ -87,7 +87,12 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   // The first-check-in tip is for people who have never checked in (not for someone on a new device).
   const isNewUser = habits.every((h) => h.done_count === 0 && h.best_streak === 0);
   // The Today card: every adult section's to-do and done habits (kids have their own stars).
-  const progress = todayProgress(sections.flatMap((s) => s.habits));
+  const progressHabits = sections.flatMap((s) => s.habits).map((h) => ({
+    habit_id: h.habit_id, title: h.title, emoji: h.emoji, category: h.category, target_count: h.target_count, period: h.period,
+    done_count: h.done_count, checked_in_today: h.checked_in_today, frozen: h.frozen, not_started: h.not_started,
+    pending_count: h.pending_count, requires_approval: h.requires_approval,
+  }));
+  const progress = todayProgress(progressHabits);
   const now = new Date();
   const date = new Intl.DateTimeFormat("en-GB", { timeZone: profile.timezone, weekday: "long", day: "numeric", month: "long" }).format(now);
   const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: profile.timezone }).format(now);
@@ -135,9 +140,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         <TodayCard
           date={date}
           dayKey={dayKey}
-          done={progress.done}
-          total={progress.total}
-          items={progress.items}
+          habits={progressHabits}
           week={overview && hasWeekData(overview) ? { done: overview.done, possible: overview.possible, streak: overview.best_current_streak } : null}
           quiet={everyone.length > 0}
         />
@@ -196,7 +199,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       ))}
       {/* Nothing due today: the week still shows on its own. */}
       {progress.total === 0 && overview && hasWeekData(overview) && (
-        <TodayCard date={date} dayKey={dayKey} done={0} total={0} items={[]} week={{ done: overview.done, possible: overview.possible, streak: overview.best_current_streak }} />
+        <TodayCard date={date} dayKey={dayKey} habits={[]} week={{ done: overview.done, possible: overview.possible, streak: overview.best_current_streak }} />
       )}
       {habits.length === 0 && kids.length === 0 && finishes.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">

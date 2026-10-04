@@ -4,9 +4,9 @@ import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Check, Clock, Plus, Snowflake } from "lucide-react";
 import { checkIn, checkInWith } from "@/app/(app)/habits/actions";
 import { dismissFirstCheckinTip } from "@/components/first-checkin-tip";
-import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
+import { useOfflineQueue, useSubmitTap, useUndoQueuedTap } from "@/components/offline/offline-queue-provider";
 import { GENERIC_ERROR } from "@/lib/habit-errors";
-import { NEEDS_CONNECTION, SAVING } from "@/lib/offline-copy";
+import { NEEDS_CONNECTION, SAVING, UNDO, undoLabel } from "@/lib/offline-copy";
 import { queueKey } from "@/lib/offline-queue";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
@@ -42,9 +42,11 @@ export function CheckInButton({
   // multi-count habit remounts the node and replays the bounce, even if the previous one is still playing.
   const [burst, setBurst] = useState(0);
   const celebrateTimeout = useRef<number | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const [choosing, setChoosing] = useState(false);
   const { queued } = useOfflineQueue();
   const submitTap = useSubmitTap();
+  const undoQueued = useUndoQueuedTap();
   const savingId = useId();
   // A tap waiting on this phone (ideas/offline.md §1): it looks checked and says it's saving. While
   // the online try runs, the button's own busy state says enough.
@@ -102,6 +104,7 @@ export function CheckInButton({
     <div className="flex flex-col items-end gap-1">
       <button
         key={burst}
+        ref={buttonRef}
         type="button"
         aria-label={`${LABEL[shown]}: ${title}`}
         aria-describedby={savingShown ? savingId : undefined}
@@ -151,9 +154,24 @@ export function CheckInButton({
         </p>
       )}
       {savingShown && (
-        <p id={savingId} className="text-xs text-muted-foreground">
-          {SAVING}
-        </p>
+        <div className="flex items-center gap-1">
+          <p id={savingId} className="text-xs text-muted-foreground">
+            {SAVING}
+          </p>
+          {/* Takes the waiting tap back: it is never sent, and the card is open again. */}
+          <button
+            type="button"
+            aria-label={undoLabel(title)}
+            onClick={async () => {
+              await undoQueued(habitId);
+              // The Undo button goes away with the tap: focus goes back to the check-in button.
+              requestAnimationFrame(() => buttonRef.current?.focus());
+            }}
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-full px-2 text-xs font-semibold text-primary underline-offset-2 hover:underline"
+          >
+            {UNDO}
+          </button>
+        </div>
       )}
     </div>
   );

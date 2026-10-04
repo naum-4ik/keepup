@@ -127,6 +127,21 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
   return <OfflineQueueContext.Provider value={value}>{children}</OfflineQueueContext.Provider>;
 }
 
+// Undo next to "Saving…" (lib/offline-client.ts undoQueued): the card shows open again at once.
+export function useUndoQueuedTap() {
+  const { client } = useContext(OfflineQueueContext);
+  return useCallback(
+    async (habitId: string, subjectId: string | null = null): Promise<void> => {
+      try {
+        await client?.undoQueued(habitId, subjectId);
+      } catch (e) {
+        console.error("undo queued tap", e);
+      }
+    },
+    [client],
+  );
+}
+
 type Online = (tap: { clientId: string }) => Promise<{ ok: true } | { ok: false; message: string }>;
 
 // A check-in tap: saved on this phone first, then tried online (lib/offline-client.ts submitTap).

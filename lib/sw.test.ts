@@ -70,7 +70,7 @@ function fakeCaches() {
 
 function worker(
   windows: Win[], openWindow = vi.fn(async () => null), fetchImpl = vi.fn(), subscribe = vi.fn(), cacheStore = fakeCaches(), version = "test",
-  showNotification = vi.fn(async (..._args: unknown[]): Promise<void> => undefined),
+  showNotification = vi.fn<(...args: unknown[]) => Promise<void>>(async () => undefined),
 ) {
   const handlers: Record<string, (e: unknown) => void> = {};
   const self = {
@@ -159,7 +159,7 @@ describe("sw.js push payloads", () => {
   });
 
   it("a notification the browser refuses to show never rejects waitUntil", async () => {
-    const refuse = vi.fn(async (..._args: unknown[]): Promise<void> => { throw new TypeError("no permission"); });
+    const refuse = vi.fn<(...args: unknown[]) => Promise<void>>(async () => { throw new TypeError("no permission"); });
     const sw = worker([], undefined, undefined, undefined, undefined, undefined, refuse);
     await expect(sw.push({ title: "Family" })).resolves.toBeDefined();
     expect(refuse).toHaveBeenCalled();

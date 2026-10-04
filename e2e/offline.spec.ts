@@ -181,3 +181,33 @@ test("Today reached by client-side navigation is saved for offline use, and kept
   await expect(page.getByText(BANNER)).toBeVisible();
   await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
 });
+
+test("offline: the Today card counts a queued tap; Undo takes it back and nothing is sent", async ({ page, context }) => {
+  await signUpAndOnboard(page);
+  await createHabit(page, { title: "Walk", count: 1, period: "day" });
+  await createHabit(page, { title: "Read", count: 1, period: "day" });
+  const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
+  await waitForWorker(page, "/today", "Check in: Read");
+  const card = page.getByRole("region", { name: "Today's progress" });
+  await expect(card.getByText("0 of 2 done")).toBeVisible();
+
+  await context.setOffline(true);
+  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await expect(page.getByText("Saving… ☁️")).toBeVisible();
+  await expect(card.getByText("1 of 2 done")).toBeVisible();
+  await expect(card.getByRole("img", { name: "1 of 2 done today" })).toBeVisible();
+
+  const undo = page.getByRole("button", { name: "Undo check-in for Walk" });
+  const box = await undo.boundingBox();
+  expect(box!.width).toBeGreaterThanOrEqual(44);
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+  await undo.click();
+  await expect(page.getByText("Saving… ☁️")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible();
+  await expect(card.getByText("0 of 2 done")).toBeVisible();
+
+  await context.setOffline(false);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible();
+  expect(countCheckIns(id)).toBe(0);
+});

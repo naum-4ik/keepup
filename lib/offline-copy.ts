@@ -3,6 +3,8 @@
 export const OFFLINE_BANNER = "Offline · showing your last update";
 export const NEEDS_CONNECTION = "Needs a connection";
 export const SAVING = "Saving… ☁️";
+export const UNDO = "Undo";
+export const undoLabel = (habit: string) => `Undo check-in for ${habit}`;
 export const COULDNT_SAVE = "A check-in couldn't be saved. Please add it again.";
 
 // Sign-out with check-ins still on the phone (lib/push-support.ts signOutWithQueue).

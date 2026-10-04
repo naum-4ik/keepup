@@ -1,7 +1,8 @@
 import type { HabitCategory, HabitPeriod } from "@/lib/habit-schema";
+import { withQueuedTaps } from "@/lib/offline-sync";
 import { groupForToday, stateOf } from "@/lib/today";
 
-type ProgressHabit = {
+export type ProgressHabit = {
   habit_id: string;
   title: string;
   emoji: string | null;
@@ -13,6 +14,7 @@ type ProgressHabit = {
   frozen: boolean;
   not_started: boolean;
   pending_count?: number | null;
+  requires_approval?: boolean | null;
 };
 
 export type TodayItem = { habitId: string; title: string; emoji: string | null; category: HabitCategory | null; done: boolean };
@@ -32,6 +34,24 @@ export function todayProgress(habits: ProgressHabit[]): { done: number; total: n
     .filter((x) => listed.has(x))
     .map((x) => ({ habitId: x.habit_id, title: x.title, emoji: x.emoji, category: x.category, done: doneIds.has(x.habit_id) }));
   return { done: doneIds.size, total: items.length, items };
+}
+
+// Taps still waiting on this phone (lib/offline-queue.ts queueKey, mine only) count as the check-ins
+// they will be, never past the target: one on an approval habit waits for a yes (pending, not done),
+// so "all done" and its confetti still wait for it, as they will once it is sent.
+export function withQueuedProgress<T extends ProgressHabit>(habits: T[], queued: ReadonlyMap<string, number>): T[] {
+  if (queued.size === 0) return habits;
+  const counted = habits.map((h) => ({
+    id: h.habit_id, done: h.done_count + (h.pending_count ?? 0), target: h.target_count, state: "open", habit: h,
+  }));
+  return withQueuedTaps(counted, queued).habits.map((c, i) => {
+    const h = c.habit;
+    const extra = c.done - counted[i].done;
+    if (extra === 0) return h;
+    return h.requires_approval
+      ? { ...h, checked_in_today: true, pending_count: (h.pending_count ?? 0) + extra }
+      : { ...h, checked_in_today: true, done_count: h.done_count + extra };
+  });
 }
 
 // Encouraging, never guilt (docs/design.md voice); at most one emoji.
