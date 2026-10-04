@@ -206,8 +206,13 @@ test("offline: the Today card counts a queued tap; Undo takes it back and nothin
   await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible();
   await expect(card.getByText("0 of 2 done")).toBeVisible();
 
+  // Nothing is sent at all (not a check-in followed by an undo).
+  const syncs: string[] = [];
+  page.on("request", (r) => void (r.url().includes("/api/check-ins/sync") && syncs.push(r.url())));
   await context.setOffline(false);
   await page.reload();
   await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible();
+  await page.waitForLoadState("networkidle");
+  expect(syncs).toHaveLength(0);
   expect(countCheckIns(id)).toBe(0);
 });

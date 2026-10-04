@@ -80,10 +80,11 @@ grant execute on function
   to authenticated;
 
 -- 3. Copied from 20261006100000_offline_check_ins.sql (its latest definition). New: no "approval
--- expiring" for a check-in that arrived (and sent its approval_needed push) less than 2 hours before
--- its window closes: the reviewers just got a fresh push, a second one minutes later only rings again
--- (M4 final review M4). The approval_needed row is written by the check-in's own insert, so the
--- check-in's created_at is when that push went out.
+-- expiring" while the check-in's approval_needed push is less than 2 hours old: the reviewers just
+-- got a fresh push, a second one minutes later only rings again (M4 final review M4). A check-in that
+-- arrived 2–4 hours before the close still gets its reminder, once that push is 2 hours old. The
+-- approval_needed row is written by the check-in's own insert, so the check-in's created_at is when
+-- that push went out.
 create or replace function private.enqueue_expiring_approvals(p_now timestamptz)
 returns int
 language plpgsql
@@ -100,7 +101,7 @@ begin
      where c.status = 'pending' and h.group_id is not null and h.archived_at is null
        and p_now >= private.check_in_deadline(h, c) - interval '2 hours'
        and p_now < private.check_in_deadline(h, c)
-       and not (c.created_at >= private.check_in_deadline(h, c) - interval '2 hours'
+       and not (c.created_at > p_now - interval '2 hours'
                 and exists (select 1 from public.notifications n where n.check_in_id = c.id and n.kind = 'approval_needed'))
      order by h.id, c.id
   loop

@@ -1,7 +1,7 @@
 -- supabase/tests/database/m4_followups.test.sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(23);
+select plan(26);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -84,6 +84,25 @@ select private.enqueue_expiring_approvals('2026-10-16 10:00+02');
 select is((select count(*)::int from public.notifications where kind = 'approval_expiring' and check_in_id = (select v from t where k = 'ontime')
             and user_id = '00000000-0000-0000-0000-0000000000a1'),
   1, 'on time: Anna still hears it is expiring, 2 hours before the close');
+
+-- Just over 2 hours before the close (16 Oct tap, arrives 17 Oct 09:55; closes 12:00): the 10:00 tick
+-- would be 5 minutes after "approval needed": nothing.
+insert into t select 'edge', (private.check_in_impl('00000000-0000-0000-0000-0000000000d9', '00000000-0000-0000-0000-0000000000b1', '2026-10-17 09:55+02',
+  null, false, 'c0000000-0000-0000-0000-000000000003', '2026-10-16 20:00+02')).id;
+select private.enqueue_expiring_approvals('2026-10-17 10:00+02');
+select is((select count(*)::int from public.notifications where kind = 'approval_expiring' and check_in_id = (select v from t where k = 'edge')),
+  0, 'arrived 2h05 before the close: no "expiring" 5 minutes after "approval needed"');
+-- 3 hours before the close (17 Oct tap, arrives 18 Oct 09:00; closes 12:00): nothing at 10:00, the
+-- reminder at 11:00, once "approval needed" is 2 hours old.
+insert into t select 'early', (private.check_in_impl('00000000-0000-0000-0000-0000000000d9', '00000000-0000-0000-0000-0000000000b1', '2026-10-18 09:00+02',
+  null, false, 'c0000000-0000-0000-0000-000000000004', '2026-10-17 20:00+02')).id;
+select private.enqueue_expiring_approvals('2026-10-18 10:00+02');
+select is((select count(*)::int from public.notifications where kind = 'approval_expiring' and check_in_id = (select v from t where k = 'early')),
+  0, 'arrived 3h before the close: nothing an hour later');
+select private.enqueue_expiring_approvals('2026-10-18 11:00+02');
+select is((select count(*)::int from public.notifications where kind = 'approval_expiring' and check_in_id = (select v from t where k = 'early')
+            and user_id = '00000000-0000-0000-0000-0000000000a1'),
+  1, 'and the reminder once "approval needed" is 2 hours old');
 
 -- 4. A 23:45 reminder whose own tick didn't run is written by the 00:00 tick, once, for its own day.
 insert into public.push_subscriptions (user_id, endpoint, p256dh, auth)
