@@ -87,6 +87,7 @@ function copyFor(job: PushJob): copy.Copy | null {
     case "habit_reminder": return copy.habitReminder(habit);
     case "group_streak_ended": return copy.groupStreakEnded(group, habit, num(job.payload.streak), period(job.payload.period));
     case "streak_back": return copy.groupStreakBack(group, habit);
+    case "group_milestone": return copy.groupMilestone(group, habit, num(job.payload.streak), period(job.payload.period));
     case "group_habit_created": return copy.groupHabitCreated(group, who, habit, scheduleLabel(job.payload.target_count, job.payload.period));
     case "group_habit_paused": return copy.groupHabitPaused(group, habit, dayLabel(job.payload.ends_on));
     case "group_habit_resumed": return copy.groupHabitResumed(group, habit);
@@ -99,7 +100,7 @@ function copyFor(job: PushJob): copy.Copy | null {
 }
 
 function tagFor(job: PushJob): string {
-  if (job.kind === "group_check_in" || job.kind === "everyone_done") return `habit:${job.habit_id}`;
+  if (job.kind === "group_check_in" || job.kind === "everyone_done" || job.kind === "group_milestone") return `habit:${job.habit_id}`;
   if (job.kind === "approval_needed" || job.kind === "approval_expiring") return "approvals";
   if (job.kind === "daily_summary") return "reminder";
   if (job.kind === "habit_reminder") return `reminder:${job.habit_id}`;

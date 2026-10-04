@@ -115,6 +115,13 @@ export const levelUp = (level: number, levelName: string): Copy => ({ title: `Le
 
 export const badgeUnlocked = (badgeName: string): Copy => ({ title: "Unlocked", body: badgeName });
 
+// A group habit's streak milestone (Inbox row and push under Group updates; owner 2026-10-04: no group
+// cards on Today). Same words as its Inbox row (lib/feed-copy.ts).
+export const groupMilestone = (group: string, habit: string, length: number, period: PeriodUnit): Copy => ({
+  title: group,
+  body: `🔥 ${habit}: ${plural(length, period)} in a row, together`,
+});
+
 export const milestoneCard = (habit: string, length: number, period: PeriodUnit): string =>
   `🔥 ${habit}: ${plural(length, period)} in a row`;
 

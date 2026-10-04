@@ -1,7 +1,7 @@
 -- supabase/tests/database/m4_followups.test.sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(26);
+select plan(30);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -32,6 +32,19 @@ select throws_ok($$select private.rotate_push_subscription_impl('00000000-0000-0
   'P0001', 'keepup:invalid_subscription', 'a refused new subscription raises');
 select ok(exists (select 1 from public.push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/new'),
   'and the old row stays');
+
+-- At the 10-device cap, a rotation replaces only its own row: no other device is dropped.
+select tests.create_user('00000000-0000-0000-0000-0000000000c1', 'cleo@example.com', '{"full_name":"Cleo"}');
+insert into public.push_subscriptions (user_id, endpoint, p256dh, auth, created_at)
+select '00000000-0000-0000-0000-0000000000c1', 'https://fcm.googleapis.com/fcm/send/cleo' || i, 'p', 'a', now() - make_interval(days => 20 - i)
+  from generate_series(1, 10) i;
+select ok(private.rotate_push_subscription_impl('00000000-0000-0000-0000-0000000000c1', 'https://fcm.googleapis.com/fcm/send/cleo5',
+            'https://fcm.googleapis.com/fcm/send/cleo5b', 'p', 'a', null),
+  'at the cap: a rotation saves');
+select is((select array_agg(replace(endpoint, 'https://fcm.googleapis.com/fcm/send/', '') order by created_at, endpoint)
+             from public.push_subscriptions where user_id = '00000000-0000-0000-0000-0000000000c1'),
+  array['cleo1', 'cleo2', 'cleo3', 'cleo4', 'cleo6', 'cleo7', 'cleo8', 'cleo9', 'cleo10', 'cleo5b'],
+  'and keeps the other nine devices (the oldest isn''t dropped)');
 
 -- 2. The re-save on open: a phone shared without signing out moves to whoever signed in (same keys);
 -- a device removed under Devices (from this phone or another one) isn't brought back.
@@ -130,7 +143,7 @@ select is((select array_agg(dedupe_key) from reminder where habit_id = '00000000
   array['habit_reminder:00000000-0000-0000-0000-0000000000f1:2026-10-14:00000000-0000-0000-0000-0000000000a1'],
   'the 00:00 tick writes yesterday''s 23:45 reminder, keyed by its own day');
 select is((select count(*)::int from reminder where habit_id = '00000000-0000-0000-0000-0000000000f2'), 0,
-  'not for a habit done after its reminder time: the day is judged as it was at 23:45');
+  'no late reminder for a habit done since (14 Oct counts its 23:50 check-in), and not judged as the new day');
 select private.enqueue_reminders('2026-10-15 00:15+02');
 select is((select count(*)::int from reminder where habit_id = '00000000-0000-0000-0000-0000000000f1'), 1, 'exactly once');
 select private.enqueue_reminders('2026-10-15 08:00+02');
@@ -143,6 +156,21 @@ select is((select array_agg(dedupe_key order by dedupe_key) from reminder where 
   array['habit_reminder:00000000-0000-0000-0000-0000000000f1:2026-10-14:00000000-0000-0000-0000-0000000000a1',
         'habit_reminder:00000000-0000-0000-0000-0000000000f1:2026-10-15:00000000-0000-0000-0000-0000000000a1'],
   'when the 23:45 tick runs, the 00:00 tick adds nothing');
+
+-- 5. A group milestone is an Inbox row and a push under Group updates; Inbox only keeps it in the Inbox.
+create function pg_temp.milestone_for_dan(p_period date) returns uuid language sql as $$
+  insert into public.notifications (user_id, kind, group_id, habit_id, payload, dedupe_key)
+  values ('00000000-0000-0000-0000-0000000000b1', 'group_milestone', (select v from t where k = 'fam'), '00000000-0000-0000-0000-0000000000d9',
+          '{"streak": 7, "period": "day"}', 'group_milestone:test:' || p_period)
+  returning id;
+$$;
+insert into t select 'm1', pg_temp.milestone_for_dan('2026-10-20');
+select ok((select push and category = 'group_updates' from public.notifications where id = (select v from t where k = 'm1')),
+  'a group milestone is pushed under Group updates');
+select private.set_notification_delivery_impl('00000000-0000-0000-0000-0000000000b1', 'group_updates', 'inbox');
+insert into t select 'm2', pg_temp.milestone_for_dan('2026-10-21');
+select ok((select not push and category = 'group_updates' from public.notifications where id = (select v from t where k = 'm2')),
+  'Group updates set to Inbox only: the milestone stays in the Inbox, no push');
 
 select * from finish();
 rollback;

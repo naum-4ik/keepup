@@ -2,13 +2,14 @@
 -- latest definition; only the parts its comment names change. Sources:
 --   private.enqueue_expiring_approvals  20261006100000_offline_check_ins.sql
 --   private.enqueue_reminders           20261004100000_reminder_scheduler.sql
+--   private.push_category               20261005100000_group_pushes.sql
 -- New functions call private.save_push_subscription_impl (latest: 20261003100000_push_subscription_guard.sql)
 -- unchanged, so a saved device always passes the same guards (known push service, takeover, cap).
 
 -- 1. A rotated subscription (the service worker's pushsubscriptionchange) in one transaction: only
 -- while the caller still has the old device, the new one is saved and the old row dropped. A device
 -- removed under Devices (or someone else's) is a no-op: false. A refused save raises and rolls the
--- whole call back, so the old row stays.
+-- whole call back, so the old row (deleted just before) stays.
 -- Locks: the old row (FOR UPDATE), then whatever the save takes. A Remove at the same moment waits,
 -- or wins and this finds nothing.
 create function private.rotate_push_subscription_impl(
@@ -24,10 +25,10 @@ begin
   if not found then
     return false;
   end if;
+  -- The old row goes first, so the 10-device cap in the save never drops another device to make room
+  -- for this one's replacement.
+  delete from public.push_subscriptions ps where ps.endpoint = p_old_endpoint and ps.user_id = p_user;
   perform private.save_push_subscription_impl(p_user, p_endpoint, p_p256dh, p_auth, p_user_agent);
-  if p_endpoint is distinct from p_old_endpoint then
-    delete from public.push_subscriptions ps where ps.endpoint = p_old_endpoint and ps.user_id = p_user;
-  end if;
   return true;
 end;
 $$;
@@ -190,4 +191,35 @@ begin
   end loop;
   return v_n;
 end;
+$$;
+
+-- 5. Copied from 20261005100000_group_pushes.sql (its latest definition). New: a group habit's streak
+-- milestone is pushed under Group updates (owner 2026-10-04: no group cards on Today; the milestone is
+-- an Inbox row and a push instead).
+create or replace function private.push_category(p_kind text)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select case p_kind
+    when 'nudge' then 'nudges'
+    when 'check_in_rejected' then 'always'
+    when 'daily_summary' then 'reminders'
+    when 'habit_reminder' then 'reminders'
+    when 'approval_expiring' then 'approvals'
+    when 'approval_needed' then 'approvals'
+    when 'group_check_in' then 'group_activity'
+    when 'everyone_done' then 'group_activity'
+    when 'kid_goal_reached' then 'group_activity'
+    when 'kid_garden_full' then 'group_activity'
+    when 'kid_streak' then 'group_activity'
+    when 'group_streak_ended' then 'group_updates'
+    when 'streak_back' then 'group_updates'
+    when 'group_habit_created' then 'group_updates'
+    when 'group_habit_paused' then 'group_updates'
+    when 'group_habit_resumed' then 'group_updates'
+    when 'member_joined' then 'group_updates'
+    when 'group_milestone' then 'group_updates'
+  end;
 $$;

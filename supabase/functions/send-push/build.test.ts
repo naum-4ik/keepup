@@ -17,6 +17,11 @@ Deno.test("Everyone did it replaces the check-in push (same tag)", () => {
   assertEquals(buildPush(job({ kind: "everyone_done" }))!.tag, "habit:h1");
 });
 
+Deno.test("a group milestone names the streak, under the habit's tag", () => {
+  const p = buildPush(job({ kind: "group_milestone", habit: "Family dinner", payload: { streak: 7, period: "day" } }))!;
+  assertEquals([p.title, p.body, p.tag, p.url], ["Family", "🔥 Family dinner: 7 days in a row, together", "habit:h1", "/habits/h1"]);
+});
+
 Deno.test("one approval gets Approve / Don't approve buttons; iPhone taps open the Inbox", () => {
   const p = buildPush(job({ kind: "approval_needed", habit: "Gym", pending: [{ check_in_id: "c1", author: "Anna", habit: "Gym" }] }))!;
   assertEquals([p.body, p.tag, p.url, p.checkInId], ["Anna did Gym. Approve?", "approvals", "/inbox", "c1"]);

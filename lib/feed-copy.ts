@@ -62,7 +62,7 @@ export function feedCopy(n: FeedItem): { title: string; body: string; href: stri
       if (ended) return { ...ended, href: habitHref };
       return { title: group, body: `${habit} streak ended at ${streak} ${unit(streak, n.payload.period)}. Start a new one ${THIS[String(n.payload.period)] ?? "today"}.`, href: habitHref };
     }
-    case "group_milestone": return { title: group, body: `🔥 ${habit}: ${streak} ${unit(streak, n.payload.period)} in a row, together`, href: habitHref };
+    case "group_milestone": return { ...copy.groupMilestone(group, habit, streak, asPeriod(n.payload.period, "day")), href: habitHref };
     case "group_habit_created": {
       // The feed row carries period and target_count, not the full schedule: say "weekly" only for a once-a-period habit.
       const p = n.payload.period;
