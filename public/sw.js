@@ -286,9 +286,12 @@ async function openOrFocus(url) {
     const windows = (await self.clients.matchAll({ type: "window", includeUncontrolled: true })).filter(
       (w) => new URL(w.url).origin === self.location.origin,
     );
-    const kid = windows.find((w) => isKidPlay(w) && (w.focused || w.visibilityState === "visible"));
-    if (kid) {
-      await kid.focus();
+    // The window in front decides: a focused one, else a visible one. Only when that is a kid view is it
+    // just focused (the child stays in kid mode); a kid view merely visible behind the adult's window
+    // never swallows the tap.
+    const front = windows.find((w) => w.focused) ?? windows.find((w) => w.visibilityState === "visible");
+    if (front && isKidPlay(front)) {
+      await front.focus();
       return;
     }
     const there = windows.find((w) => w.url === target);

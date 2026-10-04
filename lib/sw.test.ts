@@ -194,6 +194,18 @@ describe("sw.js notification taps", () => {
     expect(openWindow).not.toHaveBeenCalled();
   });
 
+  it("a kid view visible behind the adult's focused window doesn't swallow the tap", async () => {
+    const play = win("/kids/k1/play");
+    play.visibilityState = "visible";
+    const today = win("/today", undefined, true);
+    const { click, openWindow } = worker([play, today]);
+    await click({ url: "/habits/h1" });
+    expect(play.focus).not.toHaveBeenCalled();
+    expect(play.navigate).not.toHaveBeenCalled();
+    expect(today.navigate).toHaveBeenCalledWith(`${ORIGIN}/habits/h1`);
+    expect(openWindow).not.toHaveBeenCalled();
+  });
+
   it("a kid view in the background is never the window that gets moved", async () => {
     const play = win("/kids/k1/play");
     const today = win("/today");
