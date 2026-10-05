@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChartColumn } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
-import { CategoryIcon, HabitEmoji } from "@/components/habits/category-icon";
+import { HabitEmoji } from "@/components/habits/category-icon";
 import { StreakBadge } from "@/components/habits/streak-badge";
 import { HabitDots, WeekCard } from "@/components/overview/week-overview";
 import { Button } from "@/components/ui/button";
@@ -64,22 +64,6 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
         ))}
       </nav>
 
-      {/* Jump to a category: one anchor chip per category in this list, when there's more than one. */}
-      {categories.length > 1 && (
-        <nav aria-label="Categories" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-          {categories.map((c) => (
-            <a
-              key={c}
-              href={`#cat-${c}`}
-              className="flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-card pr-3.5 pl-1.5 text-sm font-semibold shadow-soft hover:bg-muted"
-            >
-              <CategoryIcon category={c} size="xs" />
-              {CATEGORIES[c].label}
-            </a>
-          ))}
-        </nav>
-      )}
-
       {habits.length === 0 ? (
         <EmptyState
           icon={<ChartColumn className="size-6" />}
@@ -95,8 +79,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
         </EmptyState>
       ) : (
         categories.map((c) => (
-          // scroll-mt clears the sticky header when a chip jumps here.
-          <section key={c} id={`cat-${c}`} aria-labelledby={`cat-${c}-title`} className="flex scroll-mt-20 flex-col gap-2">
+          <section key={c} aria-labelledby={`cat-${c}-title`} className="flex flex-col gap-2">
             <h2 id={`cat-${c}-title`} className="text-sm font-bold text-muted-foreground">{CATEGORIES[c].label}</h2>
             <ul className="flex flex-col gap-2">
               {habits
