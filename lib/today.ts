@@ -42,3 +42,10 @@ export function allCheckedOffKey<T extends TodayHabit>(sections: { key: string; 
   }
   return null;
 }
+
+// The "1/3" ring on a weekly or monthly check-in button: partway through a period that needs more
+// than one check-in. Daily habits have their own bar; nothing yet or done shows the plain icon.
+export function ringOf(h: Pick<TodayHabit, "period" | "target_count" | "done_count">): { done: number; target: number } | null {
+  if (h.period === "day" || h.target_count <= 1 || h.done_count <= 0 || h.done_count >= h.target_count) return null;
+  return { done: h.done_count, target: h.target_count };
+}

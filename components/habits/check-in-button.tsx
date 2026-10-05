@@ -8,6 +8,7 @@ import { useOfflineQueue, useSubmitTap, useUndoQueuedTap } from "@/components/of
 import { GENERIC_ERROR } from "@/lib/habit-errors";
 import { NEEDS_CONNECTION, SAVING, UNDO, undoLabel } from "@/lib/offline-copy";
 import { queueKey } from "@/lib/offline-queue";
+import { ringDash } from "@/lib/week-overview";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
@@ -26,11 +27,15 @@ export function CheckInButton({
   state,
   multi,
   withChildren = [],
+  ring = null,
 }: {
   habitId: string;
   title: string;
   state: CheckInState;
   multi: boolean;
+  // Weekly/monthly partway (ringOf): a ring and "1/3" instead of the icon, while it can still take a tap
+  // or is checked for today.
+  ring?: { done: number; target: number } | null;
   // "Me + Mary" (ideas/kids-and-groups.md §5): children in this group habit who still have it open.
   // Only ever offered on the viewer's own check-in.
   withChildren?: { id: string; name: string }[];
@@ -54,6 +59,7 @@ export function CheckInButton({
   const savingShown = saving && !pending;
   const shown: CheckInState = saving && state === "open" && !multi ? "checked-today" : state;
   const Icon = shown === "frozen" ? Snowflake : shown === "not-started" || shown === "pending" ? Clock : shown === "open" && multi ? Plus : Check;
+  const shownRing = ring && (shown === "open" || shown === "checked-today") ? ring : null;
 
   function celebrate() {
     dismissFirstCheckinTip();
@@ -106,7 +112,7 @@ export function CheckInButton({
         key={burst}
         ref={buttonRef}
         type="button"
-        aria-label={`${LABEL[shown]}: ${title}`}
+        aria-label={`${LABEL[shown]}: ${title}${shownRing ? `, ${shownRing.done} of ${shownRing.target}` : ""}`}
         aria-describedby={savingShown ? savingId : undefined}
         // Disabled while the request runs, so a double tap sends one check-in.
         disabled={shown !== "open" || pending}
@@ -127,10 +133,12 @@ export function CheckInButton({
           shown === "frozen" && "border-border text-frozen",
           shown === "not-started" && "border-border text-muted-foreground",
           shown === "open" && "border-input text-primary hover:bg-accent",
+          // The ring is the outline.
+          shownRing && "border-transparent",
           pending && "opacity-60",
         )}
       >
-        <Icon className="size-5" strokeWidth={2.5} aria-hidden />
+        {shownRing ? <Ring done={shownRing.done} target={shownRing.target} /> : <Icon className="size-5" strokeWidth={2.5} aria-hidden />}
       </button>
       {choosing && shown === "open" && (
         <div
@@ -186,5 +194,32 @@ function ChoiceButton({ onClick, children }: { onClick: () => void; children: Re
     >
       {children}
     </button>
+  );
+}
+
+// "1/3" inside a ring filled to the share done. Decoration: the button's label says "1 of 3".
+function Ring({ done, target }: { done: number; target: number }) {
+  const r = 18;
+  const { circumference, offset } = ringDash(done, target, r);
+  return (
+    <span aria-hidden className="relative flex size-full items-center justify-center">
+      <svg viewBox="0 0 44 44" className="absolute inset-0 size-full -rotate-90">
+        <circle cx="22" cy="22" r={r} fill="none" strokeWidth="3" className="stroke-muted" />
+        <circle
+          cx="22"
+          cy="22"
+          r={r}
+          fill="none"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="stroke-current"
+        />
+      </svg>
+      <span className="text-[0.6875rem] leading-none font-bold tabular-nums">
+        {done}/{target}
+      </span>
+    </span>
   );
 }

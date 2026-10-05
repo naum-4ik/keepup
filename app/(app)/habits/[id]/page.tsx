@@ -30,7 +30,7 @@ import { endLabel, endProgress, hasEnded } from "@/lib/habit-end";
 import { formatLocalDate } from "@/lib/dates";
 import { describeProgress, describeSchedule } from "@/lib/schedule";
 import { everyoneDidIt, memberStatus, membersOf, openChildrenOf } from "@/lib/today-sections";
-import { stateOf } from "@/lib/today";
+import { ringOf, stateOf } from "@/lib/today";
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -188,6 +188,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                 multi={h.target_count > 1}
                 state={stateOf(h)}
                 withChildren={openChildrenOf(h)}
+                ring={ringOf(h)}
               />
             )}
           </div>

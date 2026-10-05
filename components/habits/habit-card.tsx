@@ -7,7 +7,7 @@ import { KidCheckInButton } from "@/components/kids/kid-check-in-button";
 import type { HabitSummary } from "@/lib/habits";
 import { describeProgress } from "@/lib/schedule";
 import { everyoneDidIt, membersOf, openChildrenOf } from "@/lib/today-sections";
-import { stateOf } from "@/lib/today";
+import { ringOf, stateOf } from "@/lib/today";
 import { CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 
@@ -80,6 +80,7 @@ export function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; kid?: 
         multi={habit.target_count > 1}
         state={stateOf(habit)}
         withChildren={openChildrenOf(habit)}
+        ring={ringOf(habit)}
       />
     </div>
   );

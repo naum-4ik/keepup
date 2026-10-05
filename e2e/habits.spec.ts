@@ -174,8 +174,13 @@ test.describe("Today check-ins", () => {
     await signUpAndOnboard(page);
     await createHabit(page, { template: "Work out" });
     await page.getByRole("button", { name: "Check in: Work out" }).click();
-    await expect(page.getByRole("button", { name: "Checked in today: Work out" })).toBeDisabled();
+    // A 3×/week habit with one check-in shows a ring with "1/3", and says so in words.
+    const button = page.getByRole("button", { name: "Checked in today: Work out, 1 of 3" });
+    await expect(button).toBeDisabled();
+    await expect(button).toContainText("1/3");
     await expect(page.getByText(/1 of 3 this week/)).toBeVisible();
+    await page.getByRole("link", { name: /Work out/ }).click();
+    await expect(page.getByRole("button", { name: "Checked in today: Work out, 1 of 3" })).toContainText("1/3");
   });
 
   test("a double tap checks in only once", async ({ page }) => {
