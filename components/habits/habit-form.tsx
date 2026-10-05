@@ -1,10 +1,11 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Minus, Plus, Star, Users } from "lucide-react";
+import { Plus, Star, Users } from "lucide-react";
 import { createGroupHabit, createHabit } from "@/app/(app)/habits/actions";
 import { Avatar } from "@/components/avatar";
 import { CategoryIcon, HabitEmoji } from "@/components/habits/category-icon";
+import { CountStepper } from "@/components/habits/count-stepper";
 import { EMOJI_PANEL_ATTR, EmojiPicker } from "@/components/habits/emoji-picker";
 import { EndPicker } from "@/components/habits/end-picker";
 import { StartDatePicker } from "@/components/habits/start-date-picker";
@@ -79,8 +80,8 @@ export function HabitForm({
       // Together templates are for groups only: no "Just me".
       tab === "together",
     );
-  const createOwn = () =>
-    open(true, { title: "", emoji: "", category: tab === "popular" || tab === "together" ? "health" : tab, targetCount: "1", period: "day" });
+  // Your own habit starts with no category: the tab you were browsing isn't a choice you made.
+  const createOwn = () => open(true, { title: "", emoji: "", category: "", targetCount: "1", period: "day" });
 
   return (
     <div className="flex flex-col gap-4">
@@ -207,8 +208,6 @@ function HabitFields({
   const count = Number(values.targetCount);
   const period = (values.period in TARGET_LIMITS ? values.period : "day") as HabitPeriod;
   const limit = TARGET_LIMITS[period];
-  const step = (delta: number) =>
-    setValues((v) => ({ ...v, targetCount: String(Math.min(limit, Math.max(1, (Number(v.targetCount) || 0) + delta))) }));
   const validCount = Number.isInteger(count) && count >= 1 && count <= limit;
 
   // The browser resets <form> fields after a server action runs. Inputs re-sync from their
@@ -250,6 +249,8 @@ function HabitFields({
         <Label htmlFor="category" className="font-semibold">Category</Label>
         <select id="category" name="category" ref={categoryRef} value={values.category} onChange={set("category")} className={selectClass}
           aria-invalid={Boolean(errors.category)} aria-describedby={errors.category ? "category-error" : undefined}>
+          {/* Not `required`: the browser would block the submit and hide the other fields' messages. */}
+          <option value="" disabled>Pick a category</option>
           {CATEGORY_ORDER.map((c) => (
             <option key={c} value={c}>{CATEGORIES[c].label}</option>
           ))}
@@ -260,29 +261,16 @@ function HabitFields({
       <fieldset className="flex flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold">How often</legend>
         <div className="grid grid-cols-2 gap-2">
-          <div className="flex h-11 items-center rounded-xl border border-input">
-            <button type="button" onClick={() => step(-1)} disabled={count <= 1} aria-label="Decrease"
-              className="flex size-11 shrink-0 items-center justify-center rounded-l-xl text-primary enabled:hover:bg-accent disabled:text-muted-foreground/50">
-              <Minus className="size-4" />
-            </button>
-            <Label htmlFor="targetCount" className="sr-only">Times</Label>
-            <input
-              id="targetCount"
-              name="targetCount"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={values.targetCount}
-              onChange={set("targetCount")}
-              className="h-full w-full min-w-0 bg-transparent text-center text-base font-bold tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
-              aria-invalid={Boolean(errors.targetCount)}
-              aria-describedby={errors.targetCount ? "targetCount-error" : undefined}
-            />
-            <button type="button" onClick={() => step(1)} disabled={count >= limit} aria-label="Increase"
-              className="flex size-11 shrink-0 items-center justify-center rounded-r-xl text-primary enabled:hover:bg-accent disabled:text-muted-foreground/50">
-              <Plus className="size-4" />
-            </button>
-          </div>
+          {/* sr-only is absolutely positioned, so the label takes no grid cell. */}
+          <Label htmlFor="targetCount" className="sr-only">Times</Label>
+          <CountStepper
+            id="targetCount"
+            value={values.targetCount}
+            onChange={(targetCount) => setValues((v) => ({ ...v, targetCount }))}
+            period={period}
+            invalid={Boolean(errors.targetCount)}
+            describedBy={errors.targetCount ? "targetCount-error" : undefined}
+          />
           <Label htmlFor="period" className="sr-only">Per</Label>
           <select id="period" name="period" ref={periodRef} value={values.period} onChange={set("period")} className={selectClass}>
             {(["day", "week", "month"] as HabitPeriod[]).map((p) => (

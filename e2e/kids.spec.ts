@@ -136,6 +136,7 @@ test("Me + Mary checks in both in one tap", async ({ page }) => {
   await page.getByRole("button", { name: "Create your own" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Title").fill("Walk the dog");
+  await dialog.getByLabel("Category").selectOption("health");
   await dialog.getByRole("radio", { name: "Family" }).check();
   await dialog.getByRole("switch", { name: "Include Mary" }).click();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
@@ -152,6 +153,7 @@ test("Me + Mary from the group habit's page checks in both", async ({ page }) =>
   await page.getByRole("button", { name: "Create your own" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Title").fill("Walk the dog");
+  await dialog.getByLabel("Category").selectOption("health");
   await dialog.getByRole("radio", { name: "Family" }).check();
   await dialog.getByRole("switch", { name: "Include Mary" }).click();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
@@ -323,6 +325,7 @@ test("a group habit with a child that ended leaves the kid views, and Start agai
   await page.getByRole("button", { name: "Create your own" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Title").fill("Walk the dog");
+  await dialog.getByLabel("Category").selectOption("health");
   await dialog.getByRole("radio", { name: "Family" }).check();
   await dialog.getByRole("switch", { name: "Include Mary" }).click();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
@@ -629,4 +632,25 @@ test("a guardian archives a child's habit that has a check-in, and it leaves the
   await expect(page).toHaveURL(kidUrl);
   await expect(list.getByRole("listitem")).toHaveCount(2);
   await expect(list).not.toContainText("Tidy my toys");
+});
+
+test("a child's own habit uses the same −/＋ count as yours, capped by the period", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.getByRole("button", { name: "Add a habit" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Create your own" }).click();
+  const own = page.getByRole("dialog", { name: "Your own habit for Mary" });
+  await expect(own.getByLabel("Times")).toHaveValue("1");
+  await expect(own.getByRole("button", { name: "Decrease" })).toBeDisabled();
+  await own.getByRole("button", { name: "Increase" }).click();
+  await own.getByRole("button", { name: "Increase" }).click();
+  await expect(own.getByLabel("Times")).toHaveValue("3");
+  await own.getByLabel("Per").selectOption("week");
+  await own.getByLabel("Times").fill("7");
+  await expect(own.getByRole("button", { name: "Increase" })).toBeDisabled();
+  await own.getByLabel("Title").fill("Feed the fish");
+  await own.getByRole("button", { name: "Add habit" }).click();
+  await expect(own).toBeHidden();
+  await expect(page.getByRole("region", { name: "Habits" })).toContainText("Feed the fish");
 });

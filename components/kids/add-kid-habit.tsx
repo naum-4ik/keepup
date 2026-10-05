@@ -4,11 +4,12 @@ import { useActionState, useEffect, useState } from "react";
 import { PenLine, Plus } from "lucide-react";
 import { addChildHabit, type KidFormState } from "@/app/(app)/kids/actions";
 import { KidTemplateGroups, KidTemplateTile } from "@/components/kids/add-child-form";
+import { CountStepper } from "@/components/habits/count-stepper";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { HABIT_TITLE_MAX } from "@/lib/habit-schema";
+import { HABIT_TITLE_MAX, type HabitPeriod } from "@/lib/habit-schema";
 import { KID_TEMPLATES } from "@/lib/kid-templates";
 import { keepFormValues } from "@/lib/keep-form-values";
 
@@ -115,6 +116,9 @@ function CustomHabitForm({
 }) {
   const [state, formAction, pending] = useActionState(addChildHabit.bind(null, childId), initialState);
   const [emoji, setEmoji] = useState("⭐");
+  // Controlled, so the stepper knows the period's limit; keepFormValues means no reset wipes them.
+  const [count, setCount] = useState("1");
+  const [period, setPeriod] = useState<HabitPeriod>("day");
   useEffect(() => {
     if (state.status === "saved") onAdded();
   }, [state, onAdded]);
@@ -154,14 +158,20 @@ function CustomHabitForm({
             </button>
           ))}
         </div>
-        <div className="flex items-end gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="kid-habit-target" className="font-semibold">Times</Label>
-            <Input id="kid-habit-target" name="targetCount" type="number" inputMode="numeric" min={1} max={50} defaultValue={1} required className="h-11 w-20 rounded-xl px-3 text-base" />
+            <CountStepper id="kid-habit-target" value={count} onChange={setCount} period={period} />
           </div>
-          <div className="flex flex-1 flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="kid-habit-period" className="font-semibold">Per</Label>
-            <select id="kid-habit-period" name="period" defaultValue="day" className={selectClass}>
+            <select
+              id="kid-habit-period"
+              name="period"
+              value={period}
+              onChange={(e) => setPeriod(e.target.value as HabitPeriod)}
+              className={selectClass}
+            >
               <option value="day">day</option>
               <option value="week">week</option>
               <option value="month">month</option>

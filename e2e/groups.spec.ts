@@ -226,6 +226,7 @@ test("a group habit: both check in, both see Everyone did it, live", async ({ pa
   await page.getByRole("button", { name: "Create your own" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Title").fill("Family dinner");
+  await dialog.getByLabel("Category").selectOption("health");
   await dialog.getByRole("radio", { name: "Family" }).check();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
   await expect(page).toHaveURL(/\/today$/);
@@ -318,6 +319,7 @@ test("approval: check-ins wait, each approves the other in the Inbox, both see E
   await page.getByRole("button", { name: "Create your own" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Title").fill("Gym");
+  await dialog.getByLabel("Category").selectOption("health");
   await dialog.getByRole("radio", { name: "Gym buddies" }).check();
   await dialog.getByRole("switch", { name: "Needs approval" }).click();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();

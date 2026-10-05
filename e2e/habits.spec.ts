@@ -23,12 +23,15 @@ test("custom habits are validated", async ({ page }) => {
   await signUpAndOnboard(page);
   await page.goto("/habits/new");
   await page.getByRole("button", { name: "Create your own" }).click();
+  await expect(page.getByLabel("Category")).toHaveValue("");
 
   await page.getByLabel("Title").fill("   ");
   await page.getByRole("button", { name: "Add habit" }).click();
   await expect(page.getByText("Enter a title.")).toBeVisible();
+  await expect(page.getByText("Pick a category.")).toBeVisible();
 
   await page.getByLabel("Title").fill("Stretch");
+  await page.getByLabel("Category").selectOption("fitness");
   await page.getByLabel("Times").fill("8");
   await page.getByLabel("Per").selectOption("week");
   await page.getByRole("button", { name: "Add habit" }).click();
@@ -51,8 +54,10 @@ test("category tabs show more templates and 'Create your own'", async ({ page })
   await expect(page.getByRole("tabpanel").getByRole("button")).toHaveCount(6);
   await expect(page.getByRole("button", { name: /^Plan tomorrow/ })).toBeVisible();
   await page.getByRole("button", { name: "Create your own" }).click();
-  await expect(page.getByLabel("Category")).toHaveValue("work_money");
+  // The tab you were browsing doesn't choose the category for you.
+  await expect(page.getByLabel("Category")).toHaveValue("");
   await expect(page.getByLabel("Title")).toBeFocused();
+  await page.getByLabel("Category").selectOption("work_money");
   await expect(page.getByRole("button", { name: "Choose emoji (now 💼)" })).toBeVisible();
 });
 
@@ -86,6 +91,7 @@ test("a custom habit gets the emoji picked for it, shown on Today", async ({ pag
   await expect(own).toBeHidden();
   await expect(dialog).toBeVisible();
 
+  await dialog.getByLabel("Category").selectOption("mind");
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
   await expect(page).toHaveURL(/\/today$/);
   await expect(page.getByRole("link", { name: /Paint/ })).toContainText("🖌️");
@@ -413,6 +419,7 @@ test("a habit with an end: 30 days on create, Day 1 of 30, then extend and remov
   await page.getByRole("button", { name: "Create your own" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Title").fill("Read");
+  await dialog.getByLabel("Category").selectOption("learning");
   const ends = dialog.getByRole("group", { name: "Ends" });
   await expect(ends.getByRole("button", { name: "No end" })).toHaveAttribute("aria-pressed", "true");
   await expect(ends.getByRole("button")).toHaveText(["No end", "7 days", "30 days", "60 days", "90 days", "Until a date"]);

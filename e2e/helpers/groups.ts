@@ -62,6 +62,7 @@ export async function createGroupHabitVia(page: Page, group: string, title: stri
   await page.getByRole("button", { name: "Create your own" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Title").fill(title);
+  await dialog.getByLabel("Category").selectOption("health");
   await dialog.getByRole("radio", { name: group }).check();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
   await expect(page).toHaveURL(/\/today$/);

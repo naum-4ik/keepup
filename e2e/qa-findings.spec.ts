@@ -144,6 +144,7 @@ test("Times takes digits only: 1e1 is refused", async ({ page }) => {
   await page.getByRole("button", { name: "Create your own" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Title").fill("Push-ups");
+  await dialog.getByLabel("Category").selectOption("fitness");
   // The stepper's input is type=number; "1e1" is a valid number string there, so set it directly.
   await dialog.locator('input[name="targetCount"]').evaluate((el: HTMLInputElement) => (el.value = "1e1"));
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
@@ -156,6 +157,7 @@ test("an end before the start is refused, not dropped", async ({ page }) => {
   await page.getByRole("button", { name: "Create your own" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Title").fill("Stretch");
+  await dialog.getByLabel("Category").selectOption("fitness");
   await dialog.getByRole("button", { name: "Until a date" }).click();
   // The date field's min stops this in the browser; the server must refuse it too.
   await dialog.locator('input[name="endsOn"]').evaluate((el: HTMLInputElement) => (el.value = "2020-01-01"));
