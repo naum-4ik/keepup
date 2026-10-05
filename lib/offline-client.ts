@@ -44,10 +44,14 @@ export function createOfflineClient(deps: {
   let flushing = false;
   let held: Counts | null = null;
   let last: Counts = new Map();
+  // Entries waiting, as of the latest change (also while a flush holds its counts back).
+  let waiting = 0;
+  const saw = (counts: Counts) => void (waiting = counts.queue?.length ?? 0);
   let timer: unknown = null;
   let step = 0;
 
   const emit = (counts: Counts) => {
+    saw(counts);
     last = counts;
     deps.onCounts(counts);
   };
@@ -57,6 +61,7 @@ export function createOfflineClient(deps: {
     locks: deps.locks ?? null,
     now: deps.now,
     onChange: (counts) => {
+      saw(counts);
       if (flushing) held = counts;
       else emit(counts);
     },
@@ -82,6 +87,7 @@ export function createOfflineClient(deps: {
       flushing = false;
     }
     const counts = held ?? pendingCounts(await deps.storage.load());
+    saw(counts);
     const changed = r.synced.length + r.rejected.length + r.dropped.length + r.poisoned.length > 0;
     last = counts;
     deps.onFlushed({ counts, changed, poisoned: r.poisoned.length });
@@ -98,6 +104,7 @@ export function createOfflineClient(deps: {
     void (async () => {
       const counts = pendingCounts(await deps.storage.load());
       const dropped = [...last].some(([k, n]) => (counts.get(k) ?? 0) < n);
+      saw(counts);
       last = counts;
       deps.onFlushed({ counts, changed: dropped, poisoned: 0 });
     })();
@@ -157,6 +164,9 @@ export function createOfflineClient(deps: {
       emit(counts);
       return counts;
     },
+    // Anything waits (check-ins or undos), as of the last change this tab saw: known before the page
+    // draws it, so a live refresh can hold off (components/habits/live-refresh.tsx).
+    isBusy: () => waiting > 0,
     // Everything still waiting on this phone (check-ins and undos), for sign-out.
     pending: async () => (await deps.storage.load()).length,
     // While the page is open: hear other tabs. stop() also cancels a scheduled flush.

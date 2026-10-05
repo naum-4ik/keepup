@@ -19,9 +19,9 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
   const [ready, setReady] = useState(false);
   // While a tap or an undo waits on this phone, a refresh would draw the server's answer in its place
   // ("Done" for a tap still saving): the refresh is owed instead, and runs once the queue is empty.
-  // A ref, so a tap doesn't re-join the channel.
-  const { busy } = useOfflineQueue();
-  const busyRef = useRef(busy);
+  // isBusy() is read when a refresh is due, so a tap doesn't re-join the channel; `queued` (drawn)
+  // runs the owed refresh once nothing waits.
+  const { queued, isBusy } = useOfflineQueue();
   const owed = useRef(false);
   const refreshRef = useRef<() => void>(() => {});
 
@@ -32,7 +32,7 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
     // Offline, a refresh would replace the saved page with an error.
     const refreshSoon = () => {
       if (!navigator.onLine) return;
-      if (busyRef.current) {
+      if (isBusy()) {
         owed.current = true;
         return;
       }
@@ -41,7 +41,7 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
       // phone may have gone offline in those 400 ms.
       timer.current = window.setTimeout(() => {
         if (!navigator.onLine) return;
-        if (busyRef.current) owed.current = true;
+        if (isBusy()) owed.current = true;
         else router.refresh();
       }, 400);
     };
@@ -81,15 +81,14 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
       if (timer.current) window.clearTimeout(timer.current);
       if (channel) void supabase.removeChannel(channel);
     };
-  }, [table, filter, router]);
+  }, [table, filter, router, isBusy]);
 
   useEffect(() => {
-    busyRef.current = busy;
-    if (!busy && owed.current) {
+    if (owed.current && !isBusy()) {
       owed.current = false;
       refreshRef.current();
     }
-  }, [busy]);
+  }, [queued, isBusy]);
 
   // data-table: a page can have two listeners (the layout's notifications plus a page's check-ins).
   return <span hidden data-live={ready ? "ready" : "joining"} data-table={table} />;

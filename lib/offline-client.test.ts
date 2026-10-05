@@ -243,3 +243,34 @@ describe("Undo for a tap the server may have", () => {
     expect((await storage.load()).map((e) => e.kind)).toEqual(["undo"]);
   });
 });
+
+describe("isBusy", () => {
+  it("knows at once that a tap or an undo waits, and when nothing does", async () => {
+    const { client, setOnline } = setup({ tapTimeoutMs: 100 });
+    expect(client.isBusy()).toBe(false);
+    // The online try is still running: the tap is already saved, so a refresh must hold off.
+    let release!: (v: { ok: true }) => void;
+    const done = client.submitTap({ habitId: "h1" }, () => new Promise<{ ok: true }>((r) => (release = r)));
+    await vi.waitFor(() => expect(client.isBusy()).toBe(true));
+    release({ ok: true });
+    await done;
+    expect(client.isBusy()).toBe(false);
+    // Offline: the tap waits; its undo (never tried) empties the queue.
+    setOnline(false);
+    await client.submitTap({ habitId: "h1" }, async () => ({ ok: true }));
+    expect(client.isBusy()).toBe(true);
+    await client.undoQueued("h1");
+    expect(client.isBusy()).toBe(false);
+  });
+
+  it("an undo of a tap the server may have keeps it busy until the undo is sent", async () => {
+    const { client } = setup({ tapTimeoutMs: 100 });
+    const done = client.submitTap({ habitId: "h1" }, () => new Promise(() => undefined));
+    await vi.advanceTimersByTimeAsync(100);
+    await done;
+    await client.undoQueued("h1");
+    expect(client.isBusy()).toBe(true);
+    await client.flush();
+    expect(client.isBusy()).toBe(false);
+  });
+});
