@@ -35,10 +35,13 @@ export function BottomNav({
   displayName,
   avatarEmoji,
   avatarColor,
+  level,
 }: {
   displayName: string;
   avatarEmoji?: string | null;
   avatarColor?: string | null;
+  // The person's level (public.my_level), on the avatar; null when it couldn't be read.
+  level?: number | null;
 }) {
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
@@ -76,8 +79,15 @@ export function BottomNav({
             // Your avatar is the Profile tab. Decoration: the link is named "Profile". 24px with -my-0.5,
             // so the tab is exactly as tall as the 20px icons beside it (the nav's height doesn't move).
             glyph={
-              <span aria-hidden className={cn("-my-0.5 flex rounded-full", onProfile && "ring-2 ring-primary ring-offset-1 ring-offset-card")}>
+              <span aria-hidden className={cn("relative -my-0.5 flex rounded-full", onProfile && "ring-2 ring-primary ring-offset-1 ring-offset-card")}>
                 <Avatar name={displayName} emoji={avatarEmoji} color={avatarColor} size="sm" className="size-6 text-xs" />
+                {level ? (
+                  // The number only; Profile says "Level 2 · Seedling" in words. bottom-0, not below: the
+                  // avatar's -my-0.5 leaves no gap above the label, so anything lower covers "Profile".
+                  <span className="absolute -right-2 bottom-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.625rem] leading-none font-bold text-primary-foreground tabular-nums ring-2 ring-card">
+                    {level}
+                  </span>
+                ) : null}
               </span>
             }
           />

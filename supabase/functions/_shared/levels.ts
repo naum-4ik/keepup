@@ -27,3 +27,9 @@ export function levelProgress(xp: number): { level: number; name: LevelName; int
   const to = xpForLevel(level + 1);
   return { level, name: levelName(level), into: total - from, span: to - from, toNext: to - total };
 }
+
+// Profile's level line: "Level 7 · Sprout" and "650 XP to Level 8".
+export function levelLine(xp: number): { title: string; toNext: string } {
+  const p = levelProgress(xp);
+  return { title: `Level ${p.level} · ${p.name}`, toNext: `${p.toNext} XP to Level ${p.level + 1}` };
+}

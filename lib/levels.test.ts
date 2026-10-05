@@ -1,6 +1,6 @@
 // lib/levels.test.ts
 import { describe, expect, it } from "vitest";
-import { levelFor, levelName, levelProgress, xpForLevel } from "./levels";
+import { levelFor, levelLine, levelName, levelProgress, xpForLevel } from "./levels";
 
 describe("levels (ideas/achievements-and-rewards.md §3)", () => {
   it("follows floor(sqrt(xp / 50)) + 1 at every boundary", () => {
@@ -20,5 +20,12 @@ describe("levels (ideas/achievements-and-rewards.md §3)", () => {
   it("measures the way to the next level", () => {
     expect(levelProgress(80)).toEqual({ level: 2, name: "Seedling", into: 30, span: 150, toNext: 120 });
     expect(levelProgress(0)).toEqual({ level: 1, name: "Seedling", into: 0, span: 50, toNext: 50 });
+  });
+});
+
+describe("levelLine", () => {
+  it("reads 'Level 7 · Sprout' and what's left to the next level", () => {
+    expect(levelLine(1800)).toEqual({ title: "Level 7 · Sprout", toNext: "650 XP to Level 8" });
+    expect(levelLine(0)).toEqual({ title: "Level 1 · Seedling", toNext: "50 XP to Level 2" });
   });
 });

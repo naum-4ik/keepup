@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { ChevronRight, Settings, Sparkles, Users, type LucideIcon } from "lucide-react";
 import { AvatarEdit } from "@/components/avatar-edit";
+import { LevelCard } from "@/components/profile/level-card";
 import { SignOutButton } from "@/components/sign-out-button";
 import { getProfile } from "@/lib/auth";
 import { isAvatarColor } from "@/lib/avatars";
 import { cityOf } from "@/lib/timezones";
 import { appVersion } from "@/lib/version";
+import { getMyLevel } from "@/lib/xp-data";
 import { saveAvatar } from "./actions";
 
 // Where to go from Profile, as one list. Self-contained, so cards can sit above it later.
@@ -16,7 +18,7 @@ const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
 ];
 
 export default async function ProfilePage() {
-  const { profile } = await getProfile();
+  const [{ profile }, level] = await Promise.all([getProfile(), getMyLevel()]);
 
   return (
     <section className="flex flex-col gap-6 py-6">
@@ -36,6 +38,7 @@ export default async function ProfilePage() {
           </p>
         </div>
       </div>
+      {level && <LevelCard xp={level.xp} />}
       <nav aria-label="Account">
         <ul className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-soft">
           {LINKS.map(({ href, label, icon: Icon }) => (
