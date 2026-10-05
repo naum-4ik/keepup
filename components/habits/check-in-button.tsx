@@ -8,6 +8,7 @@ import { useOfflineQueue, useSubmitTap, useUndoQueuedTap } from "@/components/of
 import { GENERIC_ERROR } from "@/lib/habit-errors";
 import { NEEDS_CONNECTION, SAVING, UNDO, undoLabel } from "@/lib/offline-copy";
 import { queueKey } from "@/lib/offline-queue";
+import { ringOf, type RingInput } from "@/lib/today";
 import { ringDash } from "@/lib/week-overview";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
@@ -27,15 +28,15 @@ export function CheckInButton({
   state,
   multi,
   withChildren = [],
-  ring = null,
+  progress = null,
 }: {
   habitId: string;
   title: string;
   state: CheckInState;
   multi: boolean;
-  // Weekly/monthly partway (ringOf): a ring and "1/3" instead of the icon, while it can still take a tap
-  // or is checked for today.
-  ring?: { done: number; target: number } | null;
+  // The habit's count: weekly/monthly partway (ringOf, taps waiting on this phone included) shows a
+  // ring and "1/3" instead of the icon, while it can still take a tap or is checked for today.
+  progress?: RingInput | null;
   // "Me + Mary" (ideas/kids-and-groups.md §5): children in this group habit who still have it open.
   // Only ever offered on the viewer's own check-in.
   withChildren?: { id: string; name: string }[];
@@ -59,6 +60,7 @@ export function CheckInButton({
   const savingShown = saving && !pending;
   const shown: CheckInState = saving && state === "open" && !multi ? "checked-today" : state;
   const Icon = shown === "frozen" ? Snowflake : shown === "not-started" || shown === "pending" ? Clock : shown === "open" && multi ? Plus : Check;
+  const ring = progress ? ringOf(progress, queued.get(queueKey(habitId)) ?? 0) : null;
   const shownRing = ring && (shown === "open" || shown === "checked-today") ? ring : null;
 
   function celebrate() {

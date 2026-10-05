@@ -14,14 +14,14 @@ import { addButtonClass } from "@/components/ui/add-button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CATEGORIES, CATEGORY_ORDER, normalizeCategory } from "@/lib/categories";
+import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
 import { formatLocalDate } from "@/lib/dates";
 import type { GroupKind } from "@/lib/group-schema";
 import { groupTemplatesFor } from "@/lib/group-templates";
 import { HABIT_TEMPLATES, type HabitTemplate } from "@/lib/habit-templates";
 import { startAfterSwitch, todayForGroup } from "@/lib/habit-start";
 import {
-  HABIT_TITLE_MAX, TARGET_LIMITS, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod,
+  HABIT_TITLE_MAX, isHabitCategory, TARGET_LIMITS, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod,
 } from "@/lib/habit-schema";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
@@ -238,7 +238,7 @@ function HabitFields({
         <Label htmlFor="title" className="font-semibold">Title</Label>
         <EmojiPicker
           value={values.emoji}
-          category={normalizeCategory(values.category)}
+          category={isHabitCategory(values.category) ? values.category : null}
           onChange={(emoji) => setValues((v) => ({ ...v, emoji }))}
           error={errors.emoji}
         >

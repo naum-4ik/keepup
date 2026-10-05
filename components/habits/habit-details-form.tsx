@@ -7,8 +7,8 @@ import { StartDatePicker } from "@/components/habits/start-date-picker";
 import { SaveButton } from "@/components/save-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CATEGORIES, CATEGORY_ORDER, normalizeCategory } from "@/lib/categories";
-import type { HabitCategory } from "@/lib/habit-schema";
+import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
+import { isHabitCategory, type HabitCategory } from "@/lib/habit-schema";
 import { cn } from "@/lib/utils";
 
 const initialState: FormActionState = { status: "idle" };
@@ -53,7 +53,7 @@ export function HabitDetailsForm({
     <form action={formAction} className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="title">Title</Label>
-        <EmojiPicker value={values.emoji} category={normalizeCategory(values.category)} onChange={(e) => setValues((v) => ({ ...v, emoji: e }))}>
+        <EmojiPicker value={values.emoji} category={isHabitCategory(values.category) ? values.category : null} onChange={(e) => setValues((v) => ({ ...v, emoji: e }))}>
           <Input
             id="title"
             name="title"

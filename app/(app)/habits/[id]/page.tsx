@@ -30,7 +30,7 @@ import { endLabel, endProgress, hasEnded } from "@/lib/habit-end";
 import { formatLocalDate } from "@/lib/dates";
 import { describeProgress, describeSchedule } from "@/lib/schedule";
 import { everyoneDidIt, memberStatus, membersOf, openChildrenOf } from "@/lib/today-sections";
-import { ringOf, stateOf } from "@/lib/today";
+import { stateOf } from "@/lib/today";
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -157,7 +157,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
 
       {restorable && (
         <Card title="Archived">
-          <p className="text-sm text-muted-foreground">Restore it to put it back {child ? `on ${child.name}'s list` : "on Today"}. The days it was archived don&apos;t count against you.</p>
+          <p className="text-sm text-muted-foreground">Restore it to put it back {child ? `on ${child.name}'s list` : "on Today"}. The days it was archived don&apos;t count against {child ? child.name : "you"}.</p>
           <RestoreHabitButton habitId={h.habit_id} title={h.title} />
         </Card>
       )}
@@ -189,7 +189,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                 multi={h.target_count > 1}
                 state={stateOf(h)}
                 withChildren={openChildrenOf(h)}
-                ring={ringOf(h)}
+                progress={{ period: h.period, target_count: h.target_count, done_count: h.done_count }}
               />
             )}
           </div>
@@ -227,7 +227,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
             {h.current_streak}
             <span className="text-sm font-bold">{unit(h.current_streak, h.period)}</span>
           </p>
-          <p className="text-xs font-semibold text-muted-foreground">{members ? "Together" : "Your streak"}</p>
+          <p className="text-xs font-semibold text-muted-foreground">{members ? "Together" : child ? `${child.name}'s streak` : "Your streak"}</p>
         </div>
         <div className="flex flex-col items-center gap-0.5">
           <p className="flex items-center gap-1 text-2xl font-extrabold tabular-nums">
@@ -281,7 +281,9 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                     ? "Resume or cancel the pause"
                     : members
                       ? "Going away together? Pausing keeps the group's streak safe"
-                      : "Going away? Your streak waits for you"
+                      : child
+                        ? `Going away? ${child.name}'s streak waits`
+                        : "Going away? Your streak waits for you"
                 }
               >
                 <FreezeForm

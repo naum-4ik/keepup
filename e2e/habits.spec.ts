@@ -69,7 +69,8 @@ test("a custom habit gets the emoji picked for it, shown on Today", async ({ pag
   await dialog.getByLabel("Title").fill("Paint");
 
   const emojiButton = dialog.getByRole("button", { name: /^Choose emoji/ });
-  await expect(emojiButton).toHaveAccessibleName("Choose emoji (now 🍎)");
+  // No category picked yet: the neutral kid star, not a category's default.
+  await expect(emojiButton).toHaveAccessibleName("Choose emoji (now ⭐)");
   await emojiButton.click();
   await expect(emojiButton).toHaveAttribute("aria-expanded", "true");
   await expect(dialog.getByRole("group", { name: "Suggested emoji" }).getByRole("button")).toHaveCount(30);

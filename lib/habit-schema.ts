@@ -32,7 +32,7 @@ export function readHabitForm(formData: FormData): HabitFormValues {
   };
 }
 
-function isCategory(value: string): value is HabitCategory {
+export function isHabitCategory(value: string): value is HabitCategory {
   return (HABIT_CATEGORIES as readonly string[]).includes(value);
 }
 
@@ -73,8 +73,8 @@ export function parseHabitDetails(values: { title: string; emoji: string; catego
   const tError = titleError(title);
   if (tError) errors.title = tError;
   if (emoji !== "" && !isOneEmoji(emoji)) errors.emoji = "Pick one emoji.";
-  if (!isCategory(values.category)) errors.category = "Pick a category.";
-  if (Object.keys(errors).length > 0 || !isCategory(values.category)) return { ok: false, errors };
+  if (!isHabitCategory(values.category)) errors.category = "Pick a category.";
+  if (Object.keys(errors).length > 0 || !isHabitCategory(values.category)) return { ok: false, errors };
   return { ok: true, value: { title, emoji: emoji || CATEGORIES[values.category].defaultEmoji, category: values.category } };
 }
 

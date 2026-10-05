@@ -44,6 +44,12 @@ describe("ringOf", () => {
     expect(r("week", 3, 1)).toEqual({ done: 1, target: 3 });
     expect(r("month", 10, 9)).toEqual({ done: 9, target: 10 });
   });
+  it("counts taps waiting on this phone, capped at the target", () => {
+    expect(ringOf({ period: "week", target_count: 3, done_count: 0 }, 1)).toEqual({ done: 1, target: 3 });
+    expect(ringOf({ period: "week", target_count: 3, done_count: 1 }, 1)).toEqual({ done: 2, target: 3 });
+    expect(ringOf({ period: "week", target_count: 3, done_count: 2 }, 5)).toBeNull();
+    expect(ringOf({ period: "day", target_count: 8, done_count: 0 }, 1)).toBeNull();
+  });
   it("is null for daily habits, once-a-period habits, nothing done yet, or done", () => {
     expect(r("day", 8, 3)).toBeNull();
     expect(r("week", 1, 0)).toBeNull();

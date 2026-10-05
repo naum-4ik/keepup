@@ -56,7 +56,8 @@ export function EveryoneDidIt(props: Props) {
   if (ids.length === 0) return null;
   return (
     <div data-seen={props.ids.length === 0 ? "" : undefined} className="relative flex items-center gap-3 rounded-2xl bg-card p-4 shadow-soft">
-      {shown && <Confetti />}
+      {/* Keyed by the rows: a new card (new ids while a kept one shows) bursts again. */}
+      {shown && <Confetti key={key} />}
       <p className="min-w-0 flex-1 font-bold">Everyone did it! {habits.map((h) => `${h} ✓`).join(" · ")}</p>
       <AvatarRow members={members} />
     </div>

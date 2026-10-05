@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { CATEGORIES, habitEmoji } from "@/lib/categories";
 import { isOneEmoji, type HabitCategory } from "@/lib/habit-schema";
 import { emojiSuggestions } from "@/lib/habit-templates";
+import { KID_CHIP, KID_DEFAULT_EMOJI } from "@/components/habits/category-icon";
 import { cn } from "@/lib/utils";
 
 // Marks the open panel, so a surrounding Dialog can leave Escape to the picker (see habit-form).
@@ -14,6 +15,8 @@ export const EMOJI_PANEL_ATTR = "data-emoji-panel";
 // A 44px chip button next to the title that opens an inline panel (not a popover, so it lives
 // inside the Dialog's focus trap): ~30 suggestions plus a field for the phone's emoji keyboard.
 // `value` "" means none picked: the button shows the category default and the server stores it.
+// No category (Create your own before one is picked, or a child's habit with None) previews like
+// HabitEmoji shows such a habit everywhere: the kid star on the neutral chip.
 export function EmojiPicker({
   value,
   category,
@@ -22,7 +25,7 @@ export function EmojiPicker({
   children,
 }: {
   value: string;
-  category: HabitCategory;
+  category: HabitCategory | null;
   onChange: (emoji: string) => void;
   error?: string;
   children: ReactNode; // the title input, laid out beside the button
@@ -32,7 +35,7 @@ export function EmojiPicker({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelId = useId();
   const ownId = useId();
-  const shown = habitEmoji(category, value);
+  const shown = category ? habitEmoji(category, value) : value.trim() || KID_DEFAULT_EMOJI;
   const draftInvalid = draft.trim() !== "" && !isOneEmoji(draft.trim());
   // Typed words are the common mistake (the field reads like a text box), so name that case.
   const draftHint = /[\p{L}\p{N}]/u.test(draft)
@@ -63,7 +66,7 @@ export function EmojiPicker({
           onClick={() => (open ? close() : setOpen(true))}
           className={cn(
             "flex size-11 shrink-0 items-center justify-center rounded-full text-2xl leading-none ring-offset-2 ring-offset-background hover:ring-2 hover:ring-primary/40",
-            CATEGORIES[category].chipClass,
+            category ? CATEGORIES[category].chipClass : KID_CHIP,
             open && "ring-2 ring-primary",
           )}
         >
@@ -85,7 +88,7 @@ export function EmojiPicker({
           }}
         >
           <div role="group" aria-label="Suggested emoji" className="grid grid-cols-6 gap-1">
-            {emojiSuggestions(category).map((e) => (
+            {emojiSuggestions(category ?? "home").map((e) => (
               <button
                 key={e}
                 type="button"
