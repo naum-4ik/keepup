@@ -6,6 +6,8 @@
 --   private.reset_child_impl          20260930130000_reset_child.sql
 --   private.kid_rewards_on_check_in   20261007100000_m4_final_fixes.sql
 --   private.finalize_periods          20261006100000_offline_check_ins.sql
+--   public.review_check_ins           20260930100400_kid_rewards_celebrations.sql
+--   public.check_in_with              20260930100100_group_habits.sql
 --
 -- Locks, in the order every path takes them: habit row(s) → check-in row → period_results row →
 -- per-habit rows (xp_events keyed by the check-in or `<habit>:<period>`, feed rows deduped per habit)
@@ -24,8 +26,13 @@
 --   habit locks. So finalize never holds a per-person row while waiting for a habit, and a check-in
 --   holding a habit that waits on finalize's per-person row can't be waited on by finalize: no cycle.
 --   (Its per-habit rows are only ever written by a transaction holding that habit's lock.)
+-- - review_check_ins ("Approve all") reviews many habits in one transaction and check_in_with ("Me +
+--   Mary") checks in several people: both run their loop under keepup.defer_levels and sync once
+--   after it, like finalize.
 -- - So every transaction takes per-person rows in one batch, in user id order, after its last habit
---   lock: one global order, no cycle.
+--   lock: one global order, no cycle. Paths: check_in / check_in_for (check_in_impl), check_in_with,
+--   undo_check_in / undo_check_in_by_client (one person: synced at once), review_check_in,
+--   review_check_ins, finalize_periods (cron), reset_child_impl and cascades (removals only).
 --
 -- Accepted trade-off: two concurrent transactions granting to one person, each below a level
 -- boundary on its own (each sync_level sums only what it can see), can together cross it with no
@@ -191,6 +198,9 @@ end;
 $$;
 
 -- Syncs everyone whose grants were deferred in this transaction, once each, in user id order.
+-- A function that runs many check-ins or reviews in one transaction (finalize_periods,
+-- review_check_ins, check_in_with) sets keepup.defer_levels = on around its loop and calls this once
+-- after it; the reward triggers leave levels to it while the flag is on.
 create function private.sync_deferred_levels()
 returns void
 language plpgsql
@@ -211,7 +221,7 @@ end;
 $$;
 
 -- Copied from 20261006100000_offline_check_ins.sql (its latest definition). New: the first and the
--- last two lines. Period grants made in the habit loop don't sync levels (keepup.finalizing); the
+-- last two lines. Period grants made in the habit loop don't sync levels (keepup.defer_levels); the
 -- people paid are synced after it, in user id order (Locks, at the top).
 create or replace function private.finalize_periods(p_now timestamptz)
 returns int
@@ -226,7 +236,7 @@ declare
   v_inserted int;
   v_total int := 0;
 begin
-  perform set_config('keepup.finalizing', 'on', true);
+  perform set_config('keepup.defer_levels', 'on', true);
   for v_habit in
     select h.* from public.habits h
      where h.archived_at is null
@@ -281,9 +291,63 @@ begin
     get diagnostics v_inserted = row_count;
     v_total := v_total + v_inserted;
   end loop;
-  perform set_config('keepup.finalizing', '', true);
+  perform set_config('keepup.defer_levels', '', true);
   perform private.sync_deferred_levels();
   return v_total;
+end;
+$$;
+
+-- Copied from 20260930100400_kid_rewards_celebrations.sql (its latest definition). New: the loop runs
+-- under keepup.defer_levels and levels are synced once after it (Locks, at the top). A review that
+-- fails inside the loop rolls back its own deferred entries with its subtransaction.
+create or replace function public.review_check_ins(p_check_in_ids uuid[], p_approve boolean)
+returns int language plpgsql security definer set search_path = '' as $$
+declare
+  v_id uuid;
+  v_done int := 0;
+begin
+  if auth.uid() is null then raise exception 'keepup:not_authenticated' using errcode = '42501'; end if;
+  perform set_config('keepup.defer_levels', 'on', true);
+  for v_id in
+    select x.id
+      from (select distinct u.id from unnest(coalesce(p_check_in_ids, '{}')) u(id) where u.id is not null) x
+      left join public.check_ins c on c.id = x.id
+     order by c.habit_id nulls last, x.id
+  loop
+    begin
+      perform private.review_check_in_impl(v_id, auth.uid(), p_approve, now());
+      v_done := v_done + 1;
+    exception
+      when sqlstate 'P0001' then
+        if sqlerrm not in ('keepup:already_reviewed', 'keepup:review_closed') then raise; end if;
+      when sqlstate 'P0002' then
+        if sqlerrm <> 'keepup:check_in_not_found' then raise; end if;
+    end;
+  end loop;
+  perform set_config('keepup.defer_levels', '', true);
+  perform private.sync_deferred_levels();
+  return v_done;
+end;
+$$;
+
+-- Copied from 20260930100100_group_habits.sql (its only definition). New: the same deferral, so the
+-- adult's and each child's levels are synced together, in user id order.
+create or replace function public.check_in_with(p_habit_id uuid, p_children uuid[])
+returns setof public.check_ins language plpgsql security definer set search_path = '' as $$
+declare
+  v_row public.check_ins;
+  v_child uuid;
+begin
+  if auth.uid() is null then raise exception 'keepup:not_authenticated' using errcode = '42501'; end if;
+  perform set_config('keepup.defer_levels', 'on', true);
+  v_row := private.check_in_impl(p_habit_id, auth.uid(), now());
+  return next v_row;
+  foreach v_child in array coalesce(p_children, '{}') loop
+    v_row := private.check_in_impl(p_habit_id, auth.uid(), now(), v_child);
+    return next v_row;
+  end loop;
+  perform set_config('keepup.defer_levels', '', true);
+  perform private.sync_deferred_levels();
 end;
 $$;
 
@@ -324,7 +388,7 @@ begin
       case when tg_op = 'UPDATE' then coalesce(new.reviewed_at, new.created_at) else new.created_at end,
       false, false);
   end loop;
-  if not v_upgrade then
+  if not v_upgrade and current_setting('keepup.defer_levels', true) is distinct from 'on' then
     perform private.sync_deferred_levels(); -- author and reviewer, in user id order
   end if;
   return new;
@@ -394,7 +458,7 @@ begin
   -- Levels are synced once for everyone paid, in user id order: inside finalize's habit loop, after
   -- the loop (finalize does it); otherwise now, together with an upgrading check-in's author and
   -- reviewer, deferred by rewards_on_check_in (Locks, at the top).
-  if current_setting('keepup.finalizing', true) is distinct from 'on' then
+  if current_setting('keepup.defer_levels', true) is distinct from 'on' then
     perform private.sync_deferred_levels();
   end if;
   return new;

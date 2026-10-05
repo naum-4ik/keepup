@@ -1,7 +1,7 @@
 -- supabase/tests/database/xp.test.sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(67);
+select plan(70);
 
 -- finalize_periods scans every habit; start from none (rolled back at the end).
 delete from public.habits;
@@ -160,7 +160,7 @@ select private.check_in_impl('00000000-0000-0000-0000-0000000000d5', '00000000-0
 select private.check_in_impl('00000000-0000-0000-0000-0000000000d6', '00000000-0000-0000-0000-0000000000c3', '2026-10-01 12:00Z');
 create function tests.no_level_in_finalize_loop() returns trigger language plpgsql as $$
 begin
-  if current_setting('keepup.finalizing', true) = 'on' then
+  if current_setting('keepup.defer_levels', true) = 'on' then
     raise exception 'level_ups written inside the finalize habit loop';
   end if;
   return new;
@@ -173,6 +173,46 @@ select is((select array_agg(level) from public.level_ups where user_id = '000000
   'two done habits (35 → 75 XP) cross level 2: one level_ups row');
 select is((select count(*)::int from public.notifications where user_id = '00000000-0000-0000-0000-0000000000c3' and kind = 'level_up'), 1,
   'and one Inbox row');
+
+-- E6. "Approve all" over two habits, crossing a level on the first: levels synced once, after the loop
+-- (an uncommitted level row held while the loop locks the next habit could deadlock with its reviewer).
+set local session_replication_role = replica;
+insert into public.habits (id, owner_id, group_id, title, category, emoji, target_count, period, starts_on, week_start, requires_approval, created_at, created_by) values
+  ('00000000-0000-0000-0000-0000000000d7', null, (select v from t where k = 'fam'), 'Swim', 'fitness', '🏊', 1, 'day', '2026-10-01', 1, true,
+   '2026-10-01 08:00+02', '00000000-0000-0000-0000-0000000000a1'),
+  ('00000000-0000-0000-0000-0000000000d8', null, (select v from t where k = 'fam'), 'Run', 'fitness', '🏃', 1, 'day', '2026-10-01', 1, true,
+   '2026-10-01 08:00+02', '00000000-0000-0000-0000-0000000000a1');
+set local session_replication_role = origin;
+insert into t select 'p1', (private.check_in_impl('00000000-0000-0000-0000-0000000000d7', '00000000-0000-0000-0000-0000000000b1', '2026-10-05 09:00+02')).id;
+insert into t select 'p2', (private.check_in_impl('00000000-0000-0000-0000-0000000000d8', '00000000-0000-0000-0000-0000000000b1', '2026-10-05 09:00+02')).id;
+-- Dan 5 below his next boundary: the first approval (+10) already crosses it.
+insert into public.xp_events (user_id, amount, reason, source_type, source_id)
+select u, b - s - 5, 'milestone', 'streak', 'trap2-' || u
+  from (select x.user_id as u, sum(x.amount)::int as s, 50 * private.level_for(sum(x.amount)) ^ 2 as b
+          from public.xp_events x where x.user_id = '00000000-0000-0000-0000-0000000000b1' group by x.user_id) z
+ where b - s - 5 <> 0;
+create temp table dan_before on commit drop as
+  select (select count(*)::int from public.level_ups where user_id = '00000000-0000-0000-0000-0000000000b1') as levels,
+         (select count(*)::int from public.notifications where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'level_up') as rows;
+grant select on dan_before, t to authenticated;
+create function tests.no_level_while_batch_pending() returns trigger language plpgsql as $$
+begin
+  if exists (select 1 from public.check_ins c where c.id in (select v from t where k in ('p1', 'p2')) and c.status = 'pending') then
+    raise exception 'level_ups written inside the Approve all loop';
+  end if;
+  return new;
+end;
+$$;
+create trigger level_ups_not_in_loop before insert on public.level_ups for each row execute function tests.no_level_while_batch_pending();
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
+select lives_ok($$select public.review_check_ins(array[(select v from t where k = 'p1'), (select v from t where k = 'p2')], true)$$,
+  'Approve all writes no level_ups row inside its loop');
+reset role;
+drop trigger level_ups_not_in_loop on public.level_ups;
+select is((select count(*)::int from public.level_ups where user_id = '00000000-0000-0000-0000-0000000000b1') - (select levels from dan_before), 1,
+  'one level_ups row');
+select is((select count(*)::int from public.notifications where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'level_up') - (select rows from dan_before), 1,
+  'and one Inbox row, after the loop');
 
 -- F. Levels: boundaries, one row per jump, undo keeps the row, re-crossing writes nothing new.
 select is(array[private.level_for(0), private.level_for(49), private.level_for(50), private.level_for(199), private.level_for(200), private.level_for(449), private.level_for(450), private.level_for(-5)],
