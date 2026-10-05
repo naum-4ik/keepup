@@ -466,3 +466,70 @@ test("the kid view: while a done card slides down, a card that isn't moving stil
   await cards.first().getByRole("button").click();
   await expect(page.getByText("2 stars this week")).toBeAttached();
 });
+
+test("the kid view: a finishing tap shows the new thing big in the middle, then it flies into the scene", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await expect(page).toHaveURL(/\/play$/);
+  await page.getByRole("button", { name: /Tidy my toys/ }).click();
+  await expect(page.getByText("1 star this week")).toBeAttached(); // said at once, for screen readers
+  // Big and centred (about 60% of the width), springing in over the first second.
+  const reveal = page.locator("[data-reveal]");
+  await expect(reveal).toHaveAttribute("data-phase", "show");
+  await expect(reveal).toHaveAttribute("aria-hidden", "true");
+  await expect(reveal).toContainText("🌸");
+  await expect
+    .poll(async () => {
+      const box = await page.locator("[data-reveal-item]").boundingBox();
+      if (!box) return false;
+      const dx = Math.abs(box.x + box.width / 2 - 195);
+      const dy = Math.abs(box.y + box.height / 2 - 422);
+      return box.width >= 195 && dx < 20 && dy < 20;
+    }, { timeout: 1000, intervals: [50] })
+    .toBe(true);
+  // The real one in the scene shows only once the big one has landed there.
+  const item = page.locator('[data-item="0"]');
+  await expect(item).toBeHidden();
+  await expect(reveal).toHaveCount(0, { timeout: 2500 });
+  await expect(item).toBeVisible();
+  await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "1");
+});
+
+test("the kid view: two quick finishing taps both land, and both cards sink after", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await expect(page).toHaveURL(/\/play$/);
+  await page.getByRole("button", { name: /Tidy my toys/ }).click();
+  await expect(page.locator("[data-reveal]")).toBeAttached();
+  // A tap mid-reveal: the first one lands at once and the second one starts.
+  await page.getByRole("button", { name: /Read a book together/ }).click();
+  await expect(page.getByText("2 stars this week")).toBeAttached();
+  await expect(page.locator('[data-item="0"]')).toBeVisible();
+  await expect(page.locator("[data-reveal]")).toContainText("🍄");
+  await expect(page.locator("[data-reveal]")).toHaveCount(0, { timeout: 2500 });
+  await expect(page.locator('[data-item="1"]')).toBeVisible();
+  await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "2");
+  // Both green cards go to the bottom once their things are in the picture.
+  await expect(page.getByRole("listitem").first()).toContainText("Brush teeth", { timeout: 2500 });
+});
+
+test("the kid view with Reduce Motion: no zoom, the new thing fades in at its spot", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await expect(page).toHaveURL(/\/play$/);
+  await page.getByRole("button", { name: /Tidy my toys/ }).click();
+  await expect(page.getByRole("button", { name: "Tidy my toys , done" })).toBeVisible();
+  await expect(page.locator('[data-item="0"]')).toBeVisible();
+  await page.waitForTimeout(300);
+  await expect(page.locator("[data-reveal]")).toHaveCount(0);
+  await expect(page.locator("[data-reveal-item]")).toHaveCount(0);
+});

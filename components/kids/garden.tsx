@@ -1,5 +1,5 @@
 import { SceneIdle } from "@/components/kids/scene-idle";
-import { SceneItems, type Idle } from "@/components/kids/scene-items";
+import { SceneItems, type Idle, type Landed } from "@/components/kids/scene-items";
 import { kidTheme, nextStep, restartDay, restartLine, stageFor, stepLines } from "@/lib/garden";
 import { isFloatingTheme, sceneItems } from "@/lib/scene-items";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,9 @@ export function GardenPicture({
   dancing = false,
   settling = false,
   idle,
+  hidden,
+  revealed,
+  landed,
 }: {
   stars: number;
   size?: "sm" | "md" | "lg";
@@ -28,6 +31,10 @@ export function GardenPicture({
   settling?: boolean;
   // The kid view only: the scene moves gently by itself ("play"), held still while a tap plays ("pause").
   idle?: Idle;
+  // The kid view's big reveal (KidPlay): items still flying in, ones that came that way, the one that just landed.
+  hidden?: ReadonlySet<number>;
+  revealed?: ReadonlySet<number>;
+  landed?: Landed | null;
 }) {
   const t = kidTheme(theme);
   const stage = t.stages[stageFor(stars)];
@@ -39,6 +46,7 @@ export function GardenPicture({
     <div
       role="img"
       aria-label={stage.label}
+      data-scene
       className={cn(
         "relative flex flex-col items-center justify-end overflow-hidden rounded-3xl bg-gradient-to-b transition-colors duration-700",
         stage.sky,
@@ -47,7 +55,18 @@ export function GardenPicture({
       )}
     >
       {/* One item per star this week (not on album thumbnails, which show only the picture). */}
-      {size !== "sm" && <SceneItems items={sceneItems(stars, t.id)} size={size} interactive={interactive} dancing={dancing} idle={idle} />}
+      {size !== "sm" && (
+        <SceneItems
+          items={sceneItems(stars, t.id)}
+          size={size}
+          interactive={interactive}
+          dancing={dancing}
+          idle={idle}
+          hidden={hidden}
+          revealed={revealed}
+          landed={landed}
+        />
+      )}
       {idle && size !== "sm" && <SceneIdle items={sceneItems(stars, t.id)} theme={t.id} paused={idle === "pause"} />}
       {ghost && (
         <span
