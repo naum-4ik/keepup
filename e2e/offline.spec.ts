@@ -224,6 +224,9 @@ test("Undo after an online try that got no answer in time: the server ends witho
   await signUpAndOnboard(page);
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
   const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
+  // The layout's notifications listener refreshes the page once it's live (catching up); under load
+  // that came after the tap and showed the server's "Done" in place of the waiting tap.
+  await expect(page.locator('[data-live="ready"][data-table="notifications"]')).toBeAttached({ timeout: 20_000 });
   // The check-in reaches the server at once, but its answer is held past the 10 s tap timeout.
   let held = false;
   await page.route("**/today", async (route) => {

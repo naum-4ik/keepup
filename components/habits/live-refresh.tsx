@@ -25,7 +25,11 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
     const refreshSoon = () => {
       if (!navigator.onLine) return;
       if (timer.current) window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(() => router.refresh(), 400);
+      // Checked again when it fires: the layout's listener (on every page) can confirm late, and the
+      // phone may have gone offline in those 400 ms.
+      timer.current = window.setTimeout(() => {
+        if (navigator.onLine) router.refresh();
+      }, 400);
     };
     const onVisible = () => {
       if (document.visibilityState === "visible") refreshSoon();
