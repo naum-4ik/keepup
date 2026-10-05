@@ -86,3 +86,28 @@ Deno.test("every payload keeps the voice: at most one emoji", () => {
     assertEquals((`${p.title} ${p.body}`.match(/\p{Extended_Pictographic}/gu) ?? []).length <= 1, true, kind);
   }
 });
+
+Deno.test("M5: a level-up names the level, opens Profile", () => {
+  const p = buildPush(job({ kind: "level_up", habit_id: null, habit: null, group: null, payload: { level: 6 } }))!;
+  assertEquals([p.title, p.body, p.url, p.tag], ["Level 6", "Sprout 🌱", "/profile", "level_up:n1"]);
+});
+
+Deno.test("M5: a new badge, and a personal milestone with its Back to wording", () => {
+  assertEquals(buildPush(job({ kind: "badge_unlocked", habit_id: null, payload: { code: "bookworm", name: "Bookworm" } }))!.body, "Bookworm");
+  const m = buildPush(job({ kind: "streak_milestone", group: null, payload: { streak: 30, period: "day", back: true } }))!;
+  assertEquals([m.title, m.body, m.url], ["Read 20 min", "Back to 30 days of Read 20 min 🔥", "/habits/h1"]);
+});
+
+Deno.test("M5: rest day used, and the recaps", () => {
+  assertEquals(buildPush(job({ kind: "rest_day_used", group: null, payload: { streak: 14, period: "day" } }))!.body,
+    "Rest day used. Your 14-day streak is safe 💤");
+  const week = buildPush(job({ kind: "weekly_recap", habit_id: null, payload: { kind: "week", done: 18, possible: 21, longest: null } }))!;
+  assertEquals([week.title, week.body, week.url], ["Your week", "18 of 21 check-ins last week.", "/progress/recaps"]);
+  const fam = buildPush(job({ kind: "family_recap", habit_id: null, payload: { check_ins: 34, best: { title: "Family dinner", length: 5, period: "week" } } }))!;
+  assertEquals([fam.title, fam.body, fam.url], ["Family", "Together last week: 34 check-ins · Family dinner 5 weeks 🔥", "/inbox"]);
+});
+
+Deno.test("M5: an empty recap sends nothing", () => {
+  assertEquals(buildPush(job({ kind: "weekly_recap", payload: { kind: "week", done: 0, possible: 0 } })), null);
+  assertEquals(buildPush(job({ kind: "family_recap", payload: { check_ins: 0 } })), null);
+});

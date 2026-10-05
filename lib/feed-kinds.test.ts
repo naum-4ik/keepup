@@ -73,3 +73,12 @@ describe("sync notes in the Inbox (ideas/offline.md)", () => {
       .toBe("Couldn't undo Gym, its time has passed.");
   });
 });
+
+describe("M5 kinds", () => {
+  it("knows the M5 rows", () => {
+    for (const k of ["level_up", "badge_unlocked", "streak_milestone", "rest_day_used", "weekly_recap", "monthly_recap"]) expect(isFeedKind(k)).toBe(true);
+  });
+  it("leaves the family recap row out: the Inbox card shows it, the row only pushes", () => {
+    expect(isFeedKind("family_recap")).toBe(false);
+  });
+});

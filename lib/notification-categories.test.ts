@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deliveryByCategory, reminderHourHint, reminderStatus, validDelivery } from "./notification-categories";
+import { defaultDelivery, deliveryByCategory, reminderHourHint, reminderStatus, validDelivery } from "./notification-categories";
 
 describe("validDelivery", () => {
   it("takes the three choices for a known category", () => {
@@ -10,25 +10,28 @@ describe("validDelivery", () => {
     expect(validDelivery("nudges", null)).toBe(false);
     expect(validDelivery("marketing", "silent")).toBe(false);
     expect(validDelivery("always", "inbox")).toBe(false);
-    expect(validDelivery("achievements", "silent")).toBe(false); // not offered until M5
+    expect(validDelivery("achievements", "silent")).toBe(true);
   });
 });
 
 describe("deliveryByCategory", () => {
-  it("is Silent everywhere without rows", () => {
+  it("is Silent everywhere without rows, except Achievements: Inbox only", () => {
     expect(deliveryByCategory(null)).toEqual({
-      reminders: "silent", group_activity: "silent", approvals: "silent", nudges: "silent", group_updates: "silent",
+      reminders: "silent", group_activity: "silent", approvals: "silent", nudges: "silent", group_updates: "silent", achievements: "inbox",
     });
+    expect(defaultDelivery("achievements")).toBe("inbox");
+    expect(defaultDelivery("nudges")).toBe("silent");
   });
   it("reads each row, skipping ones it doesn't know", () => {
     const d = deliveryByCategory([
       { category: "nudges", delivery: "inbox" },
       { category: "approvals", delivery: "sound" },
       { category: "reminders", delivery: "vibrate" },
-      { category: "achievements", delivery: "inbox" },
+      { category: "achievements", delivery: "sound" },
+      { category: "marketing", delivery: "sound" },
     ]);
-    expect(d).toMatchObject({ nudges: "inbox", approvals: "sound", reminders: "silent" });
-    expect(d).not.toHaveProperty("achievements");
+    expect(d).toMatchObject({ nudges: "inbox", approvals: "sound", reminders: "silent", achievements: "sound" });
+    expect(d).not.toHaveProperty("marketing");
   });
 });
 

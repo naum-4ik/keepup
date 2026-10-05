@@ -73,6 +73,7 @@ const STATUS: Record<DayRow["status"], { text: string; className: string }> = {
   open: { text: "Not done yet", className: "text-muted-foreground" },
   missed: { text: "Not done", className: "text-muted-foreground" },
   paused: { text: "Paused", className: "text-frozen" },
+  rested: { text: "Rest day", className: "text-done" },
 };
 
 function RowStatus({ row }: { row: DayRow }) {

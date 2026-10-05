@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CalendarDays, Check, ChevronRight, Flame, ListChecks } from "lucide-react";
 import { CATEGORIES } from "@/lib/categories";
 import type { HabitCategory, HabitPeriod } from "@/lib/habit-schema";
-import { comparisonLine, ringDash, streakUnit, type HabitCells, type WeekOverview } from "@/lib/week-overview";
+import { STATUS_WORD, comparisonLine, ringDash, streakUnit, type HabitCells, type WeekOverview } from "@/lib/week-overview";
 import { cn } from "@/lib/utils";
 import type { DayRow } from "@/lib/day-detail";
 import { WeekDays } from "@/components/overview/week-days";
@@ -144,14 +144,9 @@ const DOT: Record<HabitCells["cells"][number]["status"], string> = {
   paused: "bg-frozen/40",
   not_started: "border border-input",
   open: "border border-input",
+  rested: "bg-done/40",
 };
-const DOT_WORD: Record<HabitCells["cells"][number]["status"], string> = {
-  done: "done",
-  missed: "missed",
-  paused: "paused",
-  not_started: "not started",
-  open: "in progress",
-};
+const DOT_WORD = STATUS_WORD;
 const SPAN: Record<HabitPeriod, [string, string]> = { day: ["day", "days"], week: ["week", "weeks"], month: ["month", "months"] };
 
 // Progress rows: the last 7 days (or up to 7 weeks / months), oldest first.

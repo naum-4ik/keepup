@@ -1,22 +1,21 @@
 import { formatLocalDate } from "@/lib/dates";
 import type { HabitPeriod } from "@/lib/habit-schema";
 import type { HistoryCell } from "@/lib/habits";
+import { OUTCOME_LABEL } from "@/lib/week-overview";
 import { cn } from "@/lib/utils";
 
 const STYLE: Record<string, string> = {
   done: "bg-done",
   missed: "bg-muted",
+  rested: "bg-done/40",
   skipped: "bg-frozen/40",
   open: "border-2 border-dashed border-input",
 };
-const LABEL: Record<string, string> = {
-  done: "Done",
-  missed: "Missed",
-  skipped: "Paused or not counted",
-  open: "In progress",
-};
+const LABEL: Record<string, string> = OUTCOME_LABEL;
 
 export function HistoryGrid({ cells, period }: { cells: HistoryCell[]; period: HabitPeriod }) {
+  // "Rest day" joins the legend only when there is one to explain.
+  const legend = ["done", "missed", "skipped", ...(cells.some((c) => c.outcome === "rested") ? ["rested"] : []), "open"];
   return (
     <div className="flex flex-col gap-3">
       <ol className="flex flex-wrap gap-1.5">
@@ -30,7 +29,7 @@ export function HistoryGrid({ cells, period }: { cells: HistoryCell[]; period: H
         })}
       </ol>
       <ul className="flex flex-wrap gap-3 text-xs text-muted-foreground" aria-hidden>
-        {(["done", "missed", "skipped", "open"] as const).map((k) => (
+        {legend.map((k) => (
           <li key={k} className="flex items-center gap-1.5">
             <span className={cn("size-3 rounded-sm", STYLE[k])} />
             {LABEL[k]}

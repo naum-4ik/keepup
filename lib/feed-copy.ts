@@ -1,6 +1,7 @@
 import type { Database } from "@/lib/database.types";
 import { formatLocalDate } from "@/lib/dates";
 import * as copy from "@/lib/notification-copy";
+import { levelName } from "@/lib/levels";
 import type { NudgeKind, PeriodUnit } from "@/lib/notification-copy";
 
 type FeedRow = Database["public"]["Functions"]["inbox_feed"]["Returns"][number];
@@ -14,6 +15,8 @@ export type FeedItem = Omit<FeedRow, "payload" | "kind" | Nullable> & { [K in Nu
 };
 // Every kind this app has a line for. The database ships first (deploy order), so the feed can hold
 // kinds a slightly older app doesn't know yet; the Inbox and the bell skip those instead of crashing.
+// `family_recap` is left out on purpose: the Inbox shows the weekly family recap as its own card
+// (family_recaps(), dismissible); that row exists only to push (M5, owner 2026-10-04).
 export const FEED_KINDS = [
   "group_check_in", "approval_needed", "check_in_approved", "check_in_rejected", "everyone_done",
   "group_streak_ended", "group_milestone", "group_habit_created", "group_habit_paused", "group_habit_resumed",
@@ -21,6 +24,7 @@ export const FEED_KINDS = [
   "kid_check_in", "kid_streak", "kid_goal_reached", "kid_garden_full",
   "private_streak_ended", "daily_summary", "habit_reminder", "approval_expiring",
   "streak_back", "already_logged", "sync_dropped", "undo_dropped",
+  "level_up", "badge_unlocked", "streak_milestone", "rest_day_used", "weekly_recap", "monthly_recap",
 ] as const;
 type Kind = (typeof FEED_KINDS)[number];
 
@@ -116,5 +120,17 @@ export function feedCopy(n: FeedItem): { title: string; body: string; href: stri
       return { ...copy.syncDropped(habit, day), href: habitHref };
     }
     case "undo_dropped": return { ...copy.undoDropped(habit, n.payload.reason === "approved" ? "approved" : "period_closed"), href: habitHref };
+    // M5 (ideas/achievements-and-rewards.md): Inbox rows, pushed under Achievements (Inbox only by default).
+    case "level_up": {
+      const level = Number(n.payload.level ?? 1);
+      return { ...copy.levelUp(level, levelName(level)), href: "/profile" };
+    }
+    case "badge_unlocked": return { ...copy.badgeUnlocked(String(n.payload.name ?? "A new badge")), href: "/profile" };
+    case "streak_milestone":
+      return { ...copy.streakMilestone(habit, streak, asPeriod(n.payload.period, "day"), n.payload.back === true), href: habitHref };
+    case "rest_day_used": return { ...copy.restDayUsed(habit, streak, n.payload.period === "week" ? "week" : "day"), href: habitHref };
+    case "weekly_recap":
+    case "monthly_recap":
+      return { ...(copy.recapCopy(n.payload) ?? { title: n.kind === "weekly_recap" ? "Your week" : "Your month", body: "Your recap is ready." }), href: "/progress/recaps" };
   }
 }

@@ -1,11 +1,12 @@
 // lib/notification-categories.ts
-// Spec: Mute controls. Achievements joins in M5, when there are any.
+// Spec: Mute controls.
 export const NOTIFICATION_CATEGORIES = [
   { key: "reminders", label: "Reminders", hint: "Your daily summary and habit reminders." },
   { key: "group_activity", label: "Group activity", hint: "Check-ins, “Everyone did it” and your kids' big moments in your groups." },
   { key: "approvals", label: "Approvals", hint: "Check-ins waiting for your OK." },
   { key: "nudges", label: "Nudges", hint: "When someone in your group thinks of you." },
   { key: "group_updates", label: "Group updates", hint: "New habits, pauses, new members, streaks and milestones." },
+  { key: "achievements", label: "Achievements", hint: "Level-ups, badges, streak milestones, rest days and your weekly recap. Inbox only unless you change it." },
 ] as const;
 export type CategoryKey = (typeof NOTIFICATION_CATEGORIES)[number]["key"];
 
@@ -28,6 +29,10 @@ export const DELIVERIES = [
 ] as const;
 export type Delivery = (typeof DELIVERIES)[number]["delivery"];
 export const DEFAULT_DELIVERY: Delivery = "silent";
+// Achievements arrive in the Inbox only until the person chooses otherwise (owner, 2026-10-04). The
+// database's private.push_allowed adopts the same default in the XP ledger migration (M5 PR 2);
+// until then no achievements rows are written, so nothing is pushed.
+export const defaultDelivery = (category: CategoryKey): Delivery => (category === "achievements" ? "inbox" : DEFAULT_DELIVERY);
 
 const isCategory = (v: unknown): v is CategoryKey => NOTIFICATION_CATEGORIES.some((c) => c.key === v);
 const isDelivery = (v: unknown): v is Delivery => DELIVERIES.some((d) => d.delivery === v);
@@ -37,9 +42,9 @@ export function validDelivery(category: unknown, delivery: unknown): boolean {
   return isCategory(category) && isDelivery(delivery);
 }
 
-// notification_prefs rows → every category's delivery. Missing or unknown → Silent (fails soft).
+// notification_prefs rows → every category's delivery. Missing or unknown → the category's default (fails soft).
 export function deliveryByCategory(rows: readonly { category: string; delivery: string }[] | null): Record<CategoryKey, Delivery> {
-  const out = Object.fromEntries(NOTIFICATION_CATEGORIES.map((c) => [c.key, DEFAULT_DELIVERY])) as Record<CategoryKey, Delivery>;
+  const out = Object.fromEntries(NOTIFICATION_CATEGORIES.map((c) => [c.key, defaultDelivery(c.key)])) as Record<CategoryKey, Delivery>;
   for (const r of rows ?? []) if (isCategory(r.category) && isDelivery(r.delivery)) out[r.category] = r.delivery;
   return out;
 }

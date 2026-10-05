@@ -47,6 +47,16 @@ const samples: Copy[] = [
   copy.groupMilestone("Family", "Family dinner", 1, "week"),
   { title: "milestone", body: copy.milestoneCard("Read 20 min", 30, "day") },
   { title: "milestone", body: copy.milestoneCard("Family dinner", 1, "week") },
+  copy.streakMilestone("Read 20 min", 1, "day", false),
+  copy.streakMilestone("Read 20 min", 1, "day", true),
+  copy.streakMilestone("Read 20 min", 2, "day", false),
+  copy.streakMilestone("Read 20 min", 2, "day", true),
+  copy.streakMilestone("Read 20 min", 30, "day", false),
+  copy.streakMilestone("Read 20 min", 30, "day", true),
+  copy.streakMilestone("Gym", 4, "week", true),
+  copy.monthlyRecap({ month: "September", done: 70, possible: 84, longest: { habit: "Read 20 min", length: 21 } })!,
+  copy.familyRecap("Family", 34, { habit: "Family dinner", length: 5, period: "week" })!,
+  copy.familyRecap("Family", 1, null)!,
 ];
 
 describe("voice rules over every notification", () => {
@@ -194,5 +204,37 @@ describe("copy sheet rows", () => {
     expect(copy.kidTreatGoal("Mary", "Trip to the park", "🛝")).toEqual({ title: "Mary", body: "Mary reached a goal: Trip to the park 🛝" });
     expect(copy.kidFullGarden("Mary").body).toBe("Mary's garden is in full bloom this week 🌷");
     expect(copy.kidStreak("Mary", 7, "Brush teeth").body).toBe("Mary: 7 days in a row: Brush teeth 🔥");
+  });
+});
+
+describe("M5 copy", () => {
+  it("milestones: first time, early days, and coming back after a break", () => {
+    expect(copy.streakMilestone("Read", 1, "day", false)).toEqual({ title: "Read", body: "First day of Read ✨" });
+    expect(copy.streakMilestone("Gym", 1, "week", false).body).toBe("First week of Gym ✨");
+    expect(copy.streakMilestone("Read", 1, "day", true).body).toBe("A fresh start: Read ✨");
+    expect(copy.streakMilestone("Read", 2, "day", false).body).toBe("Day 2 in a row. Nice start 🌱");
+    expect(copy.streakMilestone("Read", 2, "day", true).body).toBe("Day 2 in a row again 🌱");
+    expect(copy.streakMilestone("Read", 30, "day", false).body).toBe("🔥 Read: 30 days in a row");
+    expect(copy.streakMilestone("Read", 30, "day", true).body).toBe("Back to 30 days of Read 🔥");
+    expect(copy.streakMilestone("Gym", 2, "week", false).body).toBe("🔥 Gym: 2 weeks in a row");
+  });
+  it("the monthly recap names the month and stays quiet about misses", () => {
+    expect(copy.monthlyRecap({ month: "September", done: 70, possible: 84, longest: { habit: "Read", length: 21 } })).toEqual({
+      title: "Your month", body: "70 of 84 check-ins in September. Longest streak: Read 🔥 21" });
+    expect(copy.monthlyRecap({ month: "September", done: 0, possible: 0, longest: null })).toBeNull();
+  });
+  it("the family recap matches the Inbox card's words", () => {
+    expect(copy.familyRecap("Family", 34, { habit: "Family dinner", length: 5, period: "week" })).toEqual({
+      title: "Family", body: "Together last week: 34 check-ins · Family dinner 5 weeks 🔥" });
+    expect(copy.familyRecap("Family", 0, null)).toBeNull();
+  });
+  it("reads recap payloads written by the database", () => {
+    const week = { kind: "week", start: "2026-09-28", end: "2026-10-05", done: 18, possible: 21,
+      longest: { title: "Read 20 min", emoji: "📚", length: 12, period: "day" }, top: [], badges: [], days: [] };
+    expect(copy.recapCopy(week)).toEqual({ title: "Your week", body: "18 of 21 check-ins last week. Longest streak: Read 20 min 🔥 12" });
+    expect(copy.recapCopy({ ...week, kind: "month", start: "2026-09-01", end: "2026-10-01" })?.body)
+      .toBe("18 of 21 check-ins in September. Longest streak: Read 20 min 🔥 12");
+    expect(copy.recapCopy({ kind: "week", done: "x" })).toBeNull();
+    expect(copy.familyRecapCopy("Family", { check_ins: 3, best: null })?.body).toBe("Together last week: 3 check-ins");
   });
 });

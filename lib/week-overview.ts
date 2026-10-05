@@ -1,7 +1,14 @@
 import type { HabitPeriod } from "@/lib/habit-schema";
 
 // The shape of public.week_overview() (a jsonb object, so the generated type is just `Json`).
-export type DayCellStatus = "done" | "missed" | "paused" | "not_started" | "open";
+export type DayCellStatus = "done" | "missed" | "paused" | "not_started" | "open" | "rested";
+// Words for the week dots' label and the history grid (M5: a rest day keeps the streak, never "missed").
+export const STATUS_WORD: Record<DayCellStatus, string> = {
+  done: "done", missed: "missed", paused: "paused", not_started: "not started", open: "in progress", rested: "rest day",
+};
+export const OUTCOME_LABEL: Record<"done" | "missed" | "skipped" | "rested" | "open", string> = {
+  done: "Done", missed: "Missed", skipped: "Paused or not counted", rested: "Rest day", open: "In progress",
+};
 export type WeekDay = { local_date: string; daily_done: number; daily_possible: number };
 export type HabitCells = { habit_id: string; cells: { period_start: string; status: DayCellStatus }[] };
 export type WeekOverview = {
