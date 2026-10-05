@@ -586,3 +586,47 @@ test("the kid view: the big reveal still lands on its spot when the picture shri
   await expect(page.locator("[data-shrunk]")).toBeAttached();
   await expect(page.locator('[data-item="0"]')).toBeVisible();
 });
+
+test("a guardian opens a child's habit from the child page and deletes it when it has no check-ins", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  const kidUrl = page.url();
+  const list = page.getByRole("region", { name: "Habits" });
+  await list.getByRole("link", { name: /Tidy my toys/ }).click();
+  await expect(page).toHaveURL(/\/habits\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole("heading", { name: "Tidy my toys" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Mary" })).toHaveAttribute("href", new URL(kidUrl).pathname);
+
+  const manage = page.getByRole("region", { name: "Manage habit" });
+  await expect(manage).toContainText("Edit details");
+  await expect(manage).not.toContainText("Reminders");
+  await expect(manage).not.toContainText("Archive");
+  await manage.getByText("Delete", { exact: true }).click();
+  await manage.getByRole("button", { name: "Delete habit" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(page).toHaveURL(kidUrl);
+  await expect(list.getByRole("listitem")).toHaveCount(2);
+  await expect(list).not.toContainText("Tidy my toys");
+});
+
+test("a guardian archives a child's habit that has a check-in, and it leaves the child page", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  const kidUrl = page.url();
+  const list = page.getByRole("region", { name: "Habits" });
+  await list.getByRole("button", { name: "Check in for Mary: Tidy my toys" }).click();
+  await expect(list.getByRole("button", { name: "Done for Mary: Tidy my toys" })).toBeVisible();
+  await list.getByRole("link", { name: /Tidy my toys/ }).click();
+  await expect(page).toHaveURL(/\/habits\/[0-9a-f-]{36}$/);
+
+  const manage = page.getByRole("region", { name: "Manage habit" });
+  await expect(manage).not.toContainText("Delete");
+  await manage.getByText("Archive", { exact: true }).click();
+  await manage.getByRole("button", { name: "Archive habit" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Archive", exact: true }).click();
+  await expect(page).toHaveURL(kidUrl);
+  await expect(list.getByRole("listitem")).toHaveCount(2);
+  await expect(list).not.toContainText("Tidy my toys");
+});

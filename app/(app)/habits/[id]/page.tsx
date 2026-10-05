@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronDown, ChevronLeft, Flame, Trophy } from "lucide-react";
+import { KidCheckInButton } from "@/components/kids/kid-check-in-button";
 import { ArchiveHabitButton } from "@/components/habits/archive-habit-button";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { CheckInButton } from "@/components/habits/check-in-button";
@@ -72,21 +73,24 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const [{ profile, userId }, detail, ends] = await Promise.all([getProfile(), getHabitDetail(id), getHabitEnds([id])]);
   if (!detail) notFound();
 
-  const { summary: h, history, freezes, checkIns, totalCheckIns, memberCheckIns, myCheers, myNudges } = detail;
+  const { summary: h, child, history, freezes, checkIns, totalCheckIns, memberCheckIns, myCheers, myNudges } = detail;
   const members = membersOf(h);
   // Only the owner of a private habit, or an admin of a group habit, edits, pauses it for everyone,
-  // archives or deletes it (RLS and the RPCs enforce the same).
-  const canManage = !h.group_id || h.my_role === "admin";
+  // archives or deletes it (RLS and the RPCs enforce the same). A child's own habit (child is set,
+  // so the viewer is a guardian: habit_role 'guardian') is managed by any adult of the child's group.
+  const canManage = child !== null || !h.group_id || h.my_role === "admin";
   const archived = Boolean(h.archived_at);
+  // A child's own habit may have no category (kid templates); the page and the edit form need one.
+  const category = h.category ?? "home";
   // A group habit runs on its group's calendar (time zone and week start). Finished habits use Start
   // again (Progress → Finished); only plain archived ones restore, so that list is read only then.
   const [group, finishedIds, settings] = await Promise.all([
-    h.group_id ? getGroupDetail(h.group_id) : null,
+    h.group_id || child?.groupId ? getGroupDetail((h.group_id ?? child?.groupId)!) : null,
     archived && canManage ? getFinishedIds() : null,
     getHabitSettings(h.habit_id),
   ]);
   // Reminders are for people who do the habit: its owner, or anyone in its group (adults always take part).
-  const takesPart = Boolean(h.group_id) || h.my_role === "owner";
+  const takesPart = !child && (Boolean(h.group_id) || h.my_role === "owner");
   const today = todayIn(group?.timezone ?? profile.timezone);
   const weekStart = (group?.week_start ?? profile.week_start) === 0 ? 0 : 1;
   const wholeFreezes = freezes.filter((f) => !f.user_id);
@@ -99,7 +103,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const myFreeze = shownFreeze(myFreezes, today, Boolean(me?.paused));
   const endsOn = ends.get(h.habit_id) ?? null;
   const endNow = endsOn ? endProgress(h.starts_on, endsOn, today, h.period) : null;
-  const restorable = archived && canManage && !finishedIds?.has(h.habit_id);
+  const restorable = archived && canManage && !child && !finishedIds?.has(h.habit_id);
   const progress = describeProgress({
     targetCount: h.target_count,
     period: h.period,
@@ -129,9 +133,12 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
 
   return (
     <section className="flex flex-col gap-4 pt-2 pb-6">
-      <Link href="/today" className="-ml-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
-        <ChevronLeft aria-hidden className="size-4" />
-        Today
+      <Link
+        href={child ? `/kids/${child.id}` : "/today"}
+        className="-ml-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+      >
+        <ChevronLeft aria-hidden className="size-4 shrink-0" />
+        <span className="truncate">{child ? child.name : "Today"}</span>
       </Link>
 
       <header className="flex items-center gap-4">
@@ -141,7 +148,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
           <p className="text-sm text-muted-foreground">
             {h.group_id
               ? `${h.group_name} · ${describeSchedule(h.target_count, h.period)}${h.requires_approval ? " · needs approval" : ""}`
-              : `${describeSchedule(h.target_count, h.period)} · ${CATEGORIES[h.category].label}`}
+              : `${describeSchedule(h.target_count, h.period)} · ${CATEGORIES[category].label}`}
             {archived && " · Archived"}
           </p>
         </div>
@@ -161,19 +168,30 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
               <p className={isDone ? "font-bold text-done" : "font-bold"}>{everyone ? "Everyone did it ✓" : progress.text}</p>
               {h.target_count > 1 && (
                 <div className="h-2 w-40 overflow-hidden rounded-full bg-muted" aria-hidden>
-                  <div className={`h-full rounded-full bg-current ${CATEGORIES[h.category].iconClass}`} style={{ width: `${Math.min(100, (h.done_count / h.target_count) * 100)}%` }} />
+                  <div className={`h-full rounded-full bg-current ${CATEGORIES[category].iconClass}`} style={{ width: `${Math.min(100, (h.done_count / h.target_count) * 100)}%` }} />
                 </div>
               )}
             </div>
-            <CheckInButton
-              habitId={h.habit_id}
-              title={h.title}
-              multi={h.target_count > 1}
-              state={stateOf(h)}
-              withChildren={openChildrenOf(h)}
-            />
+            {child ? (
+              <KidCheckInButton
+                habitId={h.habit_id}
+                title={h.title}
+                childId={child.id}
+                childName={child.name}
+                multi={h.target_count > 1}
+                state={stateOf(h)}
+              />
+            ) : (
+              <CheckInButton
+                habitId={h.habit_id}
+                title={h.title}
+                multi={h.target_count > 1}
+                state={stateOf(h)}
+                withChildren={openChildrenOf(h)}
+              />
+            )}
           </div>
-          <CheckInList habitId={h.habit_id} checkIns={checkIns} timeZone={profile.timezone} period={h.period} />
+          {!child && <CheckInList habitId={h.habit_id} checkIns={checkIns} timeZone={profile.timezone} period={h.period} />}
         </Card>
       )}
 
@@ -278,7 +296,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                   habitId={h.habit_id}
                   title={h.title}
                   emoji={h.emoji}
-                  category={h.category}
+                  category={category}
                   startsOn={h.starts_on}
                   canEditStart={totalCheckIns === 0}
                   today={today}

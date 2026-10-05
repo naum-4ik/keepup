@@ -115,14 +115,19 @@ export default async function KidPage({
               return (
                 <li key={h.habit_id} className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-3">
-                    <HabitEmoji category={h.category} emoji={h.emoji} size="lg" />
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="truncate font-bold">{h.title}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {kidProgressText(h)}
-                        {h.group_name && ` · ${h.group_name}`}
+                    <Link
+                      href={`/habits/${h.habit_id}`}
+                      className="-my-1 flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-xl py-1 hover:bg-muted/60"
+                    >
+                      <HabitEmoji category={h.category} emoji={h.emoji} size="lg" />
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate font-bold">{h.title}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {kidProgressText(h)}
+                          {h.group_name && ` · ${h.group_name}`}
+                        </span>
                       </span>
-                    </span>
+                    </Link>
                     <StreakBadge count={h.current_streak} />
                     <KidCheckInButton
                       habitId={h.habit_id}
