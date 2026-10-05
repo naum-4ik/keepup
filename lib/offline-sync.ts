@@ -44,7 +44,10 @@ export function httpSender(fetchImpl: typeof fetch = (input, init) => fetch(inpu
     delete body.attempts;
     delete body.firstFailedAt;
     if (body.kind === "check_in") delete body.maybeSent;
-    else delete body.subjectId;
+    else {
+      delete body.subjectId;
+      delete body.queuedAt;
+    }
     let res: Response;
     try {
       res = await fetchImpl("/api/check-ins/sync", {

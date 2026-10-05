@@ -18,10 +18,10 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
   // ("Subscribed to PostgreSQL", seconds later on a cold start), and changes before that are lost.
   const [ready, setReady] = useState(false);
   // While a tap or an undo waits on this phone, a refresh would draw the server's answer in its place
-  // ("Done" for a tap still saving): the refresh is owed instead, and runs once the queue is empty.
-  // isBusy() is read when a refresh is due, so a tap doesn't re-join the channel; `queued` (drawn)
-  // runs the owed refresh once nothing waits.
-  const { queued, isBusy } = useOfflineQueue();
+  // ("Done" for a tap still saving): the refresh is owed instead, and runs once the queue is empty
+  // (or stuck: lib/offline-queue.ts holdsRefresh). holdsRefresh() is read when a refresh is due, so a
+  // tap doesn't re-join the channel; `queued` (drawn) runs the owed refresh once nothing holds it.
+  const { queued, holdsRefresh } = useOfflineQueue();
   const owed = useRef(false);
   const refreshRef = useRef<() => void>(() => {});
 
@@ -32,7 +32,7 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
     // Offline, a refresh would replace the saved page with an error.
     const refreshSoon = () => {
       if (!navigator.onLine) return;
-      if (isBusy()) {
+      if (holdsRefresh()) {
         owed.current = true;
         return;
       }
@@ -41,7 +41,7 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
       // phone may have gone offline in those 400 ms.
       timer.current = window.setTimeout(() => {
         if (!navigator.onLine) return;
-        if (isBusy()) owed.current = true;
+        if (holdsRefresh()) owed.current = true;
         else router.refresh();
       }, 400);
     };
@@ -81,14 +81,14 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
       if (timer.current) window.clearTimeout(timer.current);
       if (channel) void supabase.removeChannel(channel);
     };
-  }, [table, filter, router, isBusy]);
+  }, [table, filter, router, holdsRefresh]);
 
   useEffect(() => {
-    if (owed.current && !isBusy()) {
+    if (owed.current && !holdsRefresh()) {
       owed.current = false;
       refreshRef.current();
     }
-  }, [queued, isBusy]);
+  }, [queued, holdsRefresh]);
 
   // data-table: a page can have two listeners (the layout's notifications plus a page's check-ins).
   return <span hidden data-live={ready ? "ready" : "joining"} data-table={table} />;

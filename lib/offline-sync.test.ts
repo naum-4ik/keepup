@@ -81,7 +81,7 @@ describe("httpSender", () => {
   it("keeps the attempt count on the phone", async () => {
     let body = "";
     const fake = (async (_url: string, init: RequestInit) => ((body = String(init.body)), new Response(JSON.stringify({ outcome: "synced" })))) as unknown as typeof fetch;
-    await httpSender(fake)({ kind: "undo", clientId: C, habitId: H, subjectId: null, attempts: 3 });
+    await httpSender(fake)({ kind: "undo", clientId: C, habitId: H, subjectId: null, queuedAt: "2026-10-05T22:00:00.000Z", attempts: 3 });
     expect(JSON.parse(body)).toEqual({ kind: "undo", clientId: C, habitId: H });
   });
 

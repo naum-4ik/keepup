@@ -10,8 +10,9 @@ type Failures = { attempts?: number; firstFailedAt?: string };
 export type QueuedCheckIn = {
   kind: "check_in"; clientId: string; habitId: string; subjectId: string | null; tappedAt: string; byChild?: boolean; maybeSent?: boolean;
 } & Failures;
-// subjectId: whose tap it takes back (its tap's; older stored undos have none: mine). Kept on the phone.
-export type QueuedUndo = { kind: "undo"; clientId: string; habitId: string; subjectId?: string | null } & Failures;
+// subjectId: whose tap it takes back (its tap's; older stored undos have none: mine). queuedAt: when
+// it was made (older stored undos have none). Both kept on the phone, never sent.
+export type QueuedUndo = { kind: "undo"; clientId: string; habitId: string; subjectId?: string | null; queuedAt?: string } & Failures;
 export type QueueEntry = QueuedCheckIn | QueuedUndo;
 
 // synced: the server has it. rejected: a rule refused it (final; the server's feed note explains).
@@ -69,6 +70,21 @@ export function pendingCounts(queue: QueueEntry[]): PendingCounts {
     counts.set(k, (counts.get(k) ?? 0) + 1);
   }
   return Object.defineProperty(counts, "queue", { value: queue, enumerable: false });
+}
+
+// A live refresh normally waits while anything is queued (it would draw the server's answer over a
+// waiting tap). A queue that is stuck may not hold the page back for ever: once its oldest entry is
+// over STUCK_AFTER_MS old, every waiting check-in may already be on the server (maybeSent: tried
+// online or by a flush), and nothing is being sent right now (`running`), the refresh goes ahead; the
+// rendered-ids rule (queuedDelta) keeps it from counting a tap twice. A never-tried tap keeps holding:
+// the server can't have it, so a refresh could only draw it as not done. An undo from before
+// queuedAt existed counts as old.
+export const STUCK_AFTER_MS = 2 * 60 * 1000;
+export function holdsRefresh(queue: readonly QueueEntry[], now: Date, running: boolean): boolean {
+  if (queue.length === 0) return false;
+  if (running || queue.some((e) => e.kind === "check_in" && !e.maybeSent)) return true;
+  const times = queue.map((e) => (e.kind === "check_in" ? Date.parse(e.tappedAt) : e.queuedAt ? Date.parse(e.queuedAt) : -Infinity));
+  return now.getTime() - Math.min(...times) <= STUCK_AFTER_MS;
 }
 
 // What the waiting entries change on screen, per queueKey, against the check-ins the page was

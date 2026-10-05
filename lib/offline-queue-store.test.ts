@@ -108,7 +108,8 @@ describe("createOfflineQueue", () => {
     const queue = createOfflineQueue({ storage: memoryStorage(), send: async () => "synced", now: fixedNow, newId: ids(), onChange: (p) => seen.push([...p.keys()]) });
     await queue.checkIn("h1");
     await queue.flush();
-    expect(seen).toEqual([["h1"], []]);
+    // The middle one: marked maybe sent before it goes (same counts, new snapshot for holdsRefresh).
+    expect(seen).toEqual([["h1"], ["h1"], []]);
   });
 
   it("concurrent flush sends each entry once", async () => {

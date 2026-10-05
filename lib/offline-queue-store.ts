@@ -140,9 +140,9 @@ export function createOfflineQueue(deps: {
   }
 
   const key = (e: QueueEntry) => `${e.kind}:${e.clientId}`;
-  // No onChange: what is waiting doesn't change.
-  const markMaybeSent = async (clientId: string): Promise<void> =>
-    void (await deps.storage.update((q) => q.map((e) => (e.kind === "check_in" && e.clientId === clientId && !e.maybeSent ? { ...e, maybeSent: true } : e))));
+  // The counts don't change, but the snapshot does (lib/offline-queue.ts holdsRefresh reads maybeSent).
+  const markMaybeSent = (clientId: string): Promise<void> =>
+    update((q) => q.map((e) => (e.kind === "check_in" && e.clientId === clientId && !e.maybeSent ? { ...e, maybeSent: true } : e)));
 
   async function flushOnce(): Promise<FlushResult> {
     // Read inside the lock: another tab may have just sent (and removed) some of it.
@@ -171,7 +171,7 @@ export function createOfflineQueue(deps: {
   // the server may already have it. Otherwise an unsent check-in is simply removed.
   const allIds = (q: QueueEntry[]) => new Set(q.map((e) => e.clientId));
   function undoEntry(clientId: string, habitId: string): Promise<void> {
-    const entry = { kind: "undo" as const, clientId, habitId };
+    const entry = { kind: "undo" as const, clientId, habitId, queuedAt: now().toISOString() };
     if (!deps.locks) return update((q) => addUndo(q, entry, running ? allIds(q) : new Set()));
     return deps.locks.request(LOCK, { ifAvailable: true }, (lock) => update((q) => addUndo(q, entry, lock && !running ? new Set() : allIds(q))));
   }

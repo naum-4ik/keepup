@@ -1,6 +1,6 @@
 // lib/offline-queue.test.ts
 import { describe, expect, it, vi } from "vitest";
-import { addCheckIn, addUndo, flush, MAX_ATTEMPTS, pendingCounts, pendingHabitIds, queueKey, queuedDelta, type QueueEntry, type QueuedCheckIn, type Sender } from "./offline-queue";
+import { addCheckIn, addUndo, flush, holdsRefresh, MAX_ATTEMPTS, pendingCounts, pendingHabitIds, queueKey, queuedDelta, type QueueEntry, type QueuedCheckIn, type Sender } from "./offline-queue";
 
 const tap = (clientId: string, habitId = "h1"): QueuedCheckIn => ({
   kind: "check_in",
@@ -172,5 +172,39 @@ describe("queuedDelta: what waiting entries change on a rendered page", () => {
     const c = pendingCounts(q);
     expect(c.queue).toBe(q);
     expect(c).toEqual(new Map([["h1", 1]]));
+  });
+});
+
+describe("holdsRefresh: a live refresh waits for the queue, but not for ever", () => {
+  const at = (iso: string) => new Date(iso);
+  const sent = (clientId: string, tappedAt: string): QueuedCheckIn => ({ ...tap(clientId), tappedAt, maybeSent: true });
+
+  it("nothing queued: no hold", () => {
+    expect(holdsRefresh([], at("2026-10-05T21:00:00Z"), false)).toBe(false);
+  });
+
+  it("a fresh entry holds", () => {
+    expect(holdsRefresh([sent("a", "2026-10-05T20:59:00.000Z")], at("2026-10-05T21:00:00Z"), false)).toBe(true);
+  });
+
+  it("stuck over two minutes, every tap tried and nothing sending: the refresh goes ahead", () => {
+    const q = [sent("a", "2026-10-05T20:57:00.000Z"), sent("b", "2026-10-05T20:59:30.000Z")];
+    expect(holdsRefresh(q, at("2026-10-05T21:00:00Z"), false)).toBe(false);
+  });
+
+  it("still holds while a flush or an online try runs", () => {
+    expect(holdsRefresh([sent("a", "2026-10-05T20:50:00.000Z")], at("2026-10-05T21:00:00Z"), true)).toBe(true);
+  });
+
+  it("still holds for a tap never tried (the server can't have it)", () => {
+    const q = [sent("a", "2026-10-05T20:50:00.000Z"), tap("b")];
+    expect(holdsRefresh(q, at("2026-10-05T22:00:00Z"), false)).toBe(true);
+  });
+
+  it("an undo counts by when it was queued; one from before that was recorded counts as old", () => {
+    const fresh = { kind: "undo" as const, clientId: "u", habitId: "h1", queuedAt: "2026-10-05T20:59:30.000Z" };
+    expect(holdsRefresh([fresh], at("2026-10-05T21:00:00Z"), false)).toBe(true);
+    expect(holdsRefresh([fresh], at("2026-10-05T21:02:00Z"), false)).toBe(false);
+    expect(holdsRefresh([{ kind: "undo", clientId: "u", habitId: "h1" }], at("2026-10-05T21:00:00Z"), false)).toBe(false);
   });
 });
