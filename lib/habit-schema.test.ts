@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isOneEmoji, isUuid, parseHabit, parseHabitDetails, readHabitForm, type HabitFormValues } from "./habit-schema";
+import { isOneEmoji, isUuid, parseDetailsEdit, parseHabit, parseHabitDetails, readHabitForm, type HabitFormValues } from "./habit-schema";
 
 const valid: HabitFormValues = { title: "  Read  ", emoji: "📖", category: "mind", targetCount: "1", period: "day", startsOn: "2026-10-05" };
 
@@ -113,5 +113,22 @@ describe("isUuid", () => {
     expect(isUuid("00000000-0000-0000-0000-0000000000d1")).toBe(true);
     expect(isUuid("not-a-uuid")).toBe(false);
     expect(isUuid("00000000-0000-0000-0000-0000000000d1; drop")).toBe(false);
+  });
+});
+
+describe("parseDetailsEdit", () => {
+  it("parses a category like parseHabitDetails", () => {
+    expect(parseDetailsEdit({ title: " Walk ", emoji: "🚶", category: "fitness" })).toEqual({
+      ok: true,
+      value: { title: "Walk", emoji: "🚶", category: "fitness" },
+    });
+  });
+  it("keeps None (a child's own habit) as no category, with the kid star when no emoji is set", () => {
+    expect(parseDetailsEdit({ title: "Tidy", emoji: "🧸", category: "" })).toEqual({ ok: true, value: { title: "Tidy", emoji: "🧸", category: null } });
+    expect(parseDetailsEdit({ title: "Tidy", emoji: "", category: "" })).toEqual({ ok: true, value: { title: "Tidy", emoji: "⭐", category: null } });
+  });
+  it("still refuses a bad title or an unknown category", () => {
+    expect(parseDetailsEdit({ title: " ", emoji: "", category: "" })).toEqual({ ok: false, errors: { title: "Enter a title." } });
+    expect(parseDetailsEdit({ title: "Tidy", emoji: "", category: "nope" })).toEqual({ ok: false, errors: { category: "Pick a category." } });
   });
 });

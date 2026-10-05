@@ -42,3 +42,15 @@ export function allCheckedOffKey<T extends TodayHabit>(sections: { key: string; 
   }
   return null;
 }
+
+export type RingInput = Pick<TodayHabit, "period" | "target_count" | "done_count">;
+
+// The "1/3" ring on a weekly or monthly check-in button: partway through a period that needs more
+// than one check-in. Daily habits have their own bar; nothing yet or done shows the plain icon.
+// `queued`: taps waiting on this phone count too, capped at the target, as on the Today card
+// (lib/today-progress.ts withQueuedProgress).
+export function ringOf(h: RingInput, queued = 0): { done: number; target: number } | null {
+  const done = Math.min(h.target_count, h.done_count + Math.max(0, queued));
+  if (h.period === "day" || h.target_count <= 1 || done <= 0 || done >= h.target_count) return null;
+  return { done, target: h.target_count };
+}

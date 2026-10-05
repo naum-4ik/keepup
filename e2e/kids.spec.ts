@@ -136,6 +136,7 @@ test("Me + Mary checks in both in one tap", async ({ page }) => {
   await page.getByRole("button", { name: "Create your own" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Title").fill("Walk the dog");
+  await dialog.getByLabel("Category").selectOption("health");
   await dialog.getByRole("radio", { name: "Family" }).check();
   await dialog.getByRole("switch", { name: "Include Mary" }).click();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
@@ -152,6 +153,7 @@ test("Me + Mary from the group habit's page checks in both", async ({ page }) =>
   await page.getByRole("button", { name: "Create your own" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Title").fill("Walk the dog");
+  await dialog.getByLabel("Category").selectOption("health");
   await dialog.getByRole("radio", { name: "Family" }).check();
   await dialog.getByRole("switch", { name: "Include Mary" }).click();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
@@ -323,6 +325,7 @@ test("a group habit with a child that ended leaves the kid views, and Start agai
   await page.getByRole("button", { name: "Create your own" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Title").fill("Walk the dog");
+  await dialog.getByLabel("Category").selectOption("health");
   await dialog.getByRole("radio", { name: "Family" }).check();
   await dialog.getByRole("switch", { name: "Include Mary" }).click();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
@@ -629,4 +632,93 @@ test("a guardian archives a child's habit that has a check-in, and it leaves the
   await expect(page).toHaveURL(kidUrl);
   await expect(list.getByRole("listitem")).toHaveCount(2);
   await expect(list).not.toContainText("Tidy my toys");
+});
+
+test("a child's own habit uses the same −/＋ count as yours, capped by the period", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.getByRole("button", { name: "Add a habit" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Create your own" }).click();
+  const own = page.getByRole("dialog", { name: "Your own habit for Mary" });
+  await expect(own.getByLabel("Times")).toHaveValue("1");
+  await expect(own.getByRole("button", { name: "Decrease" })).toBeDisabled();
+  await own.getByRole("button", { name: "Increase" }).click();
+  await own.getByRole("button", { name: "Increase" }).click();
+  await expect(own.getByLabel("Times")).toHaveValue("3");
+  await own.getByLabel("Per").selectOption("week");
+  await own.getByLabel("Times").fill("7");
+  await expect(own.getByRole("button", { name: "Increase" })).toBeDisabled();
+  await own.getByLabel("Title").fill("Feed the fish");
+  await own.getByRole("button", { name: "Add habit" }).click();
+  await expect(own).toBeHidden();
+  await expect(page.getByRole("region", { name: "Habits" })).toContainText("Feed the fish");
+});
+
+test("a guardian restores a child's archived habit from the child page", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  const kidUrl = page.url();
+  const list = page.getByRole("region", { name: "Habits" });
+  await list.getByRole("button", { name: "Check in for Mary: Tidy my toys" }).click();
+  await expect(list.getByRole("button", { name: "Done for Mary: Tidy my toys" })).toBeVisible();
+  await list.getByRole("link", { name: /Tidy my toys/ }).click();
+  const manage = page.getByRole("region", { name: "Manage habit" });
+  await manage.getByText("Archive", { exact: true }).click();
+  await manage.getByRole("button", { name: "Archive habit" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Archive", exact: true }).click();
+  await expect(page).toHaveURL(kidUrl);
+  // Archived habits stay reachable from the child's page, and restore back into the list.
+  await page.getByRole("region", { name: "Archived" }).getByRole("link", { name: /Tidy my toys/ }).click();
+  await expect(page.getByRole("heading", { name: "Tidy my toys" })).toBeVisible();
+  await page.getByRole("button", { name: "Restore Tidy my toys" }).click();
+  await expect(page).toHaveURL(kidUrl);
+  await expect(list.getByRole("listitem")).toHaveCount(3);
+  await expect(list).toContainText("Tidy my toys");
+  await expect(page.getByRole("region", { name: "Archived" })).toHaveCount(0);
+});
+
+test("editing a child's habit that has no category keeps it without one", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.getByRole("region", { name: "Habits" }).getByRole("link", { name: /Tidy my toys/ }).click();
+  const header = page.locator("header").filter({ hasText: "Tidy my toys" });
+  await expect(header).not.toContainText("Home");
+  const manage = page.getByRole("region", { name: "Manage habit" });
+  await manage.getByText("Edit details", { exact: true }).click();
+  await expect(manage.getByLabel("Category")).toHaveValue("");
+  await expect(manage.getByLabel("Category").locator("option:checked")).toHaveText("None");
+  await manage.getByLabel("Title").fill("Tidy my room");
+  await manage.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Tidy my room" })).toBeVisible();
+  await expect(page.locator("header").filter({ hasText: "Tidy my room" })).not.toContainText("Home");
+  await manage.getByText("Edit details", { exact: true }).click();
+  await expect(manage.getByLabel("Category")).toHaveValue("");
+});
+
+test("a child's finished habit is listed under Finished, apart from Archived, with no Restore", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  const kidUrl = page.url();
+  await page.getByRole("region", { name: "Habits" }).getByRole("link", { name: /Tidy my toys/ }).click();
+  // A guardian sees the child's streak, not "your" streak.
+  await expect(page.getByRole("region", { name: "Streaks" })).toContainText("Mary's streak");
+  const habitUrl = page.url();
+  endHabitYesterday(habitUrl.match(/\/habits\/([0-9a-f-]{36})/)![1]);
+  await page.reload();
+  const manage = page.getByRole("region", { name: "Manage habit" });
+  await manage.getByText("Ends", { exact: true }).click();
+  await manage.getByRole("button", { name: "Finish", exact: true }).click();
+  await expect(manage.getByRole("button", { name: "Finish", exact: true })).toBeHidden();
+  await page.goto(kidUrl);
+  await expect(page.getByRole("region", { name: "Finished" })).toContainText("Tidy my toys");
+  await expect(page.getByRole("region", { name: "Archived" })).toHaveCount(0);
+  await page.getByRole("region", { name: "Finished" }).getByRole("link", { name: /Tidy my toys/ }).click();
+  await expect(page.getByRole("heading", { name: "Tidy my toys" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Restore/ })).toHaveCount(0);
 });

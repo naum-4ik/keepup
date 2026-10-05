@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 import { signUpAndOnboard } from "./helpers/auth";
 import { createHabit, endHabitYesterday } from "./helpers/habits";
 
@@ -23,12 +23,15 @@ test("custom habits are validated", async ({ page }) => {
   await signUpAndOnboard(page);
   await page.goto("/habits/new");
   await page.getByRole("button", { name: "Create your own" }).click();
+  await expect(page.getByLabel("Category")).toHaveValue("");
 
   await page.getByLabel("Title").fill("   ");
   await page.getByRole("button", { name: "Add habit" }).click();
   await expect(page.getByText("Enter a title.")).toBeVisible();
+  await expect(page.getByText("Pick a category.")).toBeVisible();
 
   await page.getByLabel("Title").fill("Stretch");
+  await page.getByLabel("Category").selectOption("fitness");
   await page.getByLabel("Times").fill("8");
   await page.getByLabel("Per").selectOption("week");
   await page.getByRole("button", { name: "Add habit" }).click();
@@ -51,8 +54,10 @@ test("category tabs show more templates and 'Create your own'", async ({ page })
   await expect(page.getByRole("tabpanel").getByRole("button")).toHaveCount(6);
   await expect(page.getByRole("button", { name: /^Plan tomorrow/ })).toBeVisible();
   await page.getByRole("button", { name: "Create your own" }).click();
-  await expect(page.getByLabel("Category")).toHaveValue("work_money");
+  // The tab you were browsing doesn't choose the category for you.
+  await expect(page.getByLabel("Category")).toHaveValue("");
   await expect(page.getByLabel("Title")).toBeFocused();
+  await page.getByLabel("Category").selectOption("work_money");
   await expect(page.getByRole("button", { name: "Choose emoji (now 💼)" })).toBeVisible();
 });
 
@@ -64,7 +69,8 @@ test("a custom habit gets the emoji picked for it, shown on Today", async ({ pag
   await dialog.getByLabel("Title").fill("Paint");
 
   const emojiButton = dialog.getByRole("button", { name: /^Choose emoji/ });
-  await expect(emojiButton).toHaveAccessibleName("Choose emoji (now 🍎)");
+  // No category picked yet: the neutral kid star, not a category's default.
+  await expect(emojiButton).toHaveAccessibleName("Choose emoji (now ⭐)");
   await emojiButton.click();
   await expect(emojiButton).toHaveAttribute("aria-expanded", "true");
   await expect(dialog.getByRole("group", { name: "Suggested emoji" }).getByRole("button")).toHaveCount(30);
@@ -86,6 +92,7 @@ test("a custom habit gets the emoji picked for it, shown on Today", async ({ pag
   await expect(own).toBeHidden();
   await expect(dialog).toBeVisible();
 
+  await dialog.getByLabel("Category").selectOption("mind");
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
   await expect(page).toHaveURL(/\/today$/);
   await expect(page.getByRole("link", { name: /Paint/ })).toContainText("🖌️");
@@ -168,14 +175,23 @@ test.describe("Today check-ins", () => {
     await expect(page.getByText("0 / 8 today")).toBeVisible();
     await page.getByRole("button", { name: "Check in: Drink water" }).click();
     await expect(page.getByText("1 / 8 today")).toBeVisible();
+    // The link is named by the title alone; the progress is its description.
+    const link = page.getByRole("link", { name: "Drink water", exact: true });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAccessibleDescription(/1 \/ 8 today/);
   });
 
   test("a weekly habit allows one check-in per day", async ({ page }) => {
     await signUpAndOnboard(page);
     await createHabit(page, { template: "Work out" });
     await page.getByRole("button", { name: "Check in: Work out" }).click();
-    await expect(page.getByRole("button", { name: "Checked in today: Work out" })).toBeDisabled();
+    // A 3×/week habit with one check-in shows a ring with "1/3", and says so in words.
+    const button = page.getByRole("button", { name: "Checked in today: Work out, 1 of 3" });
+    await expect(button).toBeDisabled();
+    await expect(button).toContainText("1/3");
     await expect(page.getByText(/1 of 3 this week/)).toBeVisible();
+    await page.getByRole("link", { name: /Work out/ }).click();
+    await expect(page.getByRole("button", { name: "Checked in today: Work out, 1 of 3" })).toContainText("1/3");
   });
 
   test("a double tap checks in only once", async ({ page }) => {
@@ -226,7 +242,10 @@ test.describe("Habit detail", () => {
     await expect(page.getByRole("button", { name: "Done: Read 20 min" })).toBeVisible();
 
     await page.getByRole("link", { name: /Read 20 min/ }).click();
-    await expect(page.getByText("1 check-in this period")).toBeVisible();
+    // One check-in: the card already says "Done for today", so no "1 check-in this period" line.
+    await expect(page.getByRole("button", { name: /^Undo check-in at / })).toBeVisible();
+    await expect(page.getByText("1 check-in this period")).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Streaks" })).toContainText("Your streak");
     await page.getByRole("button", { name: "Undo" }).click();
     await expect(page.getByText("No check-ins this period yet.")).toBeVisible();
 
@@ -357,6 +376,17 @@ test.describe("Habit detail", () => {
     await page.getByRole("link", { name: "Today" }).first().click();
     await expect(page).toHaveURL(/\/today$/);
   });
+
+  test("a habit that starts tomorrow says how its history fills", async ({ page }) => {
+    await signUpAndOnboard(page);
+    await page.goto("/habits/new");
+    await page.getByRole("button", { name: /^Read 20 min/ }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Tomorrow" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: /^Add habit/ }).click();
+    await expect(page).toHaveURL(/\/today$/);
+    await page.getByRole("link", { name: /Read 20 min/ }).click();
+    await expect(page.getByRole("region", { name: "History" })).toContainText("Nothing here yet. Each day you finish fills a square.");
+  });
 });
 
 test("progress groups habits by category and lists archived ones", async ({ page }) => {
@@ -390,6 +420,7 @@ test("a habit with an end: 30 days on create, Day 1 of 30, then extend and remov
   await page.getByRole("button", { name: "Create your own" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Title").fill("Read");
+  await dialog.getByLabel("Category").selectOption("learning");
   const ends = dialog.getByRole("group", { name: "Ends" });
   await expect(ends.getByRole("button", { name: "No end" })).toHaveAttribute("aria-pressed", "true");
   await expect(ends.getByRole("button")).toHaveText(["No end", "7 days", "30 days", "60 days", "90 days", "Until a date"]);
@@ -462,4 +493,50 @@ test("after the end, the habit page offers only Keep going or Finish", async ({ 
   await expect(manage.getByRole("button", { name: "Remove end" })).toHaveCount(0);
   await manage.getByRole("button", { name: "Keep going" }).click();
   await expect(manage).toContainText("No end yet");
+});
+
+test("every add button has one dashed look", async ({ page }) => {
+  await signUpAndOnboard(page);
+  // Height, border style, font size and corner radius: one look everywhere.
+  const look = (l: Locator) =>
+    l.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return [Math.round(el.getBoundingClientRect().height), s.borderTopStyle, s.fontSize, s.borderTopLeftRadius].join(" ");
+    });
+  await page.goto("/groups/new");
+  await page.getByRole("radio", { name: "Family" }).check();
+  await page.getByRole("button", { name: "Create group" }).click();
+  await expect(page).toHaveURL(/\/groups\/[0-9a-f-]{36}/);
+  const looks = [await look(page.getByRole("link", { name: "Add a group habit" })), await look(page.getByRole("link", { name: "Add a child" }))];
+  await page.goto("/groups");
+  looks.push(await look(page.getByRole("link", { name: "New group" })));
+  await page.goto("/habits/new");
+  looks.push(await look(page.getByRole("button", { name: "Create your own" })));
+  expect(looks[0]).toMatch(/^44 dashed /);
+  expect(new Set(looks).size).toBe(1);
+});
+
+test("Starts and Ends chips share one style and grid at 360px", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 });
+  await signUpAndOnboard(page);
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: "Create your own" }).click();
+  const dialog = page.getByRole("dialog");
+  // Measure after the dialog's open animation: its zoom scales every box while it runs.
+  await dialog.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
+  const today = dialog.getByRole("button", { name: "Today", exact: true });
+  const ends = dialog.getByRole("group", { name: "Ends" }).getByRole("button");
+  const [a, b, c, d] = await Promise.all([0, 1, 2, 3].map((i) => ends.nth(i).boundingBox()));
+  // Three equal chips in a row, then the next row.
+  expect(b!.y).toBeCloseTo(a!.y, 0);
+  expect(c!.y).toBeCloseTo(a!.y, 0);
+  expect(b!.width).toBeCloseTo(a!.width, 0);
+  expect(c!.width).toBeCloseTo(a!.width, 0);
+  expect(d!.y).toBeGreaterThan(a!.y);
+  // The same chip as Starts.
+  expect(a!.height).toBe((await today.boundingBox())!.height);
+  const fontOf = (l: Locator) => l.evaluate((el) => getComputedStyle(el).fontSize);
+  expect(await fontOf(ends.first())).toBe(await fontOf(today));
+  // Nothing scrolls sideways.
+  expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
 });

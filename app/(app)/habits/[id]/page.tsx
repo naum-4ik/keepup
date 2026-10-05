@@ -80,7 +80,8 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   // so the viewer is a guardian: habit_role 'guardian') is managed by any adult of the child's group.
   const canManage = child !== null || !h.group_id || h.my_role === "admin";
   const archived = Boolean(h.archived_at);
-  // A child's own habit may have no category (kid templates); the page and the edit form need one.
+  // A child's own habit may have no category (kid templates): its colours fall back to Home's, but
+  // the header and the edit form say none.
   const category = h.category ?? "home";
   // A group habit runs on its group's calendar (time zone and week start). Finished habits use Start
   // again (Progress → Finished); only plain archived ones restore, so that list is read only then.
@@ -103,7 +104,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const myFreeze = shownFreeze(myFreezes, today, Boolean(me?.paused));
   const endsOn = ends.get(h.habit_id) ?? null;
   const endNow = endsOn ? endProgress(h.starts_on, endsOn, today, h.period) : null;
-  const restorable = archived && canManage && !child && !finishedIds?.has(h.habit_id);
+  const restorable = archived && canManage && !finishedIds?.has(h.habit_id);
   const progress = describeProgress({
     targetCount: h.target_count,
     period: h.period,
@@ -148,7 +149,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
           <p className="text-sm text-muted-foreground">
             {h.group_id
               ? `${h.group_name} · ${describeSchedule(h.target_count, h.period)}${h.requires_approval ? " · needs approval" : ""}`
-              : `${describeSchedule(h.target_count, h.period)} · ${CATEGORIES[category].label}`}
+              : `${describeSchedule(h.target_count, h.period)}${h.category ? ` · ${CATEGORIES[h.category].label}` : ""}`}
             {archived && " · Archived"}
           </p>
         </div>
@@ -156,7 +157,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
 
       {restorable && (
         <Card title="Archived">
-          <p className="text-sm text-muted-foreground">Restore it to put it back on Today. The days it was archived don&apos;t count against you.</p>
+          <p className="text-sm text-muted-foreground">Restore it to put it back {child ? `on ${child.name}'s list` : "on Today"}. The days it was archived don&apos;t count against {child ? child.name : "you"}.</p>
           <RestoreHabitButton habitId={h.habit_id} title={h.title} />
         </Card>
       )}
@@ -188,6 +189,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                 multi={h.target_count > 1}
                 state={stateOf(h)}
                 withChildren={openChildrenOf(h)}
+                progress={{ period: h.period, target_count: h.target_count, done_count: h.done_count }}
               />
             )}
           </div>
@@ -225,7 +227,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
             {h.current_streak}
             <span className="text-sm font-bold">{unit(h.current_streak, h.period)}</span>
           </p>
-          <p className="text-xs font-semibold text-muted-foreground">{members ? "Group streak" : "Current streak"}</p>
+          <p className="text-xs font-semibold text-muted-foreground">{members ? "Together" : child ? `${child.name}'s streak` : "Your streak"}</p>
         </div>
         <div className="flex flex-col items-center gap-0.5">
           <p className="flex items-center gap-1 text-2xl font-extrabold tabular-nums">
@@ -279,7 +281,9 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                     ? "Resume or cancel the pause"
                     : members
                       ? "Going away together? Pausing keeps the group's streak safe"
-                      : "Going away? Your streak waits for you"
+                      : child
+                        ? `Going away? ${child.name}'s streak waits`
+                        : "Going away? Your streak waits for you"
                 }
               >
                 <FreezeForm
@@ -296,7 +300,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                   habitId={h.habit_id}
                   title={h.title}
                   emoji={h.emoji}
-                  category={category}
+                  category={h.category}
                   startsOn={h.starts_on}
                   canEditStart={totalCheckIns === 0}
                   today={today}

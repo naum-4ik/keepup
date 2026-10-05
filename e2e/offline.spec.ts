@@ -146,6 +146,7 @@ test("offline, Me + Mary needs a connection; Just me waits on the phone", async 
   await page.getByRole("button", { name: "Create your own" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Title").fill("Walk the dog");
+  await dialog.getByLabel("Category").selectOption("health");
   await dialog.getByRole("radio", { name: "Family" }).check();
   await dialog.getByRole("switch", { name: "Include Mary" }).click();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();

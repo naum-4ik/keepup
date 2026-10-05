@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, Clock } from "lucide-react";
+import { Avatar } from "@/components/avatar";
 import { EveryoneDidIt, type CardMember } from "@/components/celebrations/everyone-did-it";
 import { FirstCheckinTip } from "@/components/first-checkin-tip";
 import { SproutIcon } from "@/components/sprout-icon";
@@ -72,7 +73,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     todayOfP,
   ]);
   const habits = active.filter((h) => !finishes.some((f) => f.h === h));
-  const sections = sectionsForToday(habits);
+  const sections = sectionsForToday(habits, groups);
   // A solo user's Today looks as before: the "Mine" heading shows only next to a group section.
   const withHeadings = sections.some((s) => s.key !== "mine") || kids.length > 0;
   // Check-ins by other members (and other adults logging for a child) refresh these cards.
@@ -140,10 +141,27 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           quiet={everyone.length > 0}
         />
       )}
+      {/* Arriving from an invite (?joined=<group>): who's here, where the group's habits are, a way in. */}
       {joinedGroup && (
-        <p role="status" className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">
-          You joined {joinedGroup.name} ✓
-        </p>
+        <div role="status" className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-soft">
+          <span aria-hidden className="shrink-0">
+            <Avatar name={joinedGroup.name} emoji={joinedGroup.avatar_emoji} color={joinedGroup.avatar_color} size="md" />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate font-bold">Welcome to {joinedGroup.name} 👋</span>
+            <span className="text-sm text-muted-foreground">
+              {joinedGroup.member_count === 1 ? "1 person" : `${joinedGroup.member_count} people`} ·{" "}
+              {habits.some((h) => h.group_id === joinedGroup.group_id) ? "your group habits are below" : "no group habits yet"}
+            </span>
+          </span>
+          <Link
+            href={`/groups/${joinedGroup.group_id}`}
+            aria-label={`Open ${joinedGroup.name}`}
+            className="flex h-11 shrink-0 items-center rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted"
+          >
+            Open
+          </Link>
+        </div>
       )}
       {approvals.length > 0 && (
         <Link href="/inbox" className="flex min-h-14 items-center gap-3 rounded-2xl bg-card p-4 shadow-soft hover:bg-muted">
@@ -156,13 +174,12 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
         </Link>
       )}
-      {everyone.length > 0 && (
-        <EveryoneDidIt
-          ids={everyone.map((n) => n.id)}
-          habits={everyoneHabits.map(([, title]) => title)}
-          members={membersFor(everyoneHabits.map(([id]) => id))}
-        />
-      )}
+      {/* Always rendered, so the card survives a refresh after it was seen (EveryoneDidIt). */}
+      <EveryoneDidIt
+        ids={everyone.map((n) => n.id)}
+        habits={everyoneHabits.map(([, title]) => title)}
+        members={membersFor(everyoneHabits.map(([id]) => id))}
+      />
       {/* Offline (the saved page), cards whose buttons need the server say so (ideas/offline.md §3). */}
       {gentle && (
         <NeedsConnection key={gentle.key} label={gentle.key.startsWith("add_child") ? "Add a child" : "Invite"}>
@@ -202,7 +219,23 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         sections.map((s) =>
           withHeadings ? (
             <section key={s.key} aria-label={s.title} className="flex flex-col gap-3 pt-2">
-              <h2 className="text-base font-bold">{s.title}</h2>
+              <h2 className="text-base font-bold">
+                {s.key === "mine" ? (
+                  s.title
+                ) : (
+                  // A group section opens its group. The avatar is decoration: the link is named by the title.
+                  <Link
+                    href={`/groups/${s.key}`}
+                    className="-mx-2 flex min-h-11 w-fit max-w-full items-center gap-2 rounded-xl px-2 hover:bg-muted/60"
+                  >
+                    <span aria-hidden className="shrink-0">
+                      <Avatar name={s.title} emoji={s.avatar?.emoji} color={s.avatar?.color} size="sm" />
+                    </span>
+                    <span className="truncate">{s.title}</span>
+                    <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+                  </Link>
+                )}
+              </h2>
               <TodayLists habits={s.habits} tipFor={isNewUser ? tipFor : undefined} sectionDone={s.key === checkedOffKey} endLines={endLines} />
             </section>
           ) : (

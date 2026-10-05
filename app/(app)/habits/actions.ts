@@ -10,7 +10,7 @@ import { getGroupDetail } from "@/lib/groups";
 import { GENERIC_ERROR, habitErrorMessage } from "@/lib/habit-errors";
 import { isTap, tapArgs, type TapId } from "@/lib/offline-sync";
 import { reminderError } from "@/lib/reminder-mode";
-import { isUuid, LOCAL_DATE, parseHabit, parseHabitDetails, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
+import { isUuid, LOCAL_DATE, parseDetailsEdit, parseHabit, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 
 const NOT_FOUND: ActionResult = { ok: false, message: "That habit isn't available." };
 // These errors mean another device (or midnight) already changed the habit; refresh so this card
@@ -131,7 +131,7 @@ export async function unfreezeHabit(habitId: string): Promise<ActionResult> {
 
 export async function updateHabitDetails(habitId: string, _prev: FormActionState, formData: FormData): Promise<FormActionState> {
   if (!isUuid(habitId)) return { status: "error", message: "That habit isn't available." };
-  const parsed = parseHabitDetails({
+  const parsed = parseDetailsEdit({
     title: String(formData.get("title") ?? ""),
     emoji: String(formData.get("emoji") ?? ""),
     category: String(formData.get("category") ?? ""),
@@ -176,11 +176,14 @@ export async function archiveHabit(habitId: string): Promise<FormActionState> {
 // skipped, never missed (the RPC settles them).
 export async function restoreHabit(habitId: string): Promise<ActionResult> {
   if (!isUuid(habitId)) return NOT_FOUND;
-  const { supabase } = await requireUser();
+  const { supabase, userId } = await requireUser();
   const { error } = await supabase.rpc("restore_habit", { p_habit_id: habitId });
   if (error) return { ok: false, message: habitErrorMessage(error) };
   refresh(habitId);
-  redirect("/today");
+  // A guardian restoring a child's habit goes back to the child's page.
+  const next = await backTo(supabase, userId, habitId, "/today");
+  if (next.startsWith("/kids/")) revalidatePath(next);
+  redirect(next);
 }
 
 export async function deleteHabit(habitId: string): Promise<FormActionState> {

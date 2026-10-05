@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Plus, Users } from "lucide-react";
 import { GroupCard } from "@/components/groups/group-card";
+import { addButtonClass } from "@/components/ui/add-button";
 import { Button } from "@/components/ui/button";
 import { getMyGroups } from "@/lib/groups";
 
@@ -29,11 +30,10 @@ export default async function GroupsPage() {
               </li>
             ))}
           </ul>
-          <Button asChild variant="outline" className="h-11 gap-1.5">
-            <Link href="/groups/new">
-              <Plus aria-hidden className="size-4" /> New group
-            </Link>
-          </Button>
+          <Link href="/groups/new" className={addButtonClass}>
+            <Plus aria-hidden className="size-4" />
+            New group
+          </Link>
         </>
       )}
     </section>

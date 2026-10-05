@@ -1,24 +1,27 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Minus, Plus, Star, Users } from "lucide-react";
+import { Plus, Star, Users } from "lucide-react";
 import { createGroupHabit, createHabit } from "@/app/(app)/habits/actions";
 import { Avatar } from "@/components/avatar";
 import { CategoryIcon, HabitEmoji } from "@/components/habits/category-icon";
+import { CountStepper } from "@/components/habits/count-stepper";
 import { EMOJI_PANEL_ATTR, EmojiPicker } from "@/components/habits/emoji-picker";
 import { EndPicker } from "@/components/habits/end-picker";
 import { StartDatePicker } from "@/components/habits/start-date-picker";
 import { Button } from "@/components/ui/button";
+import { addButtonClass } from "@/components/ui/add-button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CATEGORIES, CATEGORY_ORDER, normalizeCategory } from "@/lib/categories";
+import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
 import { formatLocalDate } from "@/lib/dates";
 import type { GroupKind } from "@/lib/group-schema";
 import { groupTemplatesFor } from "@/lib/group-templates";
 import { HABIT_TEMPLATES, type HabitTemplate } from "@/lib/habit-templates";
+import { startAfterSwitch, todayForGroup } from "@/lib/habit-start";
 import {
-  HABIT_TITLE_MAX, TARGET_LIMITS, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod,
+  HABIT_TITLE_MAX, isHabitCategory, TARGET_LIMITS, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod,
 } from "@/lib/habit-schema";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
@@ -31,7 +34,14 @@ const chipClass =
 const initialState: HabitFormState = { status: "idle" };
 type Tab = "together" | "popular" | HabitCategory;
 type Draft = { key: number; custom: boolean; values: HabitFormValues; groupId: string; groupOnly: boolean };
-export type FormGroup = { id: string; name: string; kind: GroupKind; children: { id: string; name: string; avatar_emoji: string | null; avatar_color: string | null }[] };
+// `today`: the group's today in its own time zone (a group habit starts on the group's calendar).
+export type FormGroup = {
+  id: string;
+  name: string;
+  kind: GroupKind;
+  today: string;
+  children: { id: string; name: string; avatar_emoji: string | null; avatar_color: string | null }[];
+};
 
 // One form, two creates: a group picked in "Who's it for" makes a group habit.
 const submitHabit = (prev: HabitFormState, formData: FormData) =>
@@ -68,7 +78,7 @@ export function HabitForm({
   const opener = useRef<HTMLElement | null>(null);
   const open = (custom: boolean, values: Omit<HabitFormValues, "startsOn">, groupId = initialGroupId ?? "", groupOnly = false) => {
     opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setDraft((d) => ({ key: (d?.key ?? 0) + 1, custom, values: { ...values, startsOn: today }, groupId, groupOnly }));
+    setDraft((d) => ({ key: (d?.key ?? 0) + 1, custom, values: { ...values, startsOn: todayForGroup(groups, groupId, today) }, groupId, groupOnly }));
   };
   const pickTemplate = (t: HabitTemplate) =>
     open(
@@ -79,8 +89,8 @@ export function HabitForm({
       // Together templates are for groups only: no "Just me".
       tab === "together",
     );
-  const createOwn = () =>
-    open(true, { title: "", emoji: "", category: tab === "popular" || tab === "together" ? "health" : tab, targetCount: "1", period: "day" });
+  // Your own habit starts with no category: the tab you were browsing isn't a choice you made.
+  const createOwn = () => open(true, { title: "", emoji: "", category: "", targetCount: "1", period: "day" });
 
   return (
     <div className="flex flex-col gap-4">
@@ -131,9 +141,9 @@ export function HabitForm({
       <button
         type="button"
         onClick={createOwn}
-        className="flex h-12 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/30 text-[0.9375rem] font-bold text-primary hover:bg-accent"
+        className={addButtonClass}
       >
-        <Plus aria-hidden className="size-5" />
+        <Plus aria-hidden className="size-4" />
         Create your own
       </button>
 
@@ -195,6 +205,8 @@ function HabitFields({
   const [state, formAction, pending] = useActionState(submitHabit, initialState);
   const [groupId, setGroupId] = useState(initialGroupId);
   const group = groups.find((g) => g.id === groupId) ?? null;
+  // Today on this habit's calendar: the group's for a group habit, yours for Just me.
+  const fieldToday = todayForGroup(groups, groupId, today);
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => onPendingChange(pending), [pending, onPendingChange]);
   const [values, setValues] = useState(initial);
@@ -207,8 +219,6 @@ function HabitFields({
   const count = Number(values.targetCount);
   const period = (values.period in TARGET_LIMITS ? values.period : "day") as HabitPeriod;
   const limit = TARGET_LIMITS[period];
-  const step = (delta: number) =>
-    setValues((v) => ({ ...v, targetCount: String(Math.min(limit, Math.max(1, (Number(v.targetCount) || 0) + delta))) }));
   const validCount = Number.isInteger(count) && count >= 1 && count <= limit;
 
   // The browser resets <form> fields after a server action runs. Inputs re-sync from their
@@ -228,7 +238,7 @@ function HabitFields({
         <Label htmlFor="title" className="font-semibold">Title</Label>
         <EmojiPicker
           value={values.emoji}
-          category={normalizeCategory(values.category)}
+          category={isHabitCategory(values.category) ? values.category : null}
           onChange={(emoji) => setValues((v) => ({ ...v, emoji }))}
           error={errors.emoji}
         >
@@ -250,6 +260,8 @@ function HabitFields({
         <Label htmlFor="category" className="font-semibold">Category</Label>
         <select id="category" name="category" ref={categoryRef} value={values.category} onChange={set("category")} className={selectClass}
           aria-invalid={Boolean(errors.category)} aria-describedby={errors.category ? "category-error" : undefined}>
+          {/* Not `required`: the browser would block the submit and hide the other fields' messages. */}
+          <option value="" disabled>Pick a category</option>
           {CATEGORY_ORDER.map((c) => (
             <option key={c} value={c}>{CATEGORIES[c].label}</option>
           ))}
@@ -260,29 +272,16 @@ function HabitFields({
       <fieldset className="flex flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold">How often</legend>
         <div className="grid grid-cols-2 gap-2">
-          <div className="flex h-11 items-center rounded-xl border border-input">
-            <button type="button" onClick={() => step(-1)} disabled={count <= 1} aria-label="Decrease"
-              className="flex size-11 shrink-0 items-center justify-center rounded-l-xl text-primary enabled:hover:bg-accent disabled:text-muted-foreground/50">
-              <Minus className="size-4" />
-            </button>
-            <Label htmlFor="targetCount" className="sr-only">Times</Label>
-            <input
-              id="targetCount"
-              name="targetCount"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={values.targetCount}
-              onChange={set("targetCount")}
-              className="h-full w-full min-w-0 bg-transparent text-center text-base font-bold tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
-              aria-invalid={Boolean(errors.targetCount)}
-              aria-describedby={errors.targetCount ? "targetCount-error" : undefined}
-            />
-            <button type="button" onClick={() => step(1)} disabled={count >= limit} aria-label="Increase"
-              className="flex size-11 shrink-0 items-center justify-center rounded-r-xl text-primary enabled:hover:bg-accent disabled:text-muted-foreground/50">
-              <Plus className="size-4" />
-            </button>
-          </div>
+          {/* sr-only is absolutely positioned, so the label takes no grid cell. */}
+          <Label htmlFor="targetCount" className="sr-only">Times</Label>
+          <CountStepper
+            id="targetCount"
+            value={values.targetCount}
+            onChange={(targetCount) => setValues((v) => ({ ...v, targetCount }))}
+            period={period}
+            invalid={Boolean(errors.targetCount)}
+            describedBy={errors.targetCount ? "targetCount-error" : undefined}
+          />
           <Label htmlFor="period" className="sr-only">Per</Label>
           <select id="period" name="period" ref={periodRef} value={values.period} onChange={set("period")} className={selectClass}>
             {(["day", "week", "month"] as HabitPeriod[]).map((p) => (
@@ -305,7 +304,10 @@ function HabitFields({
                   name="groupId"
                   value={g.id}
                   checked={groupId === g.id}
-                  onChange={() => setGroupId(g.id)}
+                  onChange={() => {
+                    setValues((v) => ({ ...v, startsOn: startAfterSwitch(v.startsOn, fieldToday, todayForGroup(groups, g.id, today)) }));
+                    setGroupId(g.id);
+                  }}
                   className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0"
                 />
                 {g.name}
@@ -335,11 +337,11 @@ function HabitFields({
       <fieldset className="flex flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold">Starts</legend>
         {/* Today is sent as empty, so the server uses its own today (this page's may be stale after midnight). */}
-        <input type="hidden" name="startsOn" value={values.startsOn === today ? "" : values.startsOn} />
+        <input type="hidden" name="startsOn" value={values.startsOn === fieldToday ? "" : values.startsOn} />
         <StartDatePicker
           value={values.startsOn}
           onChange={(startsOn) => setValues((v) => ({ ...v, startsOn }))}
-          today={today}
+          today={fieldToday}
           weekStart={weekStart}
           errorId={errors.startsOn ? "startsOn-error" : undefined}
         />

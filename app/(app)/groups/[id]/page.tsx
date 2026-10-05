@@ -10,6 +10,7 @@ import { GroupSettingsForm } from "@/components/groups/group-settings-form";
 import { InviteLink } from "@/components/groups/invite-link";
 import { MemberRow } from "@/components/groups/member-row";
 import { RenameGroupForm } from "@/components/groups/rename-group-form";
+import { addButtonClass } from "@/components/ui/add-button";
 import { getProfile } from "@/lib/auth";
 import { GROUP_AVATAR_EMOJI } from "@/lib/avatars";
 import { childrenDeletionNotice, inviteUrl } from "@/lib/group-schema";
@@ -95,12 +96,6 @@ export default async function GroupPage({
         </div>
       </header>
 
-      {isAdmin && (
-        <Card title="Invite">
-          <InviteLink groupId={group.id} groupName={group.name} url={url} validUntil={validUntil} autoFocus={invite === "1"} />
-        </Card>
-      )}
-
       <Card title="People">
         <ul className="flex flex-col gap-2">
           {group.members.map((m) => (
@@ -129,7 +124,7 @@ export default async function GroupPage({
         {isAdmin && (
           <Link
             href={`/kids/new?group=${group.id}`}
-            className="flex h-11 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 text-sm font-bold text-primary hover:bg-accent"
+            className={addButtonClass}
           >
             <Plus aria-hidden className="size-4" />
             Add a child
@@ -161,13 +156,21 @@ export default async function GroupPage({
         {isAdmin && (
           <Link
             href={`/habits/new?group=${group.id}`}
-            className="flex h-11 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 text-sm font-bold text-primary hover:bg-accent"
+            className={addButtonClass}
           >
             <Plus aria-hidden className="size-4" />
             Add a group habit
           </Link>
         )}
       </Card>
+
+      {/* People, then what they do together, then bringing someone new (owner's order). ?invite=1
+          still focuses the link (autoFocus scrolls it into view). */}
+      {isAdmin && (
+        <Card title="Invite">
+          <InviteLink groupId={group.id} groupName={group.name} url={url} validUntil={validUntil} autoFocus={invite === "1"} />
+        </Card>
+      )}
 
       {isAdmin && (
         <details className="group rounded-2xl bg-card shadow-soft">
