@@ -57,7 +57,8 @@ export function comparisonLine(o: Pick<WeekOverview, "done" | "possible" | "prev
     return "Your best week yet";
   }
   if (o.done === 0) return "A fresh start this week";
-  return `${o.done} done this week`;
+  // "goals met", not "done": next to the card's check-in count, "done" read like a second count.
+  return `${o.done} ${o.done === 1 ? "goal" : "goals"} met this week`;
 }
 
 // Ring maths: the filled share of a circle, clamped to [0, 1]; nothing possible reads as empty.

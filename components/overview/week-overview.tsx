@@ -13,7 +13,7 @@ export function ProgressRing({
   done,
   possible,
   size = 20,
-  label = `${done} of ${possible} done this week`,
+  label = `${done} of ${possible} goals met this week`,
 }: {
   done: number;
   possible: number;
@@ -95,7 +95,7 @@ export function WeekCard({ overview: o, days }: { overview: WeekOverview; days?:
             Your week
           </h2>
           <p className="text-lg font-bold tabular-nums">
-            {o.done} of {o.possible} done
+            {o.done} of {o.possible} goals met
           </p>
           <p className="text-sm text-muted-foreground">{comparisonLine(o)}</p>
         </div>

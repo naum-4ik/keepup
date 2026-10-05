@@ -10,7 +10,7 @@ describe("comparisonLine", () => {
   });
 
   it("only compares with last week when there was one", () => {
-    expect(comparisonLine(week(1, 1, 0, 0))).toBe("1 done this week");
+    expect(comparisonLine(week(1, 1, 0, 0))).toBe("1 goal met this week");
   });
 
   it("calls it the best week yet when as much got done with fewer chances", () => {
@@ -19,14 +19,14 @@ describe("comparisonLine", () => {
 
   it("needs a last week to compare with before calling it the best", () => {
     expect(comparisonLine(week(0, 0, 0, 0))).toBe("A fresh start this week");
-    expect(comparisonLine(week(5, 5, 5, 0))).toBe("5 done this week");
+    expect(comparisonLine(week(5, 5, 5, 0))).toBe("5 goals met this week");
   });
 
   it("stays neutral otherwise, never negative", () => {
-    expect(comparisonLine(week(4, 10, 12, 14))).toBe("4 done this week");
+    expect(comparisonLine(week(4, 10, 12, 14))).toBe("4 goals met this week");
     expect(comparisonLine(week(0, 3, 9, 12))).toBe("A fresh start this week");
-    expect(comparisonLine(week(6, 8, 6, 8))).toBe("6 done this week");
-    expect(comparisonLine(week(6, 9, 6, 8))).toBe("6 done this week");
+    expect(comparisonLine(week(6, 8, 6, 8))).toBe("6 goals met this week");
+    expect(comparisonLine(week(6, 9, 6, 8))).toBe("6 goals met this week");
   });
 });
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight, Clock } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { EveryoneDidIt, type CardMember } from "@/components/celebrations/everyone-did-it";
+import { EmptyState } from "@/components/empty-state";
 import { FirstCheckinTip } from "@/components/first-checkin-tip";
 import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard } from "@/components/habits/habit-card";
@@ -206,15 +207,16 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         <TodayCard date={date} dayKey={dayKey} habits={[]} week={{ done: overview.done, possible: overview.possible, streak: overview.best_current_streak }} />
       )}
       {habits.length === 0 && kids.length === 0 && finishes.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">
-          <div className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">
-            <SproutIcon className="size-6" aria-hidden />
-          </div>
-          <p className="text-sm text-muted-foreground">Nothing to do yet. Add a habit to get started.</p>
-          <Button asChild className="h-11">
-            <Link href="/habits/new">Add your first habit</Link>
-          </Button>
-        </div>
+        <EmptyState
+          icon={<SproutIcon className="size-6" />}
+          action={
+            <Button asChild className="h-11">
+              <Link href="/habits/new">Add your first habit</Link>
+            </Button>
+          }
+        >
+          Nothing to do yet. Add a habit to get started.
+        </EmptyState>
       ) : (
         sections.map((s) =>
           withHeadings ? (

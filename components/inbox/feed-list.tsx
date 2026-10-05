@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Bell } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import { dayLabel, relativeTime, todayIn } from "@/lib/dates";
 import { feedCopy, type FeedItem } from "@/lib/feed-copy";
 import { cn } from "@/lib/utils";
@@ -7,14 +8,7 @@ import { cn } from "@/lib/utils";
 // Activity, newest first, under day headings in the viewer's time zone.
 export function FeedList({ items, timeZone, now }: { items: FeedItem[]; timeZone: string; now: Date }) {
   if (items.length === 0) {
-    return (
-      <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">
-        <div className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">
-          <Bell aria-hidden className="size-6" />
-        </div>
-        <p className="text-sm text-muted-foreground">Nothing yet. Activity from your groups shows up here.</p>
-      </div>
-    );
+    return <EmptyState icon={<Bell className="size-6" />}>Nothing yet. Activity from your groups shows up here.</EmptyState>;
   }
 
   const today = todayIn(timeZone, now);
