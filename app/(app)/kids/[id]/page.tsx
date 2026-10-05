@@ -7,7 +7,7 @@ import { kidProgressText } from "@/components/habits/habit-card";
 import { LiveRefresh } from "@/components/habits/live-refresh";
 import { StreakBadge } from "@/components/habits/streak-badge";
 import { AddKidHabit } from "@/components/kids/add-kid-habit";
-import { ChildDangerZone } from "@/components/kids/child-danger-zone";
+import { ChildDangerZone, ExportChildButton } from "@/components/kids/child-danger-zone";
 import { EditChildButton } from "@/components/kids/edit-child-form";
 import { Garden } from "@/components/kids/garden";
 import { ThemePicker } from "@/components/kids/theme-picker";
@@ -167,6 +167,13 @@ export default async function KidPage({
           was reached and closed) are listed apart: they don't restore. */}
       <HabitLinks title="Archived" habits={archivedHabits.filter((h) => !finishedIds.has(h.habit_id))} />
       <HabitLinks title="Finished" habits={archivedHabits.filter((h) => finishedIds.has(h.habit_id))} />
+
+      {/* Taking a copy isn't dangerous: it sits on its own, for every adult in the group. */}
+      <section aria-label="Data" className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
+        <h2 className="text-sm font-bold text-muted-foreground">Data</h2>
+        <p className="text-sm text-muted-foreground">Everything Keepup keeps about {child.name}, in one file.</p>
+        <ExportChildButton childId={id} childName={child.name} />
+      </section>
 
       <ChildDangerZone childId={id} childName={child.name} isAdmin={isAdmin} moveTargets={moveTargets} />
 

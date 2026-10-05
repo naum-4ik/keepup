@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { GoogleIcon } from "@/components/google-icon";
 import { Button } from "@/components/ui/button";
 import { GROUP_KIND_EMOJI, isGroupKind } from "@/lib/group-schema";
@@ -41,9 +42,10 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   const memberOf = claims?.claims ? await currentGroupOf(supabase, token) : null;
 
   return (
-    <InviteCard>
+    // The group's own avatar (its emoji, or the kind's when none is set), named by the group.
+    <InviteCard top={<Avatar name={group} emoji={preview.avatar_emoji || emoji} color={preview.avatar_color} size="lg" className="mx-auto" />}>
       <h1 className="text-2xl font-bold">
-        {preview.inviter_name} invited you to {group} <span aria-hidden>{emoji}</span>
+        {preview.inviter_name} invited you to {group}
       </h1>
       <p className="text-sm text-muted-foreground">
         {n === 1 ? `1 person is already in ${group}.` : `${n} people are already in ${group}.`}
@@ -89,11 +91,12 @@ async function currentGroupOf(supabase: Awaited<ReturnType<typeof createClient>>
   return data ?? null;
 }
 
-function InviteCard({ children }: { children: React.ReactNode }) {
+// `top`: what crowns the card (the group's avatar); the app icon when there's no group to show.
+function InviteCard({ top, children }: { top?: React.ReactNode; children: React.ReactNode }) {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-4 py-10">
       <div className="flex flex-col gap-5 rounded-2xl bg-card p-6 text-center shadow-soft">
-        <Image src="/icons/icon-192.png" alt="" width={56} height={56} className="mx-auto rounded-2xl" priority />
+        {top ?? <Image src="/icons/icon-192.png" alt="" width={56} height={56} className="mx-auto rounded-2xl" priority />}
         {children}
       </div>
     </main>

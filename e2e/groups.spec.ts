@@ -74,6 +74,9 @@ test("a group gets an avatar on creation, admins change it, members only see it"
   await signUpAndOnboard(page);
   await page.goto("/groups/new");
   await page.getByLabel("Name").fill("Pizza night");
+  // Optional, so it starts folded away.
+  await expect(page.getByRole("group", { name: "Avatar" })).toBeHidden();
+  await page.locator("summary").filter({ hasText: "Avatar" }).click();
   await page.getByRole("group", { name: "Avatar" }).getByRole("button", { name: "🍕" }).click();
   await page.getByRole("button", { name: "Create group" }).click();
   await expect(page).toHaveURL(/\/groups\/[0-9a-f-]{36}/);
@@ -86,6 +89,10 @@ test("a group gets an avatar on creation, admins change it, members only see it"
   await expect(dialog).toBeHidden();
   await expect(page.getByRole("button", { name: "Change the group avatar" })).toContainText("🏡");
   const url = await inviteLink(page);
+  // The invite shows the group's own avatar.
+  const visitor = await (await browser.newContext()).newPage();
+  await visitor.goto(url);
+  await expect(visitor.getByRole("img", { name: "Pizza night" })).toContainText("🏡");
   await page.goto("/groups");
   await expect(page.getByRole("link", { name: /Pizza night/ })).toContainText("🏡");
 
@@ -128,6 +135,8 @@ test("an invited person joins from the link and lands on the group's habits", as
   await guest.goto(url);
   await expect(guest.getByRole("heading", { name: /invited you to Family/ })).toBeVisible();
   await expect(guest.getByText("1 person is already in Family.")).toBeVisible();
+  // No avatar picked: the kind's emoji stands in.
+  await expect(guest.getByRole("img", { name: "Family" })).toContainText("👨‍👩‍👧");
   // Google is off on the local stack, so email is the main button ("Use email instead" next to
   // "Join with Google" when it's on).
   await guest.getByRole("link", { name: "Continue with email" }).click();
@@ -610,4 +619,16 @@ test("the bell counts a new nudge while you're on Today", async ({ page, browser
   await guest.getByRole("menuitem", { name: "💪 You've got this" }).click();
   await expect(guest.getByRole("button", { name: "Nudged ✓" })).toBeDisabled();
   await expect(page.getByRole("link", { name: "Inbox, 1 unread" })).toBeVisible({ timeout: 10_000 });
+});
+
+test("the avatar picker marks the chosen colour with a check", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await page.goto("/profile");
+  await page.getByRole("button", { name: "Change your avatar" }).click();
+  const colors = page.getByRole("dialog").getByRole("group", { name: "Background color" });
+  const sky = colors.getByRole("button", { name: "Sky", exact: true });
+  await sky.click();
+  await expect(sky).toHaveAttribute("aria-pressed", "true");
+  await expect(sky.locator("svg")).toBeVisible();
+  await expect(colors.locator("svg")).toHaveCount(1);
 });

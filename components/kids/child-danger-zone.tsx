@@ -234,13 +234,14 @@ export function ChildDangerZone({
   isAdmin: boolean;
   moveTargets: MoveTarget[];
 }) {
+  // Admins only: export (anyone's right to a copy) lives in the kid page's Data section.
+  if (!isAdmin) return null;
   return (
     <section aria-label="Danger zone" className="flex flex-col gap-2 rounded-2xl bg-card p-5 shadow-soft">
       <h2 className="text-sm font-bold text-muted-foreground">Danger zone</h2>
-      <ExportChildButton childId={childId} childName={childName} />
-      {isAdmin && <MoveChildForm childId={childId} childName={childName} targets={moveTargets} />}
-      {isAdmin && <ResetChildButton childId={childId} childName={childName} />}
-      {isAdmin && <DeleteChildButton childId={childId} childName={childName} />}
+      <MoveChildForm childId={childId} childName={childName} targets={moveTargets} />
+      <ResetChildButton childId={childId} childName={childName} />
+      <DeleteChildButton childId={childId} childName={childName} />
     </section>
   );
 }
