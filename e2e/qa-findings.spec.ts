@@ -183,3 +183,12 @@ test("the Inbox badge clears while the Inbox is open", async ({ page, browser })
   await page.goto("/inbox");
   await expect(page.getByRole("link", { name: "Inbox", exact: true })).toBeVisible({ timeout: 10_000 });
 });
+
+test("the 404 page shows the sprout and a way home", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await page.goto("/no-such-page");
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+  await expect(page.getByRole("main").locator("svg")).toBeVisible();
+  await page.getByRole("link", { name: "Back home" }).click();
+  await expect(page).not.toHaveURL(/no-such-page/);
+});

@@ -53,7 +53,7 @@ test("deleting a group with a child asks again, and Cancel resets that step", as
   await expect(page.getByText("Levi family")).toBeHidden();
 });
 
-test("tap your avatar on Profile to change it, and see it in the header", async ({ page }) => {
+test("tap your avatar on Profile to change it, and see it on the Profile tab", async ({ page }) => {
   await signUpAndOnboard(page);
   await page.goto("/profile/settings");
   await expect(page.getByText("Your avatar")).toHaveCount(0); // moved to Profile
@@ -64,8 +64,9 @@ test("tap your avatar on Profile to change it, and see it in the header", async 
   await dialog.getByRole("button", { name: "Sky", exact: true }).click();
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toBeHidden(); // closes once saved
-  // The header avatar and the nav's Profile tab are both "Profile" links; the header is the banner.
-  await expect(page.getByRole("banner").getByRole("link", { name: "Profile" })).toContainText("🦊");
+  // Your avatar is the bottom nav's Profile tab; the header no longer repeats the same link.
+  await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Profile", exact: true })).toContainText("🦊");
+  await expect(page.getByRole("banner").getByRole("link", { name: "Profile" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Change your avatar" })).toContainText("🦊");
 });
 

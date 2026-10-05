@@ -1,12 +1,19 @@
 import Link from "next/link";
+import { ChevronRight, Settings, Sparkles, Users, type LucideIcon } from "lucide-react";
 import { AvatarEdit } from "@/components/avatar-edit";
 import { SignOutButton } from "@/components/sign-out-button";
-import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
 import { isAvatarColor } from "@/lib/avatars";
 import { cityOf } from "@/lib/timezones";
 import { appVersion } from "@/lib/version";
 import { saveAvatar } from "./actions";
+
+// Where to go from Profile, as one list. Self-contained, so cards can sit above it later.
+const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/profile/settings", label: "Settings", icon: Settings },
+  { href: "/whats-new", label: "What's new", icon: Sparkles },
+  { href: "/groups", label: "Groups", icon: Users },
+];
 
 export default async function ProfilePage() {
   const { profile } = await getProfile();
@@ -29,9 +36,21 @@ export default async function ProfilePage() {
           </p>
         </div>
       </div>
-      <Button asChild variant="outline" className="h-11">
-        <Link href="/profile/settings">Settings</Link>
-      </Button>
+      <nav aria-label="Account">
+        <ul className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-soft">
+          {LINKS.map(({ href, label, icon: Icon }) => (
+            <li key={href} className="border-t border-border first:border-t-0">
+              <Link href={href} className="flex min-h-14 items-center gap-3 px-4 hover:bg-muted">
+                <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-primary">
+                  <Icon className="size-5" />
+                </span>
+                <span className="flex-1 font-semibold">{label}</span>
+                <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
       <SignOutButton />
       <footer className="text-center text-xs text-muted-foreground">
         <Link href="/whats-new" className="font-mono underline-offset-4 hover:underline">

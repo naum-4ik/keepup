@@ -15,12 +15,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <OfflineQueueProvider userId={profile.id}>
       <div className="flex min-h-dvh flex-col">
-        <AppHeader displayName={profile.display_name} avatarEmoji={profile.avatar_emoji} avatarColor={profile.avatar_color} unread={unread}>
+        <AppHeader unread={unread}>
           <OfflineBanner placement="header" />
         </AppHeader>
         {/* wrap-anywhere (inherited): a long name with no spaces wraps instead of widening the page. */}
         <main className="mx-auto w-full max-w-md flex-1 px-4 pb-24 wrap-anywhere">{children}</main>
-        <BottomNav />
+        <BottomNav displayName={profile.display_name} avatarEmoji={profile.avatar_emoji} avatarColor={profile.avatar_color} />
         <PushRefresh />
         {/* New Inbox rows (approvals asked, check-ins, nudges) refresh whatever page is open, so the
             bell's count is never stale off the Inbox; RLS applies. */}
