@@ -65,7 +65,7 @@ test("tap your avatar on Profile to change it, and see it on the Profile tab", a
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toBeHidden(); // closes once saved
   // Your avatar is the bottom nav's Profile tab; the header no longer repeats the same link.
-  await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Profile", exact: true })).toContainText("🦊");
+  await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: /^Profile/ })).toContainText("🦊");
   await expect(page.getByRole("banner").getByRole("link", { name: "Profile" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Change your avatar" })).toContainText("🦊");
 });

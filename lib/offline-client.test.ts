@@ -24,6 +24,12 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 describe("an online tap", () => {
+  it("passes xp only for a check-in that counted", async () => {
+    const { client } = setup();
+    expect(await client.submitTap({ habitId: "h1" }, async () => ({ ok: true, xp: 10 }))).toEqual({ ok: true, queued: false, xp: 10 });
+    expect(await client.submitTap({ habitId: "h2" }, async () => ({ ok: true, xp: 0 }))).toEqual({ ok: true, queued: false });
+  });
+
   it("is saved on the phone before it is tried, sent with its id only, and leaves the queue once it lands", async () => {
     const { client, storage } = setup();
     let release!: (v: { ok: true }) => void;

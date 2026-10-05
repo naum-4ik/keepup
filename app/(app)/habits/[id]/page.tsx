@@ -203,6 +203,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                 state={stateOf(h)}
                 withChildren={openChildrenOf(h)}
                 progress={{ period: h.period, target_count: h.target_count, done_count: h.done_count }}
+                needsApproval={h.requires_approval}
               />
             )}
           </div>

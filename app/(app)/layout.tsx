@@ -7,9 +7,10 @@ import { OfflineQueueProvider } from "@/components/offline/offline-queue-provide
 import { PushRefresh } from "@/components/notifications/push-refresh";
 import { getProfile } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/inbox";
+import { getMyLevel } from "@/lib/xp-data";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const [{ profile }, unread] = await Promise.all([getProfile(), getUnreadCount()]);
+  const [{ profile }, unread, level] = await Promise.all([getProfile(), getUnreadCount(), getMyLevel()]);
   if (!profile.onboarded_at) redirect("/onboarding");
 
   return (
@@ -20,7 +21,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </AppHeader>
         {/* wrap-anywhere (inherited): a long name with no spaces wraps instead of widening the page. */}
         <main className="mx-auto w-full max-w-md flex-1 px-4 pb-24 wrap-anywhere">{children}</main>
-        <BottomNav displayName={profile.display_name} avatarEmoji={profile.avatar_emoji} avatarColor={profile.avatar_color} />
+        <BottomNav
+          displayName={profile.display_name}
+          avatarEmoji={profile.avatar_emoji}
+          avatarColor={profile.avatar_color}
+          level={level?.level ?? null}
+        />
         <PushRefresh />
         {/* New Inbox rows (approvals asked, check-ins, nudges) refresh whatever page is open, so the
             bell's count is never stale off the Inbox; RLS applies. */}

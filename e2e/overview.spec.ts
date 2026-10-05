@@ -117,16 +117,14 @@ test("Progress → Calendar counts a group habit you take part in, from the day 
   await expect(panel.getByRole("listitem").filter({ hasText: "Walk" })).toContainText("Not done");
 });
 
-test("Progress: a chip per category jumps to its section", async ({ page }) => {
+test("Progress: habits are grouped under a heading per category, with no chips row", async ({ page }) => {
   await signUpAndOnboard(page);
   await createHabit(page, { template: "Drink water" });
   await createHabit(page, { template: "Work out" });
   await page.goto("/progress");
-  const chips = page.getByRole("navigation", { name: "Categories" });
-  await expect(chips.getByRole("link")).toHaveText(["Health", "Fitness"]);
-  await chips.getByRole("link", { name: "Fitness" }).click();
-  await expect(page).toHaveURL(/#cat-fitness$/);
-  await expect(page.getByRole("region", { name: "Fitness" })).toBeInViewport();
+  await expect(page.getByRole("heading", { level: 2 }).filter({ hasText: /^(Health|Fitness)$/ })).toHaveText(["Health", "Fitness"]);
+  await expect(page.getByRole("region", { name: "Fitness" })).toContainText("Work out");
+  await expect(page.getByRole("navigation", { name: "Categories" })).toHaveCount(0);
 });
 
 test("a new user's empty lists say what's next, in one card style", async ({ page }) => {
