@@ -1,6 +1,7 @@
 // supabase/functions/send-push/build.ts
 // One feed row → one notification payload. Pure: send-push's handler and tests call it.
 import * as copy from "../_shared/notification-copy.ts";
+import { levelName } from "../_shared/levels.ts";
 
 export type PushJob = {
   id: string;
@@ -95,6 +96,13 @@ function copyFor(job: PushJob): copy.Copy | null {
     case "kid_goal_reached": return copy.kidTreatGoal(kid, String(job.payload.title ?? ""), String(job.payload.emoji ?? ""));
     case "kid_garden_full": return copy.kidFullGarden(kid);
     case "kid_streak": return copy.kidStreak(kid, num(job.payload.streak), habit);
+    case "level_up": return copy.levelUp(num(job.payload.level), levelName(num(job.payload.level)));
+    case "badge_unlocked": return copy.badgeUnlocked(String(job.payload.name ?? "A new badge"));
+    case "streak_milestone": return copy.streakMilestone(habit, num(job.payload.streak), period(job.payload.period), job.payload.back === true);
+    case "rest_day_used": return copy.restDayUsed(habit, num(job.payload.streak), job.payload.period === "week" ? "week" : "day");
+    case "weekly_recap":
+    case "monthly_recap": return copy.recapCopy(job.payload);
+    case "family_recap": return copy.familyRecapCopy(group, job.payload);
     default: return null;
   }
 }
@@ -108,6 +116,9 @@ function tagFor(job: PushJob): string {
 }
 
 function urlFor(job: PushJob): string {
+  if (job.kind === "level_up" || job.kind === "badge_unlocked") return "/profile";
+  if (job.kind === "weekly_recap" || job.kind === "monthly_recap") return "/progress/recaps";
+  if (job.kind === "family_recap") return "/inbox";
   if (job.kind === "approval_needed" || job.kind === "approval_expiring") return "/inbox";
   if (job.kind === "daily_summary") return "/today";
   if (job.kind.startsWith("kid_") && job.subject_id) return `/kids/${job.subject_id}`;
