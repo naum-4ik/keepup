@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { signUpAndOnboard } from "./helpers/auth";
+import { createGroup, createGroupHabitVia, joinedDaysAgo } from "./helpers/groups";
 import { createHabit, startHabitDaysAgo } from "./helpers/habits";
 
 test("the weekly overview shows on Today and Progress", async ({ page }) => {
@@ -86,6 +87,34 @@ test("Progress → Calendar: the month, earlier months, and tap a day", async ({
   // Never before the first habit, never after this month.
   await page.goto("/progress/calendar?m=2099-01");
   await expect(month.getByRole("heading")).toHaveText(current!);
+});
+
+test("Progress → Calendar counts a group habit you take part in, from the day you joined", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await createGroupHabitVia(page, "Family", "Walk");
+  const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
+  startHabitDaysAgo(id, 40);
+  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+
+  await page.goto("/progress/calendar");
+  const month = page.getByRole("navigation", { name: "Month" });
+  // The group habit is 40 days old, but you joined today: no earlier months.
+  await expect(month.getByRole("link", { name: /^Previous month/ })).toHaveCount(0);
+  // A group habit used to leave the calendar empty.
+  const today = page.getByRole("button", { name: /: 1 of 1 done$/ });
+  await expect(today).toHaveCount(1);
+  await today.click();
+  const panel = page.getByRole("region", { name: /\d/ });
+  await expect(panel.getByRole("listitem").filter({ hasText: "Walk" })).toContainText("Done");
+
+  joinedDaysAgo(id, 40);
+  await page.reload();
+  await month.getByRole("link", { name: /^Previous month/ }).click();
+  await expect(page).toHaveURL(/\?m=\d{4}-\d{2}$/);
+  await page.getByRole("button", { name: /: 0 of 1 done$/ }).last().click();
+  await expect(panel.getByRole("listitem").filter({ hasText: "Walk" })).toContainText("Not done");
 });
 
 test("Progress: a chip per category jumps to its section", async ({ page }) => {
