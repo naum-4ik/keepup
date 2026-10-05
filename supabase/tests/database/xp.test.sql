@@ -1,7 +1,7 @@
 -- supabase/tests/database/xp.test.sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(66);
+select plan(67);
 
 -- finalize_periods scans every habit; start from none (rolled back at the end).
 delete from public.habits;
@@ -91,7 +91,28 @@ insert into t select 'l1', (private.check_in_impl('00000000-0000-0000-0000-00000
 insert into t select 'l2', (private.check_in_impl('00000000-0000-0000-0000-0000000000d2', '00000000-0000-0000-0000-0000000000a1', '2026-10-04 09:00+02',
   null, false, 'c0000000-0000-0000-0000-0000000000e3', '2026-10-02 20:30+02')).id;
 select private.review_check_in_impl((select v from t where k = 'l1'), '00000000-0000-0000-0000-0000000000a1', true, '2026-10-04 10:00+02');
+-- Set up an order trap: Dan (b1, the reviewer) crosses a level with his +2, Anna (a1, the author)
+-- only with the members' +30. Synced in two batches, Dan's level row would come first.
+insert into public.xp_events (user_id, amount, reason, source_type, source_id)
+select u, b - s - d, 'milestone', 'streak', 'trap-' || u
+  from (select x.user_id as u, sum(x.amount)::int as s, 50 * private.level_for(sum(x.amount)) ^ 2 as b,
+               case when x.user_id = '00000000-0000-0000-0000-0000000000a1' then 11 else 1 end as d
+          from public.xp_events x where x.user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1')
+         group by x.user_id) z
+ where b - s - d <> 0;
+create temp table level_order (seq serial, user_id uuid) on commit drop;
+create function tests.record_level_order() returns trigger language plpgsql as $$
+begin
+  insert into level_order (user_id) values (new.user_id);
+  return new;
+end;
+$$;
+create trigger level_ups_order after insert on public.level_ups for each row execute function tests.record_level_order();
 select private.review_check_in_impl((select v from t where k = 'l2'), '00000000-0000-0000-0000-0000000000b1', true, '2026-10-04 10:05+02');
+drop trigger level_ups_order on public.level_ups;
+select is((select array_agg(user_id order by seq) from level_order),
+  array['00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1']::uuid[],
+  'an approval that upgrades a period syncs author, reviewer and members once, in user id order');
 select is((select outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d2' and period_start = '2026-10-02'), 'done',
   'setup: the late approvals upgraded 2 Oct');
 select is((select array_agg(amount order by user_id) from xp where reason = 'period_done' and source_id = '00000000-0000-0000-0000-0000000000d2:2026-10-02'),

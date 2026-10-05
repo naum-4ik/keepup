@@ -15,18 +15,17 @@
 --   which conflicts only with FOR UPDATE, so the one profile lock left on these paths
 --   (kid_rewards_on_check_in) becomes FOR NO KEY UPDATE below.
 -- - check_in_impl, undo_*_impl, review_check_in_impl (and resettle_period inside them) hold one habit
---   and take per-person rows last.
+--   and take per-person rows last, all at once, in user id order: a check-in or approval that upgrades
+--   a settled period defers its author's and reviewer's levels, and the period trigger syncs them
+--   together with the members' (private.sync_deferred_levels).
 -- - finalize_periods locks many habits, one after another, in one transaction. Its grants during the
 --   habit loop write only per-habit rows (p_sync = false: no level_ups, no level_up rows); the
 --   people it paid are synced once each, in user id order, after the loop, when it takes no more
 --   habit locks. So finalize never holds a per-person row while waiting for a habit, and a check-in
 --   holding a habit that waits on finalize's per-person row can't be waited on by finalize: no cycle.
 --   (Its per-habit rows are only ever written by a transaction holding that habit's lock.)
--- - Remaining, accepted: a check-in that is approved and also upgrades a settled group period syncs
---   the author/reviewer first, then the members (each batch in id order). Against another such
---   transaction or finalize's tail, two people crossing the same levels at the same moment in
---   opposite order could still wait on each other; Postgres aborts one (40P01) and nothing is lost
---   that the next grant doesn't heal.
+-- - So every transaction takes per-person rows in one batch, in user id order, after its last habit
+--   lock: one global order, no cycle.
 --
 -- Accepted trade-off: two concurrent transactions granting to one person, each below a level
 -- boundary on its own (each sync_level sums only what it can see), can together cross it with no
@@ -299,9 +298,19 @@ set search_path = ''
 as $$
 declare
   r record;
+  v_habit public.habits;
+  v_upgrade boolean := false;
 begin
   if new.status <> 'approved' or (tg_op = 'UPDATE' and old.status = 'approved') then
     return new;
+  end if;
+  -- Will this check-in upgrade a settled period (check_in_impl / review_check_in_impl call
+  -- resettle_period right after, and it upgrades exactly when this holds)? Then the members' period
+  -- grants follow, and everyone's levels are synced once, together, by the period trigger.
+  if exists (select 1 from public.period_results x
+              where x.habit_id = new.habit_id and x.period_start = new.period_start and x.outcome in ('missed', 'skipped')) then
+    select h.* into v_habit from public.habits h where h.id = new.habit_id;
+    v_upgrade := private.period_outcome(v_habit, new.period_start) = 'done';
   end if;
   for r in
     select v.who, v.amount, v.reason
@@ -312,8 +321,12 @@ begin
      order by v.who
   loop
     perform private.grant_xp(r.who, r.amount, r.reason, 'check_in', new.id::text, new.habit_id,
-      case when tg_op = 'UPDATE' then coalesce(new.reviewed_at, new.created_at) else new.created_at end);
+      case when tg_op = 'UPDATE' then coalesce(new.reviewed_at, new.created_at) else new.created_at end,
+      false, false);
   end loop;
+  if not v_upgrade then
+    perform private.sync_deferred_levels(); -- author and reviewer, in user id order
+  end if;
   return new;
 end;
 $$;
@@ -376,9 +389,13 @@ begin
       select coalesce(max(coalesce(c.reviewed_at, c.created_at)), now()) into v_at from public.check_ins c
        where c.habit_id = new.habit_id and c.period_start = new.period_start and c.status = 'approved';
     end if;
-    -- Inside finalize's habit loop, levels wait until the loop is done (Locks, at the top).
-    perform private.grant_period_xp(v_habit, new.period_start, v_at, false,
-      current_setting('keepup.finalizing', true) is distinct from 'on');
+    perform private.grant_period_xp(v_habit, new.period_start, v_at, false, false);
+  end if;
+  -- Levels are synced once for everyone paid, in user id order: inside finalize's habit loop, after
+  -- the loop (finalize does it); otherwise now, together with an upgrading check-in's author and
+  -- reviewer, deferred by rewards_on_check_in (Locks, at the top).
+  if current_setting('keepup.finalizing', true) is distinct from 'on' then
+    perform private.sync_deferred_levels();
   end if;
   return new;
 end;
