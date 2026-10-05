@@ -138,14 +138,11 @@ test("README screenshots", async ({ page, context }) => {
   await section.getByRole("group", { name: "Nudges" }).getByRole("radio", { name: "Inbox only" }).check();
   await section.getByRole("group", { name: "Group activity" }).getByRole("radio", { name: "Sound" }).check();
   await page.waitForLoadState("networkidle");
-  await page.setViewportSize({ width: 412, height: 1000 }); // tall enough for the pills and the device list
   await section.getByText("What to send").scrollIntoViewIfNeeded();
-  await page.evaluate(() => window.scrollBy(0, 140));
   await page.waitForTimeout(500);
   await page.screenshot({ path: `${OUT}/notifications.png` });
 
   // Today offline: the banner, and one tap saved on the phone ("Saving…"). Same waits as e2e/offline.spec.ts.
-  await page.setViewportSize({ width: 412, height: 915 });
   await page.goto("/today");
   await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.ready, navigator.serviceWorker.controller !== null))).toBe(true);
   await page.reload();
