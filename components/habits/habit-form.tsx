@@ -18,6 +18,7 @@ import { formatLocalDate } from "@/lib/dates";
 import type { GroupKind } from "@/lib/group-schema";
 import { groupTemplatesFor } from "@/lib/group-templates";
 import { HABIT_TEMPLATES, type HabitTemplate } from "@/lib/habit-templates";
+import { startAfterSwitch, todayForGroup } from "@/lib/habit-start";
 import {
   HABIT_TITLE_MAX, TARGET_LIMITS, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod,
 } from "@/lib/habit-schema";
@@ -32,7 +33,14 @@ const chipClass =
 const initialState: HabitFormState = { status: "idle" };
 type Tab = "together" | "popular" | HabitCategory;
 type Draft = { key: number; custom: boolean; values: HabitFormValues; groupId: string; groupOnly: boolean };
-export type FormGroup = { id: string; name: string; kind: GroupKind; children: { id: string; name: string; avatar_emoji: string | null; avatar_color: string | null }[] };
+// `today`: the group's today in its own time zone (a group habit starts on the group's calendar).
+export type FormGroup = {
+  id: string;
+  name: string;
+  kind: GroupKind;
+  today: string;
+  children: { id: string; name: string; avatar_emoji: string | null; avatar_color: string | null }[];
+};
 
 // One form, two creates: a group picked in "Who's it for" makes a group habit.
 const submitHabit = (prev: HabitFormState, formData: FormData) =>
@@ -69,7 +77,7 @@ export function HabitForm({
   const opener = useRef<HTMLElement | null>(null);
   const open = (custom: boolean, values: Omit<HabitFormValues, "startsOn">, groupId = initialGroupId ?? "", groupOnly = false) => {
     opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setDraft((d) => ({ key: (d?.key ?? 0) + 1, custom, values: { ...values, startsOn: today }, groupId, groupOnly }));
+    setDraft((d) => ({ key: (d?.key ?? 0) + 1, custom, values: { ...values, startsOn: todayForGroup(groups, groupId, today) }, groupId, groupOnly }));
   };
   const pickTemplate = (t: HabitTemplate) =>
     open(
@@ -196,6 +204,8 @@ function HabitFields({
   const [state, formAction, pending] = useActionState(submitHabit, initialState);
   const [groupId, setGroupId] = useState(initialGroupId);
   const group = groups.find((g) => g.id === groupId) ?? null;
+  // Today on this habit's calendar: the group's for a group habit, yours for Just me.
+  const fieldToday = todayForGroup(groups, groupId, today);
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => onPendingChange(pending), [pending, onPendingChange]);
   const [values, setValues] = useState(initial);
@@ -293,7 +303,10 @@ function HabitFields({
                   name="groupId"
                   value={g.id}
                   checked={groupId === g.id}
-                  onChange={() => setGroupId(g.id)}
+                  onChange={() => {
+                    setValues((v) => ({ ...v, startsOn: startAfterSwitch(v.startsOn, fieldToday, todayForGroup(groups, g.id, today)) }));
+                    setGroupId(g.id);
+                  }}
                   className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0"
                 />
                 {g.name}
@@ -323,11 +336,11 @@ function HabitFields({
       <fieldset className="flex flex-col gap-1.5">
         <legend className="mb-1.5 text-sm font-semibold">Starts</legend>
         {/* Today is sent as empty, so the server uses its own today (this page's may be stale after midnight). */}
-        <input type="hidden" name="startsOn" value={values.startsOn === today ? "" : values.startsOn} />
+        <input type="hidden" name="startsOn" value={values.startsOn === fieldToday ? "" : values.startsOn} />
         <StartDatePicker
           value={values.startsOn}
           onChange={(startsOn) => setValues((v) => ({ ...v, startsOn }))}
-          today={today}
+          today={fieldToday}
           weekStart={weekStart}
           errorId={errors.startsOn ? "startsOn-error" : undefined}
         />
