@@ -236,7 +236,7 @@ test("a group habit: both check in, both see Everyone did it, live", async ({ pa
   await expect(page.getByRole("button", { name: "Done: Family dinner" })).toBeVisible();
   // The first page must be listening before the guest's check-in lands (else Realtime drops it).
   // "ready" means the server confirmed the postgres_changes listener, which can take seconds under load.
-  await expect(page.locator('[data-live="ready"]')).toBeAttached({ timeout: 20_000 });
+  await expect(page.locator('[data-live="ready"][data-table="check_ins"]')).toBeAttached({ timeout: 20_000 });
   await guest.goto("/today");
   await expect(guest.getByRole("img", { name: /: done$/ })).toBeVisible(); // Ana's avatar shows done, no names in text
   await guest.getByRole("button", { name: "Check in: Family dinner" }).click();
@@ -571,4 +571,42 @@ test("approving a check-in someone just reviewed says who did, and the note stay
   await expect(dan.getByText("Nothing waiting for you.")).toBeVisible();
   await eve.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(eve.getByRole("listitem", { name: "Ana did Gym" }).getByRole("status")).toHaveText("Dan already reviewed this.");
+});
+
+test("an undo by another member shows up live", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const url = await inviteLink(page);
+  const guest = await (await browser.newContext()).newPage();
+  await joinByLink(guest, url, "Dan");
+  await createGroupHabitVia(page, "Family", "Walk");
+  await expect(page.locator('[data-live="ready"][data-table="check_ins"]')).toBeAttached({ timeout: 20_000 });
+  await guest.goto("/today");
+  await guest.getByRole("button", { name: "Check in: Walk" }).click();
+  await expect(page.getByRole("img", { name: "Dan: done" })).toBeVisible({ timeout: 10_000 });
+  // Undo is a hard delete; a filtered Realtime listener never hears DELETE. (Dan joined today, so
+  // without his check-in he reads "joins next period", not "not yet": only "done" going away is checked.)
+  await guest.getByRole("link", { name: /Walk/ }).click();
+  await guest.getByRole("button", { name: /^Undo check-in at / }).click();
+  await expect(page.getByRole("img", { name: "Dan: done" })).toBeHidden({ timeout: 10_000 });
+});
+
+test("the bell counts a new nudge while you're on Today", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const url = await inviteLink(page);
+  const guest = await (await browser.newContext()).newPage();
+  await joinByLink(guest, url, "Dan");
+  await createGroupHabitVia(page, "Family", "Walk");
+  // Read what's there ("Dan joined"), so the nudge is the only unread row.
+  await page.goto("/inbox");
+  await expect(page.getByRole("link", { name: "Inbox", exact: true })).toBeVisible();
+  await page.goto("/today");
+  await expect(page.locator('[data-live="ready"][data-table="notifications"]')).toBeAttached({ timeout: 20_000 });
+  await guest.goto("/today");
+  await guest.getByRole("link", { name: /Walk/ }).click();
+  await guest.getByRole("button", { name: /^Nudge/ }).click();
+  await guest.getByRole("menuitem", { name: "💪 You've got this" }).click();
+  await expect(guest.getByRole("button", { name: "Nudged ✓" })).toBeDisabled();
+  await expect(page.getByRole("link", { name: "Inbox, 1 unread" })).toBeVisible({ timeout: 10_000 });
 });

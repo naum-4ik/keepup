@@ -35,9 +35,12 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
     // filter's column check) then refuse the subscription.
     void supabase.realtime.setAuth().then(() => {
       if (closed) return;
-      channel = supabase
-        .channel(`live:${table}:${filter}`)
-        .on("postgres_changes", { event: "*", schema: "public", table, filter }, refreshSoon)
+      let ch = supabase.channel(`live:${table}:${filter}`).on("postgres_changes", { event: "*", schema: "public", table, filter }, refreshSoon);
+      // Realtime can't filter DELETE events, so the filtered listener never hears an undo (a hard
+      // delete). Check-ins also listen for every delete: the payload is only the row's id, and a stray
+      // refresh just re-reads what this person may see.
+      if (table === "check_ins") ch = ch.on("postgres_changes", { event: "DELETE", schema: "public", table }, refreshSoon);
+      channel = ch
         .on("system", {}, (p: { extension?: string; status?: string }) => {
           if (closed || p.extension !== "postgres_changes" || p.status !== "ok") return;
           setReady(true);
@@ -61,5 +64,6 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
     };
   }, [table, filter, router]);
 
-  return <span hidden data-live={ready ? "ready" : "joining"} />;
+  // data-table: a page can have two listeners (the layout's notifications plus a page's check-ins).
+  return <span hidden data-live={ready ? "ready" : "joining"} data-table={table} />;
 }

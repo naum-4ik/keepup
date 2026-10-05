@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/app-shell/app-header";
 import { BottomNav } from "@/components/app-shell/bottom-nav";
+import { LiveRefresh } from "@/components/habits/live-refresh";
 import { OfflineBanner } from "@/components/offline/offline-banner";
 import { OfflineQueueProvider } from "@/components/offline/offline-queue-provider";
 import { PushRefresh } from "@/components/notifications/push-refresh";
@@ -21,6 +22,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <main className="mx-auto w-full max-w-md flex-1 px-4 pb-24 wrap-anywhere">{children}</main>
         <BottomNav />
         <PushRefresh />
+        {/* New Inbox rows (approvals asked, check-ins, nudges) refresh whatever page is open, so the
+            bell's count is never stale off the Inbox; RLS applies. */}
+        <LiveRefresh table="notifications" filter={`user_id=eq.${profile.id}`} />
       </div>
     </OfflineQueueProvider>
   );

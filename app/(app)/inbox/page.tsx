@@ -3,7 +3,6 @@ import { ApprovalList, type ApprovalRow } from "@/components/inbox/approval-list
 import { FeedList } from "@/components/inbox/feed-list";
 import { InboxTabs } from "@/components/inbox/inbox-tabs";
 import { MarkReadOnView } from "@/components/inbox/mark-read-on-view";
-import { LiveRefresh } from "@/components/habits/live-refresh";
 import { getProfile } from "@/lib/auth";
 import { dayLabel, reviewBy, todayIn } from "@/lib/dates";
 import { getFeed, getPendingApprovals } from "@/lib/inbox";
@@ -11,7 +10,7 @@ import { recapKey, recapLine, visibleRecaps } from "@/lib/today-cards";
 import { getDismissedCards, getFamilyRecaps } from "@/lib/today-cards-data";
 
 export default async function InboxPage() {
-  const [{ profile, userId }, approvals, feed, recaps, dismissed] = await Promise.all([
+  const [{ profile }, approvals, feed, recaps, dismissed] = await Promise.all([
     getProfile(), getPendingApprovals(), getFeed(), getFamilyRecaps(), getDismissedCards(),
   ]);
   // The weekly family recap (first day of the group's week), dismissible. Dismissals couldn't be read:
@@ -34,6 +33,7 @@ export default async function InboxPage() {
   return (
     <section className="flex flex-col gap-4 py-6">
       <h1 className="text-xl font-bold">Inbox</h1>
+      {/* New rows refresh this page through the app layout's notifications listener. */}
       <InboxTabs
         approvalsCount={rows.length}
         approvals={<ApprovalList rows={rows} />}
@@ -47,8 +47,6 @@ export default async function InboxPage() {
           </>
         }
       />
-      {/* New notifications (approvals asked, check-ins, nudges) refresh the page; RLS applies. */}
-      <LiveRefresh table="notifications" filter={`user_id=eq.${userId}`} />
     </section>
   );
 }
