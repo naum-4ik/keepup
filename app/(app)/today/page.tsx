@@ -174,13 +174,12 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
         </Link>
       )}
-      {everyone.length > 0 && (
-        <EveryoneDidIt
-          ids={everyone.map((n) => n.id)}
-          habits={everyoneHabits.map(([, title]) => title)}
-          members={membersFor(everyoneHabits.map(([id]) => id))}
-        />
-      )}
+      {/* Always rendered, so the card survives a refresh after it was seen (EveryoneDidIt). */}
+      <EveryoneDidIt
+        ids={everyone.map((n) => n.id)}
+        habits={everyoneHabits.map(([, title]) => title)}
+        members={membersFor(everyoneHabits.map(([id]) => id))}
+      />
       {/* Offline (the saved page), cards whose buttons need the server say so (ideas/offline.md §3). */}
       {gentle && (
         <NeedsConnection key={gentle.key} label={gentle.key.startsWith("add_child") ? "Add a child" : "Invite"}>

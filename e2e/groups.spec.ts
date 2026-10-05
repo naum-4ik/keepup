@@ -429,8 +429,15 @@ test("Everyone did it shows once, with confetti, then not again", async ({ page 
   await page.getByRole("button", { name: "Check in: Family dinner" }).click();
   const card = page.getByText("Everyone did it! Family dinner ✓");
   await expect(card).toBeVisible();
-  await expect(page.locator('[aria-hidden] > .animate-confetti')).toHaveCount(24);
+  const confetti = page.locator('[aria-hidden] > .animate-confetti');
+  await expect(confetti).toHaveCount(24);
   await seen;
+  // A refresh after it counts as seen (a live update, coming back to the tab, Realtime's catch-up)
+  // no longer lists it, but the card stays while it's read, burst included, and plays no second one.
+  // data-seen says the refresh has landed and the card is the one kept on screen.
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await expect(page.locator("[data-seen]")).toContainText("Everyone did it! Family dinner ✓");
+  await expect(confetti).toHaveCount(24);
   await page.reload();
   await expect(page.getByRole("button", { name: "Done: Family dinner" })).toBeVisible();
   await expect(card).toBeHidden();
