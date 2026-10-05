@@ -253,6 +253,7 @@ test("a member pauses just themselves; the habit carries on for the others", asy
   await createGroupHabitVia(page, "Family", "Walk");
   await guest.goto("/today");
   await guest.getByRole("link", { name: /Walk/ }).click();
+  await expect(guest.getByRole("region", { name: "Streaks" })).toContainText("Together");
   // Members don't manage the habit itself.
   await expect(guest.getByText("Pause for everyone")).toBeHidden();
   await expect(guest.getByText("Edit details")).toBeHidden();
@@ -383,7 +384,7 @@ test("after the first check-in, a family user gets one gentle Invite card, and c
   await createHabit(page, { template: "Drink water" });
   await expect(page.getByText("Invite your family")).toBeHidden();
   await page.getByRole("button", { name: "Check in: Drink water" }).click();
-  await expect(page.getByRole("link", { name: /Drink water 1 \/ 8 today/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Drink water", exact: true })).toHaveAccessibleDescription(/1 \/ 8 today/);
   await page.reload();
   await expect(page.getByText("Invite your family")).toBeVisible();
   await expect(page.getByText("Invite a friend")).toBeHidden(); // one card at a time
@@ -393,7 +394,7 @@ test("after the first check-in, a family user gets one gentle Invite card, and c
   await expect(page.getByText("Invite your family")).toBeHidden();
   await saved;
   await page.reload();
-  await expect(page.getByRole("link", { name: /Drink water 1 \/ 8 today/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Drink water", exact: true })).toHaveAccessibleDescription(/1 \/ 8 today/);
   await expect(page.getByText("Invite your family")).toBeHidden();
 });
 
@@ -402,7 +403,7 @@ test("Invite a friend: one tap creates the group and opens its invite link", asy
   await completeOnboarding(page, { purpose: "Friends" });
   await createHabit(page, { template: "Drink water" });
   await page.getByRole("button", { name: "Check in: Drink water" }).click();
-  await expect(page.getByRole("link", { name: /Drink water 1 \/ 8 today/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Drink water", exact: true })).toHaveAccessibleDescription(/1 \/ 8 today/);
   await page.reload();
   await page.getByRole("button", { name: "Invite", exact: true }).click();
   await expect(page).toHaveURL(/\/groups\/[0-9a-f-]{36}\?invite=1$/);

@@ -34,9 +34,8 @@ export function CheckInList({
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm font-semibold">
-        {checkIns.length} {checkIns.length === 1 ? "check-in" : "check-ins"} this period
-      </p>
+      {/* One check-in: the card's "Done for today" (or "1 of 3 this week") already says it. */}
+      {checkIns.length > 1 && <p className="text-sm font-semibold">{checkIns.length} check-ins this period</p>}
       <ul className="flex flex-col gap-2">
         {checkIns.map((c) => (
           <li key={c.id} className="flex min-h-14 items-center justify-between rounded-xl bg-muted py-1.5 pr-1.5 pl-4 text-sm">

@@ -41,36 +41,48 @@ export function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; kid?: 
   const showBar = habit.period === "day" && habit.target_count > 1 && !habit.frozen;
   const members = membersOf(habit);
   const everyone = everyoneDidIt(habit);
+  // The link is named by the title alone; the progress, the end line and the member avatars ("Ana:
+  // done") are its description, so a screen reader doesn't read a whole sentence as the link's name.
+  // Ids come from the habit id: a habit has one adult card per page (kids' rows use KidHabitCard).
+  const titleId = `habit-title-${habit.habit_id}`;
+  const metaId = `habit-meta-${habit.habit_id}`;
 
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-soft">
-      <Link href={`/habits/${habit.habit_id}`} className="group flex min-w-0 flex-1 items-center gap-3">
+      <Link
+        href={`/habits/${habit.habit_id}`}
+        aria-labelledby={titleId}
+        aria-describedby={metaId}
+        className="group flex min-w-0 flex-1 items-center gap-3"
+      >
         <HabitEmoji category={habit.category} emoji={habit.emoji} />
         <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="truncate font-bold group-hover:underline">{habit.title}</span>
-          <span
-            className={cn(
-              "text-sm",
-              // "1 day left" stays muted: honey means "waiting for approval" (docs/design.md), and no countdown pressure.
-              everyone ? "font-semibold text-done" : "text-muted-foreground",
+          <span id={titleId} className="truncate font-bold group-hover:underline">{habit.title}</span>
+          <span id={metaId} className="flex min-w-0 flex-col gap-1">
+            <span
+              className={cn(
+                "text-sm",
+                // "1 day left" stays muted: honey means "waiting for approval" (docs/design.md), and no countdown pressure.
+                everyone ? "font-semibold text-done" : "text-muted-foreground",
+              )}
+            >
+              {everyone ? "Everyone did it ✓" : progress.text}
+            </span>
+            {endLine && (
+              <span className={cn("text-xs font-semibold", endLine.startsWith("Almost") ? "text-primary" : "text-muted-foreground")}>
+                {endLine}
+              </span>
             )}
-          >
-            {everyone ? "Everyone did it ✓" : progress.text}
+            {showBar && (
+              <span className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+                <span
+                  className={cn("block h-full rounded-full bg-current", habit.category ? CATEGORIES[habit.category].iconClass : "text-primary")}
+                  style={{ width: `${Math.min(100, (habit.done_count / habit.target_count) * 100)}%` }}
+                />
+              </span>
+            )}
+            {members && members.length > 0 && <MemberStatusRow members={members} target={habit.target_count} />}
           </span>
-          {endLine && (
-            <span className={cn("text-xs font-semibold", endLine.startsWith("Almost") ? "text-primary" : "text-muted-foreground")}>
-              {endLine}
-            </span>
-          )}
-          {showBar && (
-            <span className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
-              <span
-                className={cn("block h-full rounded-full bg-current", habit.category ? CATEGORIES[habit.category].iconClass : "text-primary")}
-                style={{ width: `${Math.min(100, (habit.done_count / habit.target_count) * 100)}%` }}
-              />
-            </span>
-          )}
-          {members && members.length > 0 && <MemberStatusRow members={members} target={habit.target_count} />}
         </span>
       </Link>
       <StreakBadge count={habit.current_streak} />

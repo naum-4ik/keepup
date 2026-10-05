@@ -168,6 +168,10 @@ test.describe("Today check-ins", () => {
     await expect(page.getByText("0 / 8 today")).toBeVisible();
     await page.getByRole("button", { name: "Check in: Drink water" }).click();
     await expect(page.getByText("1 / 8 today")).toBeVisible();
+    // The link is named by the title alone; the progress is its description.
+    const link = page.getByRole("link", { name: "Drink water", exact: true });
+    await expect(link).toBeVisible();
+    await expect(link).toHaveAccessibleDescription(/1 \/ 8 today/);
   });
 
   test("a weekly habit allows one check-in per day", async ({ page }) => {
@@ -231,7 +235,10 @@ test.describe("Habit detail", () => {
     await expect(page.getByRole("button", { name: "Done: Read 20 min" })).toBeVisible();
 
     await page.getByRole("link", { name: /Read 20 min/ }).click();
-    await expect(page.getByText("1 check-in this period")).toBeVisible();
+    // One check-in: the card already says "Done for today", so no "1 check-in this period" line.
+    await expect(page.getByRole("button", { name: /^Undo check-in at / })).toBeVisible();
+    await expect(page.getByText("1 check-in this period")).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Streaks" })).toContainText("Your streak");
     await page.getByRole("button", { name: "Undo" }).click();
     await expect(page.getByText("No check-ins this period yet.")).toBeVisible();
 
@@ -361,6 +368,17 @@ test.describe("Habit detail", () => {
     await expect(page.getByRole("button", { name: "Pause habit" })).toBeHidden();
     await page.getByRole("link", { name: "Today" }).first().click();
     await expect(page).toHaveURL(/\/today$/);
+  });
+
+  test("a habit that starts tomorrow says how its history fills", async ({ page }) => {
+    await signUpAndOnboard(page);
+    await page.goto("/habits/new");
+    await page.getByRole("button", { name: /^Read 20 min/ }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Tomorrow" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: /^Add habit/ }).click();
+    await expect(page).toHaveURL(/\/today$/);
+    await page.getByRole("link", { name: /Read 20 min/ }).click();
+    await expect(page.getByRole("region", { name: "History" })).toContainText("Nothing here yet. Each day you finish fills a square.");
   });
 });
 

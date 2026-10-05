@@ -226,7 +226,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
             {h.current_streak}
             <span className="text-sm font-bold">{unit(h.current_streak, h.period)}</span>
           </p>
-          <p className="text-xs font-semibold text-muted-foreground">{members ? "Group streak" : "Current streak"}</p>
+          <p className="text-xs font-semibold text-muted-foreground">{members ? "Together" : "Your streak"}</p>
         </div>
         <div className="flex flex-col items-center gap-0.5">
           <p className="flex items-center gap-1 text-2xl font-extrabold tabular-nums">
