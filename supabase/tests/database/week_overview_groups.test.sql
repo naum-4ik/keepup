@@ -23,8 +23,10 @@ insert into public.habits (id, owner_id, group_id, title, category, emoji, targe
   ('00000000-0000-0000-0000-0000000008d2', null, '00000000-0000-0000-0000-0000000000f8', 'Game night', 'people', '🎲', 1, 'week', '2026-09-01', 1, '2026-09-01T08:00:00Z', '00000000-0000-0000-0000-0000000000a8'),
   ('00000000-0000-0000-0000-0000000008d3', '00000000-0000-0000-0000-0000000000a8', null, 'Walk', 'fitness', '🚶', 1, 'day', '2026-09-28', 1, '2026-09-28T08:00:00Z', '00000000-0000-0000-0000-0000000000a8'),
   -- Stretch (group, daily) started on Monday and ended on Tuesday.
-  ('00000000-0000-0000-0000-0000000008d4', null, '00000000-0000-0000-0000-0000000000f8', 'Stretch', 'health', '🧘', 1, 'day', '2026-10-05', 1, '2026-10-04T08:00:00Z', '00000000-0000-0000-0000-0000000000a8');
-update public.habits set ends_on = '2026-10-06' where id = '00000000-0000-0000-0000-0000000008d4';
+  ('00000000-0000-0000-0000-0000000008d4', null, '00000000-0000-0000-0000-0000000000f8', 'Stretch', 'health', '🧘', 1, 'day', '2026-10-05', 1, '2026-10-04T08:00:00Z', '00000000-0000-0000-0000-0000000000a8'),
+  -- Floss (Anna's own, daily) started on Monday and ended on Tuesday too.
+  ('00000000-0000-0000-0000-0000000008d5', '00000000-0000-0000-0000-0000000000a8', null, 'Floss', 'health', '🪥', 1, 'day', '2026-10-05', 1, '2026-10-04T08:00:00Z', '00000000-0000-0000-0000-0000000000a8');
+update public.habits set ends_on = '2026-10-06' where id in ('00000000-0000-0000-0000-0000000008d4', '00000000-0000-0000-0000-0000000008d5');
 set local session_replication_role = origin;
 
 -- Dan is paused on Dinner on Wednesday.
@@ -48,7 +50,13 @@ select private.check_in_impl(h, u, t)
     ('00000000-0000-0000-0000-0000000008d4', '00000000-0000-0000-0000-0000000000a8', '2026-10-05T07:30:00Z'),
     ('00000000-0000-0000-0000-0000000008d4', '00000000-0000-0000-0000-0000000000b8', '2026-10-05T07:30:00Z'),
     ('00000000-0000-0000-0000-0000000008d4', '00000000-0000-0000-0000-0000000000a8', '2026-10-06T07:30:00Z'),
-    ('00000000-0000-0000-0000-0000000008d4', '00000000-0000-0000-0000-0000000000b8', '2026-10-06T07:30:00Z')) as v(h, u, t);
+    ('00000000-0000-0000-0000-0000000008d4', '00000000-0000-0000-0000-0000000000b8', '2026-10-06T07:30:00Z'),
+    -- Floss: Monday and Tuesday (a 2-day streak, then the end).
+    ('00000000-0000-0000-0000-0000000008d5', '00000000-0000-0000-0000-0000000000a8', '2026-10-05T07:40:00Z'),
+    ('00000000-0000-0000-0000-0000000008d5', '00000000-0000-0000-0000-0000000000a8', '2026-10-06T07:40:00Z'),
+    -- Game night last week: Anna and Dan both (a 1-week group streak still running).
+    ('00000000-0000-0000-0000-0000000008d2', '00000000-0000-0000-0000-0000000000a8', '2026-10-01T18:00:00Z'),
+    ('00000000-0000-0000-0000-0000000008d2', '00000000-0000-0000-0000-0000000000b8', '2026-10-01T18:00:00Z')) as v(h, u, t);
 
 create temp table ov as
   select u.id, private.week_overview_impl(u.id, '2026-10-08T10:00:00Z') as o
@@ -59,22 +67,23 @@ create temp view dan as select o from ov where id = '00000000-0000-0000-0000-000
 create temp view eve as select o from ov where id = '00000000-0000-0000-0000-0000000000e8';
 
 -- Anna. Dinner: Mon, Tue, Thu done, Wed missed (3/4); Game night done (1/1); Walk 1/3 (Thu open);
--- Stretch Mon and Tue done (2/2), nothing after its end.
-select is((select row((o->>'done')::int, (o->>'possible')::int)::text from anna), '(7,10)',
+-- Stretch and Floss Mon and Tue done (2/2 each), nothing after their end.
+select is((select row((o->>'done')::int, (o->>'possible')::int)::text from anna), '(9,12)',
   'group habits count: a daily one each day, a weekly one once, next to your own habits');
 select is((select private.period_outcome(h, '2026-10-06') from public.habits h where h.id = '00000000-0000-0000-0000-0000000008d1'), 'missed',
   'setup: Dan didn''t do Tuesday''s Dinner, so the group''s Tuesday is missed');
 select is((select c->>'status' from anna, jsonb_array_elements(o->'per_habit') p, jsonb_array_elements(p->'cells') c
             where p->>'habit_id' = '00000000-0000-0000-0000-0000000008d1' and c->>'period_start' = '2026-10-06'), 'done',
   'a group period is done for you when you did your part (the Today ring''s rule), whatever the others did');
--- Last week: Dinner 0/7, Game night 0/1, Walk 0/6 (its partial first day isn't a miss).
-select is((select row((o->>'prev_done')::int, (o->>'prev_possible')::int)::text from anna), '(0,14)', 'last week counts group habits too');
+-- Last week: Dinner 0/7, Game night 1/1, Walk 0/6 (its partial first day isn't a miss).
+select is((select row((o->>'prev_done')::int, (o->>'prev_possible')::int)::text from anna), '(1,14)', 'last week counts group habits too');
 select is((select array_agg((d->>'daily_done') || '/' || (d->>'daily_possible') order by d->>'local_date') from anna, jsonb_array_elements(o->'days') d),
-  array['3/3', '2/3', '0/2', '1/2', '0/0', '0/0', '0/0'], 'the day circles count daily group habits, so today''s to-do one adds to the line');
-select is((select (o->>'check_ins')::int from anna), 7, 'your own check-ins on group habits count');
-select is((select (o->>'active_habits')::int from anna), 3, 'group habits are active habits, but not once their end has passed');
-select is((select row((o->>'best_current_streak')::int, o->>'best_current_streak_title')::text from anna), '(2,Stretch)',
-  'the best current streak includes group streaks, the same 🔥 the group habit shows');
+  array['4/4', '3/4', '0/2', '1/2', '0/0', '0/0', '0/0'], 'the day circles count daily group habits, so today''s to-do one adds to the line');
+select is((select (o->>'check_ins')::int from anna), 9, 'your own check-ins on group habits count');
+select is((select (o->>'active_habits')::int from anna), 3, 'group habits are active habits; no habit is once its end has passed');
+-- Stretch (group) and Floss (own) have 2-day streaks but have ended; Game night's 1 week runs on.
+select is((select row((o->>'best_current_streak')::int, o->>'best_current_streak_title', o->>'best_current_streak_period')::text from anna),
+  '(1,"Game night",week)', 'the best current streak includes group streaks, and leaves out habits whose end has passed');
 select is((select array_agg(c->>'status' order by c->>'period_start') from anna, jsonb_array_elements(o->'per_habit') p, jsonb_array_elements(p->'cells') c
             where p->>'habit_id' = '00000000-0000-0000-0000-0000000008d1'),
   array['missed', 'missed', 'missed', 'done', 'done', 'missed', 'done'], 'a group habit''s dots are yours');

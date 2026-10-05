@@ -11,9 +11,13 @@
 --
 -- What group habits now add to: done / possible (this week and last), the day circles (so
 -- lib/week-overview.ts withTodayPending also counts today's group habits still to do), check_ins
--- (your own, only in periods you were required in), active_habits (not once its end has passed),
--- per_habit (your own dots on Progress), and the best current streak (the group's streak, the
--- same 🔥 its card and the Progress list show, so the "best streak" never contradicts them).
+-- (your own, only in periods you were required in), active_habits, per_habit (your own dots on
+-- Progress), and the best current streak (the group's streak, the same 🔥 its card shows).
+--
+-- Once a habit's end has passed (private or group), it leaves active_habits and the best streak: it
+-- takes no more check-ins and leaves Today for its finish card, so the stat is the largest 🔥 among
+-- the habits still running. Its earlier periods still count in done / possible; the periods after
+-- its end aren't due (before, a private habit's open today after its end counted as "to do").
 create or replace function private.week_overview_impl(p_user uuid, p_now timestamptz)
 returns jsonb
 language sql
@@ -26,7 +30,8 @@ as $$
               from public.profiles p where p.id = p_user) t
   ),
   hs as (
-    select h as habit, h.id, h.title, h.period, h.target_count, h.created_at,
+    select h as habit, h.id, h.title, h.period, h.target_count, h.created_at, h.ends_on,
+           h.ends_on is not null and h.ends_on < private.habit_today(h, p_now) as ended,
            private.first_period_start(h) as first_ps,
            private.habit_period_start(h, wk.today) as cur_ps,
            private.habit_period_start(h, wk.ws - 7) as from_ps
@@ -95,6 +100,8 @@ as $$
       from hs
       cross join lateral generate_series(greatest(hs.first_ps, hs.from_ps)::timestamp, hs.cur_ps::timestamp,
                                          private.period_step(hs.period)) as s(d)
+     -- Nothing is due after the end (as for group habits): an ended habit's today isn't "to do".
+     where hs.ends_on is null or s.d::date <= private.habit_period_start(hs.habit, hs.ends_on)
     union all
     select g.id, g.period, g.ps, g.pe, g.target_count, g.outcome
       from gperiods g
@@ -138,9 +145,9 @@ as $$
   ),
   best as (
     select b.title, b.period, st.current_streak
-      from (select hs.id, hs.title, hs.period, hs.created_at from hs
+      from (select hs.id, hs.title, hs.period, hs.created_at from hs where not hs.ended
             union all
-            select gs.id, gs.title, gs.period, gs.created_at from gs) b
+            select gs.id, gs.title, gs.period, gs.created_at from gs where not gs.ended) b
      cross join lateral private.habit_streaks(b.id, p_now) st
      where st.current_streak > 0
      order by st.current_streak desc, b.created_at
@@ -206,8 +213,8 @@ as $$
                      and (c.habit_id in (select hs.id from hs)
                           or exists (select 1 from gperiods g
                                       where g.id = c.habit_id and g.ps = c.period_start and g.due and g.required))),
-    -- A group habit whose end has passed isn't active (its earlier periods still count above).
-    'active_habits', (select count(*)::int from hs) + (select count(*)::int from gs where not gs.ended),
+    -- A habit whose end has passed isn't active (its earlier periods still count above).
+    'active_habits', (select count(*)::int from hs where not hs.ended) + (select count(*)::int from gs where not gs.ended),
     'per_habit', coalesce((select jsonb_agg(jsonb_build_object('habit_id', ph.id, 'cells', coalesce(ph.cells, '[]'::jsonb))
                                             order by ph.created_at) from per_habit ph), '[]'::jsonb))
     from wk cross join totals t;
