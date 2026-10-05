@@ -125,6 +125,59 @@ export const groupMilestone = (group: string, habit: string, length: number, per
 export const milestoneCard = (habit: string, length: number, period: PeriodUnit): string =>
   `🔥 ${habit}: ${plural(length, period)} in a row`;
 
+// A personal streak milestone (Inbox row and push under Achievements; owner 2026-10-04: no cards on
+// Today). `back`: this habit reached this length before, in an earlier streak.
+export function streakMilestone(habit: string, length: number, period: PeriodUnit, back: boolean): Copy {
+  if (length === 1) return { title: habit, body: back ? `A fresh start: ${habit} ✨` : `First ${period} of ${habit} ✨` };
+  if (length === 2 && period === "day") return { title: habit, body: back ? "Day 2 in a row again 🌱" : "Day 2 in a row. Nice start 🌱" };
+  if (back) return { title: habit, body: `Back to ${plural(length, period)} of ${habit} 🔥` };
+  return { title: habit, body: milestoneCard(habit, length, period) };
+}
+
+export function monthlyRecap({ month, done, possible, longest }: { month: string; done: number; possible: number; longest: { habit: string; length: number } | null }): Copy | null {
+  if (possible === 0) return null;
+  const base = `${done} of ${plural(possible, "check-in")} in ${month}.`;
+  return { title: "Your month", body: longest ? `${base} Longest streak: ${longest.habit} 🔥 ${longest.length}` : base };
+}
+
+// The weekly family recap's push (owner 2026-10-04: an Inbox card plus a push). Same words as the card
+// (lib/today-cards.ts recapLine).
+export function familyRecap(group: string, checkIns: number, best: { habit: string; length: number; period: PeriodUnit } | null): Copy | null {
+  if (checkIns <= 0) return null;
+  const base = `Together last week: ${plural(checkIns, "check-in")}`;
+  return { title: group, body: best ? `${base} · ${best.habit} ${plural(best.length, best.period)} 🔥` : base };
+}
+
+const PERIOD_UNITS = new Set(["day", "week", "month"]);
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+const count = (v: unknown): number | null => (typeof v === "number" && Number.isInteger(v) && v >= 0 ? v : null);
+
+// "2026-09-01" → "September" (a plain date, read in UTC so the month never shifts).
+function monthOf(iso: unknown): string {
+  if (typeof iso !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "the last month";
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", month: "long" }).format(new Date(`${iso}T00:00:00Z`));
+}
+
+// A weekly or monthly recap row's payload (private.recap_impl) → its text. null when it's malformed or empty.
+export function recapCopy(payload: Record<string, unknown>): Copy | null {
+  const done = count(payload.done);
+  const possible = count(payload.possible);
+  if (done === null || possible === null) return null;
+  const l = isRecord(payload.longest) ? payload.longest : null;
+  const longest = l && typeof l.title === "string" && count(l.length) ? { habit: l.title, length: count(l.length)! } : null;
+  return payload.kind === "month"
+    ? monthlyRecap({ month: monthOf(payload.start), done, possible, longest })
+    : weeklyRecap({ done, possible, longest });
+}
+
+export function familyRecapCopy(group: string, payload: Record<string, unknown>): Copy | null {
+  const b = isRecord(payload.best) ? payload.best : null;
+  const best = b && typeof b.title === "string" && count(b.length) && PERIOD_UNITS.has(String(b.period))
+    ? { habit: b.title, length: count(b.length)!, period: String(b.period) as PeriodUnit }
+    : null;
+  return familyRecap(group, count(payload.check_ins) ?? 0, best);
+}
+
 export const kidTreatGoal = (kid: string, goal: string, goalEmoji: string): Copy => ({
   title: kid,
   body: `${kid} reached a goal: ${goal} ${goalEmoji}`.trim(),
