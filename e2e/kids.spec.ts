@@ -467,6 +467,38 @@ test("the kid view: while a done card slides down, a card that isn't moving stil
   await expect(page.getByText("2 stars this week")).toBeAttached();
 });
 
+// Follows the big reveal frame by frame until it's gone (optionally scrolling the list as it starts to
+// fly, so the sticky picture shrinks mid-flight); then how far its last centre is from the real item's.
+async function landingOffset(page: Page, index: number, scrollMidFlight = false): Promise<number> {
+  return page.evaluate(
+    ([i, scroll]) =>
+      new Promise<number>((resolve) => {
+        let last: DOMRect | null = null;
+        let scrolled = false;
+        const centre = (r: DOMRect) => [r.left + r.width / 2, r.top + r.height / 2];
+        const tick = () => {
+          const glyph = document.querySelector("[data-reveal-glyph]");
+          if (glyph) {
+            if (scroll && !scrolled && document.querySelector('[data-reveal][data-phase="fly"]')) {
+              scrolled = true;
+              window.scrollBy(0, 400);
+            }
+            last = glyph.getBoundingClientRect();
+            requestAnimationFrame(tick);
+            return;
+          }
+          const item = document.querySelector(`[data-item="${i}"] > span > span`);
+          if (!last || !item) return resolve(Infinity);
+          const [ax, ay] = centre(last);
+          const [bx, by] = centre(item.getBoundingClientRect());
+          resolve(Math.hypot(ax - bx, ay - by));
+        };
+        tick();
+      }),
+    [index, scrollMidFlight] as const,
+  );
+}
+
 test("the kid view: a finishing tap shows the new thing big in the middle, then it flies into the scene", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await signUpAndOnboard(page);
@@ -490,10 +522,11 @@ test("the kid view: a finishing tap shows the new thing big in the middle, then 
       return box.width >= 195 && dx < 20 && dy < 20;
     }, { timeout: 1000, intervals: [50] })
     .toBe(true);
-  // The real one in the scene shows only once the big one has landed there.
+  // The real one in the scene shows only once the big one has landed there, right on its spot.
   const item = page.locator('[data-item="0"]');
   await expect(item).toBeHidden();
-  await expect(reveal).toHaveCount(0, { timeout: 2500 });
+  expect(await landingOffset(page, 0)).toBeLessThan(20);
+  await expect(reveal).toHaveCount(0);
   await expect(item).toBeVisible();
   await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "1");
 });
@@ -528,8 +561,28 @@ test("the kid view with Reduce Motion: no zoom, the new thing fades in at its sp
   await expect(page).toHaveURL(/\/play$/);
   await page.getByRole("button", { name: /Tidy my toys/ }).click();
   await expect(page.getByRole("button", { name: "Tidy my toys , done" })).toBeVisible();
+  // It fades in right at its spot, with no overlay at any point.
   await expect(page.locator('[data-item="0"]')).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => document.getAnimations().some((a) => a instanceof CSSAnimation && a.animationName === "item-fade")))
+    .toBe(true);
   await page.waitForTimeout(300);
   await expect(page.locator("[data-reveal]")).toHaveCount(0);
   await expect(page.locator("[data-reveal-item]")).toHaveCount(0);
+});
+
+test("the kid view: the big reveal still lands on its spot when the picture shrinks mid-flight", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChildWithFiveHabits(page, "Family", "Mary");
+  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  const cards = page.getByRole("listitem");
+  await expect(cards).toHaveCount(5);
+  const titles = (await cards.allInnerTexts()).map((t) => t.trim().split("\n").pop()!.trim());
+  await cards.nth(titles.findIndex((t) => t !== "Brush teeth")).getByRole("button").click();
+  await expect(page.locator("[data-reveal]")).toBeAttached();
+  expect(await landingOffset(page, 0, true)).toBeLessThan(20);
+  await expect(page.locator("[data-shrunk]")).toBeAttached();
+  await expect(page.locator('[data-item="0"]')).toBeVisible();
 });

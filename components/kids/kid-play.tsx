@@ -12,7 +12,7 @@ import { useReducedMotion } from "@/components/kids/use-calm";
 import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
 import { stageFor, themeStages } from "@/lib/garden";
 import { createTapGuard, inOrder, orderForKid } from "@/lib/kid-order";
-import { createMoments, kindOfTap, type Moment, type Moments } from "@/lib/kid-reveal";
+import { createMoments, FLY_AT, kindOfTap, LAND_AT, type Moment, type Moments } from "@/lib/kid-reveal";
 import { isMuted, playKidSound, setMuted } from "@/lib/kid-sound";
 import { withQueuedTaps } from "@/lib/offline-sync";
 import { MAX_ITEMS, sceneItems } from "@/lib/scene-items";
@@ -32,9 +32,10 @@ type Big = {
   index: number | null;
   allDone: boolean;
   tappedAt: number;
+  // The tap finished its habit: the card holds its place until this lands.
+  holds: boolean;
   goal?: Goal;
 };
-type Showing = { moment: Moment<Big>; goal?: Goal };
 type Landed = { index: number; key: number };
 // A tap still saving, and the habit's count (without it) when it was made.
 type Tap = { habitId: string; doneAtTap: number };
@@ -173,7 +174,7 @@ export function KidPlay({
   // The big reveal (ideas/kid-view-next.md, decided 2026-10-05; lib/kid-reveal.ts). While an item is on
   // its way, it's drawn invisible at its spot (`hidden`) and its card holds its place (`holding`); items
   // that came this way don't pop on their own (`revealed`); the last one in flashes its spot (`landed`).
-  const [showing, setShowing] = useState<Showing | null>(null);
+  const [showing, setShowing] = useState<Moment<Big> | null>(null);
   const [hidden, setHidden] = useState<ReadonlySet<number>>(() => new Set());
   const [revealed, setRevealed] = useState<ReadonlySet<number>>(() => new Set());
   const [holding, setHolding] = useState<ReadonlySet<string>>(() => new Set());
@@ -192,6 +193,9 @@ export function KidPlay({
     setPlacedQueue(true);
     setOrder(orderForKid(base.habits).map((h) => h.id));
   }
+  // An item that went away again (a failed save) isn't "revealed" any more: the next one there pops.
+  const gone = [...revealed].filter((i) => i >= view.stars && !hidden.has(i));
+  if (gone.length > 0) setRevealed((s) => new Set([...s].filter((i) => !gone.includes(i))));
   const shown = inOrder(order, view.habits);
   const current = shown.map((h) => h.id).join(" ");
   // A card whose item is still on its way stays where it is, as if open (orderForKid keeps the order).
@@ -238,6 +242,10 @@ export function KidPlay({
       waiting.current = null;
     };
   }, [target, current]);
+  // A land's shorter wait is for the settle it causes, in that same render; never a later, unrelated one.
+  useEffect(() => {
+    settleIn.current = null;
+  });
 
   useEffect(() => {
     const lift = () => {
@@ -327,9 +335,11 @@ export function KidPlay({
     };
   }, []);
 
-  const milestone = showing?.moment.kind === "milestone" ? showing.moment : null;
+  const milestone = showing?.kind === "milestone" ? showing : null;
   // The enter beat (0–0.1 s) draws nothing yet.
-  const revealing = showing?.moment.kind === "reveal" && showing.moment.phase !== "enter" ? showing : null;
+  const revealing = showing?.kind === "reveal" && showing.phase !== "enter" ? showing : null;
+  const flyingId = revealing?.phase === "fly" ? revealing.id : null;
+  const flyingIndex = revealing?.data.index ?? null;
 
   const toggleSound = () => {
     setMuted(!muted);
@@ -372,18 +382,18 @@ export function KidPlay({
 
   // One big moment at a time (lib/kid-reveal.ts); a new one lands the one playing at once.
   const onMoment = useEffectEvent((moment: Moment<Big> | null) => {
-    if (moment?.kind === "reveal" && moment.phase === "fly") {
-      setShowing({ moment, goal: goalFor(spotOf(moment.data.index), bigGlyph.current?.offsetHeight || 1) });
-    } else setShowing(moment ? { moment } : null);
+    setShowing(moment);
   });
   const onLand = useEffectEvent((moment: Moment<Big>) => {
     const { data } = moment;
-    if (moment.kind === "reveal") {
-      // The real item shows now, its spot flashes and the picture gives a little bounce; the card
-      // slides down a moment later.
-      setHidden((s) => without(s, data.index));
+    // A finished card slides down a moment after its big moment is over (reveal or milestone).
+    if (data.holds) {
       setHolding((s) => without(s, data.habitId));
       settleIn.current = Math.max(AFTER_LAND_MS, SETTLE_MS - (Date.now() - data.tappedAt));
+    }
+    if (moment.kind === "reveal") {
+      // The real item shows now, its spot flashes and the picture gives a little bounce.
+      setHidden((s) => without(s, data.index));
       if (data.index !== null) setLanded({ index: data.index, key: moment.id });
       if (!reduce) {
         picture.current?.querySelector("[data-scene]")?.animate(
@@ -405,6 +415,35 @@ export function KidPlay({
     };
   }, []);
 
+  // A hidden page can't show a reveal: it lands at once, so nothing is left half-way on return.
+  useEffect(() => {
+    const away = () => {
+      if (document.visibilityState === "hidden") moments.current?.fastForward();
+    };
+    document.addEventListener("visibilitychange", away);
+    return () => document.removeEventListener("visibilitychange", away);
+  }, []);
+
+  // The flight (FLY_AT → LAND_AT): every frame it heads for where its spot is now, so it lands right
+  // even if the sticky picture shrinks or the list scrolls on the way.
+  const revealBox = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const box = revealBox.current;
+    if (flyingId === null || !box) return;
+    const px = bigGlyph.current?.offsetHeight || 1;
+    const start = performance.now();
+    let frame = 0;
+    const step = (t: number) => {
+      const k = Math.min(1, Math.max(0, (t - start) / (LAND_AT - FLY_AT)));
+      const p = k < 0.5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2; // ease in and out
+      const g = goalFor(spotOf(flyingIndex), px);
+      box.style.transform = `translate(${g.dx * p}px, ${g.dy * p}px) scale(${1 + (g.scale - 1) * p})`;
+      if (k < 1) frame = requestAnimationFrame(step);
+    };
+    step(start);
+    return () => cancelAnimationFrame(frame);
+  }, [flyingId, flyingIndex]);
+
   // A tap that finishes a habit: the item it adds shows huge in the middle, then flies to its spot.
   const reveal = (habitId: string, stars: number, allDone: boolean, tappedAt: number) => {
     const index = stars < MAX_ITEMS ? stars : null;
@@ -417,16 +456,17 @@ export function KidPlay({
     }
     setHolding((s) => new Set(s).add(habitId));
     // Reduce Motion: no zoom or fly; it lands (fades in at its spot) at once.
-    moments.current?.play("reveal", { emoji, habitId, index, allDone, tappedAt }, { instant: reduce });
+    moments.current?.play("reveal", { emoji, habitId, index, allDone, tappedAt, holds: true }, { instant: reduce });
   };
 
   // A new picture zooms in big in the middle of the screen, then shrinks into its place in the scene.
-  const zoomIn = (habitId: string, stars: number, allDone: boolean, tappedAt: number) => {
+  const zoomIn = (habitId: string, stars: number, allDone: boolean, tappedAt: number, holds: boolean) => {
     playKidSound("chime");
+    if (holds) setHolding((s) => new Set(s).add(habitId));
     // Its size there: smaller while the picture is shrunk.
     const goal = goalFor(picture.current?.querySelector("[data-hero]"), MILESTONE_PX);
     const emoji = themeStages(child.theme)[stageFor(stars + 1)].icon;
-    moments.current?.play("milestone", { emoji, habitId, index: null, allDone, tappedAt, goal });
+    moments.current?.play("milestone", { emoji, habitId, index: null, allDone, tappedAt, holds, goal });
   };
 
   return (
@@ -529,7 +569,7 @@ export function KidPlay({
                   if (kind === "reveal") reveal(h.id, before, allDone, now);
                   else {
                     fly(el, before);
-                    if (kind === "milestone") zoomIn(h.id, before, allDone, now);
+                    if (kind === "milestone") zoomIn(h.id, before, allDone, now, h.done + 1 >= h.target);
                     else {
                       playKidSound("pop");
                       moments.current?.fastForward(); // whatever is big on screen lands now
@@ -550,7 +590,8 @@ export function KidPlay({
                     }
                   });
                 }}
-                onAnimationEnd={() => {
+                onAnimationEnd={(e) => {
+                  if (e.target !== e.currentTarget) return;
                   setBumped((b) => (b === h.id ? null : b));
                   setCheer((c) => (c === h.id ? null : c));
                 }}
@@ -617,29 +658,25 @@ export function KidPlay({
         <span
           aria-hidden
           data-reveal
-          data-phase={revealing.moment.phase}
+          data-phase={revealing.phase}
           className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center"
         >
           <span
-            key={revealing.moment.id}
+            key={revealing.id}
+            ref={revealBox}
             data-reveal-item
-            className={cn("relative flex items-center justify-center", revealing.goal ? "animate-reveal-fly" : "animate-reveal-in")}
-            style={{
-              width: REVEAL_BOX,
-              height: REVEAL_BOX,
-              ["--to-x" as string]: `${revealing.goal?.dx ?? 0}px`,
-              ["--to-y" as string]: `${revealing.goal?.dy ?? 0}px`,
-              ["--to-scale" as string]: String(revealing.goal?.scale ?? 1),
-            }}
+            // While it flies, the transform is written each frame (see the flight effect above).
+            className={cn("relative flex items-center justify-center", revealing.phase === "show" && "animate-reveal-in")}
+            style={{ width: REVEAL_BOX, height: REVEAL_BOX }}
           >
             {/* A soft glow, gone as it flies. */}
             <span
               className={cn(
                 "absolute inset-[-15%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.95)_0%,rgba(255,250,220,0.55)_40%,rgba(255,255,255,0)_70%)] transition-opacity duration-300",
-                revealing.goal && "opacity-0",
+                revealing.phase === "fly" && "opacity-0",
               )}
             />
-            {!revealing.goal &&
+            {revealing.phase === "show" &&
               SPARKS.map((p, i) => (
                 <span
                   key={i}
@@ -649,8 +686,8 @@ export function KidPlay({
                   ✨
                 </span>
               ))}
-            <span ref={bigGlyph} className="relative block leading-none drop-shadow-[0_4px_12px_rgba(0,0,0,0.18)] select-none" style={{ fontSize: REVEAL_GLYPH }}>
-              {revealing.moment.data.emoji}
+            <span ref={bigGlyph} data-reveal-glyph className="relative block leading-none drop-shadow-[0_4px_12px_rgba(0,0,0,0.18)] select-none" style={{ fontSize: REVEAL_GLYPH }}>
+              {revealing.data.emoji}
             </span>
           </span>
         </span>
