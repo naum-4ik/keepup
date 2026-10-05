@@ -13,7 +13,7 @@
     "db:types": "supabase gen types typescript --local > lib/database.types.ts",
     "e2e": "playwright test",
     "test:functions": "deno test --no-lock --node-modules-dir=none supabase/functions && deno check --no-lock --node-modules-dir=none supabase/functions/send-push/index.ts",
-    "readme:screenshots": "playwright test -c playwright.readme.config.ts && sips -Z 1300 docs/screenshots/*.png >/dev/null"
+    "readme:screenshots": "playwright test -c playwright.readme.config.ts && sips -Z 1300 docs/screenshots/*.png >/dev/null && node scripts/readme/check-sizes.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
