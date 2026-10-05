@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { RenderedTaps } from "@/components/offline/offline-queue-provider";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { HabitEmoji } from "@/components/habits/category-icon";
@@ -7,7 +8,7 @@ import { kidProgressText } from "@/components/habits/habit-card";
 import { LiveRefresh } from "@/components/habits/live-refresh";
 import { StreakBadge } from "@/components/habits/streak-badge";
 import { AddKidHabit } from "@/components/kids/add-kid-habit";
-import { ChildDangerZone } from "@/components/kids/child-danger-zone";
+import { ChildDangerZone, ExportChildButton } from "@/components/kids/child-danger-zone";
 import { EditChildButton } from "@/components/kids/edit-child-form";
 import { Garden } from "@/components/kids/garden";
 import { ThemePicker } from "@/components/kids/theme-picker";
@@ -20,8 +21,9 @@ import { getProfile } from "@/lib/auth";
 import { getGroupDetail, getMyGroups } from "@/lib/groups";
 import { todayIn } from "@/lib/dates";
 import { withoutEnded } from "@/lib/habit-end";
-import { getFinishedIds, getHabitEnds, type HabitSummary } from "@/lib/habits";
+import { getFinishedIds, getHabitEnds, getRecentTapRows, type HabitSummary } from "@/lib/habits";
 import { isUuid } from "@/lib/habit-schema";
+import { currentPeriods, renderedTapIds } from "@/lib/rendered-taps";
 import { getChildCheckIns, getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { stateOf } from "@/lib/today";
 
@@ -38,12 +40,13 @@ export default async function KidPage({
   const child = (await getMyChildren()).find((c) => c.child_id === id);
   if (!child) notFound();
 
-  const [{ userId, profile }, group, groups, summaries, rewards] = await Promise.all([
+  const [{ userId, profile }, group, groups, summaries, rewards, tapRows] = await Promise.all([
     getProfile(),
     getGroupDetail(child.group_id),
     getMyGroups(),
     getChildSummaries(id),
     getChildRewards(id),
+    getRecentTapRows([id]),
   ]);
   const unarchived = summaries.filter((h) => !h.archived_at);
   const archivedHabits = summaries.filter((h) => h.archived_at && !h.group_id);
@@ -53,6 +56,8 @@ export default async function KidPage({
   const today = todayIn(group?.timezone ?? profile.timezone);
   const habits = withoutEnded(unarchived, ends, () => today);
   const checkIns = await getChildCheckIns(id, habits);
+  // The check-ins this page counts, for taps still waiting on this phone (RenderedTaps).
+  const renderedTaps = renderedTapIds(tapRows, [id], currentPeriods(habits));
   const isAdmin = group?.my_role === "admin";
   const moveTargets = isAdmin
     ? groups.filter((g) => g.role === "admin" && g.group_id !== child.group_id).map((g) => ({ id: g.group_id, name: g.name }))
@@ -64,6 +69,7 @@ export default async function KidPage({
 
   return (
     <section className="flex flex-col gap-4 pt-2 pb-6">
+      <RenderedTaps ids={renderedTaps} />
       <Link
         href={`/groups/${child.group_id}`}
         className="-ml-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -167,6 +173,13 @@ export default async function KidPage({
           was reached and closed) are listed apart: they don't restore. */}
       <HabitLinks title="Archived" habits={archivedHabits.filter((h) => !finishedIds.has(h.habit_id))} />
       <HabitLinks title="Finished" habits={archivedHabits.filter((h) => finishedIds.has(h.habit_id))} />
+
+      {/* Taking a copy isn't dangerous: it sits on its own, for every adult in the group. */}
+      <section aria-label="Data" className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
+        <h2 className="text-sm font-bold text-muted-foreground">Data</h2>
+        <p className="text-sm text-muted-foreground">Everything Keepup keeps about {child.name}, in one file.</p>
+        <ExportChildButton childId={id} childName={child.name} />
+      </section>
 
       <ChildDangerZone childId={id} childName={child.name} isAdmin={isAdmin} moveTargets={moveTargets} />
 

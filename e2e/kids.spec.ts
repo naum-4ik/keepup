@@ -722,3 +722,13 @@ test("a child's finished habit is listed under Finished, apart from Archived, wi
   await expect(page.getByRole("heading", { name: "Tidy my toys" })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Restore/ })).toHaveCount(0);
 });
+
+test("a child's data export has its own Data section, outside the danger zone", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await expect(page.getByRole("region", { name: "Danger zone" }).getByRole("button", { name: /^Export/ })).toHaveCount(0);
+  const download = page.waitForEvent("download");
+  await page.getByRole("region", { name: "Data", exact: true }).getByRole("button", { name: "Export Mary's data" }).click();
+  expect((await download).suggestedFilename()).toMatch(/^keepup-Mary-\d{4}-\d{2}-\d{2}\.json$/);
+});

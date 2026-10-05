@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarCheck, ChartColumn, CircleUser, Plus, Users, type LucideIcon } from "lucide-react";
+import { Avatar } from "@/components/avatar";
 import { cn } from "@/lib/utils";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
@@ -13,7 +14,8 @@ const PRIMARY: NavItem = { href: "/habits/new", label: "New habit", icon: Plus }
 const GROUPS: NavItem = { href: "/groups", label: "Groups", icon: Users };
 const PROFILE: NavItem = { href: "/profile", label: "Profile", icon: CircleUser };
 
-function NavLink({ href, label, icon: Icon, active }: NavItem & { active: boolean }) {
+// `glyph` replaces the icon (the Profile tab shows your avatar).
+function NavLink({ href, label, icon: Icon, active, glyph }: NavItem & { active: boolean; glyph?: React.ReactNode }) {
   return (
     <Link
       href={href}
@@ -23,15 +25,24 @@ function NavLink({ href, label, icon: Icon, active }: NavItem & { active: boolea
         active ? "text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >
-      <Icon className="size-5" aria-hidden />
+      {glyph ?? <Icon className="size-5" aria-hidden />}
       {label}
     </Link>
   );
 }
 
-export function BottomNav() {
+export function BottomNav({
+  displayName,
+  avatarEmoji,
+  avatarColor,
+}: {
+  displayName: string;
+  avatarEmoji?: string | null;
+  avatarColor?: string | null;
+}) {
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const onProfile = isActive(PROFILE.href);
 
   return (
     <nav
@@ -55,11 +66,22 @@ export function BottomNav() {
             <PRIMARY.icon className="size-6" strokeWidth={2.5} aria-hidden />
           </Link>
         </li>
-        {[GROUPS, PROFILE].map((item) => (
-          <li key={item.href} className="flex flex-1 justify-center">
-            <NavLink {...item} active={isActive(item.href)} />
-          </li>
-        ))}
+        <li className="flex flex-1 justify-center">
+          <NavLink {...GROUPS} active={isActive(GROUPS.href)} />
+        </li>
+        <li className="flex flex-1 justify-center">
+          <NavLink
+            {...PROFILE}
+            active={onProfile}
+            // Your avatar is the Profile tab. Decoration: the link is named "Profile". 24px with -my-0.5,
+            // so the tab is exactly as tall as the 20px icons beside it (the nav's height doesn't move).
+            glyph={
+              <span aria-hidden className={cn("-my-0.5 flex rounded-full", onProfile && "ring-2 ring-primary ring-offset-1 ring-offset-card")}>
+                <Avatar name={displayName} emoji={avatarEmoji} color={avatarColor} size="sm" className="size-6 text-xs" />
+              </span>
+            }
+          />
+        </li>
       </ul>
     </nav>
   );

@@ -50,6 +50,11 @@ describe("ringOf", () => {
     expect(ringOf({ period: "week", target_count: 3, done_count: 2 }, 5)).toBeNull();
     expect(ringOf({ period: "day", target_count: 8, done_count: 0 }, 1)).toBeNull();
   });
+  it("a waiting undo takes a counted tap back", () => {
+    expect(ringOf({ period: "week", target_count: 3, done_count: 2 }, -1)).toEqual({ done: 1, target: 3 });
+    expect(ringOf({ period: "week", target_count: 3, done_count: 1 }, -1)).toBeNull();
+    expect(ringOf({ period: "week", target_count: 3, done_count: 3 }, -1)).toEqual({ done: 2, target: 3 });
+  });
   it("is null for daily habits, once-a-period habits, nothing done yet, or done", () => {
     expect(r("day", 8, 3)).toBeNull();
     expect(r("week", 1, 0)).toBeNull();

@@ -2,19 +2,21 @@ import Link from "next/link";
 import { ChevronRight, Clock } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { EveryoneDidIt, type CardMember } from "@/components/celebrations/everyone-did-it";
+import { EmptyState } from "@/components/empty-state";
 import { FirstCheckinTip } from "@/components/first-checkin-tip";
 import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard } from "@/components/habits/habit-card";
 import { LiveRefresh } from "@/components/habits/live-refresh";
 import { KidSection } from "@/components/kids/kid-section";
 import { NeedsConnection } from "@/components/offline/needs-connection";
+import { RenderedTaps } from "@/components/offline/offline-queue-provider";
 import { GentleCard } from "@/components/today/gentle-card";
 import { TodayCard } from "@/components/today/today-card";
 import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
-import { getFinishSummary, getGroupTimezones, getHabitEnds, getHabitSummaries, getWeekOverview, type HabitSummary } from "@/lib/habits";
+import { getFinishSummary, getGroupTimezones, getHabitEnds, getHabitSummaries, getRecentTapRows, getWeekOverview, type HabitSummary } from "@/lib/habits";
 import { ANOTHER_GO, celebrates, finishLine } from "@/lib/habit-finish";
 import { FinishCard } from "@/components/today/finish-card";
 import { endLabel, endProgress, hasEnded, withoutEnded } from "@/lib/habit-end";
@@ -22,6 +24,7 @@ import { todayIn } from "@/lib/dates";
 import { getPendingApprovals } from "@/lib/inbox";
 import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { parsePurpose } from "@/lib/profile-schema";
+import { currentPeriods, renderedTapIds } from "@/lib/rendered-taps";
 import { allCheckedOffKey, groupForToday } from "@/lib/today";
 import { todayProgress } from "@/lib/today-progress";
 import { chooseGentleCard } from "@/lib/today-cards";
@@ -31,16 +34,18 @@ import { hasWeekData } from "@/lib/week-overview";
 
 export default async function TodayPage({ searchParams }: { searchParams: Promise<{ joined?: string }> }) {
   const { joined } = await searchParams;
-  const [summaries, overview, groups, approvals, children, { profile }, celebrations, dismissed, checkedIn] = await Promise.all([
+  const childrenP = getMyChildren();
+  const [summaries, overview, groups, approvals, children, { profile }, celebrations, dismissed, checkedIn, tapRows] = await Promise.all([
     getHabitSummaries(),
     getWeekOverview(),
     getMyGroups(),
     getPendingApprovals(),
-    getMyChildren(),
+    childrenP,
     getProfile(),
     getCelebrations(),
     getDismissedCards(),
     hasCheckedIn(),
+    childrenP.then((cs) => getRecentTapRows(cs.map((c) => c.child_id))),
   ]);
   const joinedGroup = joined && isUuid(joined) ? groups.find((g) => g.group_id === joined) : undefined;
   // Habits past their end (ideas/habit-end-date.md) leave the lists (no more check-ins) for a finish card.
@@ -73,6 +78,12 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     todayOfP,
   ]);
   const habits = active.filter((h) => !finishes.some((f) => f.h === h));
+  // The check-ins these counts include, for taps still waiting on this phone (RenderedTaps).
+  const renderedTaps = renderedTapIds(
+    tapRows,
+    [profile.id, ...children.map((c) => c.child_id)],
+    currentPeriods([...summaries, ...kids.flatMap((k) => k.habits)]),
+  );
   const sections = sectionsForToday(habits, groups);
   // A solo user's Today looks as before: the "Mine" heading shows only next to a group section.
   const withHeadings = sections.some((s) => s.key !== "mine") || kids.length > 0;
@@ -131,6 +142,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
 
   return (
     <section className="flex flex-col gap-4 py-6">
+      <RenderedTaps ids={renderedTaps} />
       <h1 className="text-xl font-bold">Today</h1>
       {progress.total > 0 && (
         <TodayCard
@@ -206,15 +218,16 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         <TodayCard date={date} dayKey={dayKey} habits={[]} week={{ done: overview.done, possible: overview.possible, streak: overview.best_current_streak }} />
       )}
       {habits.length === 0 && kids.length === 0 && finishes.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">
-          <div className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">
-            <SproutIcon className="size-6" aria-hidden />
-          </div>
-          <p className="text-sm text-muted-foreground">Nothing to do yet. Add a habit to get started.</p>
-          <Button asChild className="h-11">
-            <Link href="/habits/new">Add your first habit</Link>
-          </Button>
-        </div>
+        <EmptyState
+          icon={<SproutIcon className="size-6" />}
+          action={
+            <Button asChild className="h-11">
+              <Link href="/habits/new">Add your first habit</Link>
+            </Button>
+          }
+        >
+          Nothing to do yet. Add a habit to get started.
+        </EmptyState>
       ) : (
         sections.map((s) =>
           withHeadings ? (

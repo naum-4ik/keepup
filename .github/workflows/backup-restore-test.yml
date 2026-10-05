@@ -59,6 +59,9 @@ jobs:
           age -d -i ci.key "$LATEST" | tar -xzf - -C dump
           # Logins are in the backup (not loaded here: the local stack's auth schema differs by version).
           test -s dump/auth.sql || { echo "::error::The backup has no logins (auth.sql missing or empty)"; exit 1; }
+          # Roles are applied below with a warning only (the local stack already has Supabase's), but a
+          # backup without them can't be restored to a fresh project.
+          test -s dump/roles.sql || { echo "::error::The backup has no roles (roles.sql missing or empty)"; exit 1; }
       - name: Start a throwaway Supabase database
         run: npx supabase db start
       - name: Restore and assert

@@ -81,7 +81,7 @@ describe("httpSender", () => {
   it("keeps the attempt count on the phone", async () => {
     let body = "";
     const fake = (async (_url: string, init: RequestInit) => ((body = String(init.body)), new Response(JSON.stringify({ outcome: "synced" })))) as unknown as typeof fetch;
-    await httpSender(fake)({ kind: "undo", clientId: C, habitId: H, attempts: 3 });
+    await httpSender(fake)({ kind: "undo", clientId: C, habitId: H, subjectId: null, queuedAt: "2026-10-05T22:00:00.000Z", attempts: 3 });
     expect(JSON.parse(body)).toEqual({ kind: "undo", clientId: C, habitId: H });
   });
 
@@ -97,6 +97,20 @@ describe("httpSender", () => {
 });
 
 describe("withQueuedTaps", () => {
+  it("a waiting undo of a counted tap takes it back (the card is open again), never below zero", () => {
+    const habits = [
+      { id: "a", done: 1, target: 1, state: "done" },
+      { id: "b", done: 0, target: 1, state: "open" },
+    ];
+    expect(withQueuedTaps(habits, new Map([["a/kid1", -1], ["b/kid1", -1]]), "kid1")).toEqual({
+      habits: [
+        { id: "a", done: 0, target: 1, state: "open" },
+        { id: "b", done: 0, target: 1, state: "open" },
+      ],
+      added: -1,
+    });
+  });
+
   it("shows a queued tap as done until it syncs (the kid view keeps its star)", () => {
     const habits = [
       { id: "a", done: 0, target: 1, state: "open" },

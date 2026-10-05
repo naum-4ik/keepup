@@ -8,3 +8,7 @@ export function tabFromKey(key: string, current: number, count: number): number 
   if (key === "End") return count - 1;
   return null;
 }
+
+// The Inbox's first tab: "Approvals (2)" while something waits; plain "Approvals" at zero (a "(0)"
+// reads like a to-do). The tab itself stays, so its place never moves.
+export const approvalsLabel = (count: number): string => (count > 0 ? `Approvals (${count})` : "Approvals");

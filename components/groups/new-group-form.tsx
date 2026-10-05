@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { createGroup, type GroupActionState } from "@/app/(app)/groups/actions";
 import { AvatarPicker } from "@/components/avatar-picker";
 import { Button } from "@/components/ui/button";
@@ -67,12 +68,19 @@ export function NewGroupForm({ city }: { city: string }) {
         )}
       </div>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-semibold">
-          Avatar <span className="font-normal text-muted-foreground">(optional)</span>
-        </legend>
-        <AvatarPicker name={name} options={GROUP_AVATAR_EMOJI} hint="Until you pick one, the group shows its first letter." />
-      </fieldset>
+      {/* Optional, so folded away: the form leads with who it's for and the name. Closed, the
+          picker's hidden inputs still post (an empty emoji: the group shows its first letter). */}
+      <details className="group/avatar">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+          <span>
+            Avatar <span className="font-normal text-muted-foreground">(optional)</span>
+          </span>
+          <ChevronDown aria-hidden className="size-4 text-muted-foreground transition-transform group-open/avatar:rotate-180" />
+        </summary>
+        <div className="pt-2">
+          <AvatarPicker name={name} options={GROUP_AVATAR_EMOJI} hint="Until you pick one, the group shows its first letter." />
+        </div>
+      </details>
 
       <p id="group-new-name-help" className="text-sm text-muted-foreground">
         Your time zone ({city}) and week start are used for the group&apos;s habits. Admins can change them later.

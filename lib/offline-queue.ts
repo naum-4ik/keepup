@@ -10,7 +10,9 @@ type Failures = { attempts?: number; firstFailedAt?: string };
 export type QueuedCheckIn = {
   kind: "check_in"; clientId: string; habitId: string; subjectId: string | null; tappedAt: string; byChild?: boolean; maybeSent?: boolean;
 } & Failures;
-export type QueuedUndo = { kind: "undo"; clientId: string; habitId: string } & Failures;
+// subjectId: whose tap it takes back (its tap's; older stored undos have none: mine). queuedAt: when
+// it was made (older stored undos have none). Both kept on the phone, never sent.
+export type QueuedUndo = { kind: "undo"; clientId: string; habitId: string; subjectId?: string | null; queuedAt?: string } & Failures;
 export type QueueEntry = QueuedCheckIn | QueuedUndo;
 
 // synced: the server has it. rejected: a rule refused it (final; the server's feed note explains).
@@ -45,7 +47,8 @@ export function addUndo(queue: QueueEntry[], undo: QueuedUndo, inFlight: Readonl
   const tap = queue.find(isTap) as QueuedCheckIn | undefined;
   const rest = queue.filter((e) => !isTap(e));
   if (tap && !tap.maybeSent && !inFlight.has(undo.clientId)) return rest;
-  return rest.some((e) => same(e, undo)) ? rest : [...rest, undo];
+  const entry: QueuedUndo = tap ? { ...undo, subjectId: tap.subjectId } : undo;
+  return rest.some((e) => same(e, entry)) ? rest : [...rest, entry];
 }
 
 export function pendingHabitIds(queue: QueueEntry[]): Set<string> {
@@ -56,14 +59,54 @@ export function pendingHabitIds(queue: QueueEntry[]): Set<string> {
 export const queueKey = (habitId: string, subjectId: string | null = null) => (subjectId ? `${habitId}/${subjectId}` : habitId);
 
 // How many check-ins wait per habit and person (queueKey); a habit done 3 times a day can have two.
-export function pendingCounts(queue: QueueEntry[]): Map<string, number> {
+// `queue`: the entries these counts were taken from (the same snapshot), for queuedDelta; not
+// enumerable, so the counts still compare as a plain Map.
+export type PendingCounts = Map<string, number> & { readonly queue?: readonly QueueEntry[] };
+export function pendingCounts(queue: QueueEntry[]): PendingCounts {
   const counts = new Map<string, number>();
   for (const e of queue) {
     if (e.kind !== "check_in") continue;
     const k = queueKey(e.habitId, e.subjectId);
     counts.set(k, (counts.get(k) ?? 0) + 1);
   }
-  return counts;
+  return Object.defineProperty(counts, "queue", { value: queue, enumerable: false });
+}
+
+// A live refresh normally waits while anything is queued (it would draw the server's answer over a
+// waiting tap). A queue that is stuck may not hold the page back for ever: once its oldest entry is
+// over STUCK_AFTER_MS old, every waiting check-in may already be on the server (maybeSent: tried
+// online or by a flush), and nothing is being sent right now (`running`), the refresh goes ahead; the
+// rendered-ids rule (queuedDelta) keeps it from counting a tap twice. A never-tried tap keeps holding:
+// the server can't have it, so a refresh could only draw it as not done. An undo from before
+// queuedAt existed counts as old.
+export const STUCK_AFTER_MS = 2 * 60 * 1000;
+export function holdsRefresh(queue: readonly QueueEntry[], now: Date, running: boolean): boolean {
+  if (queue.length === 0) return false;
+  if (running || queue.some((e) => e.kind === "check_in" && !e.maybeSent)) return true;
+  const times = queue.map((e) => (e.kind === "check_in" ? Date.parse(e.tappedAt) : e.queuedAt ? Date.parse(e.queuedAt) : -Infinity));
+  return now.getTime() - Math.min(...times) <= STUCK_AFTER_MS;
+}
+
+// What the waiting entries change on screen, per queueKey, against the check-ins the page was
+// rendered with (`rendered`: their client ids). A tap adds one, unless the page already counts it
+// (it reached the server before the page was drawn). An undo takes one back only when the page
+// counts its tap; an undo of a tap the page never had changes nothing. Without a rendered list (a
+// page saved before the list existed), only taps count, as before.
+export function queuedDelta(queue: readonly QueueEntry[], rendered: ReadonlySet<string> | null): Map<string, number> {
+  const delta = new Map<string, number>();
+  const add = (k: string, n: number) => {
+    const v = (delta.get(k) ?? 0) + n;
+    if (v === 0) delta.delete(k);
+    else delta.set(k, v);
+  };
+  for (const e of queue) {
+    if (e.kind === "check_in") {
+      if (!rendered?.has(e.clientId)) add(queueKey(e.habitId, e.subjectId), 1);
+    } else if (rendered?.has(e.clientId)) {
+      add(queueKey(e.habitId, e.subjectId ?? null), -1);
+    }
+  }
+  return delta;
 }
 
 // The clientIds whose undo the server has answered (done, or refused with a feed note): a check-in

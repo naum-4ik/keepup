@@ -245,3 +245,79 @@ test("Undo after an online try that got no answer in time: the server ends witho
   await page.reload();
   await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible();
 });
+
+test("a tap right after the page opens keeps Saving… and Undo through live refreshes until it syncs", async ({ page }) => {
+  test.setTimeout(60_000);
+  await signUpAndOnboard(page);
+  await createHabit(page, { title: "Walk", count: 1, period: "day" });
+  const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
+  // The online try reaches the server, but its answer never comes back; the sync route is down, so
+  // the tap stays on the phone (it may have landed: maybeSent).
+  await page.route("**/today", async (route) => {
+    const req = route.request();
+    if (req.method() !== "POST" || !req.headers()["next-action"]) return route.continue();
+    await route.fetch();
+    await route.abort();
+  });
+  await page.route("**/api/check-ins/sync", (route) => route.abort());
+  // A fresh load: the layout's live listener is still joining when the tap happens.
+  await page.reload();
+  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await expect.poll(() => countCheckIns(id)).toBe(1); // the server has it
+  const undo = page.getByRole("button", { name: "Undo check-in for Walk" });
+  await expect(undo).toBeVisible();
+  // The listener goes live (it refreshes to catch up), and the app comes back into view (it refreshes
+  // again). Neither may swap the waiting tap for the server's "Done" while it's unsent.
+  await expect(page.locator('[data-live="ready"][data-table="notifications"]')).toBeAttached({ timeout: 20_000 });
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await page.waitForTimeout(1_500);
+  await expect(page.getByText("Saving… ☁️")).toBeVisible();
+  await expect(undo).toBeVisible();
+  await expect(page.getByRole("button", { name: "Checked in today: Walk" })).toBeVisible();
+  // Back online for the sync route: the tap syncs once (its client id), and the page shows it done.
+  await page.unroute("**/api/check-ins/sync");
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect(page.getByText("Saving… ☁️")).toBeHidden({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  expect(countCheckIns(id)).toBe(1);
+});
+
+test("a live refresh while the online try is still running doesn't show the tap as Done", async ({ page }) => {
+  test.setTimeout(60_000);
+  await signUpAndOnboard(page);
+  await createHabit(page, { title: "Walk", count: 1, period: "day" });
+  const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
+  // The try reaches the server and its answer is held, then dropped; the sync route is down.
+  let release = () => {};
+  const held = new Promise<void>((r) => (release = r));
+  await page.route("**/today", async (route) => {
+    const req = route.request();
+    if (req.method() !== "POST" || !req.headers()["next-action"]) return route.continue();
+    await route.fetch();
+    await held;
+    await route.abort().catch(() => undefined);
+  });
+  await page.route("**/api/check-ins/sync", (route) => route.abort());
+  await page.reload();
+  await expect(page.locator('[data-live="ready"][data-table="notifications"]')).toBeAttached({ timeout: 20_000 });
+  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await expect.poll(() => countCheckIns(id)).toBe(1); // the server has it; the try hasn't answered
+  // A refresh asked for while the try runs (the app comes back into view) must not draw "Done".
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await page.waitForTimeout(1_000);
+  await expect(page.getByRole("button", { name: "Done: Walk" })).toHaveCount(0);
+  // The try fails without an answer (after the 10 s timeout): the tap waits on the phone. Whatever
+  // refresh was asked for in the meantime still doesn't draw the server's "Done".
+  await page.waitForTimeout(10_000);
+  release();
+  const undo = page.getByRole("button", { name: "Undo check-in for Walk" });
+  await expect(undo).toBeVisible();
+  await page.waitForTimeout(1_500);
+  await expect(undo).toBeVisible();
+  await expect(page.getByRole("button", { name: "Checked in today: Walk" })).toBeVisible();
+  await page.unroute("**/api/check-ins/sync");
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect(page.getByText("Saving… ☁️")).toBeHidden({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  expect(countCheckIns(id)).toBe(1);
+});

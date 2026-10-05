@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CalendarDays, Check, ChevronRight, Flame, ListChecks } from "lucide-react";
 import { CATEGORIES } from "@/lib/categories";
 import type { HabitCategory, HabitPeriod } from "@/lib/habit-schema";
-import { STATUS_WORD, comparisonLine, ringDash, streakUnit, type HabitCells, type WeekOverview } from "@/lib/week-overview";
+import { STATUS_WORD, comparisonLine, goalsMet, ringDash, streakUnit, type HabitCells, type WeekOverview } from "@/lib/week-overview";
 import { cn } from "@/lib/utils";
 import type { DayRow } from "@/lib/day-detail";
 import { WeekDays } from "@/components/overview/week-days";
@@ -13,7 +13,7 @@ export function ProgressRing({
   done,
   possible,
   size = 20,
-  label = `${done} of ${possible} done this week`,
+  label = `${goalsMet(done, possible)} this week`,
 }: {
   done: number;
   possible: number;
@@ -86,6 +86,7 @@ export function WeekStrip({ overview: o }: { overview: WeekOverview }) {
 // `days`: each past or current day's list for "tap a day" (Progress); without it the days aren't tappable.
 export function WeekCard({ overview: o, days }: { overview: WeekOverview; days?: Record<string, DayRow[]> }) {
   const streak = o.best_current_streak;
+  const line = comparisonLine(o);
   return (
     <section aria-labelledby="your-week" className="flex flex-col gap-4 rounded-2xl bg-card p-4 shadow-soft">
       <div className="flex items-center gap-3">
@@ -94,10 +95,8 @@ export function WeekCard({ overview: o, days }: { overview: WeekOverview; days?:
           <h2 id="your-week" className="text-sm font-semibold text-muted-foreground">
             Your week
           </h2>
-          <p className="text-lg font-bold tabular-nums">
-            {o.done} of {o.possible} done
-          </p>
-          <p className="text-sm text-muted-foreground">{comparisonLine(o)}</p>
+          <p className="text-lg font-bold tabular-nums">{goalsMet(o.done, o.possible)}</p>
+          {line && <p className="text-sm text-muted-foreground">{line}</p>}
         </div>
         {days && (
           <Link href="/progress/calendar" className="ml-auto flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted">

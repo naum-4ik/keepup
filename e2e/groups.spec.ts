@@ -53,7 +53,7 @@ test("deleting a group with a child asks again, and Cancel resets that step", as
   await expect(page.getByText("Levi family")).toBeHidden();
 });
 
-test("tap your avatar on Profile to change it, and see it in the header", async ({ page }) => {
+test("tap your avatar on Profile to change it, and see it on the Profile tab", async ({ page }) => {
   await signUpAndOnboard(page);
   await page.goto("/profile/settings");
   await expect(page.getByText("Your avatar")).toHaveCount(0); // moved to Profile
@@ -64,8 +64,9 @@ test("tap your avatar on Profile to change it, and see it in the header", async 
   await dialog.getByRole("button", { name: "Sky", exact: true }).click();
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toBeHidden(); // closes once saved
-  // The header avatar and the nav's Profile tab are both "Profile" links; the header is the banner.
-  await expect(page.getByRole("banner").getByRole("link", { name: "Profile" })).toContainText("🦊");
+  // Your avatar is the bottom nav's Profile tab; the header no longer repeats the same link.
+  await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Profile", exact: true })).toContainText("🦊");
+  await expect(page.getByRole("banner").getByRole("link", { name: "Profile" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Change your avatar" })).toContainText("🦊");
 });
 
@@ -73,6 +74,9 @@ test("a group gets an avatar on creation, admins change it, members only see it"
   await signUpAndOnboard(page);
   await page.goto("/groups/new");
   await page.getByLabel("Name").fill("Pizza night");
+  // Optional, so it starts folded away.
+  await expect(page.getByRole("group", { name: "Avatar" })).toBeHidden();
+  await page.locator("summary").filter({ hasText: "Avatar" }).click();
   await page.getByRole("group", { name: "Avatar" }).getByRole("button", { name: "🍕" }).click();
   await page.getByRole("button", { name: "Create group" }).click();
   await expect(page).toHaveURL(/\/groups\/[0-9a-f-]{36}/);
@@ -85,6 +89,12 @@ test("a group gets an avatar on creation, admins change it, members only see it"
   await expect(dialog).toBeHidden();
   await expect(page.getByRole("button", { name: "Change the group avatar" })).toContainText("🏡");
   const url = await inviteLink(page);
+  // The invite shows the group's own avatar.
+  const visitor = await (await browser.newContext()).newPage();
+  await visitor.goto(url);
+  // Decoration (the heading names the group), so it's found by its markup, not its role.
+  await expect(visitor.getByRole("main").locator('[role="img"]')).toContainText("🏡");
+  await expect(visitor.getByRole("img", { name: "Pizza night" })).toHaveCount(0);
   await page.goto("/groups");
   await expect(page.getByRole("link", { name: /Pizza night/ })).toContainText("🏡");
 
@@ -127,6 +137,8 @@ test("an invited person joins from the link and lands on the group's habits", as
   await guest.goto(url);
   await expect(guest.getByRole("heading", { name: /invited you to Family/ })).toBeVisible();
   await expect(guest.getByText("1 person is already in Family.")).toBeVisible();
+  // No avatar picked: the kind's emoji stands in.
+  await expect(guest.getByRole("main").locator('[role="img"]')).toContainText("👨‍👩‍👧");
   // Google is off on the local stack, so email is the main button ("Use email instead" next to
   // "Join with Google" when it's on).
   await guest.getByRole("link", { name: "Continue with email" }).click();
@@ -236,7 +248,7 @@ test("a group habit: both check in, both see Everyone did it, live", async ({ pa
   await expect(page.getByRole("button", { name: "Done: Family dinner" })).toBeVisible();
   // The first page must be listening before the guest's check-in lands (else Realtime drops it).
   // "ready" means the server confirmed the postgres_changes listener, which can take seconds under load.
-  await expect(page.locator('[data-live="ready"]')).toBeAttached({ timeout: 20_000 });
+  await expect(page.locator('[data-live="ready"][data-table="check_ins"]')).toBeAttached({ timeout: 20_000 });
   await guest.goto("/today");
   await expect(guest.getByRole("img", { name: /: done$/ })).toBeVisible(); // Ana's avatar shows done, no names in text
   await guest.getByRole("button", { name: "Check in: Family dinner" }).click();
@@ -521,4 +533,104 @@ test("the group page reads People, then Group habits, then Invite", async ({ pag
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await expect(page.getByRole("main").getByRole("heading", { level: 2 })).toHaveText(["People", "Group habits", "Invite"]);
+});
+
+test("Inbox rows show who they're from, and an empty Approvals tab has no (0)", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const url = await inviteLink(page);
+  const guest = await (await browser.newContext()).newPage();
+  await joinByLink(guest, url, "Dan");
+  await guest.goto("/profile");
+  await guest.getByRole("button", { name: "Change your avatar" }).click();
+  const dialog = guest.getByRole("dialog");
+  await dialog.getByRole("group", { name: "Avatar" }).getByRole("button", { name: "🦊" }).click();
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+
+  await page.goto("/inbox");
+  await expect(page.getByRole("tab", { name: "Approvals", exact: true })).toBeVisible();
+  // The avatar is decoration (the line names Dan), so it's found by its markup, not its role.
+  const row = page.getByRole("listitem").filter({ hasText: "Dan joined Family" });
+  await expect(row.locator('[role="img"]')).toContainText("🦊");
+});
+
+test("approving a check-in someone just reviewed says who did, and the note stays", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Gym buddies", "Friends");
+  const url = await inviteLink(page);
+  const dan = await (await browser.newContext()).newPage();
+  await joinByLink(dan, url, "Dan");
+  const eve = await (await browser.newContext()).newPage();
+  await joinByLink(eve, url, "Eve");
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: "Create your own" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Title").fill("Gym");
+  await dialog.getByLabel("Category").selectOption("fitness");
+  await dialog.getByRole("radio", { name: "Gym buddies" }).check();
+  await dialog.getByRole("switch", { name: "Needs approval" }).click();
+  await dialog.getByRole("button", { name: /^Add habit/ }).click();
+  await expect(page).toHaveURL(/\/today$/);
+  await page.getByRole("button", { name: "Check in: Gym" }).click();
+  await expect(page.getByRole("button", { name: "Waiting for approval: Gym" })).toBeVisible();
+
+  // Eve's Inbox stays as loaded (Realtime is cut off), so only her own tap can change it.
+  await eve.routeWebSocket(/\/realtime\//, () => {});
+  await eve.goto("/inbox");
+  await dan.goto("/inbox");
+  await dan.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(dan.getByText("Nothing waiting for you.")).toBeVisible();
+  await eve.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(eve.getByRole("listitem", { name: "Ana did Gym" }).getByRole("status")).toHaveText("Dan already reviewed this.");
+});
+
+test("an undo by another member shows up live", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const url = await inviteLink(page);
+  const guest = await (await browser.newContext()).newPage();
+  await joinByLink(guest, url, "Dan");
+  await createGroupHabitVia(page, "Family", "Walk");
+  await expect(page.locator('[data-live="ready"][data-table="check_ins"]')).toBeAttached({ timeout: 20_000 });
+  await guest.goto("/today");
+  await guest.getByRole("button", { name: "Check in: Walk" }).click();
+  await expect(page.getByRole("img", { name: "Dan: done" })).toBeVisible({ timeout: 10_000 });
+  // Undo is a hard delete; a filtered Realtime listener never hears DELETE. (Dan joined today, so
+  // without his check-in he reads "joins next period", not "not yet": only "done" going away is checked.)
+  await guest.getByRole("link", { name: /Walk/ }).click();
+  await guest.getByRole("button", { name: /^Undo check-in at / }).click();
+  await expect(page.getByRole("img", { name: "Dan: done" })).toBeHidden({ timeout: 10_000 });
+});
+
+test("the bell counts a new nudge while you're on Today", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const url = await inviteLink(page);
+  const guest = await (await browser.newContext()).newPage();
+  await joinByLink(guest, url, "Dan");
+  await createGroupHabitVia(page, "Family", "Walk");
+  // Read what's there ("Dan joined"), so the nudge is the only unread row.
+  await page.goto("/inbox");
+  await expect(page.getByRole("link", { name: "Inbox", exact: true })).toBeVisible();
+  await page.goto("/today");
+  await expect(page.locator('[data-live="ready"][data-table="notifications"]')).toBeAttached({ timeout: 20_000 });
+  await guest.goto("/today");
+  await guest.getByRole("link", { name: /Walk/ }).click();
+  await guest.getByRole("button", { name: /^Nudge/ }).click();
+  await guest.getByRole("menuitem", { name: "💪 You've got this" }).click();
+  await expect(guest.getByRole("button", { name: "Nudged ✓" })).toBeDisabled();
+  await expect(page.getByRole("link", { name: "Inbox, 1 unread" })).toBeVisible({ timeout: 10_000 });
+});
+
+test("the avatar picker marks the chosen colour with a check", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await page.goto("/profile");
+  await page.getByRole("button", { name: "Change your avatar" }).click();
+  const colors = page.getByRole("dialog").getByRole("group", { name: "Background color" });
+  const sky = colors.getByRole("button", { name: "Sky", exact: true });
+  await sky.click();
+  await expect(sky).toHaveAttribute("aria-pressed", "true");
+  await expect(sky.locator("svg")).toBeVisible();
+  await expect(colors.locator("svg")).toHaveCount(1);
 });

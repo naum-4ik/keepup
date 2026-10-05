@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { feedCopy, type FeedItem } from "@/lib/feed-copy";
+import { FEED_KINDS, NUDGE_KINDS, feedCopy, type FeedItem } from "@/lib/feed-copy";
 import { BANNED_PATTERNS, BANNED_WORDS } from "@/lib/notification-copy";
 
 const item = (o: Partial<FeedItem>): FeedItem => ({
@@ -51,19 +51,38 @@ describe("feedCopy", () => {
     }
   });
 
-  it("uses no banned words and at most one emoji, for every kind", () => {
-    const kinds: FeedItem["kind"][] = ["group_check_in", "approval_needed", "check_in_approved", "check_in_rejected", "everyone_done",
-      "group_streak_ended", "group_milestone", "group_habit_created", "group_habit_paused", "group_habit_resumed", "group_habit_archived",
-      "member_paused", "member_joined", "member_left", "role_changed", "nudge", "cheer", "kid_check_in", "kid_streak", "kid_goal_reached", "kid_garden_full",
-      "daily_summary", "habit_reminder", "approval_expiring"];
-    const emoji = /\p{Extended_Pictographic}/gu;
-    for (const kind of kinds) {
-      const { title, body } = feedCopy(item({ kind, subject_name: "Mary", payload: { streak: 3, period: "day", kind: "thinking_of_you", role: "admin", title: "Park", emoji: "🛝" } }));
-      const text = `${title} ${body}`.toLowerCase();
-      for (const w of BANNED_WORDS) expect(text).not.toContain(w);
-      for (const re of BANNED_PATTERNS) expect(text).not.toMatch(re);
-      expect((body.match(emoji) ?? []).length).toBeLessThanOrEqual(1);
-    }
+  // Every kind in FEED_KINDS × payloads that take different branches, so a new kind is checked
+  // without anyone remembering to list it here.
+  const PAYLOADS: Record<string, unknown>[] = [
+    {},
+    { streak: 1, period: "day" },
+    { streak: 3, period: "week", best: 5 },
+    { streak: 6, period: "month", best: 6 },
+    { period: "week", target_count: 1 },
+    { period: "month", target_count: 3 },
+    { removed: true },
+    { role: "admin" },
+    { role: "member" },
+    ...NUDGE_KINDS.map((k) => ({ kind: k.kind })),
+    { reason: "approved" },
+    { reason: "period_closed", tapped_on: "2026-10-05" },
+    { todo: [{ title: "Read", done: 1, target: 3 }], at_risk: [{ title: "Gym", done: 1, target: 3, period: "week", days_left: 1 }] },
+    { title: "Park", emoji: "🛝" },
+    { ends_on: "2026-10-12" },
+    { level: 6 },
+    { code: "bookworm", name: "Bookworm" },
+    { streak: 30, period: "day", back: true },
+    { streak: 14, period: "week" },
+    { kind: "week", done: 4, possible: 7, longest: null },
+  ];
+  const cases = FEED_KINDS.flatMap((kind) => PAYLOADS.map((payload): [FeedItem["kind"], Record<string, unknown>] => [kind, payload]));
+  const emoji = /\p{Extended_Pictographic}/gu;
+  it.each(cases)("%s with %j: no banned words, at most one emoji", (kind, payload) => {
+    const { title, body } = feedCopy(item({ kind, subject_name: "Mary", payload }));
+    const text = `${title} ${body}`.toLowerCase();
+    for (const w of BANNED_WORDS) expect(text).not.toContain(w);
+    for (const re of BANNED_PATTERNS) expect(text).not.toMatch(re);
+    expect((body.match(emoji) ?? []).length).toBeLessThanOrEqual(1);
   });
 });
 

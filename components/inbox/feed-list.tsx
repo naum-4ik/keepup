@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { Bell } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { Avatar } from "@/components/avatar";
+import { SproutIcon } from "@/components/sprout-icon";
 import { dayLabel, relativeTime, todayIn } from "@/lib/dates";
 import { feedCopy, type FeedItem } from "@/lib/feed-copy";
 import { cn } from "@/lib/utils";
@@ -7,14 +10,7 @@ import { cn } from "@/lib/utils";
 // Activity, newest first, under day headings in the viewer's time zone.
 export function FeedList({ items, timeZone, now }: { items: FeedItem[]; timeZone: string; now: Date }) {
   if (items.length === 0) {
-    return (
-      <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">
-        <div className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">
-          <Bell aria-hidden className="size-6" />
-        </div>
-        <p className="text-sm text-muted-foreground">Nothing yet. Activity from your groups shows up here.</p>
-      </div>
-    );
+    return <EmptyState icon={<Bell className="size-6" />}>Nothing yet. Activity from your groups shows up here.</EmptyState>;
   }
 
   const today = todayIn(timeZone, now);
@@ -43,6 +39,17 @@ export function FeedList({ items, timeZone, now }: { items: FeedItem[]; timeZone
                       </>
                     )}
                   </span>
+                  {/* Who it's from, at a glance. Decoration: the line already names them. Rows with no
+                      person behind them (a child's own tap, summaries, sync notes) get the sprout. */}
+                  {n.actor_name ? (
+                    <span aria-hidden className="shrink-0">
+                      <Avatar name={n.actor_name} emoji={n.actor_avatar_emoji} color={n.actor_avatar_color} size="sm" />
+                    </span>
+                  ) : (
+                    <span aria-hidden className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent text-primary">
+                      <SproutIcon className="size-4" />
+                    </span>
+                  )}
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-xs font-semibold text-muted-foreground">{title}</span>
                     <span className="text-sm">{body}</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Check } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { AVATAR_COLOR_LABEL, AVATAR_COLORS, AVATAR_EMOJI, type AvatarColor } from "@/lib/avatars";
 import { cn } from "@/lib/utils";
@@ -50,11 +51,15 @@ export function AvatarPicker({
             aria-label={AVATAR_COLOR_LABEL[c]}
             aria-pressed={c === color}
             onClick={() => setColor(c)}
+            // An outline, not a ring: its gap is see-through, so it's right on a card (new group, add a
+            // child) and on a dialog's page colour alike. The check says "chosen" without colour.
             className={cn(
-              "size-11 rounded-full ring-offset-2 ring-offset-background hover:ring-2 hover:ring-primary/40 aria-pressed:ring-2 aria-pressed:ring-primary",
+              "flex size-11 items-center justify-center rounded-full text-accent-foreground outline-offset-2 hover:outline-2 hover:outline-primary/40 aria-pressed:outline-2 aria-pressed:outline-primary",
               AVATAR_COLORS[c],
             )}
-          />
+          >
+            {c === color && <Check aria-hidden className="size-5" strokeWidth={3} />}
+          </button>
         ))}
       </div>
     </div>

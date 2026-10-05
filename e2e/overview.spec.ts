@@ -15,21 +15,21 @@ test("the weekly overview shows on Today and Progress", async ({ page }) => {
   await page.getByRole("button", { name: "Check in: Walk" }).click();
   await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
   await expect(strip).toContainText("1 of 2");
-  await expect(strip.getByRole("img", { name: "1 of 2 done this week" })).not.toHaveAttribute("data-complete", "");
+  await expect(strip.getByRole("img", { name: "1 of 2 goals met this week" })).not.toHaveAttribute("data-complete", "");
 
   await page.getByRole("button", { name: "Check in: Read" }).click();
   await expect(page.getByRole("button", { name: "Done: Read" })).toBeVisible();
   // All done so far: the ring is replaced by the filled check.
-  await expect(strip.getByRole("img", { name: "2 of 2 done this week" })).toHaveAttribute("data-complete", "");
+  await expect(strip.getByRole("img", { name: "2 of 2 goals met this week" })).toHaveAttribute("data-complete", "");
   await expect(strip.locator("[data-complete] svg.lucide-check")).toBeVisible();
   await strip.click();
   await expect(page).toHaveURL(/\/progress$/);
 
   const card = page.getByRole("region", { name: "Your week" });
-  await expect(card).toContainText("2 of 2 done");
-  // No last week to compare with yet.
-  await expect(card).toContainText("2 done this week");
-  await expect(card.getByRole("img", { name: "2 of 2 done this week" })).toHaveAttribute("data-complete", "");
+  await expect(card).toContainText("2 of 2 goals met");
+  // No last week to compare with yet, so no second line restating the headline.
+  await expect(card).not.toContainText("this week");
+  await expect(card.getByRole("img", { name: "2 of 2 goals met this week" })).toHaveAttribute("data-complete", "");
   // Today's circle fills against both of today's daily habits (the weekday comes from the server's
   // clock in the user's time zone, so it isn't recomputed here).
   const todayButton = card.getByRole("button", { name: /^\w+day: 2 of 2 done$/ });
@@ -86,4 +86,28 @@ test("Progress → Calendar: the month, earlier months, and tap a day", async ({
   // Never before the first habit, never after this month.
   await page.goto("/progress/calendar?m=2099-01");
   await expect(month.getByRole("heading")).toHaveText(current!);
+});
+
+test("Progress: a chip per category jumps to its section", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createHabit(page, { template: "Drink water" });
+  await createHabit(page, { template: "Work out" });
+  await page.goto("/progress");
+  const chips = page.getByRole("navigation", { name: "Categories" });
+  await expect(chips.getByRole("link")).toHaveText(["Health", "Fitness"]);
+  await chips.getByRole("link", { name: "Fitness" }).click();
+  await expect(page).toHaveURL(/#cat-fitness$/);
+  await expect(page.getByRole("region", { name: "Fitness" })).toBeInViewport();
+});
+
+test("a new user's empty lists say what's next, in one card style", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await expect(page.getByText("Nothing to do yet. Add a habit to get started.")).toBeVisible();
+  await page.goto("/progress");
+  await expect(page.getByText("No habits yet.")).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Categories" })).toHaveCount(0);
+  await page.goto("/groups");
+  await expect(page.getByText("Share habits with the people you live and hang out with.")).toBeVisible();
+  await page.goto("/inbox");
+  await expect(page.getByText("Nothing yet. Activity from your groups shows up here.")).toBeVisible();
 });

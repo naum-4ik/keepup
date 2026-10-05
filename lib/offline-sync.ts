@@ -44,6 +44,10 @@ export function httpSender(fetchImpl: typeof fetch = (input, init) => fetch(inpu
     delete body.attempts;
     delete body.firstFailedAt;
     if (body.kind === "check_in") delete body.maybeSent;
+    else {
+      delete body.subjectId;
+      delete body.queuedAt;
+    }
     let res: Response;
     try {
       res = await fetchImpl("/api/check-ins/sync", {
@@ -62,8 +66,9 @@ export function httpSender(fetchImpl: typeof fetch = (input, init) => fetch(inpu
   };
 }
 
-// Queued taps (counts by queueKey) show as check-ins until the server has them, never past the
-// target. subjectId: whose habits these are (a child's in the kid view; null for mine).
+// Queued taps (lib/offline-queue.ts queuedDelta, by queueKey) show as check-ins until the page has
+// them, never past the target; a queued undo of a tap the page counts takes it back, never below 0.
+// subjectId: whose habits these are (a child's in the kid view; null for mine).
 export function withQueuedTaps<T extends { id: string; done: number; target: number; state: string }>(
   habits: T[],
   queued: ReadonlyMap<string, number>,
@@ -71,11 +76,12 @@ export function withQueuedTaps<T extends { id: string; done: number; target: num
 ): { habits: T[]; added: number } {
   let added = 0;
   const shown = habits.map((h) => {
-    const extra = Math.min(queued.get(queueKey(h.id, subjectId)) ?? 0, Math.max(0, h.target - h.done));
+    const q = queued.get(queueKey(h.id, subjectId)) ?? 0;
+    const extra = q > 0 ? Math.min(q, Math.max(0, h.target - h.done)) : Math.max(q, -h.done);
     if (extra === 0) return h;
     added += extra;
     const done = h.done + extra;
-    return { ...h, done, state: done >= h.target ? "done" : h.state } as T;
+    return { ...h, done, state: done >= h.target ? "done" : h.state === "done" ? "open" : h.state } as T;
   });
   return { habits: shown, added };
 }

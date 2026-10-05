@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { signUpAndOnboard } from "./helpers/auth";
+import { createGroup, createGroupHabitVia } from "./helpers/groups";
 import { createHabit, endHabitYesterday } from "./helpers/habits";
 
 test("the Today card counts today's habits, cheers you on, and celebrates the last one", async ({ page }) => {
@@ -38,3 +39,14 @@ test("with nothing due today, the card doesn't claim the day is done", async ({ 
   await expect(card.getByRole("link", { name: /^This week/ })).toBeVisible();
 });
 
+
+test("the Today card's This week counts a group habit you take part in", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await createGroupHabitVia(page, "Family", "Walk");
+  const card = page.getByRole("region", { name: "Today's progress" });
+  // A group habit used to leave the week line out ("0 of 0", or no line at all).
+  await expect(card.getByRole("img", { name: "0 of 1 goal met this week" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await expect(card.getByRole("img", { name: "1 of 1 goal met this week" })).toBeVisible();
+});

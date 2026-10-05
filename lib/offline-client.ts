@@ -2,11 +2,13 @@
 // The page's offline queue runner (used by components/offline/offline-queue-provider.tsx): when to
 // send, how a tap is saved before it is tried online, and how the UI hears about it. Browser-agnostic
 // (everything comes in as deps), so it is unit-tested in Node.
-import { pendingCounts, queueKey, type FlushResult, type Sender } from "@/lib/offline-queue";
+import { holdsRefresh, pendingCounts, queueKey, type FlushResult, type QueueEntry, type Sender } from "@/lib/offline-queue";
 import { createOfflineQueue, type Locks, type QueueStorage } from "@/lib/offline-queue-store";
 import { newTap } from "@/lib/offline-sync";
 
-export type Counts = ReadonlyMap<string, number>;
+// Waiting check-ins per queueKey; `queue`: the entries they were counted from (lib/offline-queue.ts
+// pendingCounts), so the page can tell what they change on screen (queuedDelta).
+export type Counts = ReadonlyMap<string, number> & { readonly queue?: readonly QueueEntry[] };
 export type Flushed = { counts: Counts; changed: boolean; poisoned: number };
 export type TapResult = { ok: true; queued: boolean } | { ok: false; message: string };
 type Online = (tap: { clientId: string }) => Promise<{ ok: true } | { ok: false; message: string; code?: string }>;
@@ -42,10 +44,16 @@ export function createOfflineClient(deps: {
   let flushing = false;
   let held: Counts | null = null;
   let last: Counts = new Map();
+  // Entries waiting, as of the latest change (also while a flush holds its counts back), and online
+  // tries running now: what holdsRefresh needs.
+  let waiting: readonly QueueEntry[] = [];
+  let trying = 0;
+  const saw = (counts: Counts) => void (waiting = counts.queue ?? []);
   let timer: unknown = null;
   let step = 0;
 
   const emit = (counts: Counts) => {
+    saw(counts);
     last = counts;
     deps.onCounts(counts);
   };
@@ -55,6 +63,7 @@ export function createOfflineClient(deps: {
     locks: deps.locks ?? null,
     now: deps.now,
     onChange: (counts) => {
+      saw(counts);
       if (flushing) held = counts;
       else emit(counts);
     },
@@ -80,6 +89,7 @@ export function createOfflineClient(deps: {
       flushing = false;
     }
     const counts = held ?? pendingCounts(await deps.storage.load());
+    saw(counts);
     const changed = r.synced.length + r.rejected.length + r.dropped.length + r.poisoned.length > 0;
     last = counts;
     deps.onFlushed({ counts, changed, poisoned: r.poisoned.length });
@@ -96,6 +106,7 @@ export function createOfflineClient(deps: {
     void (async () => {
       const counts = pendingCounts(await deps.storage.load());
       const dropped = [...last].some(([k, n]) => (counts.get(k) ?? 0) < n);
+      saw(counts);
       last = counts;
       deps.onFlushed({ counts, changed: dropped, poisoned: 0 });
     })();
@@ -114,11 +125,14 @@ export function createOfflineClient(deps: {
     if (!deps.isOnline()) return { ok: true, queued: true };
     await queue.markMaybeSent(tap.clientId);
     let result: Awaited<ReturnType<Online>>;
+    trying++;
     try {
       result = await withTimeout(online({ clientId: tap.clientId }), deps.tapTimeoutMs ?? TAP_TIMEOUT_MS, setTimer, clearTimer);
     } catch {
       scheduleFlush();
       return { ok: true, queued: true };
+    } finally {
+      trying--;
     }
     if (result.ok) {
       await queue.forget(tap.clientId);
@@ -155,6 +169,9 @@ export function createOfflineClient(deps: {
       emit(counts);
       return counts;
     },
+    // A live refresh should wait (lib/offline-queue.ts holdsRefresh), as of the last change this tab
+    // saw: known before the page draws it (components/habits/live-refresh.tsx).
+    holdsRefresh: () => holdsRefresh(waiting, deps.now?.() ?? new Date(), flushing || trying > 0),
     // Everything still waiting on this phone (check-ins and undos), for sign-out.
     pending: async () => (await deps.storage.load()).length,
     // While the page is open: hear other tabs. stop() also cancels a scheduled flush.

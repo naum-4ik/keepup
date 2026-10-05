@@ -1,10 +1,11 @@
 "use client";
 
-import { createContext, startTransition, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, startTransition, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createOfflineClient, type Channel, type Counts, type TapResult } from "@/lib/offline-client";
 import { GENERIC_ERROR } from "@/lib/habit-errors";
 import { claimSavedPages, savePageOffline } from "@/lib/offline-pages";
+import { queuedDelta } from "@/lib/offline-queue";
 import { deleteOfflineQueue, indexedDbStorage, offlineDbName, type Locks } from "@/lib/offline-queue-store";
 import { httpSender } from "@/lib/offline-sync";
 
@@ -12,13 +13,36 @@ type Client = ReturnType<typeof createOfflineClient>;
 // queued: check-ins waiting on this phone, per habit and person (lib/offline-queue.ts queueKey).
 // ready: the saved queue has been read (until then `queued` is empty, not "nothing waiting").
 // notice: a queued check-in was given up after repeated failures (lib/offline-queue.ts MAX_ATTEMPTS).
-type Ctx = { client: Client | null; userId: string | null; queued: Counts; ready: boolean; notice: boolean; dismissNotice: () => void };
+// delta: what the waiting entries change on this page's counts (lib/offline-queue.ts queuedDelta):
+// signed, so a waiting undo of a counted tap takes it back. busy: anything waits (taps or undos), as
+// drawn. holdsRefresh(): a live refresh should wait (lib/offline-queue.ts holdsRefresh), known at once
+// (the drawn state can wait behind a running check-in).
+type Ctx = {
+  client: Client | null; userId: string | null; queued: Counts; delta: ReadonlyMap<string, number>; busy: boolean; holdsRefresh: () => boolean;
+  ready: boolean; notice: boolean; dismissNotice: () => void; setRendered: (ids: ReadonlySet<string>) => void;
+};
 const NONE: Counts = new Map();
-const OfflineQueueContext = createContext<Ctx>({ client: null, userId: null, queued: NONE, ready: false, notice: false, dismissNotice: () => {} });
+const OfflineQueueContext = createContext<Ctx>({
+  client: null, userId: null, queued: NONE, delta: NONE, busy: false, holdsRefresh: () => false, ready: false, notice: false, dismissNotice: () => {},
+  setRendered: () => {},
+});
 
+// queued: presence (shows "Saving…" and Undo); delta: the counts to draw.
 export function useOfflineQueue() {
-  const { queued, ready } = useContext(OfflineQueueContext);
-  return { queued, ready };
+  const { queued, delta, busy, holdsRefresh, ready } = useContext(OfflineQueueContext);
+  return { queued, delta, busy, holdsRefresh, ready };
+}
+
+// The client ids of the check-ins a page was drawn with (lib/rendered-taps.ts renderedTapIds), so a
+// waiting tap the page already counts isn't added again, and a waiting undo of one takes it back.
+// A layout effect: set before the browser paints the new page, so no frame counts a tap twice.
+export function RenderedTaps({ ids }: { ids: string[] }) {
+  const { setRendered } = useContext(OfflineQueueContext);
+  const key = ids.join(",");
+  useLayoutEffect(() => {
+    setRendered(new Set(key ? key.split(",") : []));
+  }, [key, setRendered]);
+  return null;
 }
 
 export function useOfflineNotice() {
@@ -67,6 +91,7 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
   const [ready, setReady] = useState(false);
   const [notice, setNotice] = useState(false);
   const [claimed, setClaimed] = useState(false);
+  const [rendered, setRendered] = useState<ReadonlySet<string> | null>(null);
   const client = useMemo(() => {
     if (typeof window === "undefined") return null;
     return createOfflineClient({
@@ -91,6 +116,9 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
       channel: broadcast(userId),
     });
   }, [userId, router]);
+  // Known at once: a check-in's transition holds `queued` back until its online try ends, but a live
+  // refresh must know right away that a tap waits (components/habits/live-refresh.tsx).
+  const holdsRefresh = useCallback(() => client?.holdsRefresh() ?? false, [client]);
 
   useEffect(() => {
     if (!client) return;
@@ -126,7 +154,12 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
   }, [claimed, pathname]);
 
   const dismissNotice = useCallback(() => setNotice(false), []);
-  const value = useMemo(() => ({ client, userId, queued, ready, notice, dismissNotice }), [client, userId, queued, ready, notice, dismissNotice]);
+  const delta = useMemo(() => queuedDelta(queued.queue ?? [], rendered), [queued, rendered]);
+  const busy = (queued.queue?.length ?? 0) > 0;
+  const value = useMemo(
+    () => ({ client, userId, queued, delta, busy, holdsRefresh, ready, notice, dismissNotice, setRendered }),
+    [client, userId, queued, delta, busy, holdsRefresh, ready, notice, dismissNotice],
+  );
   return <OfflineQueueContext.Provider value={value}>{children}</OfflineQueueContext.Provider>;
 }
 

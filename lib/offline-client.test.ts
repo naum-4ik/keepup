@@ -225,7 +225,7 @@ describe("Undo for a tap the server may have", () => {
     const [tap] = await storage.load();
     expect(tap).toMatchObject({ kind: "check_in", maybeSent: true });
     expect(await client.undoQueued("h1")).toBe(true);
-    expect(await storage.load()).toEqual([{ kind: "undo", clientId: tap.clientId, habitId: "h1" }]);
+    expect(await storage.load()).toEqual([{ kind: "undo", clientId: tap.clientId, habitId: "h1", subjectId: null, queuedAt: expect.any(String) }]);
     expect(await client.counts()).toEqual(new Map()); // open again
     await client.flush();
     expect(sent).toEqual([`undo:${tap.clientId}`]); // the check-in isn't sent again, only its undo
@@ -241,5 +241,47 @@ describe("Undo for a tap the server may have", () => {
     expect((await storage.load())[0]).toMatchObject({ maybeSent: true });
     await client.undoQueued("h1");
     expect((await storage.load()).map((e) => e.kind)).toEqual(["undo"]);
+  });
+});
+
+describe("holdsRefresh", () => {
+  it("holds while a tap waits or its online try runs, and lets go when nothing waits", async () => {
+    const { client, setOnline } = setup({ tapTimeoutMs: 100 });
+    expect(client.holdsRefresh()).toBe(false);
+    // The online try is still running: the tap is already saved, so a refresh must hold off.
+    let release!: (v: { ok: true }) => void;
+    const done = client.submitTap({ habitId: "h1" }, () => new Promise<{ ok: true }>((r) => (release = r)));
+    await vi.waitFor(() => expect(client.holdsRefresh()).toBe(true));
+    release({ ok: true });
+    await done;
+    expect(client.holdsRefresh()).toBe(false);
+    // Offline: the tap waits; its undo (never tried) empties the queue.
+    setOnline(false);
+    await client.submitTap({ habitId: "h1" }, async () => ({ ok: true }));
+    expect(client.holdsRefresh()).toBe(true);
+    await client.undoQueued("h1");
+    expect(client.holdsRefresh()).toBe(false);
+  });
+
+  it("an undo of a tap the server may have holds until the undo is sent", async () => {
+    const { client } = setup({ tapTimeoutMs: 100 });
+    const done = client.submitTap({ habitId: "h1" }, () => new Promise(() => undefined));
+    await vi.advanceTimersByTimeAsync(100);
+    await done;
+    await client.undoQueued("h1");
+    expect(client.holdsRefresh()).toBe(true);
+    await client.flush();
+    expect(client.holdsRefresh()).toBe(false);
+  });
+
+  it("a tap stuck past two minutes, tried but unanswered, lets a refresh through", async () => {
+    vi.setSystemTime(new Date("2026-10-05T08:00:00Z"));
+    const { client } = setup({ tapTimeoutMs: 100, send: async () => "wait" });
+    const done = client.submitTap({ habitId: "h1" }, () => new Promise(() => undefined));
+    await vi.advanceTimersByTimeAsync(100);
+    await done;
+    expect(client.holdsRefresh()).toBe(true);
+    vi.setSystemTime(new Date("2026-10-05T08:02:01Z"));
+    expect(client.holdsRefresh()).toBe(false);
   });
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { tabFromKey } from "@/lib/tabs";
+import { approvalsLabel, tabFromKey } from "@/lib/tabs";
 import { cn } from "@/lib/utils";
 
 type Tab = "approvals" | "activity";
@@ -20,7 +20,7 @@ export function InboxTabs({
 }) {
   const [tab, setTab] = useState<Tab>(approvalsCount > 0 ? "approvals" : "activity");
   const tabs: [Tab, string][] = [
-    ["approvals", `Approvals (${approvalsCount})`],
+    ["approvals", approvalsLabel(approvalsCount)],
     ["activity", "Activity"],
   ];
   const refs = useRef<(HTMLButtonElement | null)[]>([]);

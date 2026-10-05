@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { HabitEmoji } from "@/components/habits/category-icon";
+import { ChartColumn } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { CategoryIcon, HabitEmoji } from "@/components/habits/category-icon";
 import { StreakBadge } from "@/components/habits/streak-badge";
 import { HabitDots, WeekCard } from "@/components/overview/week-overview";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
     (h) => Boolean(h.archived_at) === showArchived && (!showArchived || finishedIds.has(h.habit_id) === showFinished),
   );
   const cellsFor = new Map((overview?.per_habit ?? []).map((p) => [p.habit_id, p.cells]));
+  const categories = CATEGORY_ORDER.filter((c) => habits.some((h) => h.category === c));
   // Tap a day: each day up to today, from the overview's cells plus my check-ins that week.
   const week = overview?.days ?? [];
   const checkIns = week.length > 0 ? await getMyCheckIns(week[0].local_date, week[week.length - 1].local_date) : [];
@@ -61,21 +64,40 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
         ))}
       </nav>
 
+      {/* Jump to a category: one anchor chip per category in this list, when there's more than one. */}
+      {categories.length > 1 && (
+        <nav aria-label="Categories" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          {categories.map((c) => (
+            <a
+              key={c}
+              href={`#cat-${c}`}
+              className="flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-card pr-3.5 pl-1.5 text-sm font-semibold shadow-soft hover:bg-muted"
+            >
+              <CategoryIcon category={c} size="xs" />
+              {CATEGORIES[c].label}
+            </a>
+          ))}
+        </nav>
+      )}
+
       {habits.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl bg-card p-8 text-center shadow-soft">
-          <p className="text-sm text-muted-foreground">
-            {showFinished ? "No finished habits yet. Give a habit an end, like 30 days." : showArchived ? "No archived habits." : "No habits yet."}
-          </p>
-          {!showArchived && (
-            <Button asChild className="h-11">
-              <Link href="/habits/new">Add a habit</Link>
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          icon={<ChartColumn className="size-6" />}
+          action={
+            !showArchived && (
+              <Button asChild className="h-11">
+                <Link href="/habits/new">Add a habit</Link>
+              </Button>
+            )
+          }
+        >
+          {showFinished ? "No finished habits yet. Give a habit an end, like 30 days." : showArchived ? "No archived habits." : "No habits yet."}
+        </EmptyState>
       ) : (
-        CATEGORY_ORDER.filter((c) => habits.some((h) => h.category === c)).map((c) => (
-          <section key={c} className="flex flex-col gap-2">
-            <h2 className="text-sm font-bold text-muted-foreground">{CATEGORIES[c].label}</h2>
+        categories.map((c) => (
+          // scroll-mt clears the sticky header when a chip jumps here.
+          <section key={c} id={`cat-${c}`} aria-labelledby={`cat-${c}-title`} className="flex scroll-mt-20 flex-col gap-2">
+            <h2 id={`cat-${c}-title`} className="text-sm font-bold text-muted-foreground">{CATEGORIES[c].label}</h2>
             <ul className="flex flex-col gap-2">
               {habits
                 .filter((h) => h.category === c)

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { queuedDelta, type QueuedCheckIn } from "./offline-queue";
 import { todayLine, todayProgress, withQueuedProgress } from "./today-progress";
 
 const h = (id: string, state: "open" | "done" | "later", period: "day" | "week" = "day") => ({
@@ -91,5 +92,43 @@ describe("withQueuedProgress", () => {
 
   it("someone else's queued taps (a child's, keyed with their id) don't count here", () => {
     expect(todayProgress(withQueuedProgress([h("read", "open")], q([["read/kid-1", 1]]))).done).toBe(0);
+  });
+});
+
+describe("withQueuedProgress with waiting undos and taps the page already has", () => {
+  const q = (entries: [string, number][]) => new Map(entries);
+
+  it("a waiting undo of a counted tap shows a daily habit open again", () => {
+    const [shown] = withQueuedProgress([h("read", "done")], q([["read", -1]]));
+    expect(shown).toMatchObject({ done_count: 0, checked_in_today: false });
+    expect(todayProgress([shown]).done).toBe(0);
+  });
+
+  it("a 3-a-day habit keeps its other taps today", () => {
+    const water = { ...h("water", "open"), target_count: 3, done_count: 2, checked_in_today: true };
+    const [shown] = withQueuedProgress([water], q([["water", -1]]));
+    expect(shown).toMatchObject({ done_count: 1, checked_in_today: true });
+  });
+
+  it("an approval habit gives back the waiting check-in first", () => {
+    const gym = { ...h("gym", "open"), requires_approval: true, checked_in_today: true, pending_count: 1 };
+    const [shown] = withQueuedProgress([gym], q([["gym", -1]]));
+    expect(shown).toMatchObject({ done_count: 0, pending_count: 0, checked_in_today: false });
+  });
+
+  it("a weekly habit is open again today, keeping earlier check-ins", () => {
+    const walk = { ...h("walk", "open", "week"), target_count: 3, done_count: 2, checked_in_today: true };
+    expect(withQueuedProgress([walk], q([["walk", -1]]))[0]).toMatchObject({ done_count: 1, checked_in_today: false });
+  });
+
+  it("never below zero", () => {
+    expect(withQueuedProgress([h("read", "open")], q([["read", -1]]))[0]).toMatchObject({ done_count: 0 });
+  });
+
+  it("a tap that reached the server before the page was drawn isn't counted twice", () => {
+    const water = { ...h("water", "open"), target_count: 3, done_count: 1, checked_in_today: true };
+    const tap: QueuedCheckIn = { kind: "check_in", clientId: "a", habitId: "water", subjectId: null, tappedAt: "2026-10-05T08:00:00.000Z", maybeSent: true };
+    expect(withQueuedProgress([water], queuedDelta([tap], new Set(["a"])))[0]).toMatchObject({ done_count: 1 });
+    expect(withQueuedProgress([water], queuedDelta([tap], new Set()))[0]).toMatchObject({ done_count: 2 });
   });
 });

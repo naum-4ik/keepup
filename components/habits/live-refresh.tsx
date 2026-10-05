@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useOfflineQueue } from "@/components/offline/offline-queue-provider";
 import { createClient } from "@/lib/supabase/client";
 
 // Live updates (spec: Today, habit detail and Inbox). Realtime applies RLS, so this only hears rows
@@ -16,6 +17,13 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
   // SUBSCRIBED alone is too early: the server confirms the postgres_changes listener separately
   // ("Subscribed to PostgreSQL", seconds later on a cold start), and changes before that are lost.
   const [ready, setReady] = useState(false);
+  // While a tap or an undo waits on this phone, a refresh would draw the server's answer in its place
+  // ("Done" for a tap still saving): the refresh is owed instead, and runs once the queue is empty
+  // (or stuck: lib/offline-queue.ts holdsRefresh). holdsRefresh() is read when a refresh is due, so a
+  // tap doesn't re-join the channel; `queued` (drawn) runs the owed refresh once nothing holds it.
+  const { queued, holdsRefresh } = useOfflineQueue();
+  const owed = useRef(false);
+  const refreshRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const supabase = createClient();
@@ -24,9 +32,20 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
     // Offline, a refresh would replace the saved page with an error.
     const refreshSoon = () => {
       if (!navigator.onLine) return;
+      if (holdsRefresh()) {
+        owed.current = true;
+        return;
+      }
       if (timer.current) window.clearTimeout(timer.current);
-      timer.current = window.setTimeout(() => router.refresh(), 400);
+      // Checked again when it fires: the layout's listener (on every page) can confirm late, and the
+      // phone may have gone offline in those 400 ms.
+      timer.current = window.setTimeout(() => {
+        if (!navigator.onLine) return;
+        if (holdsRefresh()) owed.current = true;
+        else router.refresh();
+      }, 400);
     };
+    refreshRef.current = refreshSoon;
     const onVisible = () => {
       if (document.visibilityState === "visible") refreshSoon();
     };
@@ -35,9 +54,12 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
     // filter's column check) then refuse the subscription.
     void supabase.realtime.setAuth().then(() => {
       if (closed) return;
-      channel = supabase
-        .channel(`live:${table}:${filter}`)
-        .on("postgres_changes", { event: "*", schema: "public", table, filter }, refreshSoon)
+      let ch = supabase.channel(`live:${table}:${filter}`).on("postgres_changes", { event: "*", schema: "public", table, filter }, refreshSoon);
+      // Realtime can't filter DELETE events, so the filtered listener never hears an undo (a hard
+      // delete). Check-ins also listen for every delete: the payload is only the row's id, and a stray
+      // refresh just re-reads what this person may see.
+      if (table === "check_ins") ch = ch.on("postgres_changes", { event: "DELETE", schema: "public", table }, refreshSoon);
+      channel = ch
         .on("system", {}, (p: { extension?: string; status?: string }) => {
           if (closed || p.extension !== "postgres_changes" || p.status !== "ok") return;
           setReady(true);
@@ -59,7 +81,15 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
       if (timer.current) window.clearTimeout(timer.current);
       if (channel) void supabase.removeChannel(channel);
     };
-  }, [table, filter, router]);
+  }, [table, filter, router, holdsRefresh]);
 
-  return <span hidden data-live={ready ? "ready" : "joining"} />;
+  useEffect(() => {
+    if (owed.current && !holdsRefresh()) {
+      owed.current = false;
+      refreshRef.current();
+    }
+  }, [queued, holdsRefresh]);
+
+  // data-table: a page can have two listeners (the layout's notifications plus a page's check-ins).
+  return <span hidden data-live={ready ? "ready" : "joining"} data-table={table} />;
 }
