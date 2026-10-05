@@ -518,6 +518,9 @@ isOneToOne: false
               "check_ins": number,"habit_id": string,"local_date": string,"outcome": string
             }[]
                            },
+"calendar_start":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
 "can_act_for_profile":
 { Args: { "p_profile_id": string }; Returns: boolean
                            },
