@@ -10,6 +10,7 @@ import { EMOJI_PANEL_ATTR, EmojiPicker } from "@/components/habits/emoji-picker"
 import { EndPicker } from "@/components/habits/end-picker";
 import { StartDatePicker } from "@/components/habits/start-date-picker";
 import { Button } from "@/components/ui/button";
+import { addButtonClass } from "@/components/ui/add-button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -140,9 +141,9 @@ export function HabitForm({
       <button
         type="button"
         onClick={createOwn}
-        className="flex h-12 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/30 text-[0.9375rem] font-bold text-primary hover:bg-accent"
+        className={addButtonClass}
       >
-        <Plus aria-hidden className="size-5" />
+        <Plus aria-hidden className="size-4" />
         Create your own
       </button>
 

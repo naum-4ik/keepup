@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
 import { signUpAndOnboard } from "./helpers/auth";
 import { createHabit, endHabitYesterday } from "./helpers/habits";
 
@@ -492,4 +492,50 @@ test("after the end, the habit page offers only Keep going or Finish", async ({ 
   await expect(manage.getByRole("button", { name: "Remove end" })).toHaveCount(0);
   await manage.getByRole("button", { name: "Keep going" }).click();
   await expect(manage).toContainText("No end yet");
+});
+
+test("every add button has one dashed look", async ({ page }) => {
+  await signUpAndOnboard(page);
+  // Height, border style, font size and corner radius: one look everywhere.
+  const look = (l: Locator) =>
+    l.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return [Math.round(el.getBoundingClientRect().height), s.borderTopStyle, s.fontSize, s.borderTopLeftRadius].join(" ");
+    });
+  await page.goto("/groups/new");
+  await page.getByRole("radio", { name: "Family" }).check();
+  await page.getByRole("button", { name: "Create group" }).click();
+  await expect(page).toHaveURL(/\/groups\/[0-9a-f-]{36}/);
+  const looks = [await look(page.getByRole("link", { name: "Add a group habit" })), await look(page.getByRole("link", { name: "Add a child" }))];
+  await page.goto("/groups");
+  looks.push(await look(page.getByRole("link", { name: "New group" })));
+  await page.goto("/habits/new");
+  looks.push(await look(page.getByRole("button", { name: "Create your own" })));
+  expect(looks[0]).toMatch(/^44 dashed /);
+  expect(new Set(looks).size).toBe(1);
+});
+
+test("Starts and Ends chips share one style and grid at 360px", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 780 });
+  await signUpAndOnboard(page);
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: "Create your own" }).click();
+  const dialog = page.getByRole("dialog");
+  // Measure after the dialog's open animation: its zoom scales every box while it runs.
+  await dialog.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
+  const today = dialog.getByRole("button", { name: "Today", exact: true });
+  const ends = dialog.getByRole("group", { name: "Ends" }).getByRole("button");
+  const [a, b, c, d] = await Promise.all([0, 1, 2, 3].map((i) => ends.nth(i).boundingBox()));
+  // Three equal chips in a row, then the next row.
+  expect(b!.y).toBeCloseTo(a!.y, 0);
+  expect(c!.y).toBeCloseTo(a!.y, 0);
+  expect(b!.width).toBeCloseTo(a!.width, 0);
+  expect(c!.width).toBeCloseTo(a!.width, 0);
+  expect(d!.y).toBeGreaterThan(a!.y);
+  // The same chip as Starts.
+  expect(a!.height).toBe((await today.boundingBox())!.height);
+  const fontOf = (l: Locator) => l.evaluate((el) => getComputedStyle(el).fontSize);
+  expect(await fontOf(ends.first())).toBe(await fontOf(today));
+  // Nothing scrolls sideways.
+  expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
 });

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { dateChipClass } from "@/components/habits/start-date-picker";
 import { END_PRESETS, endsOnFor, presetLabel } from "@/lib/habit-end";
 import type { HabitPeriod } from "@/lib/habit-schema";
 import { formatLocalDate } from "@/lib/dates";
@@ -16,23 +17,20 @@ export function EndPicker({ period, startsOn, name = "endsOn" }: { period: Habit
   const [choice, setChoice] = useState<Choice>("none");
   const [date, setDate] = useState("");
   const endsOn = choice === "none" ? "" : choice === "date" ? date : endsOnFor(startsOn, period, choice);
-  const chip =
-    "flex h-11 items-center rounded-full border border-border bg-card px-3.5 text-sm font-semibold hover:bg-muted aria-pressed:border-primary aria-pressed:bg-accent";
-
   return (
     <fieldset className="flex flex-col gap-1.5">
       <legend className="mb-1.5 text-sm font-semibold">Ends</legend>
       <input type="hidden" name={name} value={endsOn} />
-      <div className="flex flex-wrap gap-2">
-        <button type="button" aria-pressed={choice === "none"} onClick={() => setChoice("none")} className={chip}>
+      <div className="grid grid-cols-3 gap-1.5">
+        <button type="button" aria-pressed={choice === "none"} onClick={() => setChoice("none")} className={dateChipClass}>
           No end
         </button>
         {END_PRESETS[period].map((n) => (
-          <button key={n} type="button" aria-pressed={choice === n} onClick={() => setChoice(n)} className={chip}>
+          <button key={n} type="button" aria-pressed={choice === n} onClick={() => setChoice(n)} className={dateChipClass}>
             {presetLabel(n, period)}
           </button>
         ))}
-        <button type="button" aria-pressed={choice === "date"} onClick={() => setChoice("date")} className={chip}>
+        <button type="button" aria-pressed={choice === "date"} onClick={() => setChoice("date")} className={dateChipClass}>
           Until a date
         </button>
       </div>

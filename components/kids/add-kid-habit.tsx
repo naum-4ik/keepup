@@ -6,6 +6,7 @@ import { addChildHabit, type KidFormState } from "@/app/(app)/kids/actions";
 import { KidTemplateGroups, KidTemplateTile } from "@/components/kids/add-child-form";
 import { CountStepper } from "@/components/habits/count-stepper";
 import { Button } from "@/components/ui/button";
+import { addButtonClass } from "@/components/ui/add-button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +33,7 @@ export function AddKidHabit({ childId, childName, existingTitles }: { childId: s
           setCustom(false);
           setOpen(true);
         }}
-        className="flex h-11 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 text-sm font-bold text-primary hover:bg-accent"
+        className={addButtonClass}
       >
         <Plus aria-hidden className="size-4" />
         Add a habit

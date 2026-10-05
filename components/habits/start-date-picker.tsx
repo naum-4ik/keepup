@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 
 const shortDate = (date: string) => formatLocalDate(date).split(" ").slice(1).join(" ");
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const chipClass =
+// The one chip for date choices: Starts here, Ends in EndPicker (same height, type and pressed state).
+export const dateChipClass =
   "flex h-11 items-center justify-center gap-1 rounded-full border border-input px-1.5 text-[0.8125rem] font-semibold whitespace-nowrap text-muted-foreground hover:border-primary/60 hover:bg-accent/60 hover:text-foreground aria-pressed:border-primary aria-pressed:bg-accent aria-pressed:text-foreground";
 
 type QuickPick = { label: string; date: string };
@@ -44,12 +45,12 @@ export function StartDatePicker({ value, onChange, today, min = today, weekStart
     <div className="flex flex-col gap-2">
       <div className="grid grid-cols-4 gap-1.5">
         {quick.map((q) => (
-          <button key={q.label} type="button" aria-pressed={value === q.date} className={chipClass}
+          <button key={q.label} type="button" aria-pressed={value === q.date} className={dateChipClass}
             onClick={() => { onChange(q.date); setOpen(false); }}>
             {q.label}
           </button>
         ))}
-        <button type="button" aria-pressed={!isQuick} aria-expanded={open} aria-label={isQuick ? "Pick a date" : `Pick a date, ${formatLocalDate(value)}`} className={chipClass}
+        <button type="button" aria-pressed={!isQuick} aria-expanded={open} aria-label={isQuick ? "Pick a date" : `Pick a date, ${formatLocalDate(value)}`} className={dateChipClass}
           onClick={() => { setMonth(value.slice(0, 7)); setOpen((o) => !o); }}>
           <CalendarDays aria-hidden className="size-4" />
           {isQuick ? "Date" : shortDate(value)}

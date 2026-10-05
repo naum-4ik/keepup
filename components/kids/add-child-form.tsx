@@ -4,6 +4,7 @@ import { useActionState, useState, type ReactNode } from "react";
 import { Check, Plus, X } from "lucide-react";
 import { addChild, type KidFormState } from "@/app/(app)/kids/actions";
 import { AvatarPicker } from "@/components/avatar-picker";
+import { addButtonClass } from "@/components/ui/add-button";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -146,7 +147,7 @@ export function AddChildForm({ groupId }: { groupId: string }) {
         <button
           type="button"
           onClick={() => setChoosing(true)}
-          className="flex h-11 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 text-sm font-bold text-primary hover:bg-accent"
+          className={addButtonClass}
         >
           <Plus aria-hidden className="size-4" />
           Choose more habits

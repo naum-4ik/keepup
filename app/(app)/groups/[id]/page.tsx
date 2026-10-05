@@ -10,6 +10,7 @@ import { GroupSettingsForm } from "@/components/groups/group-settings-form";
 import { InviteLink } from "@/components/groups/invite-link";
 import { MemberRow } from "@/components/groups/member-row";
 import { RenameGroupForm } from "@/components/groups/rename-group-form";
+import { addButtonClass } from "@/components/ui/add-button";
 import { getProfile } from "@/lib/auth";
 import { GROUP_AVATAR_EMOJI } from "@/lib/avatars";
 import { childrenDeletionNotice, inviteUrl } from "@/lib/group-schema";
@@ -123,7 +124,7 @@ export default async function GroupPage({
         {isAdmin && (
           <Link
             href={`/kids/new?group=${group.id}`}
-            className="flex h-11 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 text-sm font-bold text-primary hover:bg-accent"
+            className={addButtonClass}
           >
             <Plus aria-hidden className="size-4" />
             Add a child
@@ -155,7 +156,7 @@ export default async function GroupPage({
         {isAdmin && (
           <Link
             href={`/habits/new?group=${group.id}`}
-            className="flex h-11 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/30 text-sm font-bold text-primary hover:bg-accent"
+            className={addButtonClass}
           >
             <Plus aria-hidden className="size-4" />
             Add a group habit
