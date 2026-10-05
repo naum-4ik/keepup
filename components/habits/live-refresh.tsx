@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useOfflineQueue } from "@/components/offline/offline-queue-provider";
 import { createClient } from "@/lib/supabase/client";
 
 // Live updates (spec: Today, habit detail and Inbox). Realtime applies RLS, so this only hears rows
@@ -16,6 +17,13 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
   // SUBSCRIBED alone is too early: the server confirms the postgres_changes listener separately
   // ("Subscribed to PostgreSQL", seconds later on a cold start), and changes before that are lost.
   const [ready, setReady] = useState(false);
+  // While a tap or an undo waits on this phone, a refresh would draw the server's answer in its place
+  // ("Done" for a tap still saving): the refresh is owed instead, and runs once the queue is empty.
+  // A ref, so a tap doesn't re-join the channel.
+  const { busy } = useOfflineQueue();
+  const busyRef = useRef(busy);
+  const owed = useRef(false);
+  const refreshRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     const supabase = createClient();
@@ -24,13 +32,20 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
     // Offline, a refresh would replace the saved page with an error.
     const refreshSoon = () => {
       if (!navigator.onLine) return;
+      if (busyRef.current) {
+        owed.current = true;
+        return;
+      }
       if (timer.current) window.clearTimeout(timer.current);
       // Checked again when it fires: the layout's listener (on every page) can confirm late, and the
       // phone may have gone offline in those 400 ms.
       timer.current = window.setTimeout(() => {
-        if (navigator.onLine) router.refresh();
+        if (!navigator.onLine) return;
+        if (busyRef.current) owed.current = true;
+        else router.refresh();
       }, 400);
     };
+    refreshRef.current = refreshSoon;
     const onVisible = () => {
       if (document.visibilityState === "visible") refreshSoon();
     };
@@ -67,6 +82,14 @@ export function LiveRefresh({ table, filter }: { table: "check_ins" | "notificat
       if (channel) void supabase.removeChannel(channel);
     };
   }, [table, filter, router]);
+
+  useEffect(() => {
+    busyRef.current = busy;
+    if (!busy && owed.current) {
+      owed.current = false;
+      refreshRef.current();
+    }
+  }, [busy]);
 
   // data-table: a page can have two listeners (the layout's notifications plus a page's check-ins).
   return <span hidden data-live={ready ? "ready" : "joining"} data-table={table} />;
