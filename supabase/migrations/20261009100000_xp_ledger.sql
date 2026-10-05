@@ -3,8 +3,22 @@
 --   notifications_kind_check   20261002100000_notification_prefs_push.sql
 --   private.push_category      20261008100000_m4_followups.sql
 --   private.push_allowed       20261006100000_offline_check_ins.sql
---   private.reset_child_impl   20260930130000_reset_child.sql
--- Lock order: habit → check-in → period_results → profiles (several profiles: in user id order).
+--   private.reset_child_impl          20260930130000_reset_child.sql
+--   private.kid_rewards_on_check_in   20261007100000_m4_final_fixes.sql
+--
+-- Locks. No grant locks a profile row: every caller already holds the habit row (check_in_impl,
+-- undo_*_impl, review_check_in_impl, finalize_periods), then the check-in row, then period_results
+-- (resettle_period / finalize's insert), and grant_xp adds only row locks on the rows it inserts
+-- (xp_events, level_ups, notifications) plus the FOR KEY SHARE their foreign keys take on profiles.
+-- KEY SHARE conflicts only with FOR UPDATE, so the one profile lock left on these paths
+-- (kid_rewards_on_check_in) becomes FOR NO KEY UPDATE below. A profile lock held until commit in
+-- finalize (which locks later habits in the same transaction) would deadlock against a check-in on
+-- one of those habits; that is why there is none.
+--
+-- Accepted trade-off: two concurrent transactions granting to one person, each below a level
+-- boundary on its own (each sync_level sums only what it can see), can together cross it with no
+-- level_ups row written. The next grant to that person heals it: sync_level writes every level up to
+-- the current total that has no row yet. Nothing is ever double-granted (the ledger key).
 
 -- 1. Every M5 kind at once (the app skips kinds it doesn't know; PR 1 knows them all).
 alter table public.notifications drop constraint notifications_kind_check;
@@ -103,9 +117,9 @@ begin
 end;
 $$;
 
--- The one way XP is granted. Locks the person's profile row (after any habit / check-in / result lock
--- the caller holds), so two grants for one person can't both miss a level boundary. A profile being
--- deleted (an account deletion cascading into check-ins) is skipped: false.
+-- The one way XP is granted. Takes no profile lock (see Locks at the top). A profile that is gone or
+-- being deleted (an account deletion cascading into check-ins) is skipped: false. p_at is the time of
+-- the event (the tap, the review, the settling), so recaps count it in the right week.
 create function private.grant_xp(
   p_user uuid, p_amount int, p_reason text, p_source_type text, p_source_id text,
   p_habit_id uuid default null, p_at timestamptz default now(), p_quiet boolean default false)
@@ -114,8 +128,7 @@ language plpgsql
 set search_path = ''
 as $$
 begin
-  perform 1 from public.profiles p where p.id = p_user for update;
-  if not found then
+  if not exists (select 1 from public.profiles p where p.id = p_user) then
     return false;
   end if;
   insert into public.xp_events (user_id, amount, reason, source_type, source_id, habit_id, created_at)
@@ -158,7 +171,8 @@ end;
 $$;
 
 -- 4. Check-ins: +10 when one counts (an approved insert, or pending → approved), and +2 to whoever
--- approved it. The two profiles are locked in user id order (lock order above).
+-- approved it (never the author: check_ins_no_self_review already refuses that; checked again here).
+-- Dated by the event: the tap (created_at), or the review (reviewed_at).
 create function private.rewards_on_check_in()
 returns trigger
 language plpgsql
@@ -174,11 +188,13 @@ begin
   for r in
     select v.who, v.amount, v.reason
       from (values (new.user_id, 10, 'check_in'),
-                   (case when tg_op = 'UPDATE' then new.reviewed_by end, 2, 'approval')) v(who, amount, reason)
+                   (case when tg_op = 'UPDATE' and new.reviewed_by is distinct from new.user_id then new.reviewed_by end,
+                    2, 'approval')) v(who, amount, reason)
      where v.who is not null
      order by v.who
   loop
-    perform private.grant_xp(r.who, r.amount, r.reason, 'check_in', new.id::text, new.habit_id);
+    perform private.grant_xp(r.who, r.amount, r.reason, 'check_in', new.id::text, new.habit_id,
+      case when tg_op = 'UPDATE' then coalesce(new.reviewed_at, new.created_at) else new.created_at end);
   end loop;
   return new;
 end;
@@ -189,7 +205,8 @@ create trigger check_ins_rewards after insert or update of status on public.chec
 
 -- Undo (both undo paths delete the row): the author's +10 comes back as a negative row. The reviewer
 -- keeps their +2 (reviews are final). A cascade (the habit or group deleted, an account deleted) is
--- not an undo: the habit is gone, or grant_xp finds no profile.
+-- not an undo: the habit is gone, or grant_xp finds no profile. Dated now(): the undo runs in the
+-- check-in's still-open period (undo_check_in_impl refuses a closed one).
 create function private.xp_on_check_in_deleted()
 returns trigger
 language plpgsql
@@ -216,7 +233,9 @@ create trigger check_ins_xp_undo after delete on public.check_ins
   for each row execute function private.xp_on_check_in_deleted();
 
 -- 5. Settled periods, on INSERT (finalize) and on UPDATE of outcome (resettle_period's late upgrade):
--- a done period pays out either way, once (the ledger key).
+-- a done period pays out either way, once (the ledger key). Dated by the event: finalize's p_now
+-- (finalized_at) on insert; on an upgrade, the tap or approval that made it done (resettle_period
+-- runs right after it, in the same transaction, and takes no time of its own).
 create function private.rewards_on_period_result()
 returns trigger
 language plpgsql
@@ -225,6 +244,7 @@ set search_path = ''
 as $$
 declare
   v_habit public.habits;
+  v_at timestamptz := new.finalized_at;
 begin
   if tg_op = 'UPDATE' and new.outcome is not distinct from old.outcome then
     return new;
@@ -234,7 +254,11 @@ begin
     return new;
   end if;
   if new.outcome = 'done' then
-    perform private.grant_period_xp(v_habit, new.period_start);
+    if tg_op = 'UPDATE' then
+      select coalesce(max(coalesce(c.reviewed_at, c.created_at)), now()) into v_at from public.check_ins c
+       where c.habit_id = new.habit_id and c.period_start = new.period_start and c.status = 'approved';
+    end if;
+    perform private.grant_period_xp(v_habit, new.period_start, v_at);
   end if;
   return new;
 end;
@@ -242,6 +266,59 @@ $$;
 
 create trigger period_results_rewards after insert or update of outcome on public.period_results
   for each row execute function private.rewards_on_period_result();
+
+-- 5b. Copied from 20261007100000_m4_final_fixes.sql (its latest definition). New: the child's row lock
+-- is FOR NO KEY UPDATE (see Locks at the top).
+create or replace function private.kid_rewards_on_check_in()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_group uuid;
+  v_week date;
+  v_goal public.treat_goals;
+  v_habit public.habits;
+begin
+  if new.status <> 'approved' then
+    return new;
+  end if;
+  v_group := private.child_group(new.user_id);
+  if v_group is null then
+    return new; -- not a child
+  end if;
+
+  -- Serialize a child's concurrent check-ins so the one that crosses 18 sees all the others. FOR NO KEY
+  -- UPDATE still conflicts with itself, but not with the KEY SHARE that inserts referencing the child
+  -- take (xp_events, notifications, check-ins), so it can't deadlock against a grant to the child.
+  perform 1 from public.profiles p where p.id = new.user_id for no key update;
+
+  v_week := private.child_week_start(new.user_id, new.local_date);
+  if private.child_stars(new.user_id, v_week, v_week + 7) >= 18
+     and not exists (select 1 from public.notifications n
+                      where n.dedupe_key = any (array(
+                        select 'kid_garden_full:' || new.user_id || ':' || v_week || ':' || m.user_id
+                          from public.group_members m where m.group_id = v_group))) then
+    select h.* into v_habit from public.habits h where h.id = new.habit_id;
+    perform private.notify(private.group_adults(v_group, array[auth.uid()]), 'kid_garden_full',
+      'kid_garden_full:' || new.user_id || ':' || v_week, v_group, null, null, null, new.user_id,
+      jsonb_build_object('week_start', v_week)
+        || case when private.is_late_check_in(v_habit, new) then jsonb_build_object('late', true) else '{}'::jsonb end);
+  end if;
+
+  select g.* into v_goal from public.treat_goals g
+   where g.child_id = new.user_id and g.received_at is null and g.reached_at is null
+     for update;
+  if found and (select count(*) from public.check_ins c
+                 where c.user_id = new.user_id and c.status = 'approved' and c.created_at >= v_goal.created_at) >= v_goal.target then
+    update public.treat_goals set reached_at = new.created_at where id = v_goal.id;
+    perform private.notify(private.group_adults(v_group, array[auth.uid()]), 'kid_goal_reached', 'kid_goal_reached:' || v_goal.id,
+      v_group, null, null, null, new.user_id, jsonb_build_object('title', v_goal.title, 'emoji', v_goal.emoji));
+  end if;
+  return new;
+end;
+$$;
 
 -- 6. Achievements push (spec: Events #19, #20); the recaps and rest days join it. The family recap is
 -- a group thing: Group updates, like the group milestone (owner 2026-10-04).
@@ -364,36 +441,58 @@ revoke execute on function public.my_level(), public.mark_levels_seen(int) from 
 grant execute on function public.my_level(), public.mark_levels_seen(int) to authenticated;
 
 -- 9. Count past history (decided 2026-09-29), quietly: no Inbox rows, no pushes, levels marked seen.
--- Idempotent through the ledger key; returns how many grants were new.
+-- Set-based: one insert per reason, then one level pass for everyone. Idempotent through the ledger
+-- key (and level_ups' key); returns how many ledger rows were new. Dated by the source rows.
 create function private.backfill_xp()
 returns int
 language plpgsql
 set search_path = ''
 as $$
 declare
-  v_n int := 0;
-  r record;
+  v_n int;
+  v_total int := 0;
 begin
-  for r in
-    select c.id, c.user_id, c.reviewed_by, c.habit_id, c.created_at, c.reviewed_at
-      from public.check_ins c where c.status = 'approved' order by c.user_id, c.created_at, c.id
-  loop
-    if private.grant_xp(r.user_id, 10, 'check_in', 'check_in', r.id::text, r.habit_id, r.created_at, true) then
-      v_n := v_n + 1;
-    end if;
-    if r.reviewed_by is not null
-       and private.grant_xp(r.reviewed_by, 2, 'approval', 'check_in', r.id::text, r.habit_id, coalesce(r.reviewed_at, r.created_at), true) then
-      v_n := v_n + 1;
-    end if;
-  end loop;
-  for r in
-    select h as habit, x.period_start, x.finalized_at
-      from public.period_results x join public.habits h on h.id = x.habit_id
-     where x.outcome = 'done' order by x.habit_id, x.period_start
-  loop
-    v_n := v_n + private.grant_period_xp(r.habit, r.period_start, r.finalized_at, true);
-  end loop;
-  return v_n;
+  insert into public.xp_events (user_id, amount, reason, source_type, source_id, habit_id, created_at)
+  select c.user_id, 10, 'check_in', 'check_in', c.id::text, c.habit_id, c.created_at
+    from public.check_ins c where c.status = 'approved'
+  on conflict on constraint xp_events_grant_once do nothing;
+  get diagnostics v_n = row_count;
+  v_total := v_total + v_n;
+
+  insert into public.xp_events (user_id, amount, reason, source_type, source_id, habit_id, created_at)
+  select c.reviewed_by, 2, 'approval', 'check_in', c.id::text, c.habit_id, coalesce(c.reviewed_at, c.created_at)
+    from public.check_ins c
+   where c.status = 'approved' and c.reviewed_by is not null and c.reviewed_by <> c.user_id
+  on conflict on constraint xp_events_grant_once do nothing;
+  get diagnostics v_n = row_count;
+  v_total := v_total + v_n;
+
+  insert into public.xp_events (user_id, amount, reason, source_type, source_id, habit_id, created_at)
+  select h.owner_id, 20, 'period_done', 'period', h.id || ':' || x.period_start, h.id, x.finalized_at
+    from public.period_results x join public.habits h on h.id = x.habit_id
+   where x.outcome = 'done' and h.group_id is null and h.owner_id is not null
+  on conflict on constraint xp_events_grant_once do nothing;
+  get diagnostics v_n = row_count;
+  v_total := v_total + v_n;
+
+  insert into public.xp_events (user_id, amount, reason, source_type, source_id, habit_id, created_at)
+  select m.profile_id, 30, 'period_done', 'period', h.id || ':' || x.period_start, h.id, x.finalized_at
+    from public.period_results x
+    join public.habits h on h.id = x.habit_id
+   cross join lateral private.required_members(h, x.period_start) m(profile_id)
+   where x.outcome = 'done' and h.group_id is not null and m.profile_id is not null
+  on conflict on constraint xp_events_grant_once do nothing;
+  get diagnostics v_n = row_count;
+  v_total := v_total + v_n;
+
+  -- Every level reached, marked seen (no moment for history), no Inbox row.
+  insert into public.level_ups (user_id, level, seen_at)
+  select t.user_id, l, now()
+    from (select x.user_id, private.level_for(sum(x.amount)) as level from public.xp_events x group by x.user_id) t
+   cross join lateral generate_series(2, t.level) l
+  on conflict (user_id, level) do nothing;
+
+  return v_total;
 end;
 $$;
 

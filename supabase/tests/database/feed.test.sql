@@ -135,9 +135,9 @@ select is((select count(*)::int from public.notifications where user_id in ('000
   1, 'the other adult sees the kid check-in, feed only');
 select lives_ok($$select private.delete_group_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'fam'), true)$$,
   'deleting a group with habits, pauses, check-ins, a child and members succeeds');
--- level_up rows (M5) are about the person, not the group, so they stay.
+-- Achievements rows (M5: level-ups, badges, milestones, recaps) are about the person, not the group, so they stay.
 select is((select count(*)::int from public.notifications where user_id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000e1')
-            and kind <> 'level_up'), 0, 'and takes its feed with it');
+            and private.push_category(kind) is distinct from 'achievements'), 0, 'and takes its feed with it');
 
 select * from finish();
 rollback;
