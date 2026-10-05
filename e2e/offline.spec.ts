@@ -114,6 +114,7 @@ test("the kid view offline: a tap plays and counts once, stays after a reload, a
   await context.setOffline(true);
   const cards = page.getByRole("listitem");
   await page.getByRole("button", { name: /Tidy my toys/ }).click();
+  await expect(page.locator("[data-reveal]")).toBeAttached(); // the same big reveal as online
   await expect(page.getByRole("button", { name: "Tidy my toys , done" })).toBeVisible();
   await expect(page.getByText("1 star this week")).toBeAttached();
   await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "1");

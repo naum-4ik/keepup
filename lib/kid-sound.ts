@@ -1,7 +1,7 @@
 // ideas/kid-view-next.md §4: soft sounds in the kid view only (adult screens stay silent), on by
 // default with a mute button for the parent, remembered on this device. Made with Web Audio, so there
 // are no sound files. Browsers allow audio only after a tap, and every sound here follows one.
-export type KidSound = "pop" | "boop" | "wiggle" | "chime" | "melody";
+export type KidSound = "pop" | "boop" | "wiggle" | "chime" | "melody" | "reveal";
 
 const KEY = "keepup:kid-sound";
 let ctx: AudioContext | null = null;
@@ -68,6 +68,12 @@ const SOUNDS: Record<KidSound, (a: AudioContext) => void> = {
   },
   // A new picture (3, 7, 12, 18 stars): a bright three-note chime.
   chime: (a) => [784, 988, 1175].forEach((f, i) => note(a, f, i * 0.09, 0.35, { gain: 0.1 })),
+  // The big reveal (a tap that finishes a habit): a bouncy run up and a sparkle on top, from 0.1 s, as
+  // the new thing springs in big (lib/kid-reveal.ts SHOW_AT), so it follows the tap's pop.
+  reveal: (a) => {
+    [659, 831, 988, 1319].forEach((f, i) => note(a, f, 0.1 + i * 0.06, 0.2, { type: "triangle", gain: 0.1 }));
+    note(a, 1760, 0.34, 0.4, { to: 2637, gain: 0.05 });
+  },
   // Everything done today: a short tune.
   melody: (a) => [523, 659, 784, 659, 1047].forEach((f, i) => note(a, f, i * 0.14, 0.24, { type: "triangle", gain: 0.1 })),
 };
