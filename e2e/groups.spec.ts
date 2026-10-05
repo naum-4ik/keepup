@@ -522,3 +522,53 @@ test("the group page reads People, then Group habits, then Invite", async ({ pag
   await createGroup(page, "Family");
   await expect(page.getByRole("main").getByRole("heading", { level: 2 })).toHaveText(["People", "Group habits", "Invite"]);
 });
+
+test("Inbox rows show who they're from, and an empty Approvals tab has no (0)", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const url = await inviteLink(page);
+  const guest = await (await browser.newContext()).newPage();
+  await joinByLink(guest, url, "Dan");
+  await guest.goto("/profile");
+  await guest.getByRole("button", { name: "Change your avatar" }).click();
+  const dialog = guest.getByRole("dialog");
+  await dialog.getByRole("group", { name: "Avatar" }).getByRole("button", { name: "🦊" }).click();
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+
+  await page.goto("/inbox");
+  await expect(page.getByRole("tab", { name: "Approvals", exact: true })).toBeVisible();
+  // The avatar is decoration (the line names Dan), so it's found by its markup, not its role.
+  const row = page.getByRole("listitem").filter({ hasText: "Dan joined Family" });
+  await expect(row.locator('[role="img"]')).toContainText("🦊");
+});
+
+test("approving a check-in someone just reviewed says who did, and the note stays", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Gym buddies", "Friends");
+  const url = await inviteLink(page);
+  const dan = await (await browser.newContext()).newPage();
+  await joinByLink(dan, url, "Dan");
+  const eve = await (await browser.newContext()).newPage();
+  await joinByLink(eve, url, "Eve");
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: "Create your own" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Title").fill("Gym");
+  await dialog.getByLabel("Category").selectOption("fitness");
+  await dialog.getByRole("radio", { name: "Gym buddies" }).check();
+  await dialog.getByRole("switch", { name: "Needs approval" }).click();
+  await dialog.getByRole("button", { name: /^Add habit/ }).click();
+  await expect(page).toHaveURL(/\/today$/);
+  await page.getByRole("button", { name: "Check in: Gym" }).click();
+  await expect(page.getByRole("button", { name: "Waiting for approval: Gym" })).toBeVisible();
+
+  // Eve's Inbox stays as loaded (Realtime is cut off), so only her own tap can change it.
+  await eve.routeWebSocket(/\/realtime\//, () => {});
+  await eve.goto("/inbox");
+  await dan.goto("/inbox");
+  await dan.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(dan.getByText("Nothing waiting for you.")).toBeVisible();
+  await eve.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(eve.getByRole("listitem", { name: "Ana did Gym" }).getByRole("status")).toHaveText("Dan already reviewed this.");
+});

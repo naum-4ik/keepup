@@ -74,7 +74,10 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
             <li
               key={a.check_in_id}
               aria-label={`${a.author_name} did ${a.habit_title}`}
-              className={cn("flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-soft transition-opacity duration-200", note && "opacity-60")}
+              className={cn(
+                "flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-soft transition-opacity duration-200 motion-reduce:transition-none",
+                note && "opacity-60",
+              )}
             >
               <div className="flex items-center gap-3">
                 <Avatar name={a.author_name} emoji={a.author_avatar_emoji} color={a.author_avatar_color} size="md" />

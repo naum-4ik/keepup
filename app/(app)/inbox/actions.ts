@@ -19,8 +19,10 @@ export async function review(checkInId: string, approve: boolean): Promise<Revie
   if (!isUuid(checkInId)) return { ok: false, message: "That check-in isn't available." };
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("review_check_in", { p_check_in_id: checkInId, p_approve: approve });
-  refresh();
+  // Refresh only after a review that happened: a refresh on "already reviewed" re-rendered the Inbox
+  // and took the row away with its note ("Dan already reviewed this."). The row leaves on the next visit.
   if (error) return { ok: false, message: habitErrorMessage(error), code: errorCode(error), reviewer: reviewerOf(error) };
+  refresh();
   return { ok: true, reviewed: 1 };
 }
 
