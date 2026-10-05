@@ -10,7 +10,7 @@ import { getGroupDetail } from "@/lib/groups";
 import { GENERIC_ERROR, habitErrorMessage } from "@/lib/habit-errors";
 import { isTap, tapArgs, type TapId } from "@/lib/offline-sync";
 import { reminderError } from "@/lib/reminder-mode";
-import { checkInXp } from "@/lib/xp";
+import { checkInRowXp } from "@/lib/xp";
 import { isUuid, LOCAL_DATE, parseDetailsEdit, parseHabit, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 
 const NOT_FOUND: ActionResult = { ok: false, message: "That habit isn't available." };
@@ -69,6 +69,7 @@ export async function createHabit(_prev: HabitFormState, formData: FormData): Pr
 export async function checkIn(habitId: string, tap?: TapId): Promise<ActionResult> {
   if (!isUuid(habitId) || !isTap(tap)) return NOT_FOUND;
   const { supabase } = await requireUser();
+  const startedAt = Date.now();
   const { data, error } = await supabase.rpc("check_in", { p_habit_id: habitId, ...tapArgs(tap) });
   if (error) {
     const code = error.message?.match(/keepup:([a-z_]+)/)?.[1];
@@ -76,9 +77,8 @@ export async function checkIn(habitId: string, tap?: TapId): Promise<ActionResul
     return { ok: false, message: habitErrorMessage(error), ...(code ? { code } : {}) };
   }
   refresh(habitId);
-  // XP only for the row this tap made: a resend or a quiet merge returns an older row (check_in_impl).
-  const ours = data && (!tap || data.client_id === tap.clientId);
-  return { ok: true, xp: checkInXp(ours ? data.status : null) };
+  // XP only for a counted row this request inserted, not a resend's or a merge's (lib/xp.ts).
+  return { ok: true, xp: checkInRowXp(data, tap, startedAt) };
 }
 
 // "Me + Mary": my check-in and each child's in one call, all or nothing.

@@ -157,7 +157,7 @@ export function CheckInButton({
       </button>
       {xpFloat && (
         // Decorative: the level on Profile says it in words. Hidden under reduced motion.
-        <span aria-hidden key={xpFloat.id} className="pointer-events-none absolute -top-4 right-0 animate-xp-float text-xs font-bold whitespace-nowrap text-primary motion-reduce:hidden">
+        <span aria-hidden data-xp-float key={xpFloat.id} className="pointer-events-none absolute -top-4 right-0 animate-xp-float text-xs font-bold whitespace-nowrap text-primary motion-reduce:hidden">
           +{xpFloat.xp} XP
         </span>
       )}

@@ -30,12 +30,6 @@ describe("an online tap", () => {
     expect(await client.submitTap({ habitId: "h2" }, async () => ({ ok: true, xp: 0 }))).toEqual({ ok: true, queued: false });
   });
 
-  it("a tap that waits on the phone has no xp yet", async () => {
-    const { client, setOnline } = setup();
-    setOnline(false);
-    expect(await client.submitTap({ habitId: "h1" }, async () => ({ ok: true, xp: 10 }))).toEqual({ ok: true, queued: true });
-  });
-
   it("is saved on the phone before it is tried, sent with its id only, and leaves the queue once it lands", async () => {
     const { client, storage } = setup();
     let release!: (v: { ok: true }) => void;

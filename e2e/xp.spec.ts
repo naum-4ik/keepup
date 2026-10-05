@@ -12,13 +12,26 @@ test("a counted check-in floats +10 XP", async ({ page }) => {
 test("a tap waiting on the phone floats +10 XP at once, and not again when it syncs", async ({ page, context }) => {
   await signUpAndOnboard(page);
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
+  // Counts every float element that mounts, so a second one after the sync can't slip by between checks.
+  await page.evaluate(() => {
+    const w = window as unknown as { xpFloats: number };
+    w.xpFloats = 0;
+    new MutationObserver((records) => {
+      for (const r of records)
+        for (const n of r.addedNodes)
+          if (n instanceof Element) w.xpFloats += (n.matches("[data-xp-float]") ? 1 : 0) + n.querySelectorAll("[data-xp-float]").length;
+    }).observe(document.body, { childList: true, subtree: true });
+  });
+  const floats = () => page.evaluate(() => (window as unknown as { xpFloats: number }).xpFloats);
   await context.setOffline(true);
   await page.getByRole("button", { name: "Check in: Walk" }).click();
   await expect(page.getByText("+10 XP")).toBeVisible();
   await expect(page.getByText("+10 XP")).toHaveCount(0);
+  expect(await floats()).toBe(1);
   await context.setOffline(false);
   await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
-  await expect(page.getByText("+10 XP")).toHaveCount(0);
+  await page.waitForTimeout(1_500); // past a float's 900 ms, should the sync start one
+  expect(await floats()).toBe(1);
 });
 
 test("five counted check-ins reach level 2: on the avatar and on Profile", async ({ page }) => {
