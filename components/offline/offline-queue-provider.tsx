@@ -33,7 +33,7 @@ export function useOfflineQueue() {
   return { queued, delta, busy, holdsRefresh, ready };
 }
 
-// The client ids of the check-ins a page was drawn with (lib/habits.ts getRenderedTapIds), so a
+// The client ids of the check-ins a page was drawn with (lib/rendered-taps.ts renderedTapIds), so a
 // waiting tap the page already counts isn't added again, and a waiting undo of one takes it back.
 // A layout effect: set before the browser paints the new page, so no frame counts a tap twice.
 export function RenderedTaps({ ids }: { ids: string[] }) {

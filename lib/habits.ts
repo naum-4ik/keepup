@@ -5,6 +5,7 @@ import type { DayCheckIn } from "@/lib/day-detail";
 import { habitEmoji, normalizeCategory } from "@/lib/categories";
 import type { Database } from "@/lib/database.types";
 import type { HabitCategory } from "@/lib/habit-schema";
+import type { TapRow } from "@/lib/rendered-taps";
 import { getChildSummaries, getMyChildren } from "@/lib/kids";
 import { withTodayPending, type WeekOverview } from "@/lib/week-overview";
 
@@ -40,17 +41,18 @@ export async function getWeekOverview(): Promise<WeekOverview | null> {
   return withTodayPending(data as unknown as WeekOverview);
 }
 
-// The client ids (ideas/offline.md §4) of the recent check-ins a page is drawn with, read in the same
-// request as its counts: a tap still waiting on the phone that is already among them isn't counted
-// again, and a waiting undo of one takes it back (lib/offline-queue.ts queuedDelta). Taps wait at most
-// a few days (a late check-in counts up to 3 days after the tap). RLS: what this person may read.
-// Fails soft: without them the phone counts its taps as before.
-export async function getRenderedTapIds(): Promise<string[]> {
-  const { supabase } = await requireUser();
+// The recent check-ins a page is drawn with, read in the same request as its counts, for
+// lib/rendered-taps.ts renderedTapIds: the viewer's own and these children's (`children`), from the
+// last few days (a late check-in counts up to 3 days after the tap; a period can be a month, but a
+// tap waits on the phone for minutes or days). Fails soft: without them the phone counts its taps
+// as before.
+export async function getRecentTapRows(children: readonly string[] = []): Promise<TapRow[]> {
+  const { supabase, userId } = await requireUser();
   const since = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from("check_ins")
-    .select("client_id")
+    .select("client_id, habit_id, user_id, period_start")
+    .in("user_id", [userId, ...children])
     .not("client_id", "is", null)
     .in("status", ["approved", "pending"])
     .gte("created_at", since)
@@ -60,7 +62,7 @@ export async function getRenderedTapIds(): Promise<string[]> {
     console.error("rendered taps failed", error.message);
     return [];
   }
-  return (data ?? []).flatMap((r) => (r.client_id ? [r.client_id] : []));
+  return data ?? [];
 }
 
 // Progress → tap a day: my own check-ins this week (RLS: own rows, plus my groups'; filtered to mine).

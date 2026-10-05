@@ -21,7 +21,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { todayIn } from "@/lib/dates";
 import { isUuid, type HabitPeriod } from "@/lib/habit-schema";
 import { getGroupDetail } from "@/lib/groups";
-import { getFinishedIds, getHabitDetail, getHabitEnds, getRenderedTapIds, type HabitFreeze } from "@/lib/habits";
+import { getFinishedIds, getHabitDetail, getHabitEnds, getRecentTapRows, type HabitFreeze } from "@/lib/habits";
 import { ReminderControl } from "@/components/habits/reminder-control";
 import { getHabitSettings } from "@/lib/habit-settings";
 import { reminderHint } from "@/lib/reminder-mode";
@@ -32,6 +32,8 @@ import { formatLocalDate } from "@/lib/dates";
 import { describeProgress, describeSchedule } from "@/lib/schedule";
 import { everyoneDidIt, memberStatus, membersOf, openChildrenOf } from "@/lib/today-sections";
 import { stateOf } from "@/lib/today";
+import { getMyChildren } from "@/lib/kids";
+import { currentPeriods, renderedTapIds } from "@/lib/rendered-taps";
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -71,11 +73,20 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   if (!isUuid(id)) notFound();
   // The end needs only the id, so it loads with the habit.
-  const [{ profile, userId }, detail, ends, renderedTaps] = await Promise.all([getProfile(), getHabitDetail(id), getHabitEnds([id]), getRenderedTapIds()]);
+  const childIdsP = getMyChildren().then((cs) => cs.map((c) => c.child_id));
+  const [{ profile, userId }, detail, ends, tapRows, childIds] = await Promise.all([
+    getProfile(),
+    getHabitDetail(id),
+    getHabitEnds([id]),
+    childIdsP.then((ids) => getRecentTapRows(ids)),
+    childIdsP,
+  ]);
   if (!detail) notFound();
 
   const { summary: h, child, history, freezes, checkIns, totalCheckIns, memberCheckIns, myCheers, myNudges } = detail;
   const members = membersOf(h);
+  // The check-ins this page counts, for taps still waiting on this phone (RenderedTaps).
+  const renderedTaps = renderedTapIds(tapRows, [userId, ...childIds], currentPeriods([h]));
   // Only the owner of a private habit, or an admin of a group habit, edits, pauses it for everyone,
   // archives or deletes it (RLS and the RPCs enforce the same). A child's own habit (child is set,
   // so the viewer is a guardian: habit_role 'guardian') is managed by any adult of the child's group.

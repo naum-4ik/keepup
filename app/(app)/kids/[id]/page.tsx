@@ -21,8 +21,9 @@ import { getProfile } from "@/lib/auth";
 import { getGroupDetail, getMyGroups } from "@/lib/groups";
 import { todayIn } from "@/lib/dates";
 import { withoutEnded } from "@/lib/habit-end";
-import { getFinishedIds, getHabitEnds, getRenderedTapIds, type HabitSummary } from "@/lib/habits";
+import { getFinishedIds, getHabitEnds, getRecentTapRows, type HabitSummary } from "@/lib/habits";
 import { isUuid } from "@/lib/habit-schema";
+import { currentPeriods, renderedTapIds } from "@/lib/rendered-taps";
 import { getChildCheckIns, getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { stateOf } from "@/lib/today";
 
@@ -39,13 +40,13 @@ export default async function KidPage({
   const child = (await getMyChildren()).find((c) => c.child_id === id);
   if (!child) notFound();
 
-  const [{ userId, profile }, group, groups, summaries, rewards, renderedTaps] = await Promise.all([
+  const [{ userId, profile }, group, groups, summaries, rewards, tapRows] = await Promise.all([
     getProfile(),
     getGroupDetail(child.group_id),
     getMyGroups(),
     getChildSummaries(id),
     getChildRewards(id),
-    getRenderedTapIds(),
+    getRecentTapRows([id]),
   ]);
   const unarchived = summaries.filter((h) => !h.archived_at);
   const archivedHabits = summaries.filter((h) => h.archived_at && !h.group_id);
@@ -55,6 +56,8 @@ export default async function KidPage({
   const today = todayIn(group?.timezone ?? profile.timezone);
   const habits = withoutEnded(unarchived, ends, () => today);
   const checkIns = await getChildCheckIns(id, habits);
+  // The check-ins this page counts, for taps still waiting on this phone (RenderedTaps).
+  const renderedTaps = renderedTapIds(tapRows, [id], currentPeriods(habits));
   const isAdmin = group?.my_role === "admin";
   const moveTargets = isAdmin
     ? groups.filter((g) => g.role === "admin" && g.group_id !== child.group_id).map((g) => ({ id: g.group_id, name: g.name }))

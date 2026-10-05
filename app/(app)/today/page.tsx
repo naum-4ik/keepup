@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
-import { getFinishSummary, getGroupTimezones, getHabitEnds, getHabitSummaries, getRenderedTapIds, getWeekOverview, type HabitSummary } from "@/lib/habits";
+import { getFinishSummary, getGroupTimezones, getHabitEnds, getHabitSummaries, getRecentTapRows, getWeekOverview, type HabitSummary } from "@/lib/habits";
 import { ANOTHER_GO, celebrates, finishLine } from "@/lib/habit-finish";
 import { FinishCard } from "@/components/today/finish-card";
 import { endLabel, endProgress, hasEnded, withoutEnded } from "@/lib/habit-end";
@@ -24,6 +24,7 @@ import { todayIn } from "@/lib/dates";
 import { getPendingApprovals } from "@/lib/inbox";
 import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { parsePurpose } from "@/lib/profile-schema";
+import { currentPeriods, renderedTapIds } from "@/lib/rendered-taps";
 import { allCheckedOffKey, groupForToday } from "@/lib/today";
 import { todayProgress } from "@/lib/today-progress";
 import { chooseGentleCard } from "@/lib/today-cards";
@@ -33,17 +34,18 @@ import { hasWeekData } from "@/lib/week-overview";
 
 export default async function TodayPage({ searchParams }: { searchParams: Promise<{ joined?: string }> }) {
   const { joined } = await searchParams;
-  const [summaries, overview, groups, approvals, children, { profile }, celebrations, dismissed, checkedIn, renderedTaps] = await Promise.all([
+  const childrenP = getMyChildren();
+  const [summaries, overview, groups, approvals, children, { profile }, celebrations, dismissed, checkedIn, tapRows] = await Promise.all([
     getHabitSummaries(),
     getWeekOverview(),
     getMyGroups(),
     getPendingApprovals(),
-    getMyChildren(),
+    childrenP,
     getProfile(),
     getCelebrations(),
     getDismissedCards(),
     hasCheckedIn(),
-    getRenderedTapIds(),
+    childrenP.then((cs) => getRecentTapRows(cs.map((c) => c.child_id))),
   ]);
   const joinedGroup = joined && isUuid(joined) ? groups.find((g) => g.group_id === joined) : undefined;
   // Habits past their end (ideas/habit-end-date.md) leave the lists (no more check-ins) for a finish card.
@@ -76,6 +78,12 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     todayOfP,
   ]);
   const habits = active.filter((h) => !finishes.some((f) => f.h === h));
+  // The check-ins these counts include, for taps still waiting on this phone (RenderedTaps).
+  const renderedTaps = renderedTapIds(
+    tapRows,
+    [profile.id, ...children.map((c) => c.child_id)],
+    currentPeriods([...summaries, ...kids.flatMap((k) => k.habits)]),
+  );
   const sections = sectionsForToday(habits, groups);
   // A solo user's Today looks as before: the "Mine" heading shows only next to a group section.
   const withHeadings = sections.some((s) => s.key !== "mine") || kids.length > 0;
