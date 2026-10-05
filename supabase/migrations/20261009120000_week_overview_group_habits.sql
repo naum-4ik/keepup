@@ -11,8 +11,9 @@
 --
 -- What group habits now add to: done / possible (this week and last), the day circles (so
 -- lib/week-overview.ts withTodayPending also counts today's group habits still to do), check_ins
--- (your own), active_habits, and per_habit (your own dots on Progress). The best current streak
--- stays your private habits' (a group streak is everyone's, not yours).
+-- (your own, only in periods you were required in), active_habits (not once its end has passed),
+-- per_habit (your own dots on Progress), and the best current streak (the group's streak, the
+-- same 🔥 its card and the Progress list show, so the "best streak" never contradicts them).
 create or replace function private.week_overview_impl(p_user uuid, p_now timestamptz)
 returns jsonb
 language sql
@@ -34,7 +35,8 @@ as $$
   ),
   -- The group habits p_user takes part in (same people as takes_part and subject_summaries).
   gs as (
-    select h as habit, h.id, h.period, h.target_count, h.created_at, h.ends_on,
+    select h as habit, h.id, h.title, h.period, h.target_count, h.created_at, h.ends_on,
+           h.ends_on is not null and h.ends_on < private.habit_today(h, p_now) as ended,
            private.first_period_start(h) as first_ps,
            private.habit_period_start(h, private.habit_today(h, p_now)) as cur_ps,
            private.habit_period_start(h, wk.ws - 7) as from_ps
@@ -135,10 +137,13 @@ as $$
      group by g.d
   ),
   best as (
-    select hs.title, hs.period, st.current_streak
-      from hs cross join lateral private.habit_streaks(hs.id, p_now) st
+    select b.title, b.period, st.current_streak
+      from (select hs.id, hs.title, hs.period, hs.created_at from hs
+            union all
+            select gs.id, gs.title, gs.period, gs.created_at from gs) b
+     cross join lateral private.habit_streaks(b.id, p_now) st
      where st.current_streak > 0
-     order by st.current_streak desc, hs.created_at
+     order by st.current_streak desc, b.created_at
      limit 1
   ),
   -- The last 7 local days (daily habits) or up to 7 periods (weekly, monthly), per habit.
@@ -195,10 +200,14 @@ as $$
     'best_current_streak', coalesce((select b.current_streak from best b), 0),
     'best_current_streak_title', (select b.title from best b),
     'best_current_streak_period', (select b.period from best b),
+    -- On a group habit, only check-ins in periods that count for you (required and due).
     'check_ins', (select count(*)::int from public.check_ins c
-                   where c.habit_id in (select hs.id from hs union all select gs.id from gs)
-                     and c.user_id = p_user and c.status = 'approved' and c.local_date >= wk.ws and c.local_date < wk.ws + 7),
-    'active_habits', (select count(*)::int from hs) + (select count(*)::int from gs),
+                   where c.user_id = p_user and c.status = 'approved' and c.local_date >= wk.ws and c.local_date < wk.ws + 7
+                     and (c.habit_id in (select hs.id from hs)
+                          or exists (select 1 from gperiods g
+                                      where g.id = c.habit_id and g.ps = c.period_start and g.due and g.required))),
+    -- A group habit whose end has passed isn't active (its earlier periods still count above).
+    'active_habits', (select count(*)::int from hs) + (select count(*)::int from gs where not gs.ended),
     'per_habit', coalesce((select jsonb_agg(jsonb_build_object('habit_id', ph.id, 'cells', coalesce(ph.cells, '[]'::jsonb))
                                             order by ph.created_at) from per_habit ph), '[]'::jsonb))
     from wk cross join totals t;
