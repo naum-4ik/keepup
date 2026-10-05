@@ -5,7 +5,7 @@ import { BANNED_PATTERNS, BANNED_WORDS } from "@/lib/notification-copy";
 const item = (o: Partial<FeedItem>): FeedItem => ({
   id: "n", kind: "group_check_in", created_at: "2026-10-05T18:00:00Z", read_at: null, seen_at: null,
   group_id: "g", group_name: "Family", habit_id: "h", habit_title: "Read 20 min", habit_emoji: "📚", check_in_id: "c",
-  actor_name: "Anna", subject_id: null, subject_name: null, subject_avatar_emoji: null, payload: {}, ...o,
+  actor_name: "Anna", actor_avatar_emoji: null, actor_avatar_color: null, subject_id: null, subject_name: null, subject_avatar_emoji: null, payload: {}, ...o,
 });
 
 describe("feedCopy", () => {
