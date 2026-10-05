@@ -654,3 +654,48 @@ test("a child's own habit uses the same −/＋ count as yours, capped by the pe
   await expect(own).toBeHidden();
   await expect(page.getByRole("region", { name: "Habits" })).toContainText("Feed the fish");
 });
+
+test("a guardian restores a child's archived habit from the child page", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  const kidUrl = page.url();
+  const list = page.getByRole("region", { name: "Habits" });
+  await list.getByRole("button", { name: "Check in for Mary: Tidy my toys" }).click();
+  await expect(list.getByRole("button", { name: "Done for Mary: Tidy my toys" })).toBeVisible();
+  await list.getByRole("link", { name: /Tidy my toys/ }).click();
+  const manage = page.getByRole("region", { name: "Manage habit" });
+  await manage.getByText("Archive", { exact: true }).click();
+  await manage.getByRole("button", { name: "Archive habit" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Archive", exact: true }).click();
+  await expect(page).toHaveURL(kidUrl);
+  // Archived habits stay reachable from the child's page, and restore back into the list.
+  await page.getByRole("region", { name: "Archived" }).getByRole("link", { name: /Tidy my toys/ }).click();
+  await expect(page.getByRole("heading", { name: "Tidy my toys" })).toBeVisible();
+  await page.getByRole("button", { name: "Restore Tidy my toys" }).click();
+  await expect(page).toHaveURL(kidUrl);
+  await expect(list.getByRole("listitem")).toHaveCount(3);
+  await expect(list).toContainText("Tidy my toys");
+  await expect(page.getByRole("region", { name: "Archived" })).toHaveCount(0);
+});
+
+test("editing a child's habit that has no category keeps it without one", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.getByRole("region", { name: "Habits" }).getByRole("link", { name: /Tidy my toys/ }).click();
+  const header = page.locator("header").filter({ hasText: "Tidy my toys" });
+  await expect(header).not.toContainText("Home");
+  const manage = page.getByRole("region", { name: "Manage habit" });
+  await manage.getByText("Edit details", { exact: true }).click();
+  await expect(manage.getByLabel("Category")).toHaveValue("");
+  await expect(manage.getByLabel("Category").locator("option:checked")).toHaveText("None");
+  await manage.getByLabel("Title").fill("Tidy my room");
+  await manage.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Tidy my room" })).toBeVisible();
+  await expect(page.locator("header").filter({ hasText: "Tidy my room" })).not.toContainText("Home");
+  await manage.getByText("Edit details", { exact: true }).click();
+  await expect(manage.getByLabel("Category")).toHaveValue("");
+});

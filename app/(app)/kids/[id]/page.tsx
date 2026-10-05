@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { kidProgressText } from "@/components/habits/habit-card";
@@ -46,6 +46,7 @@ export default async function KidPage({
     getChildRewards(id),
   ]);
   const unarchived = summaries.filter((h) => !h.archived_at);
+  const archivedHabits = summaries.filter((h) => h.archived_at && !h.group_id);
   // A habit past its end (in the group's calendar) takes no more check-ins, so it leaves the list.
   const ends = await getHabitEnds(unarchived.map((h) => h.habit_id));
   const today = todayIn(group?.timezone ?? profile.timezone);
@@ -160,6 +161,24 @@ export default async function KidPage({
         )}
         <AddKidHabit childId={id} childName={child.name} existingTitles={unarchived.map((h) => h.title)} />
       </section>
+
+      {/* Archived habits open their page, where a guardian restores them. */}
+      {archivedHabits.length > 0 && (
+        <section aria-label="Archived" className="flex flex-col gap-2 rounded-2xl bg-card p-5 shadow-soft">
+          <h2 className="text-sm font-bold text-muted-foreground">Archived</h2>
+          <ul className="flex flex-col gap-1">
+            {archivedHabits.map((h) => (
+              <li key={h.habit_id}>
+                <Link href={`/habits/${h.habit_id}`} className="-mx-2 flex min-h-11 items-center gap-3 rounded-xl px-2 py-1 hover:bg-muted/60">
+                  <HabitEmoji category={h.category} emoji={h.emoji} size="xs" />
+                  <span className="min-w-0 flex-1 truncate font-semibold">{h.title}</span>
+                  <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <ChildDangerZone childId={id} childName={child.name} isAdmin={isAdmin} moveTargets={moveTargets} />
 

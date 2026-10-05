@@ -7,7 +7,7 @@ import { StartDatePicker } from "@/components/habits/start-date-picker";
 import { SaveButton } from "@/components/save-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
+import { CATEGORIES, CATEGORY_ORDER, normalizeCategory } from "@/lib/categories";
 import type { HabitCategory } from "@/lib/habit-schema";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +28,8 @@ export function HabitDetailsForm({
   habitId: string;
   title: string;
   emoji: string;
-  category: HabitCategory;
+  // null: a child's own habit with no category (kid templates). The form then offers None and keeps it.
+  category: HabitCategory | null;
   startsOn: string;
   canEditStart: boolean;
   today: string;
@@ -38,7 +39,8 @@ export function HabitDetailsForm({
   // Controlled, like the new-habit form's HabitFields: a failed save must keep what the user
   // typed rather than reverting to the original values (the browser resets uncontrolled
   // <form> fields to their mount-time defaultValue once the action returns).
-  const [values, setValues] = useState({ title, emoji, category, startsOn });
+  const [values, setValues] = useState({ title, emoji, category: category ?? "", startsOn });
+  const offerNone = category === null;
   const categoryRef = useRef<HTMLSelectElement>(null);
 
   // <select> doesn't reliably resync from its `value` prop after that same reset, so force it
@@ -51,7 +53,7 @@ export function HabitDetailsForm({
     <form action={formAction} className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="title">Title</Label>
-        <EmojiPicker value={values.emoji} category={values.category} onChange={(e) => setValues((v) => ({ ...v, emoji: e }))}>
+        <EmojiPicker value={values.emoji} category={normalizeCategory(values.category)} onChange={(e) => setValues((v) => ({ ...v, emoji: e }))}>
           <Input
             id="title"
             name="title"
@@ -68,9 +70,10 @@ export function HabitDetailsForm({
           name="category"
           ref={categoryRef}
           value={values.category}
-          onChange={(e) => setValues((v) => ({ ...v, category: e.target.value as HabitCategory }))}
+          onChange={(e) => setValues((v) => ({ ...v, category: e.target.value }))}
           className={cn(fieldClass, "w-full border border-input bg-transparent")}
         >
+          {offerNone && <option value="">None</option>}
           {CATEGORY_ORDER.map((c) => (
             <option key={c} value={c}>
               {CATEGORIES[c].label}
