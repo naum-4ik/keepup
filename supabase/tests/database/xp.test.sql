@@ -1,7 +1,7 @@
 -- supabase/tests/database/xp.test.sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(63);
+select plan(66);
 
 -- finalize_periods scans every habit; start from none (rolled back at the end).
 delete from public.habits;
@@ -12,6 +12,7 @@ select tests.create_user('00000000-0000-0000-0000-0000000000e1', 'eve@example.co
 select tests.create_user('00000000-0000-0000-0000-0000000000f1', 'fay@example.com', '{"full_name":"Fay"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000c1', 'gus@example.com', '{"full_name":"Gus"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000c2', 'hal@example.com', '{"full_name":"Hal"}');
+select tests.create_user('00000000-0000-0000-0000-0000000000c3', 'ivy@example.com', '{"full_name":"Ivy"}');
 update public.profiles set timezone = 'Europe/Rome' where id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1');
 
 create temp table t (k text primary key, v uuid) on commit drop;
@@ -123,6 +124,34 @@ select is((select array_agg(reason) from xp where source_id = 'c0000000-0000-000
   'a self-review pays the check-in, never the +2');
 delete from public.check_ins where id = 'c0000000-0000-0000-0000-0000000000f9';
 alter table public.check_ins add constraint check_ins_no_self_review check (reviewed_by is null or reviewed_by <> user_id);
+
+-- E5. finalize over two habits that together cross a level: levels are synced after the habit loop
+-- (no per-person row while it still locks habits), once: one level_ups row, one Inbox row.
+insert into public.xp_events (user_id, amount, reason, source_type, source_id) values ('00000000-0000-0000-0000-0000000000c3', 15, 'check_in', 'check_in', 'i-0');
+set local session_replication_role = replica;
+insert into public.habits (id, owner_id, title, category, emoji, target_count, period, starts_on, week_start, created_at, created_by) values
+  ('00000000-0000-0000-0000-0000000000d5', '00000000-0000-0000-0000-0000000000c3', 'Stretch', 'fitness', '🧘', 1, 'day', '2026-10-01', 1,
+   '2026-10-01 08:00Z', '00000000-0000-0000-0000-0000000000c3'),
+  ('00000000-0000-0000-0000-0000000000d6', '00000000-0000-0000-0000-0000000000c3', 'Journal', 'learning', '📓', 1, 'day', '2026-10-01', 1,
+   '2026-10-01 08:00Z', '00000000-0000-0000-0000-0000000000c3');
+set local session_replication_role = origin;
+select private.check_in_impl('00000000-0000-0000-0000-0000000000d5', '00000000-0000-0000-0000-0000000000c3', '2026-10-01 12:00Z');
+select private.check_in_impl('00000000-0000-0000-0000-0000000000d6', '00000000-0000-0000-0000-0000000000c3', '2026-10-01 12:00Z');
+create function tests.no_level_in_finalize_loop() returns trigger language plpgsql as $$
+begin
+  if current_setting('keepup.finalizing', true) = 'on' then
+    raise exception 'level_ups written inside the finalize habit loop';
+  end if;
+  return new;
+end;
+$$;
+create trigger level_ups_not_in_loop before insert on public.level_ups for each row execute function tests.no_level_in_finalize_loop();
+select lives_ok($$select private.finalize_periods('2026-10-04 13:00+02')$$, 'finalize writes no level_ups row inside its habit loop');
+drop trigger level_ups_not_in_loop on public.level_ups;
+select is((select array_agg(level) from public.level_ups where user_id = '00000000-0000-0000-0000-0000000000c3'), array[2],
+  'two done habits (35 → 75 XP) cross level 2: one level_ups row');
+select is((select count(*)::int from public.notifications where user_id = '00000000-0000-0000-0000-0000000000c3' and kind = 'level_up'), 1,
+  'and one Inbox row');
 
 -- F. Levels: boundaries, one row per jump, undo keeps the row, re-crossing writes nothing new.
 select is(array[private.level_for(0), private.level_for(49), private.level_for(50), private.level_for(199), private.level_for(200), private.level_for(449), private.level_for(450), private.level_for(-5)],

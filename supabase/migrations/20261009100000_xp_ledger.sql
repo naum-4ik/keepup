@@ -5,15 +5,28 @@
 --   private.push_allowed       20261006100000_offline_check_ins.sql
 --   private.reset_child_impl          20260930130000_reset_child.sql
 --   private.kid_rewards_on_check_in   20261007100000_m4_final_fixes.sql
+--   private.finalize_periods          20261006100000_offline_check_ins.sql
 --
--- Locks. No grant locks a profile row: every caller already holds the habit row (check_in_impl,
--- undo_*_impl, review_check_in_impl, finalize_periods), then the check-in row, then period_results
--- (resettle_period / finalize's insert), and grant_xp adds only row locks on the rows it inserts
--- (xp_events, level_ups, notifications) plus the FOR KEY SHARE their foreign keys take on profiles.
--- KEY SHARE conflicts only with FOR UPDATE, so the one profile lock left on these paths
--- (kid_rewards_on_check_in) becomes FOR NO KEY UPDATE below. A profile lock held until commit in
--- finalize (which locks later habits in the same transaction) would deadlock against a check-in on
--- one of those habits; that is why there is none.
+-- Locks, in the order every path takes them: habit row(s) → check-in row → period_results row →
+-- per-habit rows (xp_events keyed by the check-in or `<habit>:<period>`, feed rows deduped per habit)
+-- → per-person rows (level_ups (user, level) and level_up notifications, which uniqueness makes
+-- one transaction wait on another's uncommitted insert).
+-- - No grant locks a profile row. Inserts take FOR KEY SHARE on profiles through their foreign keys,
+--   which conflicts only with FOR UPDATE, so the one profile lock left on these paths
+--   (kid_rewards_on_check_in) becomes FOR NO KEY UPDATE below.
+-- - check_in_impl, undo_*_impl, review_check_in_impl (and resettle_period inside them) hold one habit
+--   and take per-person rows last.
+-- - finalize_periods locks many habits, one after another, in one transaction. Its grants during the
+--   habit loop write only per-habit rows (p_sync = false: no level_ups, no level_up rows); the
+--   people it paid are synced once each, in user id order, after the loop, when it takes no more
+--   habit locks. So finalize never holds a per-person row while waiting for a habit, and a check-in
+--   holding a habit that waits on finalize's per-person row can't be waited on by finalize: no cycle.
+--   (Its per-habit rows are only ever written by a transaction holding that habit's lock.)
+-- - Remaining, accepted: a check-in that is approved and also upgrades a settled group period syncs
+--   the author/reviewer first, then the members (each batch in id order). Against another such
+--   transaction or finalize's tail, two people crossing the same levels at the same moment in
+--   opposite order could still wait on each other; Postgres aborts one (40P01) and nothing is lost
+--   that the next grant doesn't heal.
 --
 -- Accepted trade-off: two concurrent transactions granting to one person, each below a level
 -- boundary on its own (each sync_level sums only what it can see), can together cross it with no
@@ -122,7 +135,8 @@ $$;
 -- the event (the tap, the review, the settling), so recaps count it in the right week.
 create function private.grant_xp(
   p_user uuid, p_amount int, p_reason text, p_source_type text, p_source_id text,
-  p_habit_id uuid default null, p_at timestamptz default now(), p_quiet boolean default false)
+  p_habit_id uuid default null, p_at timestamptz default now(), p_quiet boolean default false,
+  p_sync boolean default true)
 returns boolean
 language plpgsql
 set search_path = ''
@@ -137,14 +151,21 @@ begin
   if not found then
     return false;
   end if;
-  perform private.sync_level(p_user, p_quiet);
+  if p_sync then
+    perform private.sync_level(p_user, p_quiet);
+  else
+    -- Synced later by private.sync_deferred_levels (finalize, after its habit loop). Not quiet.
+    perform set_config('keepup.unsynced',
+      coalesce(nullif(current_setting('keepup.unsynced', true), '') || ',', '') || p_user::text, true);
+  end if;
   return true;
 end;
 $$;
 
 -- +20 to a private habit's owner, +30 to each required member of a group period (children included,
 -- behind the scenes). Profiles in user id order. Returns how many grants were new.
-create function private.grant_period_xp(p_habit public.habits, p_period_start date, p_at timestamptz default now(), p_quiet boolean default false)
+create function private.grant_period_xp(p_habit public.habits, p_period_start date, p_at timestamptz default now(), p_quiet boolean default false,
+  p_sync boolean default true)
 returns int
 language plpgsql
 set search_path = ''
@@ -162,11 +183,108 @@ begin
      order by u.id
   loop
     if private.grant_xp(r.id, case when p_habit.group_id is null then 20 else 30 end, 'period_done', 'period',
-                        p_habit.id || ':' || p_period_start, p_habit.id, p_at, p_quiet) then
+                        p_habit.id || ':' || p_period_start, p_habit.id, p_at, p_quiet, p_sync) then
       v_n := v_n + 1;
     end if;
   end loop;
   return v_n;
+end;
+$$;
+
+-- Syncs everyone whose grants were deferred in this transaction, once each, in user id order.
+create function private.sync_deferred_levels()
+returns void
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_list text := nullif(current_setting('keepup.unsynced', true), '');
+  r record;
+begin
+  perform set_config('keepup.unsynced', '', true);
+  if v_list is null then
+    return;
+  end if;
+  for r in select distinct u::uuid as id from unnest(string_to_array(v_list, ',')) u order by 1 loop
+    perform private.sync_level(r.id, false);
+  end loop;
+end;
+$$;
+
+-- Copied from 20261006100000_offline_check_ins.sql (its latest definition). New: the first and the
+-- last two lines. Period grants made in the habit loop don't sync levels (keepup.finalizing); the
+-- people paid are synced after it, in user id order (Locks, at the top).
+create or replace function private.finalize_periods(p_now timestamptz)
+returns int
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_habit public.habits;
+  v_step interval;
+  v_current date;
+  v_last date;
+  v_inserted int;
+  v_total int := 0;
+begin
+  perform set_config('keepup.finalizing', 'on', true);
+  for v_habit in
+    select h.* from public.habits h
+     where h.archived_at is null
+        or exists (select 1 from public.check_ins c where c.habit_id = h.id and c.status = 'pending')
+     order by h.id
+  loop
+    -- Archived habits aren't finalized, but a pending check-in on one still expires once its review
+    -- window has passed (it can no longer be reviewed).
+    if v_habit.archived_at is not null then
+      if exists (select 1 from public.check_ins c
+                  where c.habit_id = v_habit.id and c.status = 'pending'
+                    and p_now >= private.check_in_deadline(v_habit, c)) then
+        perform 1 from public.habits h where h.id = v_habit.id for update;
+        update public.check_ins c set status = 'expired'
+         where c.habit_id = v_habit.id and c.status = 'pending'
+           and p_now >= private.check_in_deadline(v_habit, c);
+      end if;
+      continue;
+    end if;
+
+    v_step := private.period_step(v_habit.period);
+    v_current := private.habit_period_start(v_habit, private.habit_today(v_habit, p_now));
+    v_last := (v_current::timestamp - v_step)::date;
+    -- Periods are at least a day long, so only the one just closed can still be in its 12h grace.
+    if private.in_grace(v_habit, v_last, p_now) then
+      v_last := (v_last::timestamp - v_step)::date;
+    end if;
+
+    if exists (select 1 from public.check_ins c
+                where c.habit_id = v_habit.id and c.status = 'pending' and c.period_start <= v_last
+                  and p_now >= private.check_in_deadline(v_habit, c)) then
+      perform 1 from public.habits h where h.id = v_habit.id for update;
+      update public.check_ins c set status = 'expired'
+       where c.habit_id = v_habit.id and c.status = 'pending' and c.period_start <= v_last
+         and p_now >= private.check_in_deadline(v_habit, c);
+    end if;
+
+    if exists (select 1
+                 from generate_series(private.first_period_start(v_habit)::timestamp, v_last::timestamp, v_step) as s(d)
+                where not exists (
+                  select 1 from public.period_results x where x.habit_id = v_habit.id and x.period_start = s.d::date)) then
+      perform 1 from public.habits h where h.id = v_habit.id for update;
+    end if;
+
+    insert into public.period_results (habit_id, period_start, outcome, finalized_at)
+    select v_habit.id, s.d::date, private.period_outcome(v_habit, s.d::date), p_now
+      from generate_series(private.first_period_start(v_habit)::timestamp, v_last::timestamp, v_step) as s(d)
+     where not exists (
+       select 1 from public.period_results x where x.habit_id = v_habit.id and x.period_start = s.d::date)
+    on conflict (habit_id, period_start) do nothing;
+
+    get diagnostics v_inserted = row_count;
+    v_total := v_total + v_inserted;
+  end loop;
+  perform set_config('keepup.finalizing', '', true);
+  perform private.sync_deferred_levels();
+  return v_total;
 end;
 $$;
 
@@ -258,7 +376,9 @@ begin
       select coalesce(max(coalesce(c.reviewed_at, c.created_at)), now()) into v_at from public.check_ins c
        where c.habit_id = new.habit_id and c.period_start = new.period_start and c.status = 'approved';
     end if;
-    perform private.grant_period_xp(v_habit, new.period_start, v_at);
+    -- Inside finalize's habit loop, levels wait until the loop is done (Locks, at the top).
+    perform private.grant_period_xp(v_habit, new.period_start, v_at, false,
+      current_setting('keepup.finalizing', true) is distinct from 'on');
   end if;
   return new;
 end;
