@@ -114,3 +114,15 @@ export function seedRecapWeek(groupId: string, habitId: string): boolean {
   }
   return false;
 }
+
+// Moves my membership in a group habit's group back (with startHabitDaysAgo, a group habit with past
+// months on Progress → Calendar). Local stack only.
+export function joinedDaysAgo(habitId: string, days: number): void {
+  if (!/^[0-9a-f-]{36}$/.test(habitId) || !Number.isInteger(days)) throw new Error(`Bad input: ${habitId} ${days}`);
+  execSync(`docker exec -i supabase_db_keepup psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q`, {
+    input: `set session_replication_role = replica;
+update public.group_members set joined_at = joined_at - interval '${days} days'
+ where group_id = (select group_id from public.habits where id = '${habitId}');`,
+    stdio: ["pipe", "ignore", "inherit"],
+  });
+}

@@ -231,7 +231,8 @@ export async function getHabitDetail(habitId: string): Promise<HabitDetail | nul
   };
 }
 
-// Progress → Calendar (ideas/progress-calendar.md): one row per day per own habit in [from, to].
+// Progress → Calendar (ideas/progress-calendar.md): one row per day per habit in [from, to] (my own
+// and the group habits I take part in).
 // Fails soft: an empty month instead of an error page.
 export async function getCalendarCells(from: string, to: string): Promise<CalendarCell[]> {
   const { supabase } = await requireUser();
@@ -243,9 +244,14 @@ export async function getCalendarCells(from: string, to: string): Promise<Calend
   return data ?? [];
 }
 
-// The first day any of my own habits started: the calendar goes back no further.
+// The first day any of my habits started (my own, and the group habits I take part in, from the day
+// I joined): the calendar goes back no further. Fails soft: no earlier months.
 export async function getFirstHabitStart(): Promise<string | null> {
-  const { supabase, userId } = await requireUser();
-  const { data } = await supabase.from("habits").select("starts_on").eq("owner_id", userId).order("starts_on").limit(1).maybeSingle();
-  return data?.starts_on ?? null;
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase.rpc("calendar_start");
+  if (error) {
+    console.error("calendar_start failed", error.message);
+    return null;
+  }
+  return data ?? null;
 }
