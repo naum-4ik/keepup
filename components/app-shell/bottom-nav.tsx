@@ -15,7 +15,7 @@ const GROUPS: NavItem = { href: "/groups", label: "Groups", icon: Users };
 const PROFILE: NavItem = { href: "/profile", label: "Profile", icon: CircleUser };
 
 // `glyph` replaces the icon (the Profile tab shows your avatar); `name`: the link's name when the glyph
-// adds something to say ("Profile, level 2").
+// adds something to say ("Profile, level 2, 40% to level 3").
 function NavLink({ href, label, icon: Icon, active, glyph, name }: NavItem & { active: boolean; glyph?: React.ReactNode; name?: string }) {
   return (
     <Link
@@ -33,21 +33,49 @@ function NavLink({ href, label, icon: Icon, active, glyph, name }: NavItem & { a
   );
 }
 
+const RING_R = 12;
+const RING_C = 2 * Math.PI * RING_R;
+
+// The way to the next level: a 2px sage arc over a soft track, from 12 o'clock, clockwise. Decoration (the
+// link's name says the percent). The fill eases to a new value; none under prefers-reduced-motion.
+function XpRing({ fraction }: { fraction: number }) {
+  return (
+    <svg data-testid="xp-ring" data-progress={fraction.toFixed(2)} viewBox="0 0 26 26" className="pointer-events-none absolute -inset-[3px] size-[26px] -rotate-90" fill="none" strokeWidth={2}>
+      <circle cx={13} cy={13} r={RING_R} className="stroke-muted" />
+      <circle
+        cx={13}
+        cy={13}
+        r={RING_R}
+        strokeLinecap="round"
+        strokeDasharray={RING_C}
+        strokeDashoffset={RING_C * (1 - fraction)}
+        className="stroke-done transition-[stroke-dashoffset] duration-500 ease-out motion-reduce:transition-none"
+        style={fraction === 0 ? { opacity: 0 } : undefined}
+      />
+    </svg>
+  );
+}
+
 export function BottomNav({
   displayName,
   avatarEmoji,
   avatarColor,
   level,
+  xpProgress,
 }: {
   displayName: string;
   avatarEmoji?: string | null;
   avatarColor?: string | null;
   // The person's level (public.my_level), on the avatar; null when it couldn't be read.
   level?: number | null;
+  // How far to the next level, 0 to 1 (the ring around the avatar); null when it couldn't be read: no ring.
+  xpProgress?: number | null;
 }) {
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const onProfile = isActive(PROFILE.href);
+  const percent = xpProgress == null ? null : Math.floor(Math.min(Math.max(xpProgress, 0), 1) * 100);
+  const profileName = !level ? undefined : percent == null ? `${PROFILE.label}, level ${level}` : `${PROFILE.label}, level ${level}, ${percent}% to level ${level + 1}`;
 
   return (
     <nav
@@ -78,17 +106,19 @@ export function BottomNav({
           <NavLink
             {...PROFILE}
             active={onProfile}
-            name={level ? `${PROFILE.label}, level ${level}` : undefined}
-            // Your avatar is the Profile tab. Decoration: the link is named "Profile" (", level 2"). 24px with -my-0.5,
-            // so the tab is exactly as tall as the 20px icons beside it (the nav's height doesn't move).
+            name={profileName}
+            // Your avatar is the Profile tab. Decoration: the link is named "Profile, level 2, 40% to level 3". A 20px
+            // avatar inside a 2px XP ring (26px, 3px past the avatar) and no margin: the tab stays as tall as the 20px icons
+            // beside it and the ring stops at the label's line box, so it never covers "Profile".
             glyph={
-              <span aria-hidden className={cn("relative -my-0.5 flex rounded-full", onProfile && "ring-2 ring-primary ring-offset-1 ring-offset-card")}>
-                <Avatar name={displayName} emoji={avatarEmoji} color={avatarColor} size="sm" className="size-6 text-xs" />
+              <span aria-hidden className="relative flex rounded-full">
+                <Avatar name={displayName} emoji={avatarEmoji} color={avatarColor} size="sm" className="size-5 text-[0.625rem]" />
+                {percent != null ? <XpRing fraction={percent / 100} /> : null}
                 {level ? (
                   // The number only; Profile says "Level 2 · Seedling" in words. Soft sage, smaller than the
                   // bell's count and never its colour, so it doesn't read as unread (owner). bottom-0, not
-                  // below: the avatar's -my-0.5 leaves no gap above the label, so anything lower covers "Profile".
-                  <span className="absolute -right-1.5 bottom-0 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-done-soft px-0.5 text-[0.5625rem] leading-none font-bold text-done tabular-nums shadow-[0_0_0_2px_var(--card)] ring-1 ring-done/50">
+                  // below: the label is 2px below the avatar, so anything lower covers "Profile".
+                  <span className="absolute -right-2 bottom-0 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-done-soft px-0.5 text-[0.5625rem] leading-none font-bold text-done tabular-nums shadow-[0_0_0_2px_var(--card)] ring-1 ring-done/50">
                     {level}
                   </span>
                 ) : null}

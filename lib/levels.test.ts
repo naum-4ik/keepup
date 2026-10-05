@@ -1,6 +1,6 @@
 // lib/levels.test.ts
 import { describe, expect, it } from "vitest";
-import { levelFor, levelLine, levelName, levelProgress, xpForLevel } from "./levels";
+import { levelFor, levelFraction, levelLine, levelName, levelProgress, xpForLevel } from "./levels";
 
 describe("levels (ideas/achievements-and-rewards.md §3)", () => {
   it("follows floor(sqrt(xp / 50)) + 1 at every boundary", () => {
@@ -33,5 +33,24 @@ describe("levelLine", () => {
     expect(levelLine(50)).toEqual({ title: "Level 2 · Seedling", toNext: "150 XP to Level 3" });
     expect(levelLine(199)).toEqual({ title: "Level 2 · Seedling", toNext: "1 XP to Level 3" });
     expect(levelLine(200)).toEqual({ title: "Level 3 · Seedling", toNext: "250 XP to Level 4" });
+  });
+});
+
+describe("levelFraction (the avatar ring)", () => {
+  it("is 0 at the start of a level and mid-way in between", () => {
+    expect(levelFraction(0)).toBe(0);
+    expect(levelFraction(25)).toBe(0.5);
+    expect(levelFraction(50)).toBe(0);
+    expect(levelFraction(80)).toBe(0.2);
+  });
+  it("stays under 1 just below the next level, and starts over exactly at it", () => {
+    expect(levelFraction(49)).toBeCloseTo(0.98);
+    expect(levelFraction(199)).toBeCloseTo(149 / 150);
+    expect(levelFraction(49)).toBeLessThan(1);
+    expect(levelFraction(200)).toBe(0);
+  });
+  it("reads negative or missing XP as 0", () => {
+    expect(levelFraction(-10)).toBe(0);
+    expect(levelFraction(Number.NaN)).toBe(0);
   });
 });
