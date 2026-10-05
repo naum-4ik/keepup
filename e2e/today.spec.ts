@@ -46,7 +46,7 @@ test("the Today card's This week counts a group habit you take part in", async (
   await createGroupHabitVia(page, "Family", "Walk");
   const card = page.getByRole("region", { name: "Today's progress" });
   // A group habit used to leave the week line out ("0 of 0", or no line at all).
-  await expect(card.getByRole("img", { name: "0 of 1 goals met this week" })).toBeVisible();
+  await expect(card.getByRole("img", { name: "0 of 1 goal met this week" })).toBeVisible();
   await page.getByRole("button", { name: "Check in: Walk" }).click();
-  await expect(card.getByRole("img", { name: "1 of 1 goals met this week" })).toBeVisible();
+  await expect(card.getByRole("img", { name: "1 of 1 goal met this week" })).toBeVisible();
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { OUTCOME_LABEL, STATUS_WORD, comparisonLine, hasWeekData, ringDash, ringFraction, streakUnit, withTodayPending, type WeekOverview } from "./week-overview";
+import { OUTCOME_LABEL, STATUS_WORD, comparisonLine, goalsMet, hasWeekData, ringDash, ringFraction, streakUnit, withTodayPending, type WeekOverview } from "./week-overview";
 
 const week = (done: number, possible: number, prev_done: number, prev_possible: number) => ({ done, possible, prev_done, prev_possible });
 
@@ -10,7 +10,7 @@ describe("comparisonLine", () => {
   });
 
   it("only compares with last week when there was one", () => {
-    expect(comparisonLine(week(1, 1, 0, 0))).toBe("1 goal met this week");
+    expect(comparisonLine(week(1, 1, 0, 0))).toBeNull();
   });
 
   it("calls it the best week yet when as much got done with fewer chances", () => {
@@ -19,14 +19,23 @@ describe("comparisonLine", () => {
 
   it("needs a last week to compare with before calling it the best", () => {
     expect(comparisonLine(week(0, 0, 0, 0))).toBe("A fresh start this week");
-    expect(comparisonLine(week(5, 5, 5, 0))).toBe("5 goals met this week");
+    expect(comparisonLine(week(5, 5, 5, 0))).toBeNull();
   });
 
   it("stays neutral otherwise, never negative", () => {
-    expect(comparisonLine(week(4, 10, 12, 14))).toBe("4 goals met this week");
+    expect(comparisonLine(week(4, 10, 12, 14))).toBeNull();
     expect(comparisonLine(week(0, 3, 9, 12))).toBe("A fresh start this week");
-    expect(comparisonLine(week(6, 8, 6, 8))).toBe("6 goals met this week");
-    expect(comparisonLine(week(6, 9, 6, 8))).toBe("6 goals met this week");
+    expect(comparisonLine(week(6, 8, 6, 8))).toBeNull();
+    expect(comparisonLine(week(6, 9, 6, 8))).toBeNull();
+  });
+});
+
+describe("goalsMet", () => {
+  it("follows the total: goal for one, goals otherwise", () => {
+    expect(goalsMet(1, 1)).toBe("1 of 1 goal met");
+    expect(goalsMet(0, 1)).toBe("0 of 1 goal met");
+    expect(goalsMet(2, 3)).toBe("2 of 3 goals met");
+    expect(goalsMet(0, 0)).toBe("0 of 0 goals met");
   });
 });
 

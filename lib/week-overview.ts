@@ -40,10 +40,15 @@ export function withTodayPending(o: WeekOverview): WeekOverview {
   return { ...o, possible: o.possible + pending };
 }
 
+// The week's headline: "1 of 1 goal met", "2 of 3 goals met" ("goals met", not "done": next to the
+// card's check-in count, "done" read like a second count). The noun follows the total.
+export const goalsMet = (done: number, possible: number) => `${done} of ${possible} ${possible === 1 ? "goal" : "goals"} met`;
+
 // Only positive or neutral. "More than last week" needs a last week to compare with. "Best week
 // yet" means this week's share done beats last week's (the only other week in the data), while
-// having done at least as much.
-export function comparisonLine(o: Pick<WeekOverview, "done" | "possible" | "prev_done" | "prev_possible">): string {
+// having done at least as much. Null when there's nothing to add: the line sits under the
+// headline, which already says how many goals were met.
+export function comparisonLine(o: Pick<WeekOverview, "done" | "possible" | "prev_done" | "prev_possible">): string | null {
   if (o.prev_possible > 0 && o.done > o.prev_done) {
     return `${o.done - o.prev_done} more than last week`;
   }
@@ -57,8 +62,7 @@ export function comparisonLine(o: Pick<WeekOverview, "done" | "possible" | "prev
     return "Your best week yet";
   }
   if (o.done === 0) return "A fresh start this week";
-  // "goals met", not "done": next to the card's check-in count, "done" read like a second count.
-  return `${o.done} ${o.done === 1 ? "goal" : "goals"} met this week`;
+  return null;
 }
 
 // Ring maths: the filled share of a circle, clamped to [0, 1]; nothing possible reads as empty.

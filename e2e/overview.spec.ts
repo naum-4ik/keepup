@@ -27,8 +27,8 @@ test("the weekly overview shows on Today and Progress", async ({ page }) => {
 
   const card = page.getByRole("region", { name: "Your week" });
   await expect(card).toContainText("2 of 2 goals met");
-  // No last week to compare with yet.
-  await expect(card).toContainText("2 goals met this week");
+  // No last week to compare with yet, so no second line restating the headline.
+  await expect(card).not.toContainText("this week");
   await expect(card.getByRole("img", { name: "2 of 2 goals met this week" })).toHaveAttribute("data-complete", "");
   // Today's circle fills against both of today's daily habits (the weekday comes from the server's
   // clock in the user's time zone, so it isn't recomputed here).
