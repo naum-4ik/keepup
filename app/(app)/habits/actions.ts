@@ -10,6 +10,7 @@ import { getGroupDetail } from "@/lib/groups";
 import { GENERIC_ERROR, habitErrorMessage } from "@/lib/habit-errors";
 import { isTap, tapArgs, type TapId } from "@/lib/offline-sync";
 import { reminderError } from "@/lib/reminder-mode";
+import { checkInXp } from "@/lib/xp";
 import { isUuid, LOCAL_DATE, parseDetailsEdit, parseHabit, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 
 const NOT_FOUND: ActionResult = { ok: false, message: "That habit isn't available." };
@@ -19,7 +20,8 @@ const REFRESH_ON_ERROR = new Set(["target_reached", "already_checked_in_today", 
 
 // code: the database rule that refused it ("keepup:<code>"), when there was one (an offline-queued
 // tap is dropped only for a rule refusal; anything else keeps it queued).
-export type ActionResult = { ok: true } | { ok: false; message: string; code?: string };
+// xp: the "+10 XP" a check-in just earned (lib/xp.ts), only from checkIn.
+export type ActionResult = { ok: true; xp?: number } | { ok: false; message: string; code?: string };
 export type FormActionState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string };
 
 function refresh(habitId?: string) {
@@ -67,14 +69,16 @@ export async function createHabit(_prev: HabitFormState, formData: FormData): Pr
 export async function checkIn(habitId: string, tap?: TapId): Promise<ActionResult> {
   if (!isUuid(habitId) || !isTap(tap)) return NOT_FOUND;
   const { supabase } = await requireUser();
-  const { error } = await supabase.rpc("check_in", { p_habit_id: habitId, ...tapArgs(tap) });
+  const { data, error } = await supabase.rpc("check_in", { p_habit_id: habitId, ...tapArgs(tap) });
   if (error) {
     const code = error.message?.match(/keepup:([a-z_]+)/)?.[1];
     if (code && REFRESH_ON_ERROR.has(code)) refresh(habitId);
     return { ok: false, message: habitErrorMessage(error), ...(code ? { code } : {}) };
   }
   refresh(habitId);
-  return { ok: true };
+  // XP only for the row this tap made: a resend or a quiet merge returns an older row (check_in_impl).
+  const ours = data && (!tap || data.client_id === tap.clientId);
+  return { ok: true, xp: checkInXp(ours ? data.status : null) };
 }
 
 // "Me + Mary": my check-in and each child's in one call, all or nothing.

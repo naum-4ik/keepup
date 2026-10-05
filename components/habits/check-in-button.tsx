@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Check, Clock, Plus, Snowflake } from "lucide-react";
 import { checkIn, checkInWith } from "@/app/(app)/habits/actions";
 import { dismissFirstCheckinTip } from "@/components/first-checkin-tip";
+import { floatXp, useXpFloat } from "@/components/habits/xp-float";
 import { useOfflineQueue, useSubmitTap, useUndoQueuedTap } from "@/components/offline/offline-queue-provider";
 import { GENERIC_ERROR } from "@/lib/habit-errors";
 import { NEEDS_CONNECTION, SAVING, UNDO, undoLabel } from "@/lib/offline-copy";
@@ -12,6 +13,7 @@ import { ringOf, type RingInput } from "@/lib/today";
 import { ringDash } from "@/lib/week-overview";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
+import { tapXp } from "@/lib/xp";
 
 const LABEL: Record<CheckInState, string> = {
   open: "Check in",
@@ -29,6 +31,7 @@ export function CheckInButton({
   multi,
   withChildren = [],
   progress = null,
+  needsApproval = false,
 }: {
   habitId: string;
   title: string;
@@ -40,10 +43,15 @@ export function CheckInButton({
   // "Me + Mary" (ideas/kids-and-groups.md §5): children in this group habit who still have it open.
   // Only ever offered on the viewer's own check-in.
   withChildren?: { id: string; name: string }[];
+  // The habit's check-ins wait for someone else's approval (habits.requires_approval): a tap waiting on
+  // this phone floats no XP then (lib/xp.ts tapXp).
+  needsApproval?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [celebrating, setCelebrating] = useState(false);
+  // The "+10 XP" float of the latest check-in on this habit (components/habits/xp-float.ts).
+  const xpFloat = useXpFloat(habitId);
   // Bumped on every successful check-in and used as the button's key, so a quick repeat tap on a
   // multi-count habit remounts the node and replays the bounce, even if the previous one is still playing.
   const [burst, setBurst] = useState(0);
@@ -66,7 +74,7 @@ export function CheckInButton({
   const ring = progress ? ringOf(progress, change) : null;
   const shownRing = ring && (shown === "open" || shown === "checked-today") ? ring : null;
 
-  function celebrate() {
+  function celebrate(earned = 0) {
     dismissFirstCheckinTip();
     // The check-in moment: a soft haptic tick where supported (Android; iPhone Safari has none)
     // and a short bounce. CSS drops the animation under prefers-reduced-motion.
@@ -75,6 +83,7 @@ export function CheckInButton({
     setCelebrating(true);
     if (celebrateTimeout.current) window.clearTimeout(celebrateTimeout.current);
     celebrateTimeout.current = window.setTimeout(() => setCelebrating(false), 450);
+    if (earned > 0) floatXp(habitId, earned);
   }
 
   function run(childIds: string[]) {
@@ -101,7 +110,8 @@ export function CheckInButton({
         setError(result.message);
         return;
       }
-      celebrate();
+      // "Me + Mary" above keeps celebrate(): several check-ins, no single number.
+      celebrate(tapXp(result, needsApproval));
     });
   }
 
@@ -112,7 +122,7 @@ export function CheckInButton({
   }, []);
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="relative flex flex-col items-end gap-1">
       <button
         key={burst}
         ref={buttonRef}
@@ -145,6 +155,12 @@ export function CheckInButton({
       >
         {shownRing ? <Ring done={shownRing.done} target={shownRing.target} /> : <Icon className="size-5" strokeWidth={2.5} aria-hidden />}
       </button>
+      {xpFloat && (
+        // Decorative: the level on Profile says it in words. Hidden under reduced motion.
+        <span aria-hidden key={xpFloat.id} className="pointer-events-none absolute -top-4 right-0 animate-xp-float text-xs font-bold whitespace-nowrap text-primary motion-reduce:hidden">
+          +{xpFloat.xp} XP
+        </span>
+      )}
       {choosing && shown === "open" && (
         <div
           role="group"

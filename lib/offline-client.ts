@@ -10,8 +10,8 @@ import { newTap } from "@/lib/offline-sync";
 // pendingCounts), so the page can tell what they change on screen (queuedDelta).
 export type Counts = ReadonlyMap<string, number> & { readonly queue?: readonly QueueEntry[] };
 export type Flushed = { counts: Counts; changed: boolean; poisoned: number };
-export type TapResult = { ok: true; queued: boolean } | { ok: false; message: string };
-type Online = (tap: { clientId: string }) => Promise<{ ok: true } | { ok: false; message: string; code?: string }>;
+export type TapResult = { ok: true; queued: boolean; xp?: number } | { ok: false; message: string };
+type Online = (tap: { clientId: string }) => Promise<{ ok: true; xp?: number } | { ok: false; message: string; code?: string }>;
 
 // A database rule refused it: final, the same answers the sync route maps to 409. An expired session
 // isn't one (the next signed-in flush sends it).
@@ -136,7 +136,8 @@ export function createOfflineClient(deps: {
     }
     if (result.ok) {
       await queue.forget(tap.clientId);
-      return { ok: true, queued: false };
+      // The XP float shows only for a check-in that counted now (lib/xp.ts).
+      return result.xp ? { ok: true, queued: false, xp: result.xp } : { ok: true, queued: false };
     }
     if (isRuleRefusal(result.code)) {
       await queue.forget(tap.clientId);

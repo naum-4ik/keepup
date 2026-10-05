@@ -75,6 +75,7 @@
   --radius-4xl: calc(var(--radius) * 2.6);
   --shadow-soft: 0 1px 2px rgb(61 44 34 / 0.06), 0 4px 12px rgb(61 44 34 / 0.05);
   --animate-checkin: checkin 220ms ease-out;
+  --animate-xp-float: xp-float 900ms ease-out forwards;
   --animate-star: star-bounce 250ms ease-out;
   --animate-star-fly: star-fly 700ms ease-in forwards;
   --animate-hold-ring: hold-ring 1500ms linear forwards;
@@ -116,6 +117,13 @@
   0% { transform: scale(1); }
   40% { transform: scale(1.15); }
   100% { transform: scale(1); }
+}
+
+/* "+10 XP" rises and fades above the check-in button (ideas/achievements-and-rewards.md §1). */
+@keyframes xp-float {
+  0% { transform: translateY(0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-14px); opacity: 0; }
 }
 
 /* "Everyone did it": a small confetti burst, each piece flying up and out to its own --dx/--dy. */
@@ -217,7 +225,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-checkin, .animate-star, .animate-star-fly, .animate-confetti, .animate-item-pop, .animate-wiggle, .animate-dance, .animate-hero-zoom,
+  .animate-checkin, .animate-xp-float, .animate-star, .animate-star-fly, .animate-confetti, .animate-item-pop, .animate-wiggle, .animate-dance, .animate-hero-zoom,
   .animate-card-bounce, .animate-reveal-in, .animate-reveal-spark, .animate-spot-flash,
   .animate-idle-sway, .animate-idle-bob, .animate-idle-drift, .animate-idle-sparkle { animation: none; }
 }

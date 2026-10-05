@@ -93,6 +93,7 @@ export function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; kid?: 
         state={stateOf(habit)}
         withChildren={openChildrenOf(habit)}
         progress={{ period: habit.period, target_count: habit.target_count, done_count: habit.done_count }}
+        needsApproval={habit.requires_approval}
       />
     </div>
   );
