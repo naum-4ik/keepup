@@ -57,6 +57,42 @@ begin
 end;
 $$;
 
+-- "Back to N": an EARLIER streak of this habit (one that started before p_started_on) reached N, by
+-- the ledger or by the settled periods themselves. The periods make it independent of the order in
+-- which one statement's period_results triggers fire (a finalize catch-up), and the ledger keeps it
+-- for a milestone already paid.
+create function private.reached_before(p_habit public.habits, p_started_on date, p_n int)
+returns boolean
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_run int := 0;
+  r record;
+begin
+  if exists (select 1 from public.xp_events x
+              where x.habit_id = p_habit.id and x.reason = 'milestone'
+                and split_part(x.source_id, ':', 3) = p_n::text
+                and split_part(x.source_id, ':', 2)::date < p_started_on) then
+    return true;
+  end if;
+  for r in select x.outcome from public.period_results x
+            where x.habit_id = p_habit.id and x.period_start < p_started_on
+            order by x.period_start loop
+    if r.outcome = 'missed' then
+      v_run := 0;
+    elsif r.outcome = 'done' then
+      v_run := v_run + 1;
+      if v_run >= p_n then
+        return true;
+      end if;
+    end if;
+  end loop;
+  return false;
+end;
+$$;
+
 -- One milestone: the bonus to the owner (or each required member of a group period, in user id
 -- order), then, if any grant was new and it isn't quiet, the Inbox row: streak_milestone for an adult's
 -- own habit (with "back" when this habit reached this N in an earlier streak), group_milestone for a
@@ -125,10 +161,7 @@ begin
   end if;
 
   perform private.notify(array[p_habit.owner_id], 'streak_milestone', 'streak_milestone:' || v_key, null, p_habit.id, null, null, null,
-    jsonb_build_object('streak', p_run, 'period', p_habit.period, 'back', exists (
-      select 1 from public.xp_events x
-       where x.user_id = p_habit.owner_id and x.reason = 'milestone' and x.habit_id = p_habit.id
-         and x.source_id <> v_key and split_part(x.source_id, ':', 3) = p_run::text)) || v_late);
+    jsonb_build_object('streak', p_run, 'period', p_habit.period, 'back', private.reached_before(p_habit, p_started_on, p_run)) || v_late);
   return true;
 end;
 $$;
@@ -190,13 +223,12 @@ begin
   end if;
   if new.outcome = 'done' then
     if tg_op = 'UPDATE' then
-      select coalesce(max(coalesce(c.reviewed_at, c.created_at)), now()) into v_at from public.check_ins c
-       where c.habit_id = new.habit_id and c.period_start = new.period_start and c.status = 'approved';
-      -- The tap or approval that made it done (the latest one, as for v_at).
+      -- The tap or approval that made it done: the latest approved check-in in the period.
       select c.* into v_check_in from public.check_ins c
        where c.habit_id = new.habit_id and c.period_start = new.period_start and c.status = 'approved'
        order by coalesce(c.reviewed_at, c.created_at) desc, c.id desc limit 1;
       v_late := found and private.is_late_check_in(v_habit, v_check_in);
+      v_at := coalesce(v_check_in.reviewed_at, v_check_in.created_at, now());
     end if;
     perform private.grant_period_xp(v_habit, new.period_start, v_at, false, false);
     perform private.period_milestones(v_habit, new.period_start, v_at, false, false, v_late);

@@ -1,7 +1,7 @@
 -- supabase/tests/database/milestones.test.sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(23);
+select plan(25);
 
 delete from public.habits;
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
@@ -155,6 +155,25 @@ select is((select array_agg(split_part(source_id, ':', 2) || ':' || split_part(s
             where habit_id = '00000000-0000-0000-0000-0000000000d8'),
   array['2026-09-01:1', '2026-09-01:2', '2026-09-01:10', '2026-09-05:1', '2026-09-05:2', '2026-09-05:5', '2026-09-05:7'],
   'merging two streaks pays only the Ns neither piece reached (10), not 5 and 7 again');
+
+select is((select array_agg(split_part(dedupe_key, ':', 3) || ':' || split_part(dedupe_key, ':', 4) || ':' || (payload ->> 'back')
+                    order by split_part(dedupe_key, ':', 3), split_part(dedupe_key, ':', 4)::int)
+             from public.notifications where kind = 'streak_milestone' and habit_id = '00000000-0000-0000-0000-0000000000d8'),
+  array['2026-09-01:1:false', '2026-09-01:2:false', '2026-09-01:10:false', '2026-09-05:1:true', '2026-09-05:2:true', '2026-09-05:5:false', '2026-09-05:7:false'],
+  '"back" only for the Ns an earlier streak reached');
+
+-- "Back" doesn't depend on the order one statement's triggers fire in: periods inserted latest first.
+set local session_replication_role = replica;
+insert into public.habits (id, owner_id, title, category, emoji, target_count, period, starts_on, week_start, created_at, created_by)
+values ('00000000-0000-0000-0000-0000000000d9', '00000000-0000-0000-0000-0000000000f1', 'Journal', 'mind', '📓', 1, 'day', '2026-09-01', 1,
+        '2026-09-01 08:00Z', '00000000-0000-0000-0000-0000000000f1');
+set local session_replication_role = origin;
+insert into public.period_results (habit_id, period_start, outcome, finalized_at)
+select '00000000-0000-0000-0000-0000000000d9', d::date, case when d::date = '2026-09-02' then 'missed' else 'done' end, '2026-09-04 01:00Z'
+  from generate_series('2026-09-01'::timestamp, '2026-09-03', '1 day') d order by d desc;
+select is((select array_agg(split_part(dedupe_key, ':', 3) || ':' || (payload ->> 'back') order by split_part(dedupe_key, ':', 3))
+             from public.notifications where kind = 'streak_milestone' and habit_id = '00000000-0000-0000-0000-0000000000d9'),
+  array['2026-09-01:false', '2026-09-03:true'], 'settled latest first: the first streak is not "back", the later one is');
 
 select * from finish();
 rollback;
