@@ -154,13 +154,22 @@ export async function updateHabitDetails(habitId: string, _prev: FormActionState
 
 // archiveHabit/deleteHabit are driven by a confirm dialog via useActionState (not a plain
 // <form>), so a failure must come back as state the dialog can show, not a thrown error.
+// After archive or delete, a guardian lands back on the child's page; everyone else on their own list.
+// Read before the change (a deleted habit can't be read) from the habit's own row (RLS: what I can see).
+async function backTo(supabase: Awaited<ReturnType<typeof requireUser>>["supabase"], userId: string, habitId: string, fallback: string) {
+  const { data } = await supabase.from("habits").select("owner_id, group_id").eq("id", habitId).maybeSingle();
+  return data && !data.group_id && data.owner_id && data.owner_id !== userId ? `/kids/${data.owner_id}` : fallback;
+}
+
 export async function archiveHabit(habitId: string): Promise<FormActionState> {
   if (!isUuid(habitId)) return { status: "error", message: "That habit isn't available." };
-  const { supabase } = await requireUser();
+  const { supabase, userId } = await requireUser();
+  const next = await backTo(supabase, userId, habitId, "/progress?view=archived");
   const { error } = await supabase.from("habits").update({ archived_at: new Date().toISOString() }).eq("id", habitId);
   if (error) return { status: "error", message: habitErrorMessage(error) };
   refresh(habitId);
-  redirect("/progress?view=archived");
+  if (next.startsWith("/kids/")) revalidatePath(next);
+  redirect(next);
 }
 
 // Restore from Archived (not Finished): back on Today with its history; the archived days count as
@@ -176,11 +185,13 @@ export async function restoreHabit(habitId: string): Promise<ActionResult> {
 
 export async function deleteHabit(habitId: string): Promise<FormActionState> {
   if (!isUuid(habitId)) return { status: "error", message: "That habit isn't available." };
-  const { supabase } = await requireUser();
+  const { supabase, userId } = await requireUser();
+  const next = await backTo(supabase, userId, habitId, "/today");
   const { error } = await supabase.rpc("delete_habit", { p_habit_id: habitId });
   if (error) return { status: "error", message: habitErrorMessage(error) };
   refresh();
-  redirect("/today");
+  if (next.startsWith("/kids/")) revalidatePath(next);
+  redirect(next);
 }
 
 // A group habit (admins only; the RPC enforces it). Children take part only when ticked.

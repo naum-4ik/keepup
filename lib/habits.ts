@@ -5,6 +5,7 @@ import type { DayCheckIn } from "@/lib/day-detail";
 import { habitEmoji, normalizeCategory } from "@/lib/categories";
 import type { Database } from "@/lib/database.types";
 import type { HabitCategory } from "@/lib/habit-schema";
+import { getChildSummaries, getMyChildren } from "@/lib/kids";
 import { withTodayPending, type WeekOverview } from "@/lib/week-overview";
 
 // Kid habits (child_summaries) have no category; adult habits always have one.
@@ -115,6 +116,8 @@ export type MemberCheckIn = { id: string; user_id: string; local_date: string; s
 
 export type HabitDetail = {
   summary: AdultHabitSummary;
+  // Set when the habit is a child's own (the viewer is a guardian): the summary is then the child's.
+  child: { id: string; name: string; groupId: string | null } | null;
   history: HistoryCell[];
   freezes: HabitFreeze[];
   checkIns: HabitCheckIn[];
@@ -127,8 +130,17 @@ export type HabitDetail = {
 
 export async function getHabitDetail(habitId: string): Promise<HabitDetail | null> {
   const { supabase, userId } = await requireUser();
-  const summary = (await getHabitSummaries()).find((s) => s.habit_id === habitId);
-  if (!summary) return null;
+  let summary: AdultHabitSummary | undefined = (await getHabitSummaries()).find((s) => s.habit_id === habitId);
+  let child: HabitDetail["child"] = null;
+  if (!summary) {
+    // Not mine: a guardian's own list leaves out a child's habit, so read it from the child's.
+    const { data: row } = await supabase.from("habits").select("owner_id, group_id").eq("id", habitId).maybeSingle();
+    const kid = row?.owner_id && !row.group_id ? (await getMyChildren()).find((c) => c.child_id === row.owner_id) : undefined;
+    if (!kid) return null;
+    summary = (await getChildSummaries(kid.child_id)).find((s) => s.habit_id === habitId) as AdultHabitSummary | undefined;
+    if (!summary) return null;
+    child = { id: kid.child_id, name: kid.name, groupId: kid.group_id };
+  }
 
   const isGroup = Boolean(summary.group_id);
   const [history, freezes, checkIns, total, memberCheckIns, myNudges] = await Promise.all([
@@ -145,7 +157,7 @@ export async function getHabitDetail(habitId: string): Promise<HabitDetail | nul
       .from("check_ins")
       .select("id, local_date, created_at")
       .eq("habit_id", habitId)
-      .eq("user_id", userId)
+      .eq("user_id", child?.id ?? userId)
       .eq("period_start", summary.period_start)
       .order("created_at", { ascending: false }),
     // Everyone's: a habit with any history can't be deleted (delete_habit's rule).
@@ -183,6 +195,7 @@ export async function getHabitDetail(habitId: string): Promise<HabitDetail | nul
 
   return {
     summary,
+    child,
     history: history.data ?? [],
     freezes: freezes.data ?? [],
     checkIns: checkIns.data ?? [],
