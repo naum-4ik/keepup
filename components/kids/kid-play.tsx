@@ -142,14 +142,14 @@ export function KidPlay({
   const [saving, setSaving] = useState<ReadonlySet<string>>(() => new Set());
   const inFlight = useRef(new Set<string>());
   const lastTap = useRef(new Map<string, number>());
-  const { queued, ready } = useOfflineQueue();
+  const { delta, ready } = useOfflineQueue();
   const submitTap = useSubmitTap();
   // Taps saved on the phone count on screen until they sync, so the star doesn't vanish in the car,
   // and a queued card counts as done for the order (it still sinks).
   const base = useMemo(() => {
-    const q = withQueuedTaps(habits, queued, child.id);
+    const q = withQueuedTaps(habits, delta, child.id);
     return { habits: q.habits, stars: stars + q.added };
-  }, [habits, stars, queued, child.id]);
+  }, [habits, stars, delta, child.id]);
   // A tap shows at once and until the new count arrives, from the server or from the queue: a tap is
   // drawn only while its habit's count hasn't moved past where it was, so it never counts twice.
   const [taps, tap] = useOptimistic<Tap[], Tap>([], (s, t) => [...s, t]);

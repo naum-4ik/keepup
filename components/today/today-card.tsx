@@ -31,8 +31,8 @@ export function TodayCard({
   // Another celebration (e.g. "Everyone did it") is already on screen: don't burst twice.
   quiet?: boolean;
 }) {
-  const { queued } = useOfflineQueue();
-  const { done, total, items } = useMemo(() => todayProgress(withQueuedProgress(habits, queued)), [habits, queued]);
+  const { delta } = useOfflineQueue();
+  const { done, total, items } = useMemo(() => todayProgress(withQueuedProgress(habits, delta)), [habits, delta]);
   const allDone = total > 0 && done >= total;
   // The confetti waits for the server's word: a tap is queued for a moment even online (saved on the
   // phone first), and "Everyone did it" (quiet) only arrives with the page's refresh.

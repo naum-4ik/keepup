@@ -40,12 +40,15 @@ export function KidCheckInButton({
   const [error, setError] = useState<string | null>(null);
   const [star, setStar] = useState(0);
   const timer = useRef<number | null>(null);
-  const { queued } = useOfflineQueue();
+  const { queued, delta } = useOfflineQueue();
   const submitTap = useSubmitTap();
   const savingId = useId();
   const saving = queued.has(queueKey(habitId, childId));
   const savingShown = saving && !pending;
-  const shown: CheckInState = saving && state === "open" && !multi ? "checked-today" : state;
+  // delta: a waiting tap the page doesn't count yet (+), or a waiting undo of one it does (-).
+  const change = delta.get(queueKey(habitId, childId)) ?? 0;
+  const shown: CheckInState =
+    !multi && change > 0 && state === "open" ? "checked-today" : !multi && change < 0 && (state === "done" || state === "checked-today") ? "open" : state;
   const Icon = shown === "frozen" ? Snowflake : shown === "not-started" || shown === "pending" ? Clock : shown === "open" && multi ? Plus : Check;
 
   useEffect(() => () => {

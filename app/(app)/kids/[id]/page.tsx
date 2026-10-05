@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { RenderedTaps } from "@/components/offline/offline-queue-provider";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { HabitEmoji } from "@/components/habits/category-icon";
@@ -20,7 +21,7 @@ import { getProfile } from "@/lib/auth";
 import { getGroupDetail, getMyGroups } from "@/lib/groups";
 import { todayIn } from "@/lib/dates";
 import { withoutEnded } from "@/lib/habit-end";
-import { getFinishedIds, getHabitEnds, type HabitSummary } from "@/lib/habits";
+import { getFinishedIds, getHabitEnds, getRenderedTapIds, type HabitSummary } from "@/lib/habits";
 import { isUuid } from "@/lib/habit-schema";
 import { getChildCheckIns, getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { stateOf } from "@/lib/today";
@@ -38,12 +39,13 @@ export default async function KidPage({
   const child = (await getMyChildren()).find((c) => c.child_id === id);
   if (!child) notFound();
 
-  const [{ userId, profile }, group, groups, summaries, rewards] = await Promise.all([
+  const [{ userId, profile }, group, groups, summaries, rewards, renderedTaps] = await Promise.all([
     getProfile(),
     getGroupDetail(child.group_id),
     getMyGroups(),
     getChildSummaries(id),
     getChildRewards(id),
+    getRenderedTapIds(),
   ]);
   const unarchived = summaries.filter((h) => !h.archived_at);
   const archivedHabits = summaries.filter((h) => h.archived_at && !h.group_id);
@@ -64,6 +66,7 @@ export default async function KidPage({
 
   return (
     <section className="flex flex-col gap-4 pt-2 pb-6">
+      <RenderedTaps ids={renderedTaps} />
       <Link
         href={`/groups/${child.group_id}`}
         className="-ml-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"

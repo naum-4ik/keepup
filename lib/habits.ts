@@ -40,6 +40,29 @@ export async function getWeekOverview(): Promise<WeekOverview | null> {
   return withTodayPending(data as unknown as WeekOverview);
 }
 
+// The client ids (ideas/offline.md §4) of the recent check-ins a page is drawn with, read in the same
+// request as its counts: a tap still waiting on the phone that is already among them isn't counted
+// again, and a waiting undo of one takes it back (lib/offline-queue.ts queuedDelta). Taps wait at most
+// a few days (a late check-in counts up to 3 days after the tap). RLS: what this person may read.
+// Fails soft: without them the phone counts its taps as before.
+export async function getRenderedTapIds(): Promise<string[]> {
+  const { supabase } = await requireUser();
+  const since = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from("check_ins")
+    .select("client_id")
+    .not("client_id", "is", null)
+    .in("status", ["approved", "pending"])
+    .gte("created_at", since)
+    .order("created_at", { ascending: false })
+    .limit(500);
+  if (error) {
+    console.error("rendered taps failed", error.message);
+    return [];
+  }
+  return (data ?? []).flatMap((r) => (r.client_id ? [r.client_id] : []));
+}
+
 // Progress → tap a day: my own check-ins this week (RLS: own rows, plus my groups'; filtered to mine).
 // Fails soft: without them the day list still shows daily habits from the overview.
 export async function getMyCheckIns(from: string, to: string): Promise<DayCheckIn[]> {

@@ -225,7 +225,7 @@ describe("Undo for a tap the server may have", () => {
     const [tap] = await storage.load();
     expect(tap).toMatchObject({ kind: "check_in", maybeSent: true });
     expect(await client.undoQueued("h1")).toBe(true);
-    expect(await storage.load()).toEqual([{ kind: "undo", clientId: tap.clientId, habitId: "h1" }]);
+    expect(await storage.load()).toEqual([{ kind: "undo", clientId: tap.clientId, habitId: "h1", subjectId: null }]);
     expect(await client.counts()).toEqual(new Map()); // open again
     await client.flush();
     expect(sent).toEqual([`undo:${tap.clientId}`]); // the check-in isn't sent again, only its undo

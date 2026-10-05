@@ -15,12 +15,13 @@ import { LiveRefresh } from "@/components/habits/live-refresh";
 import { MEMBER_STATUS_LABEL, MemberAvatar } from "@/components/habits/member-status-row";
 import { NudgeButton } from "@/components/habits/nudge-button";
 import { PauseMeForm } from "@/components/habits/pause-me-form";
+import { RenderedTaps } from "@/components/offline/offline-queue-provider";
 import { getProfile } from "@/lib/auth";
 import { CATEGORIES } from "@/lib/categories";
 import { todayIn } from "@/lib/dates";
 import { isUuid, type HabitPeriod } from "@/lib/habit-schema";
 import { getGroupDetail } from "@/lib/groups";
-import { getFinishedIds, getHabitDetail, getHabitEnds, type HabitFreeze } from "@/lib/habits";
+import { getFinishedIds, getHabitDetail, getHabitEnds, getRenderedTapIds, type HabitFreeze } from "@/lib/habits";
 import { ReminderControl } from "@/components/habits/reminder-control";
 import { getHabitSettings } from "@/lib/habit-settings";
 import { reminderHint } from "@/lib/reminder-mode";
@@ -70,7 +71,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   if (!isUuid(id)) notFound();
   // The end needs only the id, so it loads with the habit.
-  const [{ profile, userId }, detail, ends] = await Promise.all([getProfile(), getHabitDetail(id), getHabitEnds([id])]);
+  const [{ profile, userId }, detail, ends, renderedTaps] = await Promise.all([getProfile(), getHabitDetail(id), getHabitEnds([id]), getRenderedTapIds()]);
   if (!detail) notFound();
 
   const { summary: h, child, history, freezes, checkIns, totalCheckIns, memberCheckIns, myCheers, myNudges } = detail;
@@ -134,6 +135,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
 
   return (
     <section className="flex flex-col gap-4 pt-2 pb-6">
+      <RenderedTaps ids={renderedTaps} />
       <Link
         href={child ? `/kids/${child.id}` : "/today"}
         className="-ml-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"

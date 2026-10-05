@@ -1,6 +1,6 @@
 // lib/offline-queue.test.ts
 import { describe, expect, it, vi } from "vitest";
-import { addCheckIn, addUndo, flush, MAX_ATTEMPTS, pendingCounts, pendingHabitIds, queueKey, type QueueEntry, type QueuedCheckIn, type Sender } from "./offline-queue";
+import { addCheckIn, addUndo, flush, MAX_ATTEMPTS, pendingCounts, pendingHabitIds, queueKey, queuedDelta, type QueueEntry, type QueuedCheckIn, type Sender } from "./offline-queue";
 
 const tap = (clientId: string, habitId = "h1"): QueuedCheckIn => ({
   kind: "check_in",
@@ -135,5 +135,42 @@ describe("flush", () => {
     expect(waited.attempted).toBeNull();
     expect(waited.poisoned).toEqual([]);
     expect(waited.remaining[0]).toMatchObject({ attempts: 4 });
+  });
+});
+
+describe("queuedDelta: what waiting entries change on a rendered page", () => {
+  const sent = (clientId: string, habitId = "h1", subjectId: string | null = null): QueuedCheckIn => ({ ...tap(clientId, habitId), subjectId, maybeSent: true });
+
+  it("a tap the page doesn't have yet adds one", () => {
+    expect(queuedDelta([tap("a")], new Set())).toEqual(new Map([["h1", 1]]));
+  });
+
+  it("a tap the page already counts (it reached the server first) isn't added again", () => {
+    expect(queuedDelta([sent("a")], new Set(["a"]))).toEqual(new Map());
+    expect(queuedDelta([sent("a"), tap("b")], new Set(["a"]))).toEqual(new Map([["h1", 1]]));
+  });
+
+  it("an undo of a tap the page counts takes it back; of one it never had, changes nothing", () => {
+    const undone = addUndo([sent("a")], { kind: "undo", clientId: "a", habitId: "h1" });
+    expect(queuedDelta(undone, new Set(["a"]))).toEqual(new Map([["h1", -1]]));
+    expect(queuedDelta(undone, new Set())).toEqual(new Map());
+  });
+
+  it("a child's undo lands on the child's key (the undo keeps its tap's subject)", () => {
+    const undone = addUndo([sent("a", "h1", "kid1")], { kind: "undo", clientId: "a", habitId: "h1" });
+    expect(undone).toEqual([{ kind: "undo", clientId: "a", habitId: "h1", subjectId: "kid1" }]);
+    expect(queuedDelta(undone, new Set(["a"]))).toEqual(new Map([["h1/kid1", -1]]));
+  });
+
+  it("without a rendered list, only taps count (as before)", () => {
+    const q = [tap("a"), { kind: "undo" as const, clientId: "z", habitId: "h2" }];
+    expect(queuedDelta(q, null)).toEqual(pendingCounts(q));
+  });
+
+  it("pendingCounts carries the entries it was taken from, and still compares as a Map", () => {
+    const q = [tap("a")];
+    const c = pendingCounts(q);
+    expect(c.queue).toBe(q);
+    expect(c).toEqual(new Map([["h1", 1]]));
   });
 });

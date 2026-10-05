@@ -36,9 +36,10 @@ export function todayProgress(habits: ProgressHabit[]): { done: number; total: n
   return { done: doneIds.size, total: items.length, items };
 }
 
-// Taps still waiting on this phone (lib/offline-queue.ts queueKey, mine only) count as the check-ins
-// they will be, never past the target: one on an approval habit waits for a yes (pending, not done),
-// so "all done" and its confetti still wait for it, as they will once it is sent.
+// Taps still waiting on this phone (lib/offline-queue.ts queuedDelta, mine only) count as the
+// check-ins they will be, never past the target: one on an approval habit waits for a yes (pending,
+// not done), so "all done" and its confetti still wait for it, as they will once it is sent. A
+// waiting undo of a tap the page already counts takes it back (never below zero).
 export function withQueuedProgress<T extends ProgressHabit>(habits: T[], queued: ReadonlyMap<string, number>): T[] {
   if (queued.size === 0) return habits;
   const counted = habits.map((h) => ({
@@ -48,9 +49,16 @@ export function withQueuedProgress<T extends ProgressHabit>(habits: T[], queued:
     const h = c.habit;
     const extra = c.done - counted[i].done;
     if (extra === 0) return h;
-    return h.requires_approval
-      ? { ...h, checked_in_today: true, pending_count: (h.pending_count ?? 0) + extra }
-      : { ...h, checked_in_today: true, done_count: h.done_count + extra };
+    if (extra > 0) {
+      return h.requires_approval
+        ? { ...h, checked_in_today: true, pending_count: (h.pending_count ?? 0) + extra }
+        : { ...h, checked_in_today: true, done_count: h.done_count + extra };
+    }
+    // An undo: the taken-back tap was today's (taps wait on the phone for minutes, not days). A daily
+    // habit still checked in today keeps its other taps; any other habit is open again today.
+    const pending = Math.max(0, (h.pending_count ?? 0) + (h.requires_approval ? extra : 0));
+    const done = Math.max(0, h.done_count + (h.requires_approval ? Math.min(0, (h.pending_count ?? 0) + extra) : extra));
+    return { ...h, done_count: done, pending_count: pending, checked_in_today: h.period === "day" && done + pending > 0 };
   });
 }
 

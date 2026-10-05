@@ -50,7 +50,7 @@ export function CheckInButton({
   const celebrateTimeout = useRef<number | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [choosing, setChoosing] = useState(false);
-  const { queued } = useOfflineQueue();
+  const { queued, delta } = useOfflineQueue();
   const submitTap = useSubmitTap();
   const undoQueued = useUndoQueuedTap();
   const savingId = useId();
@@ -58,9 +58,12 @@ export function CheckInButton({
   // the online try runs, the button's own busy state says enough.
   const saving = queued.has(queueKey(habitId));
   const savingShown = saving && !pending;
-  const shown: CheckInState = saving && state === "open" && !multi ? "checked-today" : state;
+  // delta: a waiting tap the page doesn't count yet (+), or a waiting undo of one it does (-).
+  const change = delta.get(queueKey(habitId)) ?? 0;
+  const shown: CheckInState =
+    !multi && change > 0 && state === "open" ? "checked-today" : !multi && change < 0 && (state === "done" || state === "checked-today") ? "open" : state;
   const Icon = shown === "frozen" ? Snowflake : shown === "not-started" || shown === "pending" ? Clock : shown === "open" && multi ? Plus : Check;
-  const ring = progress ? ringOf(progress, queued.get(queueKey(habitId)) ?? 0) : null;
+  const ring = progress ? ringOf(progress, change) : null;
   const shownRing = ring && (shown === "open" || shown === "checked-today") ? ring : null;
 
   function celebrate() {

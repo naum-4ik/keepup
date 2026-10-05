@@ -2,11 +2,13 @@
 // The page's offline queue runner (used by components/offline/offline-queue-provider.tsx): when to
 // send, how a tap is saved before it is tried online, and how the UI hears about it. Browser-agnostic
 // (everything comes in as deps), so it is unit-tested in Node.
-import { pendingCounts, queueKey, type FlushResult, type Sender } from "@/lib/offline-queue";
+import { pendingCounts, queueKey, type FlushResult, type QueueEntry, type Sender } from "@/lib/offline-queue";
 import { createOfflineQueue, type Locks, type QueueStorage } from "@/lib/offline-queue-store";
 import { newTap } from "@/lib/offline-sync";
 
-export type Counts = ReadonlyMap<string, number>;
+// Waiting check-ins per queueKey; `queue`: the entries they were counted from (lib/offline-queue.ts
+// pendingCounts), so the page can tell what they change on screen (queuedDelta).
+export type Counts = ReadonlyMap<string, number> & { readonly queue?: readonly QueueEntry[] };
 export type Flushed = { counts: Counts; changed: boolean; poisoned: number };
 export type TapResult = { ok: true; queued: boolean } | { ok: false; message: string };
 type Online = (tap: { clientId: string }) => Promise<{ ok: true } | { ok: false; message: string; code?: string }>;

@@ -9,13 +9,14 @@ import { HabitCard } from "@/components/habits/habit-card";
 import { LiveRefresh } from "@/components/habits/live-refresh";
 import { KidSection } from "@/components/kids/kid-section";
 import { NeedsConnection } from "@/components/offline/needs-connection";
+import { RenderedTaps } from "@/components/offline/offline-queue-provider";
 import { GentleCard } from "@/components/today/gentle-card";
 import { TodayCard } from "@/components/today/today-card";
 import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
-import { getFinishSummary, getGroupTimezones, getHabitEnds, getHabitSummaries, getWeekOverview, type HabitSummary } from "@/lib/habits";
+import { getFinishSummary, getGroupTimezones, getHabitEnds, getHabitSummaries, getRenderedTapIds, getWeekOverview, type HabitSummary } from "@/lib/habits";
 import { ANOTHER_GO, celebrates, finishLine } from "@/lib/habit-finish";
 import { FinishCard } from "@/components/today/finish-card";
 import { endLabel, endProgress, hasEnded, withoutEnded } from "@/lib/habit-end";
@@ -32,7 +33,7 @@ import { hasWeekData } from "@/lib/week-overview";
 
 export default async function TodayPage({ searchParams }: { searchParams: Promise<{ joined?: string }> }) {
   const { joined } = await searchParams;
-  const [summaries, overview, groups, approvals, children, { profile }, celebrations, dismissed, checkedIn] = await Promise.all([
+  const [summaries, overview, groups, approvals, children, { profile }, celebrations, dismissed, checkedIn, renderedTaps] = await Promise.all([
     getHabitSummaries(),
     getWeekOverview(),
     getMyGroups(),
@@ -42,6 +43,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     getCelebrations(),
     getDismissedCards(),
     hasCheckedIn(),
+    getRenderedTapIds(),
   ]);
   const joinedGroup = joined && isUuid(joined) ? groups.find((g) => g.group_id === joined) : undefined;
   // Habits past their end (ideas/habit-end-date.md) leave the lists (no more check-ins) for a finish card.
@@ -132,6 +134,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
 
   return (
     <section className="flex flex-col gap-4 py-6">
+      <RenderedTaps ids={renderedTaps} />
       <h1 className="text-xl font-bold">Today</h1>
       {progress.total > 0 && (
         <TodayCard
