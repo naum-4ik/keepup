@@ -25,13 +25,13 @@ export type Database = {
           Tables: {
             "check_ins": {
                   Row: {
-                    "client_id": string | null,"created_at": string,"habit_id": string,"id": string,"local_date": string,"logged_by": string | null,"period_start": string,"reviewed_at": string | null,"reviewed_by": string | null,"status": string,"tapped_at": string | null,"user_id": string
+                    "by_child": boolean,"client_id": string | null,"created_at": string,"habit_id": string,"id": string,"local_date": string,"logged_by": string | null,"period_start": string,"reviewed_at": string | null,"reviewed_by": string | null,"status": string,"tapped_at": string | null,"user_id": string
                   }
                   Insert: {
-                    "client_id"?: string | null,"created_at"?: string,"habit_id": string,"id"?: string,"local_date": string,"logged_by"?: string | null,"period_start": string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"status"?: string,"tapped_at"?: string | null,"user_id": string
+                    "by_child"?: boolean,"client_id"?: string | null,"created_at"?: string,"habit_id": string,"id"?: string,"local_date": string,"logged_by"?: string | null,"period_start": string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"status"?: string,"tapped_at"?: string | null,"user_id": string
                   }
                   Update: {
-                    "client_id"?: string | null,"created_at"?: string,"habit_id"?: string,"id"?: string,"local_date"?: string,"logged_by"?: string | null,"period_start"?: string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"status"?: string,"tapped_at"?: string | null,"user_id"?: string
+                    "by_child"?: boolean,"client_id"?: string | null,"created_at"?: string,"habit_id"?: string,"id"?: string,"local_date"?: string,"logged_by"?: string | null,"period_start"?: string,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"status"?: string,"tapped_at"?: string | null,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -532,7 +532,8 @@ isOneToOne: false
                            },
 "check_in":
 { Args: { "p_client_id"?: string,"p_habit_id": string,"p_tapped_at"?: string }; Returns: {
-              "client_id": string | null,
+              "by_child": boolean,
+"client_id": string | null,
 "created_at": string,
 "habit_id": string,
 "id": string,
@@ -553,7 +554,8 @@ isOneToOne: false
       } },
 "check_in_for":
 { Args: { "p_by_child"?: boolean,"p_child_id": string,"p_client_id"?: string,"p_habit_id": string,"p_tapped_at"?: string }; Returns: {
-              "client_id": string | null,
+              "by_child": boolean,
+"client_id": string | null,
 "created_at": string,
 "habit_id": string,
 "id": string,
@@ -574,7 +576,8 @@ isOneToOne: false
       } },
 "check_in_with":
 { Args: { "p_children": (string)[],"p_habit_id": string }; Returns: {
-              "client_id": string | null,
+              "by_child": boolean,
+"client_id": string | null,
 "created_at": string,
 "habit_id": string,
 "id": string,
@@ -791,7 +794,7 @@ isOneToOne: false
                            },
 "inbox_feed":
 { Args: { "p_limit"?: number }; Returns: {
-              "actor_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_title": string,"id": string,"kind": string,"payload": Json,"read_at": string,"seen_at": string,"subject_avatar_emoji": string,"subject_id": string,"subject_name": string
+              "actor_avatar_color": string,"actor_avatar_emoji": string,"actor_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_title": string,"id": string,"kind": string,"payload": Json,"read_at": string,"seen_at": string,"subject_avatar_emoji": string,"subject_id": string,"subject_name": string
             }[]
                            },
 "invite_membership":
@@ -799,7 +802,7 @@ isOneToOne: false
                            },
 "invite_preview":
 { Args: { "p_token": string }; Returns: {
-              "group_kind": string,"group_name": string,"inviter_name": string,"member_count": number
+              "avatar_color": string,"avatar_emoji": string,"group_kind": string,"group_name": string,"inviter_name": string,"member_count": number
             }[]
                            },
 "is_group_admin":
@@ -922,7 +925,8 @@ isOneToOne: false
       } },
 "review_check_in":
 { Args: { "p_approve": boolean,"p_check_in_id": string }; Returns: {
-              "client_id": string | null,
+              "by_child": boolean,
+"client_id": string | null,
 "created_at": string,
 "habit_id": string,
 "id": string,

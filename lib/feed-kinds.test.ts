@@ -16,7 +16,7 @@ describe("feed kinds", () => {
 const item = (o: Partial<FeedItem>): FeedItem => ({
   id: "n", kind: "private_streak_ended", created_at: "2026-10-05T18:00:00Z", read_at: null, seen_at: null,
   group_id: null, group_name: null, habit_id: "h", habit_title: "Read", habit_emoji: "📖", check_in_id: null,
-  actor_name: null, subject_id: null, subject_name: null, subject_avatar_emoji: null, payload: {}, ...o,
+  actor_name: null, actor_avatar_emoji: null, actor_avatar_color: null, subject_id: null, subject_name: null, subject_avatar_emoji: null, payload: {}, ...o,
 });
 
 describe("#11 private streak ended (feed only)", () => {

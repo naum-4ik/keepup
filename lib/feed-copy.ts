@@ -7,7 +7,7 @@ import type { NudgeKind, PeriodUnit } from "@/lib/notification-copy";
 type FeedRow = Database["public"]["Functions"]["inbox_feed"]["Returns"][number];
 // The generated types mark every returned column as non-null; the joins and optional columns can be null.
 type Nullable = "read_at" | "seen_at" | "group_id" | "group_name" | "habit_id" | "habit_title" | "habit_emoji" | "check_in_id"
-  | "actor_name" | "subject_id" | "subject_name" | "subject_avatar_emoji";
+  | "actor_name" | "actor_avatar_emoji" | "actor_avatar_color" | "subject_id" | "subject_name" | "subject_avatar_emoji";
 
 export type FeedItem = Omit<FeedRow, "payload" | "kind" | Nullable> & { [K in Nullable]: FeedRow[K] | null } & {
   kind: Kind;
