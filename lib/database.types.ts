@@ -285,6 +285,25 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"level_ups": {
+                  Row: {
+                    "level": number,"reached_at": string,"seen_at": string | null,"user_id": string
+                  }
+                  Insert: {
+                    "level": number,"reached_at"?: string,"seen_at"?: string | null,"user_id": string
+                  }
+                  Update: {
+                    "level"?: number,"reached_at"?: string,"seen_at"?: string | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "level_ups_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"notification_prefs": {
                   Row: {
                     "category": string,"delivery": string,"enabled": boolean,"user_id": string
@@ -461,6 +480,25 @@ isOneToOne: false
     },{
       foreignKeyName: "treat_goals_created_by_fkey"
       columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"xp_events": {
+                  Row: {
+                    "amount": number,"created_at": string,"habit_id": string | null,"id": string,"reason": string,"source_id": string,"source_type": string,"user_id": string
+                  }
+                  Insert: {
+                    "amount": number,"created_at"?: string,"habit_id"?: string | null,"id"?: string,"reason": string,"source_id": string,"source_type": string,"user_id": string
+                  }
+                  Update: {
+                    "amount"?: number,"created_at"?: string,"habit_id"?: string | null,"id"?: string,"reason"?: string,"source_id"?: string,"source_type"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "xp_events_user_id_fkey"
+      columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
@@ -807,6 +845,9 @@ isOneToOne: false
 "mark_feed_seen":
 { Args: { "p_ids": (string)[] }; Returns: number
                            },
+"mark_levels_seen":
+{ Args: { "p_up_to": number }; Returns: number
+                           },
 "mark_treat_received":
 { Args: { "p_goal_id": string }; Returns: undefined
                            },
@@ -821,6 +862,11 @@ isOneToOne: false
 "my_groups":
 { Args: Record<PropertyKey, never>; Returns: {
               "avatar_color": string,"avatar_emoji": string,"child_count": number,"group_id": string,"joined_at": string,"kind": string,"member_count": number,"name": string,"role": string
+            }[]
+                           },
+"my_level":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "level": number,"xp": number
             }[]
                            },
 "nudge":
