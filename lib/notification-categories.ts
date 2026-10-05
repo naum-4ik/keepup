@@ -7,7 +7,6 @@ export const NOTIFICATION_CATEGORIES = [
   { key: "nudges", label: "Nudges", hint: "When someone in your group thinks of you." },
   { key: "group_updates", label: "Group updates", hint: "New habits, pauses, new members, streaks and milestones." },
   { key: "achievements", label: "Achievements", hint: "Level-ups, badges, streak milestones, rest days and your weekly recap. Inbox only unless you change it." },
-
 ] as const;
 export type CategoryKey = (typeof NOTIFICATION_CATEGORIES)[number]["key"];
 
@@ -31,7 +30,8 @@ export const DELIVERIES = [
 export type Delivery = (typeof DELIVERIES)[number]["delivery"];
 export const DEFAULT_DELIVERY: Delivery = "silent";
 // Achievements arrive in the Inbox only until the person chooses otherwise (owner, 2026-10-04). The
-// database applies the same default (private.push_allowed).
+// database's private.push_allowed adopts the same default in the XP ledger migration (M5 PR 2);
+// until then no achievements rows are written, so nothing is pushed.
 export const defaultDelivery = (category: CategoryKey): Delivery => (category === "achievements" ? "inbox" : DEFAULT_DELIVERY);
 
 const isCategory = (v: unknown): v is CategoryKey => NOTIFICATION_CATEGORIES.some((c) => c.key === v);
