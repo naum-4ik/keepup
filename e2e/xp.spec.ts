@@ -32,5 +32,6 @@ test("five counted check-ins reach level 2: on the avatar and on Profile", async
   await expect(page.getByRole("heading", { name: "Level 2 · Seedling" })).toBeVisible();
   await expect(page.getByRole("progressbar", { name: "XP to Level 3" })).toHaveAttribute("aria-valuenow", "0");
   await expect(page.getByText("150 XP to Level 3")).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Main" }).getByText("2", { exact: true })).toBeVisible();
+  const tab = page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Profile, level 2", exact: true });
+  await expect(tab.getByText("2", { exact: true })).toBeVisible();
 });

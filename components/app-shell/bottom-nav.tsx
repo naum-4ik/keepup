@@ -14,11 +14,13 @@ const PRIMARY: NavItem = { href: "/habits/new", label: "New habit", icon: Plus }
 const GROUPS: NavItem = { href: "/groups", label: "Groups", icon: Users };
 const PROFILE: NavItem = { href: "/profile", label: "Profile", icon: CircleUser };
 
-// `glyph` replaces the icon (the Profile tab shows your avatar).
-function NavLink({ href, label, icon: Icon, active, glyph }: NavItem & { active: boolean; glyph?: React.ReactNode }) {
+// `glyph` replaces the icon (the Profile tab shows your avatar); `name`: the link's name when the glyph
+// adds something to say ("Profile, level 2").
+function NavLink({ href, label, icon: Icon, active, glyph, name }: NavItem & { active: boolean; glyph?: React.ReactNode; name?: string }) {
   return (
     <Link
       href={href}
+      aria-label={name}
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex min-h-11 w-full flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-xs font-semibold",
@@ -76,15 +78,17 @@ export function BottomNav({
           <NavLink
             {...PROFILE}
             active={onProfile}
-            // Your avatar is the Profile tab. Decoration: the link is named "Profile". 24px with -my-0.5,
+            name={level ? `${PROFILE.label}, level ${level}` : undefined}
+            // Your avatar is the Profile tab. Decoration: the link is named "Profile" (", level 2"). 24px with -my-0.5,
             // so the tab is exactly as tall as the 20px icons beside it (the nav's height doesn't move).
             glyph={
               <span aria-hidden className={cn("relative -my-0.5 flex rounded-full", onProfile && "ring-2 ring-primary ring-offset-1 ring-offset-card")}>
                 <Avatar name={displayName} emoji={avatarEmoji} color={avatarColor} size="sm" className="size-6 text-xs" />
                 {level ? (
-                  // The number only; Profile says "Level 2 · Seedling" in words. bottom-0, not below: the
-                  // avatar's -my-0.5 leaves no gap above the label, so anything lower covers "Profile".
-                  <span className="absolute -right-2 bottom-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[0.625rem] leading-none font-bold text-primary-foreground tabular-nums ring-2 ring-card">
+                  // The number only; Profile says "Level 2 · Seedling" in words. Soft sage, smaller than the
+                  // bell's count and never its colour, so it doesn't read as unread (owner). bottom-0, not
+                  // below: the avatar's -my-0.5 leaves no gap above the label, so anything lower covers "Profile".
+                  <span className="absolute -right-1.5 bottom-0 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-done-soft px-0.5 text-[0.5625rem] leading-none font-bold text-done tabular-nums shadow-[0_0_0_2px_var(--card)] ring-1 ring-done/50">
                     {level}
                   </span>
                 ) : null}
