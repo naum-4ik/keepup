@@ -95,12 +95,6 @@ export default async function GroupPage({
         </div>
       </header>
 
-      {isAdmin && (
-        <Card title="Invite">
-          <InviteLink groupId={group.id} groupName={group.name} url={url} validUntil={validUntil} autoFocus={invite === "1"} />
-        </Card>
-      )}
-
       <Card title="People">
         <ul className="flex flex-col gap-2">
           {group.members.map((m) => (
@@ -168,6 +162,14 @@ export default async function GroupPage({
           </Link>
         )}
       </Card>
+
+      {/* People, then what they do together, then bringing someone new (owner's order). ?invite=1
+          still focuses the link (autoFocus scrolls it into view). */}
+      {isAdmin && (
+        <Card title="Invite">
+          <InviteLink groupId={group.id} groupName={group.name} url={url} validUntil={validUntil} autoFocus={invite === "1"} />
+        </Card>
+      )}
 
       {isAdmin && (
         <details className="group rounded-2xl bg-card shadow-soft">

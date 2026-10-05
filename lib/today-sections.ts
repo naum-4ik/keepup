@@ -39,18 +39,27 @@ export const openChildrenOf = (h: Pick<HabitSummary, "members" | "target_count">
 export const everyoneDidIt = (h: Pick<HabitSummary, "members" | "group_done" | "done_count" | "target_count" | "frozen">): boolean =>
   Boolean(membersOf(h) && h.group_done && (h.done_count >= h.target_count || h.frozen));
 
-export type TodaySection = { key: string; title: string; habits: HabitSummary[] };
+export type TodaySection = {
+  key: string;
+  title: string;
+  habits: HabitSummary[];
+  // A group section's avatar, from my_groups (undefined for Mine, or when my_groups failed soft).
+  avatar?: { emoji: string | null; color: string | null };
+};
+type GroupAvatar = { group_id: string; avatar_emoji: string | null; avatar_color: string | null };
 
 // Today: "Mine" first, then one section per group by name; empty sections are dropped.
-export function sectionsForToday(habits: HabitSummary[]): TodaySection[] {
+// `groups` (my_groups) gives each group section its avatar.
+export function sectionsForToday(habits: HabitSummary[], groups: readonly GroupAvatar[] = []): TodaySection[] {
   const mine = habits.filter((x) => !x.group_id);
-  const groups = new Map<string, TodaySection>();
+  const avatars = new Map(groups.map((g) => [g.group_id, { emoji: g.avatar_emoji, color: g.avatar_color }]));
+  const byGroup = new Map<string, TodaySection>();
   for (const x of habits) {
     if (!x.group_id) continue;
-    const g = groups.get(x.group_id) ?? { key: x.group_id, title: x.group_name ?? "Group", habits: [] };
+    const g = byGroup.get(x.group_id) ?? { key: x.group_id, title: x.group_name ?? "Group", habits: [], avatar: avatars.get(x.group_id) };
     g.habits.push(x);
-    groups.set(x.group_id, g);
+    byGroup.set(x.group_id, g);
   }
-  return [{ key: "mine", title: "Mine", habits: mine }, ...[...groups.values()].sort((a, b) => a.title.localeCompare(b.title))]
+  return [{ key: "mine", title: "Mine", habits: mine }, ...[...byGroup.values()].sort((a, b) => a.title.localeCompare(b.title))]
     .filter((s) => s.habits.length > 0);
 }

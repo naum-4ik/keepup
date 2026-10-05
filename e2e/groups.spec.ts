@@ -140,7 +140,10 @@ test("an invited person joins from the link and lands on the group's habits", as
   await expect(guest.getByText("You're joining Family. A little about you first.")).toBeVisible();
   await expect(guest.getByText("Keepup is for")).toBeHidden();
   await completeOnboarding(guest, { name: "Grandma", invited: true });
-  await expect(guest.getByRole("main").getByRole("status")).toContainText("You joined Family ✓");
+  const welcome = guest.getByRole("main").getByRole("status");
+  await expect(welcome).toContainText("Welcome to Family");
+  await expect(welcome).toContainText("2 people · no group habits yet");
+  await expect(welcome.getByRole("link", { name: "Open Family" })).toHaveAttribute("href", /^\/groups\/[0-9a-f-]{36}$/);
 
   await page.goto("/groups");
   await expect(page.getByRole("link", { name: /Family/ })).toContainText("2 members");
@@ -156,7 +159,7 @@ test("someone already using Keepup joins with one tap", async ({ page, browser }
   await friend.goto(url);
   await friend.getByRole("button", { name: "Join Flatmates" }).click();
   await expect(friend).toHaveURL(/\/today\?joined=/);
-  await expect(friend.getByRole("main").getByRole("status")).toContainText("You joined Flatmates ✓");
+  await expect(friend.getByRole("main").getByRole("status")).toContainText("Welcome to Flatmates");
   // Already in: the link now offers Open, not Join.
   await friend.goto(url);
   await expect(friend.getByRole("button", { name: /^Join / })).toHaveCount(0);
@@ -176,7 +179,7 @@ test("Join on a page loaded before joining opens the group", async ({ page, brow
   await otherTab.goto(url);
   await otherTab.getByRole("button", { name: "Join Flatmates" }).click();
   await expect(otherTab).toHaveURL(/\/today\?joined=/);
-  // The first tab still shows Join; tapping it now opens the group instead of "You joined".
+  // The first tab still shows Join; tapping it now opens the group instead of the welcome card.
   await friend.getByRole("button", { name: "Join Flatmates" }).click();
   await expect(friend).toHaveURL(/\/groups\/[0-9a-f-]{36}$/);
 });
@@ -485,4 +488,27 @@ test("with reduced motion, Everyone did it shows without confetti", async ({ pag
   const confetti = page.locator('[aria-hidden] > .animate-confetti');
   await expect(confetti).toHaveCount(24);
   for (const piece of await confetti.all()) await expect(piece).toBeHidden();
+});
+
+test("Today's group header shows the group's avatar and opens the group", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const groupPath = new URL(page.url()).pathname;
+  await page.getByRole("button", { name: "Change the group avatar" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("group", { name: "Avatar" }).getByRole("button", { name: "🏡" }).click();
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+  await createGroupHabitVia(page, "Family", "Family dinner");
+  // The avatar is decoration inside the heading: the heading and its link are named "Family" only.
+  const heading = page.getByRole("region", { name: "Family" }).getByRole("heading", { name: "Family", exact: true });
+  await expect(heading).toContainText("🏡");
+  await heading.getByRole("link", { name: "Family", exact: true }).click();
+  await expect(page).toHaveURL((u) => u.pathname === groupPath);
+});
+
+test("the group page reads People, then Group habits, then Invite", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await expect(page.getByRole("main").getByRole("heading", { level: 2 })).toHaveText(["People", "Group habits", "Invite"]);
 });
