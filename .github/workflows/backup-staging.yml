@@ -46,7 +46,10 @@ jobs:
           npx supabase db dump --linked --data-only --use-copy --schema public -f dump/data.sql
           # Logins (auth.users, identities): without them a restore has profiles nobody can sign in to.
           npx supabase db dump --linked --data-only --use-copy --schema auth -f dump/auth.sql
-          test -s dump/schema.sql && test -s dump/data.sql && test -s dump/auth.sql
+          # Every part must be there and non-empty, roles too: a restore without them can't recreate grants.
+          for f in roles schema data auth; do
+            test -s "dump/$f.sql" || { echo "::error::dump/$f.sql is missing or empty"; exit 1; }
+          done
       - name: Encrypt
         env:
           AGE_RECIPIENTS: ${{ secrets.AGE_RECIPIENTS }}

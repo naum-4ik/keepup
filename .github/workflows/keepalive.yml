@@ -20,3 +20,23 @@ jobs:
             -H "apikey: ${{ secrets.STAGING_PUBLISHABLE_KEY }}")
           echo "HTTP $code"
           [ "$code" != "000" ] && [ "$code" -lt 500 ]
+
+  # GitHub switches off scheduled workflows after 60 days without a commit to the default branch.
+  # Turning them on again every day keeps the nightly backup, the monthly restore test and this ping
+  # running through quiet spells (enabling an enabled workflow changes nothing). If GitHub ever
+  # switched off this file itself it couldn't run to fix that; its daily run keeps it active.
+  enable-schedules:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Re-enable the scheduled workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          for wf in keepalive.yml backup-staging.yml backup-restore-test.yml; do
+            gh api -X PUT "repos/$REPO/actions/workflows/$wf/enable"
+            echo "enabled $wf"
+          done
