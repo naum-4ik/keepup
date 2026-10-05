@@ -108,7 +108,7 @@ set local session_replication_role = origin;
 select is((select outcome from dan where habit_id = '00000000-0000-0000-0000-0000000008d1' and d = '2026-10-08'), 'skipped',
   'a whole-group pause today reads skipped, as on your own habits');
 
-select is((select array_agg(private.calendar_start_impl(u)::text order by n)
+select is((select array_agg(private.calendar_start_impl(u, '2026-10-08T10:00:00Z')::text order by n)
              from (values (1, '00000000-0000-0000-0000-0000000000a8'::uuid), (2, '00000000-0000-0000-0000-0000000000e8'::uuid)) as v(n, u)),
   array['2026-09-01', '2026-10-07'],
   'the calendar starts at the earliest group habit you take part in, from the day you joined');

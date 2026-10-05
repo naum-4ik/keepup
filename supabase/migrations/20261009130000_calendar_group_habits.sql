@@ -318,21 +318,24 @@ $$;
 
 -- The calendar's first month: the earliest start among your own habits and the group habits you take
 -- part in (for a group habit, the later of its start and the day you joined, in its time zone).
--- Archived habits count, as in calendar_cells. Month-precise: the app only compares months.
-create function private.calendar_start_impl(p_user uuid)
+-- Archived habits count, as in calendar_cells; a habit that hasn't started yet doesn't. Month-precise:
+-- the app only compares months.
+create function private.calendar_start_impl(p_user uuid, p_now timestamptz)
 returns date
 language sql
 stable
 set search_path = ''
 as $$
   select min(x.s) from (
-    select h.starts_on as s from public.habits h where h.owner_id = p_user
+    select h.starts_on as s from public.habits h
+     where h.owner_id = p_user and h.starts_on <= private.habit_today(h, p_now)
     union all
     select greatest(h.starts_on,
                     (select private.local_date(m.joined_at, private.habit_timezone(h)) from public.group_members m
                       where m.group_id = h.group_id and m.user_id = p_user and m.left_at is null))
       from public.habits h
      where h.group_id is not null and h.id in (select private.person_group_habits(p_user))
+       and h.starts_on <= private.habit_today(h, p_now)
   ) x;
 $$;
 
@@ -341,7 +344,7 @@ returns date
 language plpgsql stable security definer set search_path = '' as $$
 begin
   if auth.uid() is null then raise exception 'keepup:not_authenticated' using errcode = '42501'; end if;
-  return private.calendar_start_impl(auth.uid());
+  return private.calendar_start_impl(auth.uid(), now());
 end;
 $$;
 
