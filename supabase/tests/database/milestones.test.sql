@@ -1,7 +1,7 @@
 -- supabase/tests/database/milestones.test.sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(22);
+select plan(23);
 
 delete from public.habits;
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
@@ -139,6 +139,22 @@ select is(array[private.push_allowed('00000000-0000-0000-0000-0000000000a1', 'ki
                 private.push_allowed('00000000-0000-0000-0000-0000000000a1', 'kid_streak', null, (select v from t where k = 'fam'), '{}', now())],
   array[false, true],
   'a late kid streak note stays in the Inbox too');
+
+-- A late upgrade that merges two streaks doesn't pay again an N the later piece already earned
+-- (nor call it "back"): 1–3 Sep, 5–11 Sep (5 and 7 under the 5 Sep start), then 4 Sep upgraded.
+set local session_replication_role = replica;
+insert into public.habits (id, owner_id, title, category, emoji, target_count, period, starts_on, week_start, created_at, created_by)
+values ('00000000-0000-0000-0000-0000000000d8', '00000000-0000-0000-0000-0000000000f1', 'Floss', 'health', '🦷', 1, 'day', '2026-09-01', 1,
+        '2026-09-01 08:00Z', '00000000-0000-0000-0000-0000000000f1');
+set local session_replication_role = origin;
+insert into public.period_results (habit_id, period_start, outcome, finalized_at)
+select '00000000-0000-0000-0000-0000000000d8', d::date, case when d::date = '2026-09-04' then 'missed' else 'done' end, d + interval '1 day'
+  from generate_series('2026-09-01'::timestamp, '2026-09-11', '1 day') d order by d;
+update public.period_results set outcome = 'done' where habit_id = '00000000-0000-0000-0000-0000000000d8' and period_start = '2026-09-04';
+select is((select array_agg(split_part(source_id, ':', 2) || ':' || split_part(source_id, ':', 3) order by split_part(source_id, ':', 2), split_part(source_id, ':', 3)::int) from ms
+            where habit_id = '00000000-0000-0000-0000-0000000000d8'),
+  array['2026-09-01:1', '2026-09-01:2', '2026-09-01:10', '2026-09-05:1', '2026-09-05:2', '2026-09-05:5', '2026-09-05:7'],
+  'merging two streaks pays only the Ns neither piece reached (10), not 5 and 7 again');
 
 select * from finish();
 rollback;
