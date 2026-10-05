@@ -45,6 +45,20 @@ test("five counted check-ins reach level 2: on the avatar and on Profile", async
   await expect(page.getByRole("heading", { name: "Level 2 · Seedling" })).toBeVisible();
   await expect(page.getByRole("progressbar", { name: "XP to Level 3" })).toHaveAttribute("aria-valuenow", "0");
   await expect(page.getByText("150 XP to Level 3")).toBeVisible();
-  const tab = page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Profile, level 2", exact: true });
+  const tab = page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Profile, level 2, 0% to level 3", exact: true });
   await expect(tab.getByText("2", { exact: true })).toBeVisible();
+});
+
+test("the Profile tab's ring shows the way to the next level, on every tab", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createHabit(page, { title: "Walk", count: 1, period: "day" });
+  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  // 10 XP of the 50 to level 2.
+  for (const path of ["/today", "/progress", "/profile"]) {
+    await page.goto(path);
+    const nav = page.getByRole("navigation", { name: "Main" });
+    await expect(nav.getByRole("link", { name: "Profile, level 1, 20% to level 2", exact: true })).toBeVisible();
+    await expect(nav.getByTestId("xp-ring")).toHaveAttribute("data-progress", "0.20");
+  }
 });

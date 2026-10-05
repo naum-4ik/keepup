@@ -7,6 +7,7 @@ import { OfflineQueueProvider } from "@/components/offline/offline-queue-provide
 import { PushRefresh } from "@/components/notifications/push-refresh";
 import { getProfile } from "@/lib/auth";
 import { getUnreadCount } from "@/lib/inbox";
+import { levelFraction } from "@/lib/levels";
 import { getMyLevel } from "@/lib/xp-data";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -26,6 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           avatarEmoji={profile.avatar_emoji}
           avatarColor={profile.avatar_color}
           level={level?.level ?? null}
+          xpProgress={level ? levelFraction(level.xp) : null}
         />
         <PushRefresh />
         {/* New Inbox rows (approvals asked, check-ins, nudges) refresh whatever page is open, so the
