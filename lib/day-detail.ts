@@ -15,7 +15,7 @@ export type DayRow = {
   pending: number;
 };
 
-const ORDER: Record<DayRowStatus, number> = { done: 0, checked_in: 1, open: 2, missed: 3, paused: 4 };
+const ORDER: Record<DayRowStatus, number> = { done: 0, checked_in: 1, open: 2, missed: 3, paused: 4, rested: 5 };
 
 // Progress → tap a day: what you did that day. Daily habits use the day's cell from week_overview;
 // weekly and monthly habits appear only when checked in that day.

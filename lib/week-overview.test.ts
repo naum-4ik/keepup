@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { comparisonLine, hasWeekData, ringDash, ringFraction, streakUnit, withTodayPending, type WeekOverview } from "./week-overview";
+import { OUTCOME_LABEL, STATUS_WORD, comparisonLine, hasWeekData, ringDash, ringFraction, streakUnit, withTodayPending, type WeekOverview } from "./week-overview";
 
 const week = (done: number, possible: number, prev_done: number, prev_possible: number) => ({ done, possible, prev_done, prev_possible });
 
@@ -83,5 +83,13 @@ describe("withTodayPending", () => {
 
   it("changes nothing when today has no row", () => {
     expect(withTodayPending({ ...base, days: [] })).toMatchObject({ done: 2, possible: 2 });
+  });
+});
+
+describe("rest days (M5)", () => {
+  it("a rested period reads as a rest day, never as missed", () => {
+    expect(STATUS_WORD.rested).toBe("rest day");
+    expect(OUTCOME_LABEL.rested).toBe("Rest day");
+    expect(OUTCOME_LABEL.missed).toBe("Missed");
   });
 });

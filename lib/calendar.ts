@@ -30,7 +30,7 @@ export function monthGrid(month: string, weekStart: 0 | 1): (string | null)[][] 
   return Array.from({ length: cells.length / 7 }, (_, w) => cells.slice(w * 7, w * 7 + 7));
 }
 
-const ORDER: Record<DayRowStatus, number> = { done: 0, checked_in: 1, open: 2, missed: 3, paused: 4 };
+const ORDER: Record<DayRowStatus, number> = { done: 0, checked_in: 1, open: 2, missed: 3, paused: 4, rested: 5 };
 
 export function summarizeDays(cells: CalendarCell[], habits: DayHabit[]): Map<string, CalendarDay> {
   const byId = new Map(habits.map((h) => [h.habit_id, h]));

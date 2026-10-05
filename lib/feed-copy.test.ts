@@ -66,3 +66,25 @@ describe("feedCopy", () => {
     }
   });
 });
+
+describe("M5 feed lines", () => {
+  it("level-ups and badges open Profile", () => {
+    expect(feedCopy(item({ kind: "level_up", habit_id: null, habit_title: null, group_name: null, payload: { level: 6 } })))
+      .toEqual({ title: "Level 6", body: "Sprout 🌱", href: "/profile" });
+    expect(feedCopy(item({ kind: "badge_unlocked", habit_id: null, payload: { code: "bookworm", name: "Bookworm" } })))
+      .toEqual({ title: "Unlocked", body: "Bookworm", href: "/profile" });
+  });
+  it("a personal milestone, a rest day and the recaps", () => {
+    expect(feedCopy(item({ kind: "streak_milestone", group_name: null, payload: { streak: 30, period: "day", back: false } })))
+      .toEqual({ title: "Read 20 min", body: "🔥 Read 20 min: 30 days in a row", href: "/habits/h" });
+    expect(feedCopy(item({ kind: "rest_day_used", group_name: null, payload: { streak: 3, period: "week" } })).body)
+      .toBe("Rest week used. Your 3-week streak is safe 💤");
+    expect(feedCopy(item({ kind: "weekly_recap", habit_id: null, payload: { kind: "week", done: 4, possible: 7, longest: null } })))
+      .toEqual({ title: "Your week", body: "4 of 7 check-ins last week.", href: "/progress/recaps" });
+    expect(feedCopy(item({ kind: "monthly_recap", habit_id: null, payload: { kind: "month", start: "2026-09-01", done: 1, possible: 1 } })).body)
+      .toBe("1 of 1 check-in in September.");
+  });
+  it("a malformed recap still reads as a gentle line", () => {
+    expect(feedCopy(item({ kind: "weekly_recap", habit_id: null, payload: {} })).body).toBe("Your recap is ready.");
+  });
+});
