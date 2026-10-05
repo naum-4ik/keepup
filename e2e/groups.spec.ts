@@ -92,7 +92,9 @@ test("a group gets an avatar on creation, admins change it, members only see it"
   // The invite shows the group's own avatar.
   const visitor = await (await browser.newContext()).newPage();
   await visitor.goto(url);
-  await expect(visitor.getByRole("img", { name: "Pizza night" })).toContainText("🏡");
+  // Decoration (the heading names the group), so it's found by its markup, not its role.
+  await expect(visitor.getByRole("main").locator('[role="img"]')).toContainText("🏡");
+  await expect(visitor.getByRole("img", { name: "Pizza night" })).toHaveCount(0);
   await page.goto("/groups");
   await expect(page.getByRole("link", { name: /Pizza night/ })).toContainText("🏡");
 
@@ -136,7 +138,7 @@ test("an invited person joins from the link and lands on the group's habits", as
   await expect(guest.getByRole("heading", { name: /invited you to Family/ })).toBeVisible();
   await expect(guest.getByText("1 person is already in Family.")).toBeVisible();
   // No avatar picked: the kind's emoji stands in.
-  await expect(guest.getByRole("img", { name: "Family" })).toContainText("👨‍👩‍👧");
+  await expect(guest.getByRole("main").locator('[role="img"]')).toContainText("👨‍👩‍👧");
   // Google is off on the local stack, so email is the main button ("Use email instead" next to
   // "Join with Google" when it's on).
   await guest.getByRole("link", { name: "Continue with email" }).click();

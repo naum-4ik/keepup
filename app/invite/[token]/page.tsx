@@ -42,8 +42,15 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   const memberOf = claims?.claims ? await currentGroupOf(supabase, token) : null;
 
   return (
-    // The group's own avatar (its emoji, or the kind's when none is set), named by the group.
-    <InviteCard top={<Avatar name={group} emoji={preview.avatar_emoji || emoji} color={preview.avatar_color} size="lg" className="mx-auto" />}>
+    // The group's own avatar (its emoji, or the kind's when none is set). Decoration: the heading
+    // already names the group.
+    <InviteCard
+      top={
+        <span aria-hidden className="mx-auto flex">
+          <Avatar name={group} emoji={preview.avatar_emoji || emoji} color={preview.avatar_color} size="lg" />
+        </span>
+      }
+    >
       <h1 className="text-2xl font-bold">
         {preview.inviter_name} invited you to {group}
       </h1>
