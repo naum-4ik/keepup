@@ -189,7 +189,7 @@ describe("copy sheet rows", () => {
     expect(copy.restDayUsed("Run", 8, "week").body).toBe("Rest week used. Your 8-week streak is safe 💤");
     expect(copy.weeklyRecap({ done: 18, possible: 21, longest: { habit: "Read 20 min", length: 12 } })).toEqual({
       title: "Your week",
-      body: "18 of 21 check-ins last week. Longest streak: Read 20 min 🔥 12",
+      body: "18 of 21 check-ins last week. Longest streak: Read 20 min 🔥 12 days",
     });
     expect(copy.weeklyRecap({ done: 4, possible: 7, longest: null })?.body).toBe("4 of 7 check-ins last week.");
     expect(copy.levelUp(6, "Sprout")).toEqual({ title: "Level 6", body: "Sprout 🌱" });
@@ -220,7 +220,7 @@ describe("M5 copy", () => {
   });
   it("the monthly recap names the month and stays quiet about misses", () => {
     expect(copy.monthlyRecap({ month: "September", done: 70, possible: 84, longest: { habit: "Read", length: 21 } })).toEqual({
-      title: "Your month", body: "70 of 84 check-ins in September. Longest streak: Read 🔥 21" });
+      title: "Your month", body: "70 of 84 check-ins in September. Longest streak: Read 🔥 21 days" });
     expect(copy.monthlyRecap({ month: "September", done: 0, possible: 0, longest: null })).toBeNull();
   });
   it("the family recap matches the Inbox card's words", () => {
@@ -231,9 +231,9 @@ describe("M5 copy", () => {
   it("reads recap payloads written by the database", () => {
     const week = { kind: "week", start: "2026-09-28", end: "2026-10-05", done: 18, possible: 21,
       longest: { title: "Read 20 min", emoji: "📚", length: 12, period: "day" }, top: [], badges: [], days: [] };
-    expect(copy.recapCopy(week)).toEqual({ title: "Your week", body: "18 of 21 check-ins last week. Longest streak: Read 20 min 🔥 12" });
+    expect(copy.recapCopy(week)).toEqual({ title: "Your week", body: "18 of 21 check-ins last week. Longest streak: Read 20 min 🔥 12 days" });
     expect(copy.recapCopy({ ...week, kind: "month", start: "2026-09-01", end: "2026-10-01" })?.body)
-      .toBe("18 of 21 check-ins in September. Longest streak: Read 20 min 🔥 12");
+      .toBe("18 of 21 check-ins in September. Longest streak: Read 20 min 🔥 12 days");
     expect(copy.recapCopy({ kind: "week", done: "x" })).toBeNull();
     expect(copy.familyRecapCopy("Family", { check_ins: 3, best: null })?.body).toBe("Together last week: 3 check-ins");
   });
