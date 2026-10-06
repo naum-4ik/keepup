@@ -18,6 +18,16 @@ export function releaseLabel(r: Release, appVersion: string): string {
 
 export const RELEASES: Release[] = [
   {
+    version: "0.6.0",
+    notes: [
+      "Every check-in earns XP, and you grow from Seedling to Forest. A ring around your Profile avatar shows the way to the next level, and streak milestones arrive in your Inbox.",
+      "24 badges to collect under Profile → Achievements, from First step to Bookworm. Your past check-ins already count.",
+      "Rest days: keep a daily habit going for a week and you earn one. Miss a day and it's used for you, so your streak stays safe.",
+      "A weekly and monthly recap of your wins, in your Inbox and under Progress → Recaps.",
+      "Level-ups and badges get a short celebration (Settings → Celebrations → Subtle for a quieter one). In the kid view, every star now gets a big reveal.",
+    ],
+  },
+  {
     version: "0.5.0",
     date: "2026-10-04",
     notes: [
