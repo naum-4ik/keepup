@@ -10,7 +10,7 @@ import { getGroupDetail } from "@/lib/groups";
 import { GENERIC_ERROR, habitErrorMessage } from "@/lib/habit-errors";
 import { isTap, tapArgs, type TapId } from "@/lib/offline-sync";
 import { reminderError } from "@/lib/reminder-mode";
-import { checkInRowXp } from "@/lib/xp";
+import { countsNow, type TapXp } from "@/lib/xp";
 import { isUuid, LOCAL_DATE, parseDetailsEdit, parseHabit, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 
 const NOT_FOUND: ActionResult = { ok: false, message: "That habit isn't available." };
@@ -20,8 +20,9 @@ const REFRESH_ON_ERROR = new Set(["target_reached", "already_checked_in_today", 
 
 // code: the database rule that refused it ("keepup:<code>"), when there was one (an offline-queued
 // tap is dropped only for a rule refusal; anything else keeps it queued).
-// xp: the "+10 XP" a check-in just earned (lib/xp.ts), only from checkIn.
-export type ActionResult = { ok: true; xp?: number } | { ok: false; message: string; code?: string };
+// xp: the XP a check-in just earned (lib/xp.ts), only from checkIn: null when it counted but the
+// ledger couldn't be read ("+XP").
+export type ActionResult = { ok: true; xp?: TapXp } | { ok: false; message: string; code?: string };
 export type FormActionState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string };
 
 function refresh(habitId?: string) {
@@ -78,7 +79,18 @@ export async function checkIn(habitId: string, tap?: TapId): Promise<ActionResul
   }
   refresh(habitId);
   // XP only for a counted row this request inserted, not a resend's or a merge's (lib/xp.ts).
-  return { ok: true, xp: checkInRowXp(data, tap, startedAt) };
+  if (!data || !countsNow(data, tap, startedAt)) return { ok: true, xp: 0 };
+  // The amount the database granted (10 + the streak, private.check_in_streak), read back from the
+  // ledger (RLS: own rows). Fails soft: "+XP" with no number.
+  const { data: granted, error: readError } = await supabase
+    .from("xp_events")
+    .select("amount")
+    .eq("reason", "check_in")
+    .eq("source_type", "check_in")
+    .eq("source_id", data.id)
+    .maybeSingle();
+  if (readError) console.error("check-in XP read failed", readError.message);
+  return { ok: true, xp: granted?.amount ?? null };
 }
 
 // "Me + Mary": my check-in and each child's in one call, all or nothing.

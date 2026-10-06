@@ -103,6 +103,8 @@ insert into t select 'fam', (private.create_group_impl('00000000-0000-0000-0000-
 update public.groups set timezone = 'Europe/Rome' where id = (select v from t where k = 'fam');
 insert into t select 'inv', (private.create_invite_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'fam'), now())).id;
 select private.accept_invite_impl('00000000-0000-0000-0000-0000000000b1', (select token from public.group_invites where id = (select v from t where k = 'inv')), now());
+-- Joined before the seeded October days (joining stamps the real clock, which will pass them).
+update public.group_members set joined_at = '2026-09-01' where group_id = (select v from t where k = 'fam');
 set local session_replication_role = replica;
 insert into public.habits (id, owner_id, group_id, title, category, emoji, target_count, period, starts_on, week_start, requires_approval, created_at, created_by)
 values ('00000000-0000-0000-0000-0000000000d9', null, (select v from t where k = 'fam'), 'Gym', 'fitness', '🏋️', 1, 'day', '2026-10-01', 1, true,

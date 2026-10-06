@@ -1,18 +1,19 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import type { TapXp } from "@/lib/xp";
 
-// The "+10 XP" float of a check-in, kept outside the button: the refresh after a check-in can move the
+// The "+N XP" float of a check-in, kept outside the button: the refresh after a check-in can move the
 // habit's card (Today's "Done for today" list) and remount its button, which would cut the float short.
 // Keyed by habit; one float per habit at a time, gone after the 900 ms animation.
 export const XP_FLOAT_MS = 900;
-type Float = { xp: number; id: number };
+type Float = { xp: TapXp; id: number };
 const floats = new Map<string, Float>();
 const listeners = new Set<() => void>();
 let next = 0;
 const emit = () => listeners.forEach((l) => l());
 
-export function floatXp(habitId: string, xp: number) {
+export function floatXp(habitId: string, xp: TapXp) {
   const id = ++next;
   floats.set(habitId, { xp, id });
   emit();

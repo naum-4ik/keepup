@@ -113,7 +113,7 @@
   100% { transform: scale(1); }
 }
 
-/* "+10 XP" rises and fades above the check-in button (ideas/achievements-and-rewards.md §1). */
+/* "+N XP" rises and fades above the check-in button (ideas/achievements-and-rewards.md §1). */
 @keyframes xp-float {
   0% { transform: translateY(0); opacity: 0; }
   20% { opacity: 1; }

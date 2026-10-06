@@ -1,17 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { ServiceWorker } from "@/components/pwa/service-worker";
 import "./globals.css";
 
-const nunito = Nunito({
+// Self-hosted (no build-time fetch from Google). Nunito: one variable file (v3.602, the version Google
+// serves), subset to Google's latin + latin-ext ranges, so names like Łukasz or Gülşen stay in one font.
+// Built from googlefonts/nunito Nunito[wght].ttf with fonttools: pyftsubset --unicodes=<latin,latin-ext>
+// --layout-features='*' --flavor=woff2. Geist Mono: Google's latin file. Licences: app/fonts/*-OFL.txt.
+const nunito = localFont({
   variable: "--font-nunito",
-  weight: ["400", "600", "700", "800"],
-  subsets: ["latin"],
+  src: [{ path: "./fonts/nunito-latin-ext.woff2", weight: "400 800", style: "normal" }],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
   variable: "--font-geist-mono",
-  subsets: ["latin"],
+  src: [{ path: "./fonts/geist-mono-latin.woff2", weight: "100 900", style: "normal" }],
+  display: "swap",
 });
 
 export const metadata: Metadata = {

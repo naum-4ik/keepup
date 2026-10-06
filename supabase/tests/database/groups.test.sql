@@ -105,10 +105,14 @@ select throws_ok($$select private.delete_group_impl('00000000-0000-0000-0000-000
   'P0001', 'keepup:children_would_be_deleted', 'deleting a group with children needs confirmation');
 
 -- Deleting an auth user deletes the adult's profile and, through it, their habits and check-ins.
-insert into public.habits (owner_id, title, category, target_count, period, starts_on)
-values ('00000000-0000-0000-0000-0000000000f1', 'Read', 'learning', 1, 'day', current_date);
-insert into public.check_ins (habit_id, user_id, local_date, period_start)
-select id, owner_id, current_date, current_date from public.habits where owner_id = '00000000-0000-0000-0000-0000000000f1';
+-- Fixed dates with triggers off: the habit rules' "no start in the past" reads the owner's own today,
+-- which UTC current_date isn't, in some hours.
+set local session_replication_role = replica;
+insert into public.habits (owner_id, title, category, emoji, target_count, period, starts_on, created_at)
+values ('00000000-0000-0000-0000-0000000000f1', 'Read', 'learning', '📚', 1, 'day', '2026-09-01', '2026-09-01T08:00:00Z');
+insert into public.check_ins (habit_id, user_id, local_date, period_start, created_at, logged_by)
+select id, owner_id, '2026-09-01', '2026-09-01', '2026-09-01T09:00:00Z', owner_id from public.habits where owner_id = '00000000-0000-0000-0000-0000000000f1';
+set local session_replication_role = origin;
 delete from auth.users where id = '00000000-0000-0000-0000-0000000000f1';
 select is((select count(*)::int from public.profiles where id = '00000000-0000-0000-0000-0000000000f1'), 0,
   'deleting an auth user deletes the profile');

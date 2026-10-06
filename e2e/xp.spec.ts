@@ -10,7 +10,26 @@ test("a counted check-in floats +10 XP", async ({ page }) => {
   await expect(page.getByText("+10 XP")).toBeVisible();
 });
 
-test("a tap waiting on the phone floats +10 XP at once, and not again when it syncs", async ({ page, context }) => {
+test("a streak earns more: yesterday done, today floats +11 XP", async ({ page }) => {
+  const email = uniqueEmail();
+  await signUp(page, email);
+  await completeOnboarding(page);
+  await createHabit(page, { title: "Walk", count: 1, period: "day" });
+  // Yesterday (in the person's own time zone, relative to now): the habit already ran, and was done.
+  // Replica: the habit's guard refuses a start in the past, and the seeded row needs no rewards.
+  sql(`set session_replication_role = replica;
+       with u as (select p.id, p.timezone from public.profiles p join auth.users a on a.id = p.id where a.email = '${email}'),
+         h as (update public.habits x set starts_on = (now() at time zone u.timezone)::date - 1, created_at = now() - interval '2 days'
+                 from u where x.owner_id = u.id returning x.id, u.id as user_id, u.timezone)
+       insert into public.check_ins (habit_id, user_id, local_date, period_start, status, created_at, logged_by)
+       select h.id, h.user_id, (now() at time zone h.timezone)::date - 1, (now() at time zone h.timezone)::date - 1, 'approved',
+              now() - interval '1 day', h.user_id from h;`);
+  await page.reload();
+  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await expect(page.getByText("+11 XP")).toBeVisible();
+});
+
+test("a tap waiting on the phone floats +XP at once (the amount is set when it lands), and not again when it syncs", async ({ page, context }) => {
   await signUpAndOnboard(page);
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
   // Counts every float element that mounts, so a second one after the sync can't slip by between checks.
@@ -26,8 +45,8 @@ test("a tap waiting on the phone floats +10 XP at once, and not again when it sy
   const floats = () => page.evaluate(() => (window as unknown as { xpFloats: number }).xpFloats);
   await context.setOffline(true);
   await page.getByRole("button", { name: "Check in: Walk" }).click();
-  await expect(page.getByText("+10 XP")).toBeVisible();
-  await expect(page.getByText("+10 XP")).toHaveCount(0);
+  await expect(page.getByText("+XP", { exact: true })).toBeVisible();
+  await expect(page.getByText("+XP", { exact: true })).toHaveCount(0);
   expect(await floats()).toBe(1);
   await context.setOffline(false);
   await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
@@ -147,12 +166,16 @@ test("Settings → Celebrations remembers Full or Subtle", async ({ page }) => {
   await expect(page.getByRole("radiogroup", { name: "Celebrations" }).getByRole("radio", { name: "Full" })).toBeChecked();
 });
 
+// Runs SQL on the local test database; returns its output.
+function sql(input: string): string {
+  return execSync(`docker exec -i supabase_db_keepup psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -At`, { input }).toString().trim();
+}
+
 // Whether a badge of this account is still unseen, read from the local test database.
 function badgeUnseen(email: string, code: string): boolean {
-  const out = execSync(`docker exec -i supabase_db_keepup psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -At`, {
-    input: `select count(*) from public.user_achievements a join auth.users u on u.id = a.user_id where u.email = '${email}' and a.achievement_code = '${code}' and a.seen_at is null;`,
-  });
-  return out.toString().trim() === "1";
+  return (
+    sql(`select count(*) from public.user_achievements a join auth.users u on u.id = a.user_id where u.email = '${email}' and a.achievement_code = '${code}' and a.seen_at is null;`) === "1"
+  );
 }
 
 test("a page opened in a hidden tab shows and marks nothing until the tab is looked at", async ({ page }) => {

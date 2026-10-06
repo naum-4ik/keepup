@@ -78,12 +78,16 @@ select results_eq($$select (select status from public.check_ins where habit_id =
   $$values ('expired'::text, 'missed'::text)$$, 'a pending check-in expires and the day is finalized without it');
 
 -- "Approve all" (runs on the real clock): a check-in someone already reviewed, or one that no longer
--- exists, is skipped; the count says how many this call reviewed.
+-- exists, is skipped; the count says how many this call reviewed. Its own habit, started yesterday
+-- and removed afterwards, so today's check-ins never meet Gym's fixed, already finalized days.
 set local session_replication_role = replica;
+insert into public.habits (id, owner_id, group_id, title, category, emoji, target_count, period, starts_on, week_start, requires_approval, created_at, created_by) values
+  ('00000000-0000-0000-0000-0000000000d9', null, '00000000-0000-0000-0000-0000000000f1', 'Swim', 'fitness', '🏊', 1, 'day',
+   private.local_date(now(), 'Asia/Jerusalem') - 1, 0, true, now() - interval '1 day', '00000000-0000-0000-0000-0000000000a1');
 insert into public.check_ins (id, habit_id, user_id, local_date, period_start, status, reviewed_by, reviewed_at, logged_by) values
-  ('00000000-0000-0000-0000-00000000aa01', '00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000a1',
+  ('00000000-0000-0000-0000-00000000aa01', '00000000-0000-0000-0000-0000000000d9', '00000000-0000-0000-0000-0000000000a1',
    private.local_date(now(), 'Asia/Jerusalem'), private.local_date(now(), 'Asia/Jerusalem'), 'pending', null, null, '00000000-0000-0000-0000-0000000000a1'),
-  ('00000000-0000-0000-0000-00000000aa02', '00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000a1',
+  ('00000000-0000-0000-0000-00000000aa02', '00000000-0000-0000-0000-0000000000d9', '00000000-0000-0000-0000-0000000000a1',
    private.local_date(now(), 'Asia/Jerusalem'), private.local_date(now(), 'Asia/Jerusalem'), 'approved', '00000000-0000-0000-0000-0000000000b1', now(), '00000000-0000-0000-0000-0000000000a1');
 set local session_replication_role = origin;
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000b1');
@@ -91,6 +95,7 @@ select is(public.review_check_ins(array['00000000-0000-0000-0000-00000000aa02', 
   '00000000-0000-0000-0000-00000000aa99']::uuid[], true), 1, 'approve all skips an already-reviewed or missing check-in and counts the rest');
 reset role;
 select is((select status from public.check_ins where id = '00000000-0000-0000-0000-00000000aa01'), 'approved', 'the pending one was approved');
+delete from public.habits where id = '00000000-0000-0000-0000-0000000000d9';
 
 -- An archived approval habit: its pending check-in still expires once the review window has passed.
 select lives_ok($$select private.check_in_impl('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000b1', '2026-10-09T10:00:00Z')$$,

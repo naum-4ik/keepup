@@ -53,11 +53,16 @@ select is(private.child_rewards_impl('00000000-0000-0000-0000-0000000000a1', (se
 select throws_ok($$select private.child_rewards_impl('00000000-0000-0000-0000-0000000000c1', (select v from t where k = 'mary'), now())$$,
   'P0002', 'keepup:child_not_found', 'only the child''s adults see her rewards');
 
--- Family recap: only on the first day of the group's week, for the week that ended
-select is_empty($$select * from private.family_recaps_impl('00000000-0000-0000-0000-0000000000a1', '2026-10-07T10:00:00Z')$$,
-  'no recap mid-week');
-select is((select week_start from private.family_recaps_impl('00000000-0000-0000-0000-0000000000a1', '2026-10-12T10:00:00Z')),
-  '2026-10-05'::date, 'on Monday, a recap of last week');
+-- Family recap: only on the first day of the group's week, for the week that ended. Mary's stars above
+-- are today's (now()), so the week is this one, in the group's calendar.
+create temp table wk on commit drop as
+  select private.period_start('week', private.local_date(now(), g.timezone), g.week_start) as ws, g.timezone as tz
+    from public.groups g where g.id = (select v from t where k = 'fam');
+select is_empty(format($$select * from private.family_recaps_impl('00000000-0000-0000-0000-0000000000a1', %L)$$,
+  (select ((ws + 9)::timestamp + time '10:00') at time zone tz from wk)), 'no recap mid-week');
+select is((select week_start from private.family_recaps_impl('00000000-0000-0000-0000-0000000000a1',
+  (select ((ws + 7)::timestamp + time '10:00') at time zone tz from wk))),
+  (select ws from wk), 'on the first day of the next week, a recap of the week that ended');
 
 -- Dismissing cards: documented keys only
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000a1');
