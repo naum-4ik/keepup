@@ -161,11 +161,19 @@ export function createOfflineClient(deps: {
     return true;
   }
 
+  // Reset my data (Settings): the taps and undos still waiting on these habits are dropped first, so
+  // none is sent to a habit the reset removes. Other tabs hear about it.
+  async function forgetHabits(habitIds: Iterable<string>): Promise<void> {
+    await queue.dropHabits(new Set(habitIds));
+    deps.channel?.post();
+  }
+
   return {
     queue,
     flush,
     submitTap,
     undoQueued,
+    forgetHabits,
     counts: async () => {
       const counts = pendingCounts(await deps.storage.load());
       emit(counts);

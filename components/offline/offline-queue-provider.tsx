@@ -4,7 +4,7 @@ import { createContext, startTransition, useCallback, useContext, useEffect, use
 import { usePathname, useRouter } from "next/navigation";
 import { createOfflineClient, type Channel, type Counts, type TapResult } from "@/lib/offline-client";
 import { GENERIC_ERROR } from "@/lib/habit-errors";
-import { claimSavedPages, savePageOffline } from "@/lib/offline-pages";
+import { claimSavedPages, clearSavedPages, savePageOffline } from "@/lib/offline-pages";
 import { queuedDelta, type ShownPeriods } from "@/lib/offline-queue";
 import { deleteOfflineQueue, indexedDbStorage, offlineDbName, type Locks } from "@/lib/offline-queue-store";
 import { httpSender } from "@/lib/offline-sync";
@@ -182,6 +182,19 @@ export function useUndoQueuedTap() {
       } catch (e) {
         console.error("undo queued tap", e);
       }
+    },
+    [client],
+  );
+}
+
+// Reset my data (components/profile/reset-my-data.tsx): drop what waits on these habits from this
+// phone, and the saved pages, before the reset runs.
+export function useForgetOfflineHabits() {
+  const { client } = useContext(OfflineQueueContext);
+  return useCallback(
+    async (habitIds: string[]): Promise<void> => {
+      await client?.forgetHabits(habitIds);
+      await clearSavedPages();
     },
     [client],
   );

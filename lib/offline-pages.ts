@@ -40,3 +40,13 @@ export async function clearOfflineCaches(timeoutMs = 3000): Promise<void> {
   }
   if ("caches" in window) await Promise.all((await caches.keys()).map((k) => caches.delete(k)));
 }
+
+// Reset my data: the saved Today and kid view show habits that are about to go. The next visit saves
+// them again.
+export async function clearSavedPages(): Promise<void> {
+  try {
+    if ("caches" in window) await caches.delete(PAGES);
+  } catch {
+    // no Cache Storage here: nothing was saved
+  }
+}

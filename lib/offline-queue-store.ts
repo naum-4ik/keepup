@@ -195,6 +195,8 @@ export function createOfflineQueue(deps: {
     // A tap that was saved here first and then reached the server online (or was refused): it needn't
     // wait any more. If a flush is sending it at the same time, the server keeps one (client_id).
     forget: (clientId: string) => update((q) => q.filter((e) => !(e.kind === "check_in" && e.clientId === clientId))),
+    // Reset my data: everything waiting on these habits leaves the phone (they are about to go).
+    dropHabits: (habitIds: ReadonlySet<string>) => update((q) => q.filter((e) => !habitIds.has(e.habitId))),
     flush(): Promise<FlushResult> {
       running ??= (deps.locks ? deps.locks.request(LOCK, {}, flushOnce) : flushOnce()).finally(() => (running = null));
       return running;

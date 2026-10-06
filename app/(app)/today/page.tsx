@@ -24,6 +24,7 @@ import { todayIn } from "@/lib/dates";
 import { getPendingApprovals } from "@/lib/inbox";
 import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { parsePurpose } from "@/lib/profile-schema";
+import { RESET_DONE } from "@/lib/reset-my-data";
 import { currentPeriods, renderedTapIds, tapPeriods } from "@/lib/rendered-taps";
 import { allCheckedOffKey, groupForToday } from "@/lib/today";
 import { todayProgress } from "@/lib/today-progress";
@@ -32,8 +33,8 @@ import { getCelebrations, getDismissedCards, hasCheckedIn } from "@/lib/today-ca
 import { membersOf, sectionsForToday } from "@/lib/today-sections";
 import { hasWeekData } from "@/lib/week-overview";
 
-export default async function TodayPage({ searchParams }: { searchParams: Promise<{ joined?: string }> }) {
-  const { joined } = await searchParams;
+export default async function TodayPage({ searchParams }: { searchParams: Promise<{ joined?: string; reset?: string }> }) {
+  const { joined, reset } = await searchParams;
   const childrenP = getMyChildren();
   const [summaries, overview, groups, approvals, children, { profile }, celebrations, dismissed, checkedIn, tapRows] = await Promise.all([
     getHabitSummaries(),
@@ -151,6 +152,12 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     <section className="flex flex-col gap-4 py-6">
       <RenderedTaps ids={renderedTaps} periods={shownPeriods} />
       <h1 className="text-xl font-bold">Today</h1>
+      {/* Right after Settings → Reset my data. */}
+      {reset === "1" && (
+        <p role="status" className="rounded-2xl bg-card p-4 text-sm font-semibold shadow-soft">
+          {RESET_DONE}
+        </p>
+      )}
       {progress.total > 0 && (
         <TodayCard
           date={date}

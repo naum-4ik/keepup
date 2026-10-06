@@ -294,3 +294,16 @@ describe("holdsRefresh", () => {
     expect(client.holdsRefresh()).toBe(false);
   });
 });
+
+describe("Reset my data", () => {
+  it("drops what waits on the given habits (taps and undos), keeps the rest, and tells other tabs", async () => {
+    const post = vi.fn();
+    const { client, storage } = setup({ online: false, channel: { post, listen: () => () => {} } });
+    await client.submitTap({ habitId: "mine" }, async () => ({ ok: true }));
+    await client.submitTap({ habitId: "group" }, async () => ({ ok: true }));
+    await storage.update((q) => [...q, { kind: "undo", clientId: "u1", habitId: "mine" }]);
+    await client.forgetHabits(["mine"]);
+    expect((await storage.load()).map((e) => `${e.kind}:${e.habitId}`)).toEqual(["check_in:group"]);
+    expect(post).toHaveBeenCalled();
+  });
+});

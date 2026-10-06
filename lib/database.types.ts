@@ -970,6 +970,9 @@ isOneToOne: false
 "reset_child":
 { Args: { "p_child_id": string }; Returns: undefined
                            },
+"reset_my_data":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
 "restore_habit":
 { Args: { "p_habit_id": string }; Returns: {
               "archived_at": string | null,
