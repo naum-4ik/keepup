@@ -23,7 +23,20 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "check_ins": {
+            "achievements": {
+                  Row: {
+                    "badge_group": string,"code": string,"description": string,"icon": string,"name": string,"sort_order": number
+                  }
+                  Insert: {
+                    "badge_group": string,"code": string,"description": string,"icon": string,"name": string,"sort_order": number
+                  }
+                  Update: {
+                    "badge_group"?: string,"code"?: string,"description"?: string,"icon"?: string,"name"?: string,"sort_order"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"check_ins": {
                   Row: {
                     "by_child": boolean,"client_id": string | null,"created_at": string,"habit_id": string,"id": string,"local_date": string,"logged_by": string | null,"period_start": string,"reviewed_at": string | null,"reviewed_by": string | null,"status": string,"tapped_at": string | null,"user_id": string
                   }
@@ -424,13 +437,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "avatar_color": string | null,"avatar_emoji": string | null,"created_at": string,"display_name": string,"group_id": string | null,"id": string,"kid_theme": string | null,"kind": string,"muted_until": string | null,"onboarded_at": string | null,"purpose": string | null,"reminder_hour": number,"terms_accepted_at": string | null,"timezone": string,"week_start": number
+                    "avatar_color": string | null,"avatar_emoji": string | null,"celebrations": string,"created_at": string,"display_name": string,"group_id": string | null,"id": string,"kid_theme": string | null,"kind": string,"muted_until": string | null,"onboarded_at": string | null,"purpose": string | null,"reminder_hour": number,"terms_accepted_at": string | null,"timezone": string,"week_start": number
                   }
                   Insert: {
-                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"created_at"?: string,"display_name": string,"group_id"?: string | null,"id": string,"kid_theme"?: string | null,"kind"?: string,"muted_until"?: string | null,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
+                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"celebrations"?: string,"created_at"?: string,"display_name": string,"group_id"?: string | null,"id": string,"kid_theme"?: string | null,"kind"?: string,"muted_until"?: string | null,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
                   }
                   Update: {
-                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"created_at"?: string,"display_name"?: string,"group_id"?: string | null,"id"?: string,"kid_theme"?: string | null,"kind"?: string,"muted_until"?: string | null,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
+                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"celebrations"?: string,"created_at"?: string,"display_name"?: string,"group_id"?: string | null,"id"?: string,"kid_theme"?: string | null,"kind"?: string,"muted_until"?: string | null,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
                   }
                   Relationships: [
                     {
@@ -480,6 +493,31 @@ isOneToOne: false
     },{
       foreignKeyName: "treat_goals_created_by_fkey"
       columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"user_achievements": {
+                  Row: {
+                    "achievement_code": string,"seen_at": string | null,"unlocked_at": string,"user_id": string
+                  }
+                  Insert: {
+                    "achievement_code": string,"seen_at"?: string | null,"unlocked_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "achievement_code"?: string,"seen_at"?: string | null,"unlocked_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "user_achievements_achievement_code_fkey"
+      columns: ["achievement_code"]
+isOneToOne: false
+      referencedRelation: "achievements"
+      referencedColumns: ["code"]
+    },{
+      foreignKeyName: "user_achievements_user_id_fkey"
+      columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
@@ -845,6 +883,9 @@ isOneToOne: false
 "leave_group":
 { Args: { "p_confirm_children"?: boolean,"p_group_id": string }; Returns: undefined
                            },
+"mark_badges_seen":
+{ Args: { "p_codes": (string)[] }; Returns: number
+                           },
 "mark_feed_read":
 { Args: { "p_ids"?: (string)[] }; Returns: number
                            },
@@ -959,6 +1000,9 @@ isOneToOne: false
                            },
 "save_push_subscription":
 { Args: { "p_auth": string,"p_endpoint": string,"p_p256dh": string,"p_user_agent"?: string }; Returns: undefined
+                           },
+"set_celebrations":
+{ Args: { "p_mode": string }; Returns: undefined
                            },
 "set_child_theme":
 { Args: { "p_child_id": string,"p_theme": string }; Returns: undefined
