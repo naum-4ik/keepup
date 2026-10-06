@@ -85,15 +85,18 @@ set search_path = ''
 as $$
 declare
   v_queue text;
+  v_queued text;
 begin
   if p_user is null then
     return false;
   end if;
   if not p_sync and not p_quiet then
     v_queue := coalesce(current_setting('keepup.unbadged', true), '');
-    -- Already earned, or already queued in this transaction (the earliest moment wins): nothing to add.
+    -- Already earned, or already queued in this transaction at the same moment or earlier: nothing to
+    -- add. A later entry that is earlier is added; the sync keeps the earliest moment per badge.
+    v_queued := (regexp_match(v_queue, '(?:^|;)' || p_user || '\|' || p_code || '\|([^|]*)\|'))[1];
     if exists (select 1 from public.user_achievements a where a.user_id = p_user and a.achievement_code = p_code)
-       or strpos(';' || v_queue, ';' || p_user || '|' || p_code || '|') > 0 then
+       or v_queued::timestamptz <= coalesce(p_at, now()) then
       return false;
     end if;
     perform set_config('keepup.unbadged',
@@ -139,10 +142,13 @@ begin
       from (select distinct u::uuid as id, 0 as step, null::text as code, null::timestamptz as at, false as late
               from unnest(string_to_array(v_list, ',')) u
             union all
-            select split_part(b, '|', 1)::uuid, 1, split_part(b, '|', 2),
-                   min(split_part(b, '|', 3)::timestamptz), bool_or(split_part(b, '|', 4)::boolean)
-              from unnest(string_to_array(v_badges, ';')) b
-             group by 1, 2, 3) x
+            -- The earliest moment queued for each badge, with its late flag.
+            select * from (
+              select distinct on (q.id, q.code) q.id, 1, q.code, q.at, q.late
+                from (select split_part(b, '|', 1)::uuid as id, split_part(b, '|', 2) as code,
+                             split_part(b, '|', 3)::timestamptz as at, split_part(b, '|', 4)::boolean as late
+                        from unnest(string_to_array(v_badges, ';')) b) q
+               order by q.id, q.code, q.at) e) x
      order by x.id, x.step, x.code
   loop
     if r.step = 0 then
@@ -166,8 +172,7 @@ as $$
       from public.habits h
      where h.period = 'day' and h.archived_at is null
        and h.starts_on <= p_date and (h.ends_on is null or h.ends_on >= p_date)
-       and (h.owner_id = p_user or h.group_id is not null)
-       and private.takes_part(h, p_user)
+       and (h.owner_id = p_user or h.id in (select private.person_group_habits(p_user)))
        and not private.is_frozen(h.id, p_date, p_date + 1)
        and not private.is_member_frozen(h.id, p_user, p_date, p_date + 1))
   select count(*) >= 2 and coalesce(bool_and((
@@ -177,8 +182,12 @@ as $$
 $$;
 
 -- Perfect week: in the person's week starting p_week_start, every period of every daily and weekly habit
--- they took part in all week is settled done (or paused), with at least two habits done.
-create function private.perfect_week(p_user uuid, p_week_start date)
+-- they had all week is done (or skipped: the habit paused), with at least two habits done. A group
+-- habit judges the person's own part (private.person_period_outcome, owner 2026-10-06: the ring's,
+-- "This week"'s and the calendar's rule): done when their own check-ins reach the target, whatever
+-- the others did; a period they weren't required for (paused, not yet joined) is left out, neither
+-- done nor missed. p_now: the moment judged (only the period still open at p_now isn't done).
+create function private.perfect_week(p_user uuid, p_week_start date, p_now timestamptz default now())
 returns boolean
 language sql
 stable
@@ -188,7 +197,7 @@ as $$
     select h as habit, h.id, h.period
       from public.habits h
      where h.period in ('day', 'week')
-       and (h.owner_id = p_user or h.group_id is not null) and private.takes_part(h, p_user)
+       and (h.owner_id = p_user or h.id in (select private.person_group_habits(p_user)))
        and h.starts_on <= p_week_start
        and (h.ends_on is null or h.ends_on >= p_week_start + 6)
        and (h.archived_at is null or h.archived_at >= private.local_midnight(p_week_start + 7, private.habit_timezone(h)))
@@ -196,11 +205,18 @@ as $$
     select distinct hs.id, private.habit_period_start(hs.habit, d::date) as ps
       from hs cross join generate_series(p_week_start::timestamp, (p_week_start + 6)::timestamp, interval '1 day') d
      where hs.period = 'day' or private.habit_period_start(hs.habit, d::date) >= p_week_start
+  ), judged as (
+    select e.id, h.group_id is not null as shared,
+           case when h.group_id is null
+                then (select x.outcome from public.period_results x where x.habit_id = e.id and x.period_start = e.ps)
+                else (select o.outcome from private.person_period_outcome(h, p_user, e.ps, p_now) o) end as outcome
+      from expected e join public.habits h on h.id = e.id
   )
-  select count(distinct e.id) >= 2
-     and coalesce(bool_and(coalesce(x.outcome in ('done', 'skipped'), false)), false)
-     and count(distinct e.id) filter (where x.outcome = 'done') >= 2
-    from expected e left join public.period_results x on x.habit_id = e.id and x.period_start = e.ps;
+  select count(distinct j.id) >= 2
+     and coalesce(bool_and(coalesce(j.outcome in ('done', 'skipped'), false)), false)
+     and count(distinct j.id) filter (where j.outcome = 'done') >= 2
+    from judged j
+   where not (j.shared and j.outcome is null);
 $$;
 
 -- Hooks. Each judges one moment (p_at) for the people it concerns. They only read; the awards are
@@ -268,8 +284,10 @@ begin
 end;
 $$;
 
--- A settled period: rested → Rest well for the owner; done → the streak, category and family badges
--- for everyone it paid period XP to (the owner, or each required member of a group period).
+-- A settled period. Whatever it settled as: Perfect week for each person it concerns (the owner, or
+-- each required member of a group period: a member's own part can be done when the group's is
+-- missed). Rested → Rest well for the owner; done → the streak, category and family badges for
+-- everyone it paid period XP to.
 create function private.badges_on_period(p_habit public.habits, p_period_start date, p_outcome text, p_at timestamptz default now(),
   p_quiet boolean default false, p_sync boolean default true, p_late boolean default false)
 returns void
@@ -286,6 +304,20 @@ declare
   v_code text;
   u uuid;
 begin
+  if p_habit.period in ('day', 'week') then
+    for u in
+      select x.id
+        from (select p_habit.owner_id as id where p_habit.group_id is null
+              union
+              select m.profile_id from private.required_members(p_habit, p_period_start) m(profile_id) where p_habit.group_id is not null) x
+       where x.id is not null
+       order by x.id
+    loop
+      if private.perfect_week(u, private.period_start('week', p_period_start, (select p.week_start from public.profiles p where p.id = u)), p_at) then
+        perform private.award_badge(u, 'perfect_week', p_at, p_quiet, p_sync, p_late);
+      end if;
+    end loop;
+  end if;
   if p_outcome = 'rested' then
     perform private.award_badge(p_habit.owner_id, 'rest_well', p_at, p_quiet, p_sync, p_late);
     return;
@@ -296,7 +328,8 @@ begin
   select s.run, s.started_on into v_run, v_start from private.streak_at(p_habit, p_period_start) s;
   for u in
     select x.user_id from public.xp_events x
-     where x.reason = 'period_done' and x.source_type = 'period' and x.source_id = p_habit.id || ':' || p_period_start
+     where x.habit_id = p_habit.id and x.reason = 'period_done' and x.source_type = 'period'
+       and x.source_id = p_habit.id || ':' || p_period_start
      order by x.user_id
   loop
     if v_run >= 7 then
@@ -343,10 +376,6 @@ begin
            where x.user_id = u and x.reason = 'period_done' and h.group_id is not null and x.created_at <= p_at) >= 10 then
         perform private.award_badge(u, 'team_player', p_at, p_quiet, p_sync, p_late);
       end if;
-    end if;
-    if p_habit.period in ('day', 'week')
-       and private.perfect_week(u, private.period_start('week', p_period_start, (select p.week_start from public.profiles p where p.id = u))) then
-      perform private.award_badge(u, 'perfect_week', p_at, p_quiet, p_sync, p_late);
     end if;
   end loop;
 end;
@@ -405,9 +434,9 @@ begin
 end;
 $$;
 
--- Copied from 20261010100000_streak_milestones.sql (its latest definition). New: a done period's
--- badges, after the XP and milestones, at the same moment (v_at) and late flag, queued for the sync
--- below (or finalize's, after its loop).
+-- Copied from 20261010100000_streak_milestones.sql (its latest definition). New: the period's badges
+-- (any outcome; a done one after the XP and milestones), at the same moment (v_at) and late flag,
+-- queued for the sync below (or finalize's, after its loop).
 create or replace function private.rewards_on_period_result()
 returns trigger
 language plpgsql
@@ -439,6 +468,9 @@ begin
     perform private.grant_period_xp(v_habit, new.period_start, v_at, false, false);
     perform private.period_milestones(v_habit, new.period_start, v_at, false, false, v_late);
     perform private.badges_on_period(v_habit, new.period_start, 'done', v_at, false, false, v_late);
+  else
+    -- Any other settle still judges Perfect week (a member's own part can be done).
+    perform private.badges_on_period(v_habit, new.period_start, new.outcome, v_at, false, false, false);
   end if;
   -- Levels (and badges) are synced once for everyone, in user id order: inside finalize's habit loop,
   -- after the loop (finalize does it); otherwise now, together with an upgrading check-in's author and
@@ -539,7 +571,8 @@ grant execute on function public.set_celebrations(text), public.mark_badges_seen
 
 -- Past history, quietly (dated when earned, marked seen, no Inbox rows). Returns how many were new.
 -- A period is judged at the latest of its settling and its period XP (a late upgrade pays at the tap,
--- after finalized_at), so the ledger counts include it.
+-- after finalized_at), so the ledger counts include it. Periods are judged in that order, across
+-- habits, so a badge two habits earned is dated at the earlier one (the first award wins).
 create function private.backfill_badges()
 returns int
 language plpgsql
@@ -562,10 +595,10 @@ begin
   end loop;
   for r in select h as habit, x.period_start, x.outcome,
                   greatest(x.finalized_at, (select max(e.created_at) from public.xp_events e
-                                             where e.reason = 'period_done' and e.source_type = 'period'
+                                             where e.habit_id = h.id and e.reason = 'period_done' and e.source_type = 'period'
                                                and e.source_id = h.id || ':' || x.period_start)) as at
              from public.period_results x join public.habits h on h.id = x.habit_id
-            where x.outcome = 'done' order by x.habit_id, x.period_start loop
+            order by 4, x.habit_id, x.period_start loop
     perform private.badges_on_period(r.habit, r.period_start, r.outcome, r.at, true);
   end loop;
   return (select count(*)::int from public.user_achievements) - v_before;

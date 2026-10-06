@@ -2,7 +2,7 @@
 -- One assertion per badge (spec: every rule has a test), plus the wiring, quiet, RLS and setting.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(48);
+select plan(57);
 
 select tests.create_user(id::uuid, n || '@example.com', jsonb_build_object('full_name', n))
   from (values ('00000000-0000-0000-0000-0000000000a1', 'Anna'), ('00000000-0000-0000-0000-0000000000b1', 'Dan'),
@@ -160,6 +160,8 @@ select pg_temp.seed('00000000-0000-0000-0000-0000000000c8', '00000000-0000-0000-
 insert into public.period_results (habit_id, period_start, outcome) values ('00000000-0000-0000-0000-0000000000c8', '2026-06-04', 'missed');
 select pg_temp.seed('00000000-0000-0000-0000-0000000000c8', '00000000-0000-0000-0000-0000000000c1', '2026-06-05', 7);
 set local session_replication_role = origin;
+select private.badges_on_period(h, '2026-01-09', 'done', '2026-01-10') from public.habits h where h.id = '00000000-0000-0000-0000-0000000000c4';
+select ok(not pg_temp.has('00000000-0000-0000-0000-0000000000c1', 'good_company'), 'not Good company at 9 done in People');
 select private.badges_on_period(h, ('2026-01-01'::date + n - 1), 'done', '2027-01-01')
   from public.habits h join (values ('00000000-0000-0000-0000-0000000000c2'::uuid, 30), ('00000000-0000-0000-0000-0000000000c3', 30),
                                     ('00000000-0000-0000-0000-0000000000c4', 10), ('00000000-0000-0000-0000-0000000000c5', 6)) v(id, n) on v.id = h.id;
@@ -260,8 +262,92 @@ delete from public.check_ins where user_id = '00000000-0000-0000-0000-0000000000
 select ok(pg_temp.has('00000000-0000-0000-0000-0000000000d9', 'first_step') and pg_temp.has('00000000-0000-0000-0000-0000000000d9', 'first_week'),
   'an undone check-in keeps its badges');
 
+-- Fix round 1 (owner 2026-10-06): Perfect week judges each person's OWN part of a group habit. Oli,
+-- Rae, Sol and Tia share two daily group habits for the week of Mon 1 June. G1's last day settles
+-- missed (Rae didn't), the only call: Oli's own part is done every day, so the missed settle gives
+-- it to Oli and judges Rae (no badge). Sol was paused on G1 one day (left out); Tia was paused on G1
+-- all week, so only G2 counts for her (a paused period is not done).
+select tests.create_user(id::uuid, n || '@example.com', jsonb_build_object('full_name', n))
+  from (values ('00000000-0000-0000-0000-0000000000a7', 'Oli'), ('00000000-0000-0000-0000-0000000000a8', 'Rae'),
+               ('00000000-0000-0000-0000-0000000000a9', 'Sol'), ('00000000-0000-0000-0000-0000000000aa', 'Tia'),
+               ('00000000-0000-0000-0000-0000000000ab', 'Uma')) v(id, n);
+update public.profiles set timezone = 'UTC'
+ where id in ('00000000-0000-0000-0000-0000000000a7', '00000000-0000-0000-0000-0000000000a8', '00000000-0000-0000-0000-0000000000a9',
+              '00000000-0000-0000-0000-0000000000aa', '00000000-0000-0000-0000-0000000000ab');
+insert into t select 'duo', (private.create_group_impl('00000000-0000-0000-0000-0000000000a7', 'Crew 2', 'friends')).id;
+insert into public.group_members (group_id, user_id)
+select (select v from t where k = 'duo'), m.id::uuid
+  from (values ('00000000-0000-0000-0000-0000000000a8'), ('00000000-0000-0000-0000-0000000000a9'), ('00000000-0000-0000-0000-0000000000aa')) m(id);
+update public.group_members set joined_at = '2026-05-01' where group_id = (select v from t where k = 'duo');
+update public.groups set timezone = 'UTC' where id = (select v from t where k = 'duo');
+set local session_replication_role = replica;
+select pg_temp.habit(('00000000-0000-0000-0000-00000000040' || i)::uuid, '00000000-0000-0000-0000-0000000000a7', 'mind', 'day', 1, '2026-06-01', (select v from t where k = 'duo'))
+  from generate_series(1, 2) i;
+insert into public.period_results (habit_id, period_start, outcome, finalized_at)
+select ('00000000-0000-0000-0000-00000000040' || h)::uuid, '2026-06-01'::date + d, case when h = 1 and d = 6 then 'missed' else 'done' end,
+       '2026-06-02'::timestamptz + make_interval(days => d)
+  from generate_series(1, 2) h, generate_series(0, 6) d;
+insert into public.habit_freezes (habit_id, user_id, starts_on, ends_on, created_by) values
+  ('00000000-0000-0000-0000-000000000401', '00000000-0000-0000-0000-0000000000a9', '2026-06-03', '2026-06-03', '00000000-0000-0000-0000-0000000000a9'),
+  ('00000000-0000-0000-0000-000000000401', '00000000-0000-0000-0000-0000000000aa', '2026-06-01', '2026-06-07', '00000000-0000-0000-0000-0000000000aa');
+insert into public.check_ins (habit_id, user_id, local_date, period_start, status, created_at, logged_by)
+select ('00000000-0000-0000-0000-00000000040' || h)::uuid, u::uuid, '2026-06-01'::date + d, '2026-06-01'::date + d, 'approved',
+       '2026-06-01 09:00+00'::timestamptz + make_interval(days => d), u::uuid
+  from generate_series(1, 2) h, generate_series(0, 6) d,
+       unnest(array['00000000-0000-0000-0000-0000000000a7', '00000000-0000-0000-0000-0000000000a8',
+                    '00000000-0000-0000-0000-0000000000a9', '00000000-0000-0000-0000-0000000000aa']) u
+ where not (h = 1 and d = 6 and u = '00000000-0000-0000-0000-0000000000a8')
+   and not (h = 1 and d = 2 and u = '00000000-0000-0000-0000-0000000000a9')
+   and not (h = 1 and u = '00000000-0000-0000-0000-0000000000aa');
+set local session_replication_role = origin;
+select private.badges_on_period(h, '2026-06-07', 'missed', '2026-06-08 12:00+00') from public.habits h where h.id = '00000000-0000-0000-0000-000000000401';
+select ok(pg_temp.has('00000000-0000-0000-0000-0000000000a7', 'perfect_week'),
+  'Perfect week: my own part done every day, though another member missed a day (judged on the missed settle)');
+select ok(not pg_temp.has('00000000-0000-0000-0000-0000000000a8', 'perfect_week'), 'not when I missed one group day (still judged when it settles missed)');
+select ok(pg_temp.has('00000000-0000-0000-0000-0000000000a9', 'perfect_week'), 'a day I was paused doesn''t break it');
+select private.badges_on_period(h, '2026-06-07', 'done', '2026-06-08 12:00+00') from public.habits h where h.id = '00000000-0000-0000-0000-000000000402';
+select ok(not pg_temp.has('00000000-0000-0000-0000-0000000000aa', 'perfect_week'), 'and a paused period doesn''t count as done (one habit left)');
+
+-- Fair judge through the real review: Oli has approved 19; the 20th is review_check_in_impl.
+set local session_replication_role = replica;
+insert into public.habits (id, owner_id, group_id, title, category, emoji, target_count, period, starts_on, week_start, requires_approval, created_at, created_by)
+values ('00000000-0000-0000-0000-000000000403', null, (select v from t where k = 'duo'), 'Gym', 'fitness', '🏋️', 1, 'day', '2026-07-01', 1, true,
+        '2026-07-01', '00000000-0000-0000-0000-0000000000a7');
+insert into public.check_ins (habit_id, user_id, local_date, period_start, status, created_at, logged_by, reviewed_by, reviewed_at)
+select '00000000-0000-0000-0000-000000000403', '00000000-0000-0000-0000-0000000000a8', '2026-07-01'::date + i, '2026-07-01'::date + i, 'approved',
+       '2026-07-01 09:00+00'::timestamptz + make_interval(days => i), '00000000-0000-0000-0000-0000000000a8',
+       '00000000-0000-0000-0000-0000000000a7', '2026-07-01 10:00+00'::timestamptz + make_interval(days => i)
+  from generate_series(0, 18) i;
+set local session_replication_role = origin;
+insert into t select 'g20', (private.check_in_impl('00000000-0000-0000-0000-000000000403', '00000000-0000-0000-0000-0000000000a8', '2026-08-20 09:00+00')).id;
+select private.review_check_in_impl((select v from t where k = 'g20'), '00000000-0000-0000-0000-0000000000a7', true, '2026-08-20 10:00+00');
+select ok(pg_temp.has('00000000-0000-0000-0000-0000000000a7', 'fair_judge'), 'Fair judge: the 20th approval, through review_check_in_impl');
+
+-- Back on track needs a streak that ended: a miss with nothing done before it isn't one.
+set local session_replication_role = replica;
+select pg_temp.habit('00000000-0000-0000-0000-000000000404', '00000000-0000-0000-0000-0000000000aa', 'fitness', 'day', 1, '2026-04-01');
+insert into public.period_results (habit_id, period_start, outcome, finalized_at) values ('00000000-0000-0000-0000-000000000404', '2026-04-01', 'missed', '2026-04-02');
+select pg_temp.seed('00000000-0000-0000-0000-000000000404', '00000000-0000-0000-0000-0000000000aa', '2026-04-02', 7);
+set local session_replication_role = origin;
+select private.badges_on_period(h, '2026-04-08', 'done', '2027-01-01') from public.habits h where h.id = '00000000-0000-0000-0000-000000000404';
+select ok(pg_temp.has('00000000-0000-0000-0000-0000000000aa', 'first_week') and not pg_temp.has('00000000-0000-0000-0000-0000000000aa', 'back_on_track'),
+  'not Back on track after a miss with nothing done before it');
+
+-- Backfill dating: Uma reached 7 on two habits; the one with the higher id got there first (8 Mar).
+set local session_replication_role = replica;
+select pg_temp.habit('00000000-0000-0000-0000-0000000005a1', '00000000-0000-0000-0000-0000000000ab', 'fitness', 'day', 1, '2024-03-10');
+select pg_temp.habit('00000000-0000-0000-0000-0000000005b1', '00000000-0000-0000-0000-0000000000ab', 'fitness', 'day', 1, '2024-03-01');
+select pg_temp.seed('00000000-0000-0000-0000-0000000005a1', '00000000-0000-0000-0000-0000000000ab', '2024-03-10', 7);
+select pg_temp.seed('00000000-0000-0000-0000-0000000005b1', '00000000-0000-0000-0000-0000000000ab', '2024-03-01', 7);
+set local session_replication_role = origin;
+
 -- Backfill is idempotent; reset clears a child's badges.
 select private.backfill_badges();
+select is((select unlocked_at from public.user_achievements where user_id = '00000000-0000-0000-0000-0000000000ab' and achievement_code = 'first_week'),
+  ('2024-03-01'::date + interval '7 days')::timestamptz, 'the backfill dates a badge at the earlier of two habits');
+select ok((select bool_and(seen_at is not null) and count(*) >= 2 from public.user_achievements where user_id = '00000000-0000-0000-0000-0000000000ab')
+          and not exists (select 1 from public.notifications where user_id = '00000000-0000-0000-0000-0000000000ab'),
+  'and quietly: marked seen, no Inbox rows');
 select is(private.backfill_badges(), 0, 'a second backfill awards nothing');
 select private.reset_child_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'mary'));
 select is((select count(*)::int from public.user_achievements where user_id = (select v from t where k = 'mary')), 0, 'reset clears the child''s badges');
