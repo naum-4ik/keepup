@@ -14,8 +14,10 @@ export function BadgeNotes({ children }: { children: React.ReactNode }) {
 // One badge: its icon and name; the date (earned) or the hint (locked) in a small note on hover
 // (a mouse), tap or focus. It closes on tap outside, Escape or blur. The button's name carries the
 // whole text, so a screen reader needs no note (the note is hidden from it).
-// Locked: the same icon, desaturated, on a muted circle at 85% (icon 3.5:1 on the circle in light,
-// 4.8:1 in dark); the name stays full muted-foreground (5.2:1).
+// Earned stands out (owner, 2026-10-06): the group's pastel tinted a little more with its ink, a soft
+// ring and glow in the ink, and a bold name in the full foreground colour. Locked recedes: the circle
+// and icon fade to 55% and lose their colour; the name stays full muted-foreground, medium weight, so it
+// keeps AA (5.5:1 on the card in light, 6.6:1 in dark), and only the decorative circle fades.
 export function BadgeTile({
   code,
   name,
@@ -79,12 +81,18 @@ export function BadgeTile({
         data-badge-circle
         className={cn(
           "flex size-12 items-center justify-center rounded-full",
-          earned ? cn(chip, ink) : "bg-muted text-muted-foreground opacity-85 grayscale",
+          earned
+            ? cn(
+                chip,
+                ink,
+                "ring-2 ring-current/35 shadow-[inset_0_0_0_24px_color-mix(in_srgb,currentColor_12%,transparent),0_0_0_5px_color-mix(in_srgb,currentColor_12%,transparent)]",
+              )
+            : "bg-muted text-muted-foreground opacity-55 grayscale",
         )}
       >
         {children}
       </span>
-      <span aria-hidden className={cn("text-xs font-semibold", !earned && "text-muted-foreground")}>
+      <span aria-hidden className={cn("text-xs", earned ? "font-bold text-foreground" : "font-medium text-muted-foreground")}>
         {name}
       </span>
       {shown && (
