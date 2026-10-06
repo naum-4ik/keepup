@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.6.0](https://github.com/naum-4ik/keepup/compare/v0.5.0...v0.6.0) (2026-10-06)
+
+
+### Features
+
+* a big reveal on every done tap in the kid view ([#126](https://github.com/naum-4ik/keepup/issues/126)) ([44ea9e2](https://github.com/naum-4ik/keepup/commit/44ea9e2445c918ab207a133f945e46f10b2a9ace))
+* achievements, the level-up and badge moment, Celebrations setting (M5 PR 9) ([#140](https://github.com/naum-4ik/keepup/issues/140)) ([e1d67bd](https://github.com/naum-4ik/keepup/commit/e1d67bd65f284be8da63e696dc25599a7e8744a9))
+* an XP ring around your avatar in the Profile tab ([#135](https://github.com/naum-4ik/keepup/issues/135)) ([05c9a3b](https://github.com/naum-4ik/keepup/commit/05c9a3b9d5518d19d0edd4f8247b4f1ade980550))
+* **db:** badges (M5 PR 8) ([#139](https://github.com/naum-4ik/keepup/issues/139)) ([3914a13](https://github.com/naum-4ik/keepup/commit/3914a13e1cd382dd67dc676c9bff5020a5645361))
+* **db:** rest days (M5 PR 10) ([#141](https://github.com/naum-4ik/keepup/issues/141)) ([6d953c1](https://github.com/naum-4ik/keepup/commit/6d953c1309997796272bbdf01b526ee2a7248275))
+* **db:** streak milestones (M5 PR 7) ([#136](https://github.com/naum-4ik/keepup/issues/136)) ([5e1dd4b](https://github.com/naum-4ik/keepup/commit/5e1dd4b7f9426de5e0bd28e92516d20b2585ac97))
+* **db:** weekly and monthly recaps (M5 PR 11) ([#143](https://github.com/naum-4ik/keepup/issues/143)) ([cdded00](https://github.com/naum-4ik/keepup/commit/cdded00f713d3b7cde3a975efb4a7830c2252c75))
+* **db:** XP ledger and levels (M5 PR 2) ([#129](https://github.com/naum-4ik/keepup/issues/129)) ([d1c2989](https://github.com/naum-4ik/keepup/commit/d1c2989f240106fc5c2645148b3e4e04346e616f))
+* link previews when Keepup is shared ([#147](https://github.com/naum-4ik/keepup/issues/147)) ([80504bb](https://github.com/naum-4ik/keepup/commit/80504bb7e354c68356d1e641ecb91290268003ce))
+* M5 copy, push text and labels (M5 PR 1) ([#127](https://github.com/naum-4ik/keepup/issues/127)) ([e11255f](https://github.com/naum-4ik/keepup/commit/e11255fa78db86af8ea40815a6e198be28af309a))
+* Progress → Recaps (M5 PR 12) ([#144](https://github.com/naum-4ik/keepup/issues/144)) ([d13bef8](https://github.com/naum-4ik/keepup/commit/d13bef86269e50b7747e9713b4cc97d3a992f42c))
+* streak-scaled XP, clearer achievements, self-hosted font, deploy retry ([#145](https://github.com/naum-4ik/keepup/issues/145)) ([71a2b97](https://github.com/naum-4ik/keepup/commit/71a2b97d145718d736eff3ce67b9121859b98a5f))
+* XP on the check-in, level on the avatar and on Profile (M5 PR 6) ([#134](https://github.com/naum-4ik/keepup/issues/134)) ([68f7fdc](https://github.com/naum-4ik/keepup/commit/68f7fdc2ef60a364b549a5ac48156d14628422d7))
+
+
+### Bug Fixes
+
+* a parent can open, archive and delete a child's habit ([#128](https://github.com/naum-4ik/keepup/issues/128)) ([ffc8fa4](https://github.com/naum-4ik/keepup/commit/ffc8fa419c1bb2cf64bdcc44c7d10ec14d285bcb))
+* **db:** avatars for invites and the Inbox, kid export and goals, invite race (M5 PR 3) ([#130](https://github.com/naum-4ik/keepup/issues/130)) ([f1f7e0b](https://github.com/naum-4ik/keepup/commit/f1f7e0bba1667fc467960e718099c62e5d836673))
+* **db:** Progress → Calendar counts group habits you take part in ([#133](https://github.com/naum-4ik/keepup/issues/133)) ([a04fba9](https://github.com/naum-4ik/keepup/commit/a04fba94b1e87d7aa4f0d8a94d7fd12854bd196b))
+* M4 follow-ups, and no group cards on Today ([#123](https://github.com/naum-4ik/keepup/issues/123)) ([206394f](https://github.com/naum-4ik/keepup/commit/206394f07c93f9b7ee31e76358405ae830cc5d7c))
+* M5 final review — streak badges on late upgrades, own-part badges, quiet late notes ([#148](https://github.com/naum-4ik/keepup/issues/148)) ([68b0244](https://github.com/naum-4ik/keepup/commit/68b0244aef75eee2dca83ecc2f6ae52bf365366f))
+* polish Inbox, Profile, navigation and CI; This week counts group habits (M5 PR 5) ([#132](https://github.com/naum-4ik/keepup/issues/132)) ([bb79e48](https://github.com/naum-4ik/keepup/commit/bb79e48e1a01fa9909b929f2e98ca4e1beb9c8cc))
+* polish Today, the habit page, forms and groups (M5 PR 4) ([#131](https://github.com/naum-4ik/keepup/issues/131)) ([da0b7e0](https://github.com/naum-4ik/keepup/commit/da0b7e0c753d9ea43dfa15bf952061750706b5a8))
+* the kid view's big reveal on every star ([#138](https://github.com/naum-4ik/keepup/issues/138)) ([40fab4b](https://github.com/naum-4ik/keepup/commit/40fab4bb0656356c5c45696aa7e6fac227fa165f))
+
 ## [0.5.0](https://github.com/naum-4ik/keepup/compare/v0.4.0...v0.5.0) (2026-10-04)
 
 
