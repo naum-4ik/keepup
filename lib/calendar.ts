@@ -40,7 +40,8 @@ export function summarizeDays(cells: CalendarCell[], habits: DayHabit[]): Map<st
     if (!h) continue;
     let status: DayRowStatus | null = null;
     if (h.period === "day") {
-      if (c.outcome === "done" || c.outcome === "missed" || c.outcome === "open") status = c.outcome;
+      // A rest day is listed ("Rest day") but, like a paused one, isn't counted as possible below.
+      if (c.outcome === "done" || c.outcome === "missed" || c.outcome === "open" || c.outcome === "rested") status = c.outcome;
     } else if (c.check_ins > 0) {
       status = "checked_in";
     }
