@@ -74,8 +74,41 @@ test("Profile → Achievements shows earned badges in colour with the date, lock
   await expect(page).toHaveURL(/\/profile\/achievements$/);
   const badges = page.getByRole("region", { name: "Achievements" });
   await expect(badges).toContainText("2 of 24 earned"); // Planted and First step
-  await expect(badges.getByRole("listitem", { name: /^First step, earned / })).toBeVisible();
-  await expect(badges.getByRole("listitem", { name: "Bookworm, locked: 30 times done in Learning." })).toBeVisible();
+  const earned = badges.getByRole("button", { name: /^First step, earned / });
+  const locked = badges.getByRole("button", { name: "Bookworm, locked: 30 times done in Learning." });
+  // Earned in colour, locked greyed out; just the icon and the name until asked.
+  await expect(earned).toHaveAttribute("data-earned", "true");
+  await expect(earned.locator("[data-badge-circle]")).not.toHaveCSS("filter", /grayscale/);
+  await expect(locked).toHaveAttribute("data-earned", "false");
+  await expect(locked.locator("[data-badge-circle]")).toHaveCSS("filter", /grayscale/);
+  await expect(badges.getByRole("tooltip")).toHaveCount(0);
+  await expect(badges).not.toContainText("30 times done in Learning.");
+  // A tap shows the date (earned) or the hint (locked), one at a time; Escape closes it.
+  await earned.click();
+  await expect(earned.getByRole("tooltip", { includeHidden: true })).toHaveText(/^Earned \d{1,2} [A-Z][a-z]{2}$/);
+  await locked.click();
+  await expect(locked.getByRole("tooltip", { includeHidden: true })).toHaveText("30 times done in Learning.");
+  await expect(badges.getByRole("tooltip", { includeHidden: true })).toHaveCount(1);
+  await page.keyboard.press("Escape");
+  await expect(badges.getByRole("tooltip", { includeHidden: true })).toHaveCount(0);
+  // A tap outside closes it too.
+  await locked.click();
+  await page.getByRole("heading", { name: "Achievements" }).click();
+  await expect(badges.getByRole("tooltip", { includeHidden: true })).toHaveCount(0);
+});
+
+test("Achievements: with a mouse, hovering an earned badge shows its date", async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 }, hasTouch: false, isMobile: false, timezoneId: "Europe/Rome", baseURL: "http://localhost:3000" });
+  const page = await context.newPage();
+  await signUpAndOnboard(page);
+  await createHabit(page, { title: "Walk", count: 1, period: "day" }); // Planted
+  await page.goto("/profile/achievements");
+  const planted = page.getByRole("region", { name: "Achievements" }).getByRole("button", { name: /^Planted, earned / });
+  await planted.hover();
+  await expect(planted.getByRole("tooltip", { includeHidden: true })).toHaveText(/^Earned /);
+  await page.mouse.move(0, 0);
+  await expect(planted.getByRole("tooltip", { includeHidden: true })).toHaveCount(0);
+  await context.close();
 });
 
 test("the level-up moment plays once, on the next page, and closes on tap", async ({ page }) => {
