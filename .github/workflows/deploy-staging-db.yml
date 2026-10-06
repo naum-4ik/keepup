@@ -30,10 +30,14 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npx supabase link --project-ref "${{ secrets.STAGING_PROJECT_REF }}"
+      # Each Supabase call is tried up to 3 times, 10 s apart (scripts/retry.sh): its management API
+      # sometimes fails once (#139's deploy). Safe to repeat: link only writes local config, db push
+      # applies only the migrations not yet on the target (each in its own transaction), and a
+      # function deploy replaces the function.
+      - run: scripts/retry.sh npx supabase link --project-ref "${{ secrets.STAGING_PROJECT_REF }}"
       # db push is idempotent (it only applies migrations not yet on the target), so running it
       # on every green CI run on develop -- not just ones that touched supabase/migrations -- is
       # safe and keeps this simple.
-      - run: npx supabase db push
+      - run: scripts/retry.sh npx supabase db push
       # send-push reads its secrets from Supabase (VAPID keys, webhook secret), never from the repo.
-      - run: npx supabase functions deploy send-push --project-ref "${{ secrets.STAGING_PROJECT_REF }}"
+      - run: scripts/retry.sh npx supabase functions deploy send-push --project-ref "${{ secrets.STAGING_PROJECT_REF }}"
