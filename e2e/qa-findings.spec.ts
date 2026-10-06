@@ -14,6 +14,16 @@ async function addChildUI(page: Page, name: string) {
   await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/);
 }
 
+// Sets an input's value the way typing does (the native setter + an input event), so React's state
+// follows. A bare `el.value = …` is wiped by the next re-render of the form.
+async function setValueLikeTyping(locator: import("@playwright/test").Locator, value: string) {
+  await locator.evaluate((el: HTMLInputElement, v: string) => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(el, v);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+  }, value);
+}
+
 test("kid custom habit: a server error keeps what was typed", async ({ page }) => {
   await signUpAndOnboard(page);
   await createGroup(page, "Fam");
@@ -146,7 +156,7 @@ test("Times takes digits only: 1e1 is refused", async ({ page }) => {
   await dialog.getByLabel("Title").fill("Push-ups");
   await dialog.getByLabel("Category").selectOption("fitness");
   // The stepper's input is type=number; "1e1" is a valid number string there, so set it directly.
-  await dialog.locator('input[name="targetCount"]').evaluate((el: HTMLInputElement) => (el.value = "1e1"));
+  await setValueLikeTyping(dialog.locator('input[name="targetCount"]'), "1e1");
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
   await expect(dialog.getByText(/^Pick 1–50 times a day\./)).toBeVisible();
 });
@@ -160,7 +170,7 @@ test("an end before the start is refused, not dropped", async ({ page }) => {
   await dialog.getByLabel("Category").selectOption("fitness");
   await dialog.getByRole("button", { name: "Until a date" }).click();
   // The date field's min stops this in the browser; the server must refuse it too.
-  await dialog.locator('input[name="endsOn"]').evaluate((el: HTMLInputElement) => (el.value = "2020-01-01"));
+  await setValueLikeTyping(dialog.locator('input[name="endsOn"]'), "2020-01-01");
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
   await expect(dialog.getByRole("alert")).toHaveText("The last day can't be before the first day.");
   await expect(dialog.getByLabel("Title")).toHaveValue("Stretch");
