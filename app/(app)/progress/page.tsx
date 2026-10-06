@@ -40,7 +40,10 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
 
   return (
     <section className="flex flex-col gap-5 py-6">
-      <h1 className="text-xl font-bold">Progress</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-xl font-bold">Progress</h1>
+        <Link href="/progress/recaps" className="flex h-11 items-center rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted">Recaps</Link>
+      </div>
       {!showArchived && overview && hasWeekData(overview) && <WeekCard overview={overview} days={days} />}
 
       {/* The same segmented look as Inbox's tabs: filled pills read as primary buttons. */}
