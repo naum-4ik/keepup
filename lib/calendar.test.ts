@@ -51,6 +51,15 @@ describe("summarizeDays", () => {
   it("doesn't count a skipped day against you", () => {
     expect(summarizeDays(cells, habits).get("2026-09-11")).toMatchObject({ done: 0, possible: 0 });
   });
+  it("lists a rest day as Rest day without counting it as possible", () => {
+    const rest = [
+      { local_date: "2026-09-13", habit_id: "read", outcome: "rested", check_ins: 0 },
+      { local_date: "2026-09-13", habit_id: "walk", outcome: "done", check_ins: 1 },
+    ];
+    const d = summarizeDays(rest, habits).get("2026-09-13")!;
+    expect(d).toMatchObject({ done: 1, possible: 1 });
+    expect(d.rows.map((r) => `${r.title}:${r.status}`)).toEqual(["Walk:done", "Read:rested"]);
+  });
   it("ignores habits it doesn't know", () => {
     expect(summarizeDays([{ local_date: "2026-09-12", habit_id: "gone", outcome: "done", check_ins: 1 }], habits).get("2026-09-12")).toBeUndefined();
   });

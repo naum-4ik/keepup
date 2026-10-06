@@ -1,12 +1,16 @@
 -- supabase/tests/database/rest_days.test.sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(22);
+select plan(27);
 
 delete from public.habits;
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'bea@example.com', '{"full_name":"Bea"}');
-update public.profiles set timezone = 'Europe/Rome' where id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1');
+select tests.create_user('00000000-0000-0000-0000-0000000000c1', 'cy@example.com', '{"full_name":"Cy"}');
+select tests.create_user('00000000-0000-0000-0000-0000000000c2', 'wes@example.com', '{"full_name":"Wes"}');
+update public.profiles set timezone = 'Europe/Rome'
+ where id in ('00000000-0000-0000-0000-0000000000a1', '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000c1',
+              '00000000-0000-0000-0000-0000000000c2');
 create temp table t (k text primary key, v uuid) on commit drop;
 insert into t select 'fam', (private.create_group_impl('00000000-0000-0000-0000-0000000000a1', 'Family', 'family')).id;
 update public.group_members set joined_at = '2026-09-01' where group_id = (select v from t where k = 'fam');
@@ -31,6 +35,17 @@ insert into public.habits (id, owner_id, title, category, emoji, target_count, p
 select x.id::uuid, '00000000-0000-0000-0000-0000000000b1', x.title, 'home', '⭐', 1, 'day', '2026-09-21', 1, '2026-09-21', '00000000-0000-0000-0000-0000000000b1'
   from (values ('00000000-0000-0000-0000-0000000000e1', 'Tidy'), ('00000000-0000-0000-0000-0000000000e2', 'Dishes'),
                ('00000000-0000-0000-0000-0000000000e3', 'Plants')) x(id, title);
+-- Cy: Tidy has 7 done days, then misses 28 Sep (rested); Dishes and Plants start that day, done. Cy never
+-- has two daily habits all done at a check-in, so Full day can only come from the rested settle.
+insert into public.habits (id, owner_id, title, category, emoji, target_count, period, starts_on, week_start, created_at, created_by)
+select x.id::uuid, '00000000-0000-0000-0000-0000000000c1', x.title, 'home', '⭐', 1, 'day', x.starts::date, 1, x.starts::timestamptz,
+       '00000000-0000-0000-0000-0000000000c1'
+  from (values ('00000000-0000-0000-0000-0000000000f1', 'Tidy', '2026-09-21'), ('00000000-0000-0000-0000-0000000000f2', 'Dishes', '2026-09-28'),
+               ('00000000-0000-0000-0000-0000000000f3', 'Plants', '2026-09-28')) x(id, title, starts);
+-- Wes: a weekly habit for Steady month (seeded results below).
+insert into public.habits (id, owner_id, title, category, emoji, target_count, period, starts_on, week_start, created_at, created_by)
+values ('00000000-0000-0000-0000-0000000000f4', '00000000-0000-0000-0000-0000000000c2', 'Swim', 'fitness', '🏊', 1, 'week', '2026-10-05', 1,
+        '2026-10-05', '00000000-0000-0000-0000-0000000000c2');
 insert into public.habit_freezes (habit_id, starts_on, ends_on) values ('00000000-0000-0000-0000-0000000000d4', '2026-10-08', '2026-10-08');
 set local session_replication_role = origin;
 
@@ -55,6 +70,11 @@ select pg_temp.tap('00000000-0000-0000-0000-0000000000e1', '2026-09-21', '2026-0
 select pg_temp.tap('00000000-0000-0000-0000-0000000000e1', '2026-09-29', '2026-10-04', null, '00000000-0000-0000-0000-0000000000b1');
 select pg_temp.tap('00000000-0000-0000-0000-0000000000e2', '2026-09-28', '2026-10-04', null, '00000000-0000-0000-0000-0000000000b1');
 select pg_temp.tap('00000000-0000-0000-0000-0000000000e3', '2026-09-28', '2026-10-04', null, '00000000-0000-0000-0000-0000000000b1');
+select pg_temp.tap('00000000-0000-0000-0000-0000000000f1', '2026-09-21', '2026-09-27', null, '00000000-0000-0000-0000-0000000000c1');
+select pg_temp.tap('00000000-0000-0000-0000-0000000000f2', '2026-09-28', '2026-09-28', null, '00000000-0000-0000-0000-0000000000c1');
+select pg_temp.tap('00000000-0000-0000-0000-0000000000f3', '2026-09-28', '2026-09-28', null, '00000000-0000-0000-0000-0000000000c1');
+select ok(not exists (select 1 from public.user_achievements where user_id = '00000000-0000-0000-0000-0000000000c1' and achievement_code = 'full_day'),
+  'Cy: no Full day at the check-ins (Tidy was still due on 28 Sep)');
 
 -- One catch-up call settles everything up to 21 Oct. Rest well (and every other badge) is queued in its
 -- habit loop and written once after it (per-person rows after the last habit lock).
@@ -113,6 +133,13 @@ select is((select d ->> 'daily_done' || '/' || (d ->> 'daily_possible') || ':' |
 select ok(exists (select 1 from public.user_achievements where user_id = '00000000-0000-0000-0000-0000000000b1' and achievement_code = 'perfect_week'),
   'Perfect week: a rest day doesn''t break the week');
 select ok(private.full_day('00000000-0000-0000-0000-0000000000b1', '2026-09-28'), 'Full day leaves a rested habit out (2 of 2 others done)');
+select is((select unlocked_at from public.user_achievements where user_id = '00000000-0000-0000-0000-0000000000c1' and achievement_code = 'full_day'),
+  '2026-10-22 01:00+02'::timestamptz, 'a day whose only miss became rested earns Full day at the settle (written after the loop)');
+select is((select coalesce(string_agg(payload ->> 'streak', ','), 'none') from public.notifications
+            where kind = 'private_streak_ended' and habit_id = '00000000-0000-0000-0000-0000000000d1' and dedupe_key like '%:2026-10-08:%')
+          || ':' || (select payload ->> 'streak' from public.notifications
+            where kind = 'private_streak_ended' and habit_id = '00000000-0000-0000-0000-0000000000d3' and dedupe_key like '%:2026-10-09:%'),
+  'none:7', 'a rested day sends no "streak ended" note; the next real miss reports the run kept (7)');
 
 -- A late tap on the rested day upgrades it to done and gives the rest day back. Anna 10 XP below her
 -- next level: the tap's +10 crosses it, and that level row must wait for the one sync after
@@ -139,6 +166,23 @@ select is((select outcome || ':' || private.rest_days_left(h, '2026-10-10') from
             where r.habit_id = '00000000-0000-0000-0000-0000000000d1' and r.period_start = '2026-10-08'), 'done:1',
   'a late check-in on a rested day upgrades it and refunds the rest day');
 select is(private.finalize_periods('2026-10-22 01:00+02'), 0, 'finalizing again changes nothing');
+
+-- Steady month: November has five weeks, four done and one rested (like a skipped week, it doesn't
+-- break the month). October (three done, one paused) doesn't count. Settled one by one, through the trigger.
+create function pg_temp.settle(p_habit uuid, p_week date, p_outcome text) returns void language sql as $$
+  insert into public.period_results (habit_id, period_start, outcome, finalized_at)
+  values (p_habit, p_week, p_outcome, (p_week + 7)::timestamp at time zone 'Europe/Rome' + interval '1 hour');
+$$;
+delete from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000f4'; -- the catch-up above settled it
+select pg_temp.settle('00000000-0000-0000-0000-0000000000f4', w::date, o)
+  from (values ('2026-10-05', 'done'), ('2026-10-12', 'done'), ('2026-10-19', 'done'), ('2026-10-26', 'skipped'),
+               ('2026-11-02', 'done'), ('2026-11-09', 'rested'), ('2026-11-16', 'done'), ('2026-11-23', 'done')) v(w, o)
+ order by w;
+select ok(not exists (select 1 from public.user_achievements where user_id = '00000000-0000-0000-0000-0000000000c2' and achievement_code = 'steady_month'),
+  'not yet: three done weeks in November');
+select pg_temp.settle('00000000-0000-0000-0000-0000000000f4', '2026-11-30', 'done');
+select ok(exists (select 1 from public.user_achievements where user_id = '00000000-0000-0000-0000-0000000000c2' and achievement_code = 'steady_month'),
+  'Steady month: four done weeks and a rested one');
 
 select * from finish();
 rollback;

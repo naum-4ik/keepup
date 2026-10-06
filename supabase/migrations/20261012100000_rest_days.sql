@@ -5,8 +5,11 @@
 -- done or missed). Nothing is stored: the balance is read from period_results, so a late upgrade of a
 -- rested day refunds it by itself. Past missed periods stay missed (no backfill). Group and monthly
 -- habits have none; a paused period is skipped and never uses one.
--- Controller ruling (2026-10-06): a rested period counts like skipped for Perfect week and Full day;
--- Steady month still treats it as breaking (PR 8, unchanged).
+-- Controller ruling (2026-10-06): a rested period counts like skipped for Perfect week, Full day and
+-- Steady month (review, fix round 1).
+-- By design, a refund is not re-applied: when a late upgrade gives a rest day back, a later period
+-- already settled as missed stays missed (its "streak ended" note can't be retracted), and the
+-- rest_day_used note of the upgraded day stays in the Inbox.
 -- Replaced, copied from their latest definitions:
 --   period_results_outcome_check        20260929100400_period_results_and_streaks.sql
 --   private.finalize_periods            20261009100000_xp_ledger.sql
@@ -15,11 +18,12 @@
 --   private.perfect_week                20261011100000_badges.sql
 --   private.rewards_on_check_in         20261011100000_badges.sql
 --   private.rewards_on_period_result    20261011100000_badges.sql
+--   private.badges_on_period            20261011100000_badges.sql
 --
 -- Locks: unchanged (habit → check-in → period_results → per-habit rows → per-person rows, in user id
 -- order). rest_days_left / settled_outcome only read. finalize_periods still runs its habit loop under
 -- keepup.defer_levels and syncs once after it; a rested settle writes only per-habit rows in the loop
--- (the rest_day_used note, keyed by habit and period) and queues Rest well. A late tap on a rested day
+-- (the rest_day_used note, keyed by habit and period) and queues Rest well and a re-judged Full day. A late tap on a rested day
 -- is predicted as an upgrade by rewards_on_check_in, so the author's levels and badges wait for the
 -- period trigger's one sync, after resettle_period has taken the period_results row.
 
@@ -169,7 +173,8 @@ $$;
 
 -- Copied from 20261007100000_m4_final_fixes.sql (its latest definition). New: a rested period is
 -- upgraded too (its rest day comes back: rest_days_left reads the new outcome). "Streak is back"
--- still follows only a missed one (a rested day sent no "ended" note).
+-- still follows only a missed one (a rested day sent no "ended" note). The refund isn't re-applied to
+-- a later period already settled missed, and the day's rest_day_used note stays (header).
 create or replace function private.resettle_period(p_habit public.habits, p_period_start date)
 returns void
 language plpgsql
@@ -212,7 +217,7 @@ $$;
 
 -- Copied from 20261011100000_badges.sql (its latest definition). New: a daily habit whose day was
 -- rested is left out, like a paused one (controller ruling). Full day is judged at the check-in,
--- before finalization decides rested, so this matters when a later (late) check-in re-judges the day.
+-- before finalization decides rested, so badges_on_period judges the day again on a rested settle.
 create or replace function private.full_day(p_user uuid, p_date date)
 returns boolean
 language sql
@@ -356,8 +361,9 @@ end;
 $$;
 
 -- Copied from 20261011100000_badges.sql (its latest definition). New: a rested period writes the
--- rest_day_used Inbox row for an adult owner, { streak: the run kept, period }. Rest well is queued
--- by badges_on_period (any non-done outcome already reaches it, queued, at v_at).
+-- rest_day_used Inbox row for an adult owner, { streak: the run kept, period }. Rest well and the
+-- re-judged Full day are queued by badges_on_period (any non-done outcome already reaches it, queued,
+-- at v_at).
 create or replace function private.rewards_on_period_result()
 returns trigger
 language plpgsql
@@ -408,5 +414,121 @@ begin
     perform private.sync_deferred_levels();
   end if;
   return new;
+end;
+$$;
+
+-- Copied from 20261011100000_badges.sql (its only definition). New: a rested settle re-judges Full day
+-- for that date (the rested habit is now left out), and Steady month treats a rested week like a
+-- skipped one (only missed breaks it). Called with p_sync = false from the trigger, so both are queued
+-- and written after finalize's loop, per person in user id order.
+create or replace function private.badges_on_period(p_habit public.habits, p_period_start date, p_outcome text, p_at timestamptz default now(),
+  p_quiet boolean default false, p_sync boolean default true, p_late boolean default false)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_run int;
+  v_start date;
+  v_week date;
+  v_profile public.profiles;
+  v_month date := date_trunc('month', p_period_start::timestamp)::date;
+  v_next date := (date_trunc('month', p_period_start::timestamp) + interval '1 month')::date;
+  v_count int;
+  v_need int;
+  v_code text;
+  u uuid;
+begin
+  if p_habit.period in ('day', 'week') then
+    for u in
+      select x.id
+        from (select p_habit.owner_id as id where p_habit.group_id is null
+              union
+              select m.profile_id from private.required_members(p_habit, p_period_start) m(profile_id) where p_habit.group_id is not null) x
+       where x.id is not null
+       order by x.id
+    loop
+      select p.* into v_profile from public.profiles p where p.id = u;
+      v_week := private.period_start('week', p_period_start, v_profile.week_start);
+      -- Only once the week is over in this habit's zone (no earlier settle of it can complete the
+      -- week; the person's other habits re-judge at their own settles), and not again.
+      continue when p_at < private.local_midnight(v_week + 7, private.habit_timezone(p_habit))
+                 or exists (select 1 from public.user_achievements a where a.user_id = u and a.achievement_code = 'perfect_week');
+      if p_sync or p_quiet then
+        if private.perfect_week(u, v_week, p_at) then
+          perform private.award_badge(u, 'perfect_week', p_at, p_quiet, p_sync, p_late);
+        end if;
+      elsif strpos(';' || coalesce(current_setting('keepup.unjudged', true), ''), ';' || u || '|' || v_week || '|') = 0 then
+        -- Judged once per person and week by sync_deferred_levels, after everything this transaction settles.
+        perform set_config('keepup.unjudged',
+          coalesce(nullif(current_setting('keepup.unjudged', true), '') || ';', '') || u || '|' || v_week || '|' || coalesce(p_at, now()) || '|' || p_late, true);
+      end if;
+    end loop;
+  end if;
+  if p_outcome = 'rested' then
+    perform private.award_badge(p_habit.owner_id, 'rest_well', p_at, p_quiet, p_sync, p_late);
+    -- Full day was judged at the day's check-ins, before this rest day existed: judge the day again
+    -- now that the rested habit is left out (queued from the trigger, like every other award).
+    if p_habit.period = 'day' and private.full_day(p_habit.owner_id, p_period_start) then
+      perform private.award_badge(p_habit.owner_id, 'full_day', p_at, p_quiet, p_sync, p_late);
+    end if;
+    return;
+  end if;
+  if p_outcome <> 'done' then
+    return;
+  end if;
+  select s.run, s.started_on into v_run, v_start from private.streak_at(p_habit, p_period_start) s;
+  for u in
+    select x.user_id from public.xp_events x
+     where x.habit_id = p_habit.id and x.reason = 'period_done' and x.source_type = 'period'
+       and x.source_id = p_habit.id || ':' || p_period_start
+     order by x.user_id
+  loop
+    if v_run >= 7 then
+      perform private.award_badge(u, 'first_week', p_at, p_quiet, p_sync, p_late);
+    end if;
+    if p_habit.period = 'day' then
+      if v_run >= 14 then perform private.award_badge(u, 'two_weeks_strong', p_at, p_quiet, p_sync, p_late); end if;
+      if v_run >= 30 then perform private.award_badge(u, 'unstoppable', p_at, p_quiet, p_sync, p_late); end if;
+      if v_run >= 100 then perform private.award_badge(u, 'century', p_at, p_quiet, p_sync, p_late); end if;
+      if v_run >= 365 then perform private.award_badge(u, 'year_round', p_at, p_quiet, p_sync, p_late); end if;
+      if v_run >= 30 and p_habit.category = 'break_habit' then perform private.award_badge(u, 'free', p_at, p_quiet, p_sync, p_late); end if;
+      if v_run >= 7 and p_habit.category = 'health' and p_habit.target_count >= 8 then
+        perform private.award_badge(u, 'hydrated', p_at, p_quiet, p_sync, p_late);
+      end if;
+    end if;
+    -- Back on track: this streak is 7+ and an earlier streak on the habit ended (a missed period after a done one).
+    if v_run >= 7 and exists (
+         select 1 from public.period_results m
+          where m.habit_id = p_habit.id and m.outcome = 'missed' and m.period_start < v_start
+            and exists (select 1 from public.period_results d where d.habit_id = p_habit.id and d.outcome = 'done' and d.period_start < m.period_start)) then
+      perform private.award_badge(u, 'back_on_track', p_at, p_quiet, p_sync, p_late);
+    end if;
+    if (p_habit.period = 'week'
+        and (select count(*) from public.period_results x where x.habit_id = p_habit.id and x.outcome = 'done'
+              and x.period_start >= v_month and x.period_start < v_next) >= 4
+        and not exists (select 1 from public.period_results x where x.habit_id = p_habit.id and x.outcome = 'missed'
+              and x.period_start >= v_month and x.period_start < v_next))
+       or (p_habit.period = 'month' and v_run >= 3) then
+      perform private.award_badge(u, 'steady_month', p_at, p_quiet, p_sync, p_late);
+    end if;
+    if p_habit.category in ('mind', 'learning', 'people', 'work_money') then
+      select count(*) into v_count from public.xp_events x join public.habits h on h.id = x.habit_id
+       where x.user_id = u and x.reason = 'period_done' and h.category = p_habit.category and x.created_at <= p_at;
+      v_need := case p_habit.category when 'people' then 10 when 'work_money' then 6 else 30 end;
+      v_code := case p_habit.category when 'mind' then 'calm_mind' when 'learning' then 'bookworm'
+                                      when 'people' then 'good_company' else 'go_getter' end;
+      if v_count >= v_need then
+        perform private.award_badge(u, v_code, p_at, p_quiet, p_sync, p_late);
+      end if;
+    end if;
+    if p_habit.group_id is not null then
+      perform private.award_badge(u, 'all_together', p_at, p_quiet, p_sync, p_late);
+      if (select count(*) from public.xp_events x join public.habits h on h.id = x.habit_id
+           where x.user_id = u and x.reason = 'period_done' and h.group_id is not null and x.created_at <= p_at) >= 10 then
+        perform private.award_badge(u, 'team_player', p_at, p_quiet, p_sync, p_late);
+      end if;
+    end if;
+  end loop;
 end;
 $$;

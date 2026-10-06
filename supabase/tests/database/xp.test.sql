@@ -183,8 +183,10 @@ insert into public.habits (id, owner_id, group_id, title, category, emoji, targe
   ('00000000-0000-0000-0000-0000000000d8', null, (select v from t where k = 'fam'), 'Run', 'fitness', '🏃', 1, 'day', '2026-10-01', 1, true,
    '2026-10-01 08:00+02', '00000000-0000-0000-0000-0000000000a1');
 set local session_replication_role = origin;
-insert into t select 'p1', (private.check_in_impl('00000000-0000-0000-0000-0000000000d7', '00000000-0000-0000-0000-0000000000b1', '2026-10-05 09:00+02')).id;
-insert into t select 'p2', (private.check_in_impl('00000000-0000-0000-0000-0000000000d8', '00000000-0000-0000-0000-0000000000b1', '2026-10-05 09:00+02')).id;
+insert into t select 'p1', (private.check_in_impl('00000000-0000-0000-0000-0000000000d7', '00000000-0000-0000-0000-0000000000b1', date_trunc('day', now() at time zone 'Europe/Rome') at time zone 'Europe/Rome')).id;
+insert into t select 'p2', (private.check_in_impl('00000000-0000-0000-0000-0000000000d8', '00000000-0000-0000-0000-0000000000b1', date_trunc('day', now() at time zone 'Europe/Rome') at time zone 'Europe/Rome')).id;
+-- The check-ins are today's (local midnight): review_check_ins approves at now(), and a fixed date would
+-- pass its review window (period end + 12h) on the real calendar.
 -- Dan 5 below his next boundary: the first approval (+10) already crosses it.
 insert into public.xp_events (user_id, amount, reason, source_type, source_id)
 select u, b - s - 5, 'milestone', 'streak', 'trap2-' || u
