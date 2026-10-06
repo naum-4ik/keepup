@@ -87,11 +87,11 @@ describe("feedCopy", () => {
 });
 
 describe("M5 feed lines", () => {
-  it("level-ups and badges open Profile", () => {
+  it("level-ups open Profile, badges open Achievements", () => {
     expect(feedCopy(item({ kind: "level_up", habit_id: null, habit_title: null, group_name: null, payload: { level: 6 } })))
-      .toEqual({ title: "Level 6", body: "Sprout 🌱", href: "/profile" });
+      .toEqual({ title: "Level 6", body: "Sprout 🌿", href: "/profile" });
     expect(feedCopy(item({ kind: "badge_unlocked", habit_id: null, payload: { code: "bookworm", name: "Bookworm" } })))
-      .toEqual({ title: "Unlocked", body: "Bookworm", href: "/profile" });
+      .toEqual({ title: "Unlocked", body: "Bookworm", href: "/profile/achievements" });
   });
   it("a personal milestone, a rest day and the recaps", () => {
     expect(feedCopy(item({ kind: "streak_milestone", group_name: null, payload: { streak: 30, period: "day", back: false } })))

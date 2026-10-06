@@ -125,7 +125,7 @@ export function feedCopy(n: FeedItem): { title: string; body: string; href: stri
       const level = Number(n.payload.level ?? 1);
       return { ...copy.levelUp(level, levelName(level)), href: "/profile" };
     }
-    case "badge_unlocked": return { ...copy.badgeUnlocked(String(n.payload.name ?? "A new badge")), href: "/profile" };
+    case "badge_unlocked": return { ...copy.badgeUnlocked(String(n.payload.name ?? "A new badge")), href: "/profile/achievements" };
     case "streak_milestone":
       return { ...copy.streakMilestone(habit, streak, asPeriod(n.payload.period, "day"), n.payload.back === true), href: habitHref };
     case "rest_day_used": return { ...copy.restDayUsed(habit, streak, n.payload.period === "week" ? "week" : "day"), href: habitHref };

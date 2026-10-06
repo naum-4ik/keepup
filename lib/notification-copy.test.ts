@@ -1,6 +1,7 @@
 // lib/notification-copy.test.ts
 import { describe, expect, it } from "vitest";
 import * as copy from "./notification-copy";
+import { levelName } from "./levels";
 import { BANNED_PATTERNS, BANNED_WORDS, type Copy } from "./notification-copy";
 
 const EMOJI = /\p{Extended_Pictographic}/gu;
@@ -192,7 +193,7 @@ describe("copy sheet rows", () => {
       body: "18 of 21 check-ins last week. Longest streak: Read 20 min 🔥 12 days",
     });
     expect(copy.weeklyRecap({ done: 4, possible: 7, longest: null })?.body).toBe("4 of 7 check-ins last week.");
-    expect(copy.levelUp(6, "Sprout")).toEqual({ title: "Level 6", body: "Sprout 🌱" });
+    expect(copy.levelUp(6, "Sprout")).toEqual({ title: "Level 6", body: "Sprout 🌿" });
     expect(copy.badgeUnlocked("Bookworm")).toEqual({ title: "Unlocked", body: "Bookworm" });
     expect(copy.milestoneCard("Read 20 min", 30, "day")).toBe("🔥 Read 20 min: 30 days in a row");
     expect(copy.milestoneCard("Family dinner", 1, "week")).toBe("🔥 Family dinner: 1 week in a row");
@@ -236,5 +237,15 @@ describe("M5 copy", () => {
       .toBe("18 of 21 check-ins in September. Longest streak: Read 20 min 🔥 12 days");
     expect(copy.recapCopy({ kind: "week", done: "x" })).toBeNull();
     expect(copy.familyRecapCopy("Family", { check_ins: 3, best: null })?.body).toBe("Together last week: 3 check-ins");
+  });
+});
+
+describe("levelUp", () => {
+  it("uses the level's own stage emoji, one per stage", () => {
+    const bodies = [1, 5, 6, 10, 11, 15, 16, 20, 21, 40].map((l) => copy.levelUp(l, levelName(l)).body);
+    expect(bodies).toEqual([
+      "Seedling 🌱", "Seedling 🌱", "Sprout 🌿", "Sprout 🌿", "Sapling 🪴", "Sapling 🪴", "Tree 🌲", "Tree 🌲", "Forest 🌳", "Forest 🌳",
+    ]);
+    for (const b of bodies) expect(b.match(/\p{Extended_Pictographic}/gu)).toHaveLength(1);
   });
 });
