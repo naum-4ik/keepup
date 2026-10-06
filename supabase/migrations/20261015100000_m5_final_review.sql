@@ -38,6 +38,10 @@
 --     reverses exactly what was granted (the ledger amount); undoing the first doesn't re-grant the
 --     others. The author of a late check-in is marked for a late level_up (above).
 --   private.rewards_on_period_result (above) also marks a late upgrade's payees.
+--   private.badges_on_period           20261012100000_rest_days.sql
+--     Controller ruling 2026-10-06 (owner: your own part): a group habit's streak badges read each
+--     member's own streak at the judged period (check_in_streak; Back on track: private.own_comeback),
+--     at any settle of a period whose own part they did. Milestones stay on the group run (group notes).
 --
 -- Locks: unchanged (habit → check-in → period_results → per-habit rows → per-person rows, in user id
 -- order). The new reads (the walk's last done period, own_streak) take no locks; the second
@@ -496,6 +500,217 @@ begin
     perform private.sync_deferred_levels(); -- author and reviewer, in user id order (levels, then badges)
   end if;
   return new;
+end;
+$$;
+
+-- A person's own outcome of a group habit's period, as check_in_streak judges it: done when their own
+-- approved check-ins reach the target; skipped when they weren't required or the period was skipped;
+-- open while an approval habit's period waits out its grace; else missed.
+create function private.own_outcome(p_habit public.habits, p_user uuid, p_period_start date, p_at timestamptz)
+returns text
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_out text;
+begin
+  select x.outcome into v_out from public.period_results x where x.habit_id = p_habit.id and x.period_start = p_period_start;
+  if p_user not in (select m from private.required_members(p_habit, p_period_start) m) then
+    return 'skipped';
+  elsif (select count(*) from public.check_ins c
+          where c.habit_id = p_habit.id and c.user_id = p_user and c.period_start = p_period_start and c.status = 'approved') >= p_habit.target_count then
+    return 'done';
+  elsif coalesce(v_out, private.period_outcome(p_habit, p_period_start)) = 'skipped' then
+    return 'skipped';
+  elsif v_out is null and private.in_grace(p_habit, p_period_start, p_at) then
+    return 'open';
+  end if;
+  return 'missed';
+end;
+$$;
+
+-- Back on track, own part: walking back from p_period_start, an own miss with an own done before it
+-- (an earlier streak of theirs ended).
+create function private.own_comeback(p_habit public.habits, p_user uuid, p_period_start date, p_at timestamptz)
+returns boolean
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_step interval := private.period_step(p_habit.period);
+  v_first date := private.first_period_start(p_habit);
+  v_ps date := p_period_start;
+  v_missed boolean := false;
+  v_out text;
+begin
+  while v_ps >= v_first loop
+    v_out := private.own_outcome(p_habit, p_user, v_ps, p_at);
+    if v_out = 'missed' then
+      v_missed := true;
+    elsif v_out = 'done' and v_missed then
+      return true;
+    end if;
+    v_ps := (v_ps::timestamp - v_step)::date;
+  end loop;
+  return false;
+end;
+$$;
+
+-- Copied from 20261012100000_rest_days.sql (its latest definition). New: a group habit's streak badges
+-- (First week, Two weeks strong, Unstoppable, Century, Year-round, Free, Hydrated, Back on track) read
+-- each member's own streak (check_in_streak), at any settle of a period whose own part they did; the
+-- group run (streak_at) now judges them for private habits only. Milestones stay on the group run.
+create or replace function private.badges_on_period(p_habit public.habits, p_period_start date, p_outcome text, p_at timestamptz default now(),
+  p_quiet boolean default false, p_sync boolean default true, p_late boolean default false)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_run int;
+  v_start date;
+  v_week date;
+  v_profile public.profiles;
+  v_month date := date_trunc('month', p_period_start::timestamp)::date;
+  v_next date := (date_trunc('month', p_period_start::timestamp) + interval '1 month')::date;
+  v_count int;
+  v_need int;
+  v_code text;
+  v_own int;
+  v_cap int;
+  u uuid;
+begin
+  if p_habit.period in ('day', 'week') then
+    for u in
+      select x.id
+        from (select p_habit.owner_id as id where p_habit.group_id is null
+              union
+              select m.profile_id from private.required_members(p_habit, p_period_start) m(profile_id) where p_habit.group_id is not null) x
+       where x.id is not null
+       order by x.id
+    loop
+      select p.* into v_profile from public.profiles p where p.id = u;
+      v_week := private.period_start('week', p_period_start, v_profile.week_start);
+      -- Only once the week is over in this habit's zone (no earlier settle of it can complete the
+      -- week; the person's other habits re-judge at their own settles), and not again.
+      continue when p_at < private.local_midnight(v_week + 7, private.habit_timezone(p_habit))
+                 or exists (select 1 from public.user_achievements a where a.user_id = u and a.achievement_code = 'perfect_week');
+      if p_sync or p_quiet then
+        if private.perfect_week(u, v_week, p_at) then
+          perform private.award_badge(u, 'perfect_week', p_at, p_quiet, p_sync, p_late);
+        end if;
+      elsif strpos(';' || coalesce(current_setting('keepup.unjudged', true), ''), ';' || u || '|' || v_week || '|') = 0 then
+        -- Judged once per person and week by sync_deferred_levels, after everything this transaction settles.
+        perform set_config('keepup.unjudged',
+          coalesce(nullif(current_setting('keepup.unjudged', true), '') || ';', '') || u || '|' || v_week || '|' || coalesce(p_at, now()) || '|' || p_late, true);
+      end if;
+    end loop;
+  end if;
+  -- A group habit's streak badges read each member's own streak (owner 2026-10-06: your own part, as
+  -- for Perfect week, XP, This week and the calendar), judged at any settle of a period whose own part
+  -- they did (another member's miss doesn't settle it done). Walked back only as far as the largest
+  -- threshold still to earn.
+  if p_habit.group_id is not null then
+    for u in select m.profile_id from private.required_members(p_habit, p_period_start) m(profile_id) order by 1 loop
+      continue when (select count(*) from public.check_ins c
+                      where c.habit_id = p_habit.id and c.user_id = u and c.period_start = p_period_start
+                        and c.status = 'approved') < p_habit.target_count;
+      select max(t.n) into v_cap
+        from (values ('first_week', 7, true), ('back_on_track', 7, true),
+                     ('two_weeks_strong', 14, p_habit.period = 'day'), ('unstoppable', 30, p_habit.period = 'day'),
+                     ('century', 100, p_habit.period = 'day'), ('year_round', 365, p_habit.period = 'day'),
+                     ('free', 30, p_habit.period = 'day' and p_habit.category = 'break_habit'),
+                     ('hydrated', 7, p_habit.period = 'day' and p_habit.category = 'health' and p_habit.target_count >= 8)) t(code, n, applies)
+       where t.applies
+         and not exists (select 1 from public.user_achievements a where a.user_id = u and a.achievement_code = t.code);
+      continue when v_cap is null;
+      v_own := private.check_in_streak(p_habit, u, p_period_start, p_at, v_cap - 1) + 1;
+      continue when v_own < 7;
+      perform private.award_badge(u, 'first_week', p_at, p_quiet, p_sync, p_late);
+      if p_habit.period = 'day' then
+        if v_own >= 14 then perform private.award_badge(u, 'two_weeks_strong', p_at, p_quiet, p_sync, p_late); end if;
+        if v_own >= 30 then perform private.award_badge(u, 'unstoppable', p_at, p_quiet, p_sync, p_late); end if;
+        if v_own >= 100 then perform private.award_badge(u, 'century', p_at, p_quiet, p_sync, p_late); end if;
+        if v_own >= 365 then perform private.award_badge(u, 'year_round', p_at, p_quiet, p_sync, p_late); end if;
+        if v_own >= 30 and p_habit.category = 'break_habit' then perform private.award_badge(u, 'free', p_at, p_quiet, p_sync, p_late); end if;
+        if p_habit.category = 'health' and p_habit.target_count >= 8 then
+          perform private.award_badge(u, 'hydrated', p_at, p_quiet, p_sync, p_late);
+        end if;
+      end if;
+      if not exists (select 1 from public.user_achievements a where a.user_id = u and a.achievement_code = 'back_on_track')
+         and private.own_comeback(p_habit, u, p_period_start, p_at) then
+        perform private.award_badge(u, 'back_on_track', p_at, p_quiet, p_sync, p_late);
+      end if;
+    end loop;
+  end if;
+  if p_outcome = 'rested' then
+    perform private.award_badge(p_habit.owner_id, 'rest_well', p_at, p_quiet, p_sync, p_late);
+    -- Full day was judged at the day's check-ins, before this rest day existed: judge the day again
+    -- now that the rested habit is left out (queued from the trigger, like every other award).
+    if p_habit.period = 'day' and private.full_day(p_habit.owner_id, p_period_start) then
+      perform private.award_badge(p_habit.owner_id, 'full_day', p_at, p_quiet, p_sync, p_late);
+    end if;
+    return;
+  end if;
+  if p_outcome <> 'done' then
+    return;
+  end if;
+  select s.run, s.started_on into v_run, v_start from private.streak_at(p_habit, p_period_start) s;
+  for u in
+    select x.user_id from public.xp_events x
+     where x.habit_id = p_habit.id and x.reason = 'period_done' and x.source_type = 'period'
+       and x.source_id = p_habit.id || ':' || p_period_start
+     order by x.user_id
+  loop
+    -- Streak badges: private habits here (the group's are judged per member, above).
+    if p_habit.group_id is null and v_run >= 7 then
+      perform private.award_badge(u, 'first_week', p_at, p_quiet, p_sync, p_late);
+    end if;
+    if p_habit.group_id is null and p_habit.period = 'day' then
+      if v_run >= 14 then perform private.award_badge(u, 'two_weeks_strong', p_at, p_quiet, p_sync, p_late); end if;
+      if v_run >= 30 then perform private.award_badge(u, 'unstoppable', p_at, p_quiet, p_sync, p_late); end if;
+      if v_run >= 100 then perform private.award_badge(u, 'century', p_at, p_quiet, p_sync, p_late); end if;
+      if v_run >= 365 then perform private.award_badge(u, 'year_round', p_at, p_quiet, p_sync, p_late); end if;
+      if v_run >= 30 and p_habit.category = 'break_habit' then perform private.award_badge(u, 'free', p_at, p_quiet, p_sync, p_late); end if;
+      if v_run >= 7 and p_habit.category = 'health' and p_habit.target_count >= 8 then
+        perform private.award_badge(u, 'hydrated', p_at, p_quiet, p_sync, p_late);
+      end if;
+    end if;
+    -- Back on track: this streak is 7+ and an earlier streak on the habit ended (a missed period after a done one).
+    if p_habit.group_id is null and v_run >= 7 and exists (
+         select 1 from public.period_results m
+          where m.habit_id = p_habit.id and m.outcome = 'missed' and m.period_start < v_start
+            and exists (select 1 from public.period_results d where d.habit_id = p_habit.id and d.outcome = 'done' and d.period_start < m.period_start)) then
+      perform private.award_badge(u, 'back_on_track', p_at, p_quiet, p_sync, p_late);
+    end if;
+    if (p_habit.period = 'week'
+        and (select count(*) from public.period_results x where x.habit_id = p_habit.id and x.outcome = 'done'
+              and x.period_start >= v_month and x.period_start < v_next) >= 4
+        and not exists (select 1 from public.period_results x where x.habit_id = p_habit.id and x.outcome = 'missed'
+              and x.period_start >= v_month and x.period_start < v_next))
+       or (p_habit.period = 'month' and v_run >= 3) then
+      perform private.award_badge(u, 'steady_month', p_at, p_quiet, p_sync, p_late);
+    end if;
+    if p_habit.category in ('mind', 'learning', 'people', 'work_money') then
+      select count(*) into v_count from public.xp_events x join public.habits h on h.id = x.habit_id
+       where x.user_id = u and x.reason = 'period_done' and h.category = p_habit.category and x.created_at <= p_at;
+      v_need := case p_habit.category when 'people' then 10 when 'work_money' then 6 else 30 end;
+      v_code := case p_habit.category when 'mind' then 'calm_mind' when 'learning' then 'bookworm'
+                                      when 'people' then 'good_company' else 'go_getter' end;
+      if v_count >= v_need then
+        perform private.award_badge(u, v_code, p_at, p_quiet, p_sync, p_late);
+      end if;
+    end if;
+    if p_habit.group_id is not null then
+      perform private.award_badge(u, 'all_together', p_at, p_quiet, p_sync, p_late);
+      if (select count(*) from public.xp_events x join public.habits h on h.id = x.habit_id
+           where x.user_id = u and x.reason = 'period_done' and h.group_id is not null and x.created_at <= p_at) >= 10 then
+        perform private.award_badge(u, 'team_player', p_at, p_quiet, p_sync, p_late);
+      end if;
+    end if;
+  end loop;
 end;
 $$;
 

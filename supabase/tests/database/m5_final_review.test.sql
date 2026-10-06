@@ -5,7 +5,7 @@
 -- (M4). Every time is pinned, except check_in_with, which uses now() (its fixture is built from now()).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(26);
+select plan(32);
 
 -- finalize_periods scans every habit; start from none (rolled back at the end).
 delete from public.habits;
@@ -67,8 +67,9 @@ create temp view ms7 as
 select is(array(select outcome from public.period_results where habit_id in ('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000d2')
                   and period_start = '2026-10-17' order by habit_id), array['missed', 'missed'],
   'the 17th settles missed (Ben''s part on Walk; Fay has no rest day saved after 5 days)');
-select ok(not pg_temp.has('00000000-0000-0000-0000-0000000000a1', 'first_week') and not pg_temp.has('00000000-0000-0000-0000-0000000000b1', 'first_week')
-          and not pg_temp.has('00000000-0000-0000-0000-0000000000f1', 'first_week'), 'no First week before the late taps');
+select is(array[pg_temp.has('00000000-0000-0000-0000-0000000000a1', 'first_week'), pg_temp.has('00000000-0000-0000-0000-0000000000b1', 'first_week'),
+                pg_temp.has('00000000-0000-0000-0000-0000000000f1', 'first_week')], array[true, false, false],
+  'before the late taps: Anna has First week by her own run (12–18), Ben and Fay don''t');
 
 -- Ben's tap for the 17th (offline) and Fay's arrive on the 20th: the 17th becomes done, 12–19 is 8 in a row.
 select private.check_in_impl('00000000-0000-0000-0000-0000000000d1', '00000000-0000-0000-0000-0000000000b1', '2026-10-20 09:00Z',
@@ -78,7 +79,7 @@ select private.check_in_impl('00000000-0000-0000-0000-0000000000d2', '00000000-0
 select is((select outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d1' and period_start = '2026-10-17'), 'done',
   'the late tap upgrades the group''s 17th');
 select ok(pg_temp.has('00000000-0000-0000-0000-0000000000a1', 'first_week') and pg_temp.has('00000000-0000-0000-0000-0000000000b1', 'first_week'),
-  'group: both members get First week, judged at the walk''s last done day (the 19th)');
+  'group: Ben gets First week too, by his own run judged at the walk''s last done day (the 19th)');
 select is((select array_agg(user_id || '@' || source_id order by user_id) from ms7 where source_id like '00000000-0000-0000-0000-0000000000d1:%'),
   array['00000000-0000-0000-0000-0000000000a1@00000000-0000-0000-0000-0000000000d1:2026-10-12:7',
         '00000000-0000-0000-0000-0000000000b1@00000000-0000-0000-0000-0000000000d1:2026-10-12:7'],
@@ -177,6 +178,58 @@ insert into t select 'w9', (private.check_in_impl('00000000-0000-0000-0000-00000
 select is((select amount from oli where check_in = (select v from t where k = 'w9') and reason = 'check_in'), 10,
   'a new one while the others stand earns the base 10');
 
+-- Controller ruling: a group habit's streak badges read each member's own streak.
+select tests.create_user(id::uuid, n || '@example.com', jsonb_build_object('full_name', n))
+  from (values ('00000000-0000-0000-0000-0000000000b2', 'Kai'), ('00000000-0000-0000-0000-0000000000b3', 'Jo'),
+               ('00000000-0000-0000-0000-0000000000b4', 'Pat'), ('00000000-0000-0000-0000-0000000000b5', 'Quin'),
+               ('00000000-0000-0000-0000-0000000000a5', 'Ros'), ('00000000-0000-0000-0000-0000000000a6', 'Sam')) v(id, n);
+update public.profiles set timezone = 'UTC', week_start = 1
+ where id in ('00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000b3', '00000000-0000-0000-0000-0000000000b4',
+              '00000000-0000-0000-0000-0000000000b5', '00000000-0000-0000-0000-0000000000a5', '00000000-0000-0000-0000-0000000000a6');
+select pg_temp.family('join', '00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000b3');
+update public.group_members set joined_at = '2027-04-06 00:00Z'
+ where group_id = (select v from t where k = 'join') and user_id = '00000000-0000-0000-0000-0000000000b3';
+select pg_temp.family('miss', '00000000-0000-0000-0000-0000000000b4', '00000000-0000-0000-0000-0000000000b5');
+select pg_temp.family('kids', '00000000-0000-0000-0000-0000000000a5', '00000000-0000-0000-0000-0000000000a6');
+insert into t select 'kid', private.create_child_impl('00000000-0000-0000-0000-0000000000a5', (select v from t where k = 'kids'), 'Bo', '🐼', 'peach', true);
+set local session_replication_role = replica;
+insert into public.habits (id, owner_id, group_id, title, category, emoji, target_count, period, starts_on, week_start, requires_approval, created_at, created_by)
+select x.id::uuid, x.owner, x.grp, x.title, null, '⭐', x.target, 'day', x.starts::date, 1, false, (x.starts || ' 08:00Z')::timestamptz, x.creator::uuid
+  from (values
+    ('00000000-0000-0000-0000-0000000000db', null::uuid, (select v from t where k = 'join'), 'Run', '2027-04-01', 1, '00000000-0000-0000-0000-0000000000b2'),
+    ('00000000-0000-0000-0000-0000000000dc', null, (select v from t where k = 'miss'), 'Run', '2027-05-01', 1, '00000000-0000-0000-0000-0000000000b4'),
+    ('00000000-0000-0000-0000-0000000000dd', (select v from t where k = 'kid'), null, 'Teeth', '2027-06-01', 2, '00000000-0000-0000-0000-0000000000a5')
+  ) x(id, owner, grp, title, starts, target, creator);
+-- Bo: 1–5 Jun done.
+insert into public.period_results (habit_id, period_start, outcome, finalized_at)
+select '00000000-0000-0000-0000-0000000000dd', d::date, 'done', d + interval '1 day 1 hour' from generate_series('2027-06-01'::timestamp, '2027-06-05', '1 day') d;
+set local session_replication_role = origin;
+-- Run (join): Kai 1–7 Apr, Jo joined on the 6th and did 6–7. Run (miss): Pat 1–7 May, Quin 1–6.
+select private.check_in_impl('00000000-0000-0000-0000-0000000000db', u, d + interval '9 hours')
+  from generate_series('2027-04-01'::timestamp, '2027-04-07', '1 day') d
+ cross join unnest(array['00000000-0000-0000-0000-0000000000b2', '00000000-0000-0000-0000-0000000000b3']::uuid[]) u
+ where u = '00000000-0000-0000-0000-0000000000b2' or d::date >= '2027-04-06';
+select private.finalize_periods('2027-04-08 01:00Z');
+select is((select array_agg(outcome order by period_start) from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000db'),
+  array['done', 'done', 'done', 'done', 'done', 'done', 'done'], 'the group''s run is 7 days');
+select is(array[pg_temp.has('00000000-0000-0000-0000-0000000000b2', 'first_week'), pg_temp.has('00000000-0000-0000-0000-0000000000b3', 'first_week')],
+  array[true, false], 'First week for Kai (7 of his own), not for Jo, who joined on day 6 (2 of hers)');
+select private.check_in_impl('00000000-0000-0000-0000-0000000000dc', u, d + interval '9 hours')
+  from generate_series('2027-05-01'::timestamp, '2027-05-07', '1 day') d
+ cross join unnest(array['00000000-0000-0000-0000-0000000000b4', '00000000-0000-0000-0000-0000000000b5']::uuid[]) u
+ where u = '00000000-0000-0000-0000-0000000000b4' or d::date <= '2027-05-06';
+select private.finalize_periods('2027-05-08 01:00Z');
+select is((select outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000dc' and period_start = '2027-05-07'), 'missed',
+  'Quin''s miss settles the group''s 7th missed');
+select is(array[pg_temp.has('00000000-0000-0000-0000-0000000000b4', 'first_week'), pg_temp.has('00000000-0000-0000-0000-0000000000b5', 'first_week')],
+  array[true, false], 'Pat did all 7 and gets First week anyway; Quin (6) doesn''t');
+
+-- The streak bonus once per period, the reviewer's cases: a parent's two taps for a child on a 5-day streak.
+insert into t select 'bo' || i, (private.check_in_impl('00000000-0000-0000-0000-0000000000dd', '00000000-0000-0000-0000-0000000000a5',
+  '2027-06-06 09:00Z'::timestamptz + make_interval(mins => i), (select v from t where k = 'kid'))).id from generate_series(1, 2) i;
+select is(array(select (select x.amount from public.xp_events x where x.reason = 'check_in' and x.source_id = (select v::text from t where k = 'bo' || i))
+                  from generate_series(1, 2) i), array[15, 10], 'a child on a 5-day streak, two taps by a parent: 15, then 10');
+
 -- M7. check_in_with takes the children in id order, whatever order the app sends (two parents can't
 -- lock the same children in opposite orders). Built from now(): it checks in at now().
 select pg_temp.family('home', '00000000-0000-0000-0000-0000000000e2', '00000000-0000-0000-0000-0000000000f1');
@@ -205,6 +258,28 @@ select is((select users from w where habit = '00000000-0000-0000-0000-0000000000
 select is((select users from w where habit = '00000000-0000-0000-0000-0000000000d7'),
   array['00000000-0000-0000-0000-0000000000e2'::uuid] || array(select v from t where k in ('kid1', 'kid2') order by v),
   'the adult first, then the children in id order');
+
+-- "Approve all" with two pending taps in one period (Ros, approval habit, a 5-day own streak): 15, then
+-- 10. Built from today (UTC): review_check_ins approves at now(), inside the period's review window.
+set local session_replication_role = replica;
+insert into public.habits (id, owner_id, group_id, title, category, emoji, target_count, period, starts_on, week_start, requires_approval, created_at, created_by)
+values ('00000000-0000-0000-0000-0000000000de', null, (select v from t where k = 'kids'), 'Piano', null, '🎹', 2, 'day',
+        (now() at time zone 'UTC')::date - 5, 1, true, now() - interval '6 days', '00000000-0000-0000-0000-0000000000a5');
+insert into public.check_ins (habit_id, user_id, local_date, period_start, status, created_at, logged_by, reviewed_by, reviewed_at)
+select '00000000-0000-0000-0000-0000000000de', '00000000-0000-0000-0000-0000000000a5', d, d, 'approved', d + time '09:00',
+       '00000000-0000-0000-0000-0000000000a5', '00000000-0000-0000-0000-0000000000a6', d + time '10:00'
+  from generate_series(1, 5) i cross join generate_series(1, 2) n
+ cross join lateral (select (now() at time zone 'UTC')::date - i as d) x;
+set local session_replication_role = origin;
+insert into t select 'pi' || i, (private.check_in_impl('00000000-0000-0000-0000-0000000000de', '00000000-0000-0000-0000-0000000000a5',
+  date_trunc('day', now() at time zone 'UTC') at time zone 'UTC')).id from generate_series(1, 2) i;
+select tests.authenticate_as('00000000-0000-0000-0000-0000000000a6');
+select public.review_check_ins(array(select v from t where k in ('pi1', 'pi2')), true);
+reset role;
+select is(array(select x.amount from public.xp_events x where x.reason = 'check_in'
+                   and x.source_id in (select v::text from t where k in ('pi1', 'pi2'))
+                 order by x.source_id::uuid), array[15, 10],
+  'Approve all, two pending taps in one period: 15, then 10 (approved in check-in id order)');
 
 select * from finish();
 rollback;
