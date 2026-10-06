@@ -169,8 +169,12 @@ test("an end before the start is refused, not dropped", async ({ page }) => {
   await dialog.getByLabel("Title").fill("Stretch");
   await dialog.getByLabel("Category").selectOption("fitness");
   await dialog.getByRole("button", { name: "Until a date" }).click();
-  // The date field's min stops this in the browser; the server must refuse it too.
-  await setValueLikeTyping(dialog.locator('input[name="endsOn"]'), "2020-01-01");
+  // The date field's min stops this in the browser; the server must refuse it too. Fill the visible
+  // field (its state feeds the hidden `endsOn`, which React rewrites on every render) without its min.
+  const endDate = dialog.getByLabel("End date");
+  await endDate.evaluate((el: HTMLInputElement) => el.removeAttribute("min"));
+  await setValueLikeTyping(endDate, "2020-01-01");
+  await expect(dialog.getByText(/^Last day: /)).toBeVisible();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
   await expect(dialog.getByRole("alert")).toHaveText("The last day can't be before the first day.");
   await expect(dialog.getByLabel("Title")).toHaveValue("Stretch");
