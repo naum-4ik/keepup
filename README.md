@@ -82,7 +82,7 @@ Next.js 16 (App Router, Server Actions) on Vercel · Supabase (Postgres with Row
   - Playwright end-to-end tests on a phone viewport, including a guard that every template tab fits on an iPhone SE screen.
 - **Flow:** `feature/*` → PR → `develop` (staging) → release PR → `main` (production).
 
-More: [Architecture](docs/architecture.md) (request path, security layers, scaling) · [Design](docs/design.md) (colours, type, motion, voice) · [Decisions](docs/decisions/README.md) (why things are the way they are).
+More: [Architecture](docs/architecture.md) (diagrams, security layers, free-tier limits, scaling) · [Design](docs/design.md) (colours, type, motion, voice) · [Decisions](docs/decisions/README.md) (why things are the way they are).
 
 ## Run locally
 
