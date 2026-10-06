@@ -12,7 +12,7 @@ import { useReducedMotion } from "@/components/kids/use-calm";
 import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
 import { stageFor, themeStages } from "@/lib/garden";
 import { createTapGuard, inOrder, orderForKid } from "@/lib/kid-order";
-import { createMoments, FLY_AT, kindOfTap, LAND_AT, type Moment, type Moments } from "@/lib/kid-reveal";
+import { createMoments, FLY_AT, LAND_AT, momentsForTap, type Moment, type Moments, type Step } from "@/lib/kid-reveal";
 import { isMuted, playKidSound, setMuted } from "@/lib/kid-sound";
 import { withQueuedTaps } from "@/lib/offline-sync";
 import { MAX_ITEMS, sceneItems } from "@/lib/scene-items";
@@ -21,11 +21,11 @@ import { cn } from "@/lib/utils";
 
 type PlayHabit = { id: string; title: string; emoji: string; target: number; done: number; state: CheckInState };
 type Child = { id: string; name: string; emoji: string | null; color: string | null; theme: string };
-type Flying = { key: number; emoji: string; x: number; y: number; dx: number; dy: number };
 // Where a big thing in the middle of the screen goes: from the middle to its place, and its size there.
 type Goal = { dx: number; dy: number; scale: number };
 // The big moment playing over the screen (lib/kid-reveal.ts): a reveal (the item this tap adds, at its
-// scene `index`; none once the scene is full) or a milestone (the new picture, its goal measured at the tap).
+// scene `index`; none once the scene is full) or a milestone (the new picture; its goal is measured when
+// it starts, see `stageGoal`).
 type Big = {
   emoji: string;
   habitId: string;
@@ -34,7 +34,6 @@ type Big = {
   tappedAt: number;
   // The tap finished its habit: the card holds its place until this lands.
   holds: boolean;
-  goal?: Goal;
 };
 type Landed = { index: number; key: number };
 // A tap still saving, and the habit's count (without it) when it was made.
@@ -43,13 +42,13 @@ type Tap = { habitId: string; doneAtTap: number };
 // The new picture's size on screen during its moment (it lands at text-8xl, 96px).
 const MILESTONE_PX = 240;
 
-// The big reveal: the box is about 60% of the screen's width, the emoji a little smaller inside it.
-const REVEAL_BOX = "min(60vw, 420px)";
-const REVEAL_GLYPH = "min(48vw, 336px)";
+// The big reveal: the box is about 70% of the screen's width, the emoji a little smaller inside it.
+const REVEAL_BOX = "min(70vw, 490px)";
+const REVEAL_GLYPH = "min(56vw, 392px)";
 // A sparkle burst around it, a fixed fan (no Math.random: server and client agree).
 const SPARKS = Array.from({ length: 10 }, (_, i) => {
   const angle = (i / 10) * 2 * Math.PI + 0.3;
-  const dist = 130 + ((i * 37) % 50);
+  const dist = 150 + ((i * 37) % 60);
   return { dx: Math.round(Math.cos(angle) * dist), dy: Math.round(Math.sin(angle) * dist), delay: 60 + (i % 3) * 50 };
 });
 // After its item lands, a finished card waits this long before it slides down (but never less than
@@ -115,9 +114,9 @@ function shrinkTo(wrap: HTMLElement, pic: HTMLElement, backdrop: HTMLElement, he
 }
 
 // The full-screen kid view (ideas/kid-view-next.md §4), for children as young as 2–3: a tap counts at
-// once (logged as by the child), with a pop sound, and the thing it adds flies from the card into the
-// week's scene. A new picture brings a chime and confetti; the last habit of the day makes the scene
-// dance. Tapping a done card or the scene is play: a wiggle and a sound, nothing counted.
+// once (logged as by the child), with a pop sound, and the thing it adds shows big in the middle, then
+// flies into the week's scene. A new picture follows with a chime and confetti; the last habit of the
+// day makes the scene dance. Tapping a done card or the scene is play: a wiggle and a sound, nothing counted.
 // No numbers or text for the child; the star count and "what's next" are on the kid page.
 // With more habits than fit (ideas/kid-view-next.md, 2026-10-04): open ones come first and done ones
 // slide to the bottom, and the picture sticks to the top (smaller once scrolled), so every tap's effect
@@ -163,7 +162,6 @@ export function KidPlay({
     return { habits: shown, stars: base.stars + extra };
   }, [base, taps]);
   const [error, setError] = useState<string | null>(null);
-  const [flying, setFlying] = useState<Flying[]>([]);
   const [bumped, setBumped] = useState<string | null>(null);
   const [cheer, setCheer] = useState<string | null>(null);
   const [dance, setDance] = useState<number | null>(null);
@@ -179,6 +177,10 @@ export function KidPlay({
   const [revealed, setRevealed] = useState<ReadonlySet<number>>(() => new Set());
   const [holding, setHolding] = useState<ReadonlySet<string>>(() => new Set());
   const [landed, setLanded] = useState<Landed | null>(null);
+  // A new picture waits for its item's reveal: the stage in the scene stays out of sight until its
+  // milestone (`stageDue`), which flies to where the stage is when it starts (`stageGoal`).
+  const [stageDue, setStageDue] = useState(false);
+  const [stageGoal, setStageGoal] = useState<Goal | null>(null);
   // How long the next settle waits (see AFTER_LAND_MS); null: SETTLE_MS.
   const settleIn = useRef<number | null>(null);
   const muted = useSyncExternalStore(subscribeSound, isMuted, () => false);
@@ -346,21 +348,6 @@ export function KidPlay({
     soundListeners.forEach((cb) => cb());
   };
 
-  // The item this tap adds flies from the card to its spot in the scene (once the scene is full,
-  // to the middle, as a star).
-  const fly = (from: HTMLElement, stars: number) => {
-    const a = from.getBoundingClientRect();
-    const b = picture.current?.getBoundingClientRect();
-    const item = stars < MAX_ITEMS ? sceneItems(stars + 1, child.theme)[stars] : null;
-    const x = a.left + a.width / 2;
-    const y = a.top + a.height / 2;
-    const tx = b ? b.left + (b.width * (item?.x ?? 50)) / 100 : x;
-    const ty = b ? b.top + (b.height * (item?.y ?? 50)) / 100 : y - 240;
-    const key = ++seq.current;
-    setFlying((f) => [...f, { key, emoji: item?.emoji ?? "⭐", x, y, dx: tx - x, dy: ty - y }]);
-    window.setTimeout(() => setFlying((f) => f.filter((s) => s.key !== key)), 800);
-  };
-
   // From the middle of the screen to `el` (a spot in the picture), for something `px` tall there.
   // Measured when it's about to go, so a sticky or shrunk picture is where it is now.
   const goalFor = (el: Element | null | undefined, px: number): Goal => {
@@ -380,8 +367,19 @@ export function KidPlay({
     window.setTimeout(() => setDance((d) => (d === key ? null : d)), DANCE_MS);
   };
 
-  // One big moment at a time (lib/kid-reveal.ts); a new one lands the one playing at once.
+  // One big moment at a time (lib/kid-reveal.ts); quick taps wait their turn. Each one's sound plays
+  // as it starts, and a milestone measures where its stage is then (the picture may have shrunk).
+  const started = useRef(0);
   const onMoment = useEffectEvent((moment: Moment<Big> | null) => {
+    if (moment && moment.id !== started.current) {
+      started.current = moment.id;
+      if (moment.kind === "reveal") playKidSound("reveal"); // its notes start 0.1 s in, as it springs up
+      else {
+        playKidSound("chime");
+        setStageGoal(goalFor(picture.current?.querySelector("[data-hero]"), MILESTONE_PX));
+        setStageDue(false);
+      }
+    }
     setShowing(moment);
   });
   const onLand = useEffectEvent((moment: Moment<Big>) => {
@@ -402,7 +400,9 @@ export function KidPlay({
         );
       }
     }
-    // The last habit of the day: the scene dances once the big moment is over (one burst at a time).
+    // Landed without starting (the page went to the background): its stage shows now.
+    if (moment.kind === "milestone") setStageDue(false);
+    // The last habit of the day: the scene dances once the tap's last big moment is over (one burst at a time).
     if (data.allDone) startDance();
   });
   const moments = useRef<Moments<Big> | null>(null);
@@ -444,29 +444,30 @@ export function KidPlay({
     return () => cancelAnimationFrame(frame);
   }, [flyingId, flyingIndex]);
 
-  // A tap that finishes a habit: the item it adds shows huge in the middle, then flies to its spot.
-  const reveal = (habitId: string, stars: number, allDone: boolean, tappedAt: number) => {
+  // Every tap that earns a star (ideas/kid-view-next.md, decided 2026-10-06): the item it adds shows
+  // huge in the middle, then flies to its spot; a new picture zooms in after it. The item stays out of
+  // the scene until it lands; a finished card (`holds`) keeps its place until then.
+  const celebrate = (habitId: string, stars: number, allDone: boolean, tappedAt: number, holds: boolean) => {
     const index = stars < MAX_ITEMS ? stars : null;
     const emoji = index === null ? "⭐" : sceneItems(index + 1, child.theme)[index].emoji;
     playKidSound("pop");
-    playKidSound("reveal"); // starts 0.1 s in, as it springs up
+    // Reduce Motion: no zoom or fly; it lands (fades in at its spot) at once, with its sound.
+    if (reduce) playKidSound("reveal");
     if (index !== null) {
       setRevealed((s) => new Set(s).add(index));
       if (!reduce) setHidden((s) => new Set(s).add(index));
     }
-    setHolding((s) => new Set(s).add(habitId));
-    // Reduce Motion: no zoom or fly; it lands (fades in at its spot) at once.
-    moments.current?.play("reveal", { emoji, habitId, index, allDone, tappedAt, holds: true }, { instant: reduce });
-  };
-
-  // A new picture zooms in big in the middle of the screen, then shrinks into its place in the scene.
-  const zoomIn = (habitId: string, stars: number, allDone: boolean, tappedAt: number, holds: boolean) => {
-    playKidSound("chime");
     if (holds) setHolding((s) => new Set(s).add(habitId));
-    // Its size there: smaller while the picture is shrunk.
-    const goal = goalFor(picture.current?.querySelector("[data-hero]"), MILESTONE_PX);
-    const emoji = themeStages(child.theme)[stageFor(stars + 1)].icon;
-    moments.current?.play("milestone", { emoji, habitId, index: null, allDone, tappedAt, holds, goal });
+    const kinds = momentsForTap({ starsBefore: stars });
+    if (kinds.includes("milestone")) setStageDue(true);
+    const steps = kinds.map((kind, i): Step<Big> => {
+      // The dance follows the tap's last moment.
+      const last = { allDone: allDone && i === kinds.length - 1, habitId, tappedAt };
+      return kind === "reveal"
+        ? { kind, instant: reduce, data: { ...last, emoji, index, holds } }
+        : { kind, data: { ...last, emoji: themeStages(child.theme)[stageFor(stars + 1)].icon, index: null, holds: false } };
+    });
+    moments.current?.play(steps);
   };
 
   return (
@@ -503,8 +504,8 @@ export function KidPlay({
             theme={child.theme}
             interactive
             dancing={dancing}
-            settling={milestone !== null}
-            idle={dancing || showing !== null || flying.length > 0 ? "pause" : "play"}
+            settling={milestone !== null || stageDue}
+            idle={dancing || showing !== null ? "pause" : "play"}
             hidden={hidden}
             revealed={revealed}
             landed={landed}
@@ -539,7 +540,7 @@ export function KidPlay({
                 type="button"
                 disabled={saving.has(h.id)}
                 aria-busy={saving.has(h.id) || undefined}
-                onClick={(e) => {
+                onClick={() => {
                   // This card is sliding to its new place: a wiggle, nothing counted, so the tap isn't silent.
                   if (guard.blocks(h.id)) {
                     setBumped(h.id);
@@ -557,24 +558,13 @@ export function KidPlay({
                   lastTap.current.set(h.id, now);
                   inFlight.current.add(h.id);
                   setSaving(new Set(inFlight.current));
-                  const el = e.currentTarget;
                   const before = view.stars;
                   const allDone = view.habits.every((x) => (x.id === h.id ? x.done + 1 >= x.target : x.state !== "open"));
                   setError(null);
                   // Outside the transition: its updates wait for the save, and these must show at once.
-                  // One effect per tap (lib/kid-reveal.ts): a new picture wins over the big reveal, and part
-                  // of a 2×-a-day habit keeps the small one (the item flies from the card).
-                  const kind = kindOfTap({ starsBefore: before, done: h.done, target: h.target });
-                  if (kind !== "partial") setCheer(h.id);
-                  if (kind === "reveal") reveal(h.id, before, allDone, now);
-                  else {
-                    fly(el, before);
-                    if (kind === "milestone") zoomIn(h.id, before, allDone, now, h.done + 1 >= h.target);
-                    else {
-                      playKidSound("pop");
-                      moments.current?.fastForward(); // whatever is big on screen lands now
-                    }
-                  }
+                  // The save starts now; only the picture may wait for the one before (lib/kid-reveal.ts).
+                  setCheer(h.id);
+                  celebrate(h.id, before, allDone, now, h.done + 1 >= h.target);
                   if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate(10);
                   const doneAtTap = base.habits.find((x) => x.id === h.id)?.done ?? h.done;
                   startTransition(async () => {
@@ -630,7 +620,7 @@ export function KidPlay({
         })}
       </ul>
 
-      {milestone?.data.goal && (
+      {milestone && stageGoal && (
         <span
           key={milestone.id}
           aria-hidden
@@ -641,9 +631,9 @@ export function KidPlay({
             className="relative block leading-none select-none motion-safe:animate-hero-zoom"
             style={{
               fontSize: MILESTONE_PX,
-              ["--to-x" as string]: `${milestone.data.goal.dx}px`,
-              ["--to-y" as string]: `${milestone.data.goal.dy}px`,
-              ["--to-scale" as string]: String(milestone.data.goal.scale),
+              ["--to-x" as string]: `${stageGoal.dx}px`,
+              ["--to-y" as string]: `${stageGoal.dy}px`,
+              ["--to-scale" as string]: String(stageGoal.scale),
             }}
           >
             <span className="absolute inset-[-25%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.9)_0%,rgba(255,255,255,0.4)_45%,rgba(255,255,255,0)_70%)]" />
@@ -693,17 +683,6 @@ export function KidPlay({
         </span>
       )}
 
-      {flying.map((s) => (
-        <span
-          key={s.key}
-          aria-hidden
-          className="pointer-events-none fixed z-50 flex size-10 items-center justify-center text-4xl leading-none motion-safe:animate-star-fly motion-reduce:hidden"
-          // Centred by offset, not translate: the animation owns the transform.
-          style={{ left: s.x - 20, top: s.y - 20, ["--fly-x" as string]: `${s.dx}px`, ["--fly-y" as string]: `${s.dy}px` }}
-        >
-          {s.emoji}
-        </span>
-      ))}
     </div>
   );
 }
