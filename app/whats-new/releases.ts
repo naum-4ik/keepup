@@ -19,6 +19,7 @@ export function releaseLabel(r: Release, appVersion: string): string {
 export const RELEASES: Release[] = [
   {
     version: "0.6.0",
+    date: "2026-10-06",
     notes: [
       "Every check-in earns XP, and you grow from Seedling to Forest. A ring around your Profile avatar shows the way to the next level, and streak milestones arrive in your Inbox.",
       "24 badges to collect under Profile → Achievements, from First step to Bookworm. Your past check-ins already count.",
