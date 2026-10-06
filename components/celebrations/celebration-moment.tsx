@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { Star } from "lucide-react";
 import { Confetti } from "@/components/celebrations/confetti";
@@ -28,11 +28,23 @@ function markSeen(item: SeenItem): void {
   void fetch("/api/celebrations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) }).catch(() => {});
 }
 
+// Whether the tab is on screen. A moment waits for it: a page opened in a background tab shows (and
+// marks seen) nothing until it is looked at, and a tab hidden mid-moment stops its timer (as
+// EveryoneDidIt does).
+function onVisibility(change: () => void): () => void {
+  document.addEventListener("visibilitychange", change);
+  return () => document.removeEventListener("visibilitychange", change);
+}
+const useTabVisible = () => useSyncExternalStore(onVisibility, () => document.visibilityState === "visible", () => false);
+
+// Escape belongs to an open dialog above the page, if there is one.
+const dialogOpen = () => document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]') !== null;
+
 const SHOWN_MS: Record<CelebrationMode, number> = { full: 2400, subtle: 4000 };
 
 // §9: a ~2 s full-screen moment (Full) or a small toast (Subtle), once each. It is checked when a page
 // opens (the pathname changes), never in the middle of a run of check-ins on the same page. It doesn't
-// take focus; tap, Escape or the timer moves on. Reduced motion: no confetti, no pop. Full waits its
+// take focus; tap, Escape (Full) or the timer moves on. Reduced motion: no confetti, no pop. Full waits its
 // turn with the page's other bursts (lib/burst-turns.ts) and holds it while it shows, so "Everyone did
 // it", a finish card or Today's all-done confetti never plays at the same time. The (app) layout only:
 // never in the kid view.
@@ -41,6 +53,8 @@ export function CelebrationMoment() {
   const [state, setState] = useState<{ mode: CelebrationMode; queue: Celebration[]; ready: boolean }>({ mode: "full", queue: [], ready: false });
   const [index, setIndex] = useState(0);
   const turn = useRef<{ release: () => void } | null>(null);
+  const marked = useRef(new Set<string>());
+  const visible = useTabVisible();
   const lineId = useId();
 
   useEffect(() => {
@@ -68,7 +82,7 @@ export function CelebrationMoment() {
   // Gone with the layout (signed out): hand back what's left of the turn.
   useEffect(() => () => turn.current?.release(), []);
 
-  const current = state.ready ? state.queue[index] : undefined;
+  const current = state.ready && visible ? state.queue[index] : undefined;
   const done = state.queue.length > 0 && index >= state.queue.length;
   const next = useCallback(() => setIndex((i) => i + 1), []);
 
@@ -80,16 +94,25 @@ export function CelebrationMoment() {
 
   useEffect(() => {
     if (!current) return;
-    // Marked seen when shown, so leaving mid-moment never shows it twice.
-    markSeen(current.kind === "level" ? { level: current.level } : { badge: current.code });
+    // On screen: marked seen now, so leaving mid-moment never shows it twice (once per item, even when
+    // the tab is hidden and shown again). The timer restarts each time the tab comes back.
+    const id = current.kind === "level" ? `level:${current.level}` : `badge:${current.code}`;
+    if (!marked.current.has(id)) {
+      marked.current.add(id);
+      markSeen(current.kind === "level" ? { level: current.level } : { badge: current.code });
+    }
     const timer = window.setTimeout(next, SHOWN_MS[state.mode]);
+    // Full only: the toast covers nothing, so Escape stays with the page. Captured before a dialog's
+    // own listener, and left to it when one is open above the moment.
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") next();
+      if (e.key !== "Escape" || dialogOpen()) return;
+      e.stopImmediatePropagation();
+      next();
     };
-    window.addEventListener("keydown", onKey);
+    if (state.mode === "full") window.addEventListener("keydown", onKey, true);
     return () => {
       window.clearTimeout(timer);
-      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onKey, true);
     };
   }, [current, next, state.mode]);
 
@@ -129,7 +152,7 @@ export function CelebrationMoment() {
         <p id={lineId} className="text-base text-muted-foreground">
           {current.line}
         </p>
-        <p className="text-xs text-muted-foreground">Tap to close</p>
+        <p className="text-xs text-muted-foreground">Tap or press Esc</p>
       </div>
     </div>
   );

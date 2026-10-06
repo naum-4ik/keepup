@@ -1,5 +1,6 @@
+import { execSync } from "node:child_process";
 import { expect, test } from "@playwright/test";
-import { setCelebrations, signUpAndOnboard } from "./helpers/auth";
+import { completeOnboarding, setCelebrations, signUp, signUpAndOnboard, uniqueEmail } from "./helpers/auth";
 import { createHabit } from "./helpers/habits";
 
 test("a counted check-in floats +10 XP", async ({ page }) => {
@@ -111,4 +112,56 @@ test("Settings → Celebrations remembers Full or Subtle", async ({ page }) => {
   await setCelebrations(page, "full");
   await page.reload();
   await expect(page.getByRole("radiogroup", { name: "Celebrations" }).getByRole("radio", { name: "Full" })).toBeChecked();
+});
+
+// Whether a badge of this account is still unseen, read from the local test database.
+function badgeUnseen(email: string, code: string): boolean {
+  const out = execSync(`docker exec -i supabase_db_keepup psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -At`, {
+    input: `select count(*) from public.user_achievements a join auth.users u on u.id = a.user_id where u.email = '${email}' and a.achievement_code = '${code}' and a.seen_at is null;`,
+  });
+  return out.toString().trim() === "1";
+}
+
+test("a page opened in a hidden tab shows and marks nothing until the tab is looked at", async ({ page }) => {
+  // The tab's visibility, under the test's control.
+  await page.addInitScript(() => {
+    const w = window as unknown as { tabHidden: boolean };
+    w.tabHidden = false;
+    Object.defineProperty(document, "visibilityState", { get: () => (w.tabHidden ? "hidden" : "visible") });
+    Object.defineProperty(document, "hidden", { get: () => w.tabHidden });
+  });
+  const email = uniqueEmail();
+  await signUp(page, email);
+  await completeOnboarding(page);
+  await page.addInitScript(() => ((window as unknown as { tabHidden: boolean }).tabHidden = true));
+  await createHabit(page, { title: "Walk", count: 1, period: "day" }); // Planted, on a page that opens hidden
+  await page.waitForTimeout(2_000);
+  await expect(page.getByRole("status", { name: "Celebration" })).toHaveCount(0);
+  expect(badgeUnseen(email, "planted")).toBe(true);
+  await page.evaluate(() => {
+    (window as unknown as { tabHidden: boolean }).tabHidden = false;
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect(page.getByRole("status", { name: "Celebration" })).toContainText("Planted");
+  await expect.poll(() => badgeUnseen(email, "planted")).toBe(false);
+});
+
+test("Escape closes the moment, not a dialog underneath it", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await setCelebrations(page, "full");
+  await createHabit(page, { title: "Walk", count: 1, period: "day" });
+  const moment = page.getByRole("alertdialog", { name: "Celebration" });
+  await expect(moment).toContainText("Planted");
+  await expect(moment).toContainText("Tap or press Esc");
+  // A key listener of the page (as a dialog's) must not see the Escape the moment took.
+  await page.evaluate(() => {
+    const w = window as unknown as { pageEscapes: number };
+    w.pageEscapes = 0;
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") w.pageEscapes += 1;
+    });
+  });
+  await page.keyboard.press("Escape");
+  await expect(moment).toHaveCount(0);
+  expect(await page.evaluate(() => (window as unknown as { pageEscapes: number }).pageEscapes)).toBe(0);
 });
