@@ -15,9 +15,10 @@ export function BadgeNotes({ children }: { children: React.ReactNode }) {
 // (a mouse), tap or focus. It closes on tap outside, Escape or blur. The button's name carries the
 // whole text, so a screen reader needs no note (the note is hidden from it).
 // Earned stands out (owner, 2026-10-06): the group's pastel tinted a little more with its ink, a soft
-// ring and glow in the ink, and a bold name in the full foreground colour. Locked recedes: the circle
-// and icon fade to 55% and lose their colour; the name stays full muted-foreground, medium weight, so it
-// keeps AA (5.5:1 on the card in light, 6.6:1 in dark), and only the decorative circle fades.
+// ring and glow in the ink, and a bold name in the full foreground colour. Locked recedes: a lighter
+// circle (muted at 60%), circle and icon at 50%, no colour. The name stays full muted-foreground,
+// medium weight, so it keeps AA (5.5:1 on the card in light, 6.6:1 in dark); only the decorative
+// circle fades.
 export function BadgeTile({
   code,
   name,
@@ -87,7 +88,7 @@ export function BadgeTile({
                 ink,
                 "ring-2 ring-current/35 shadow-[inset_0_0_0_24px_color-mix(in_srgb,currentColor_12%,transparent),0_0_0_5px_color-mix(in_srgb,currentColor_12%,transparent)]",
               )
-            : "bg-muted text-muted-foreground opacity-55 grayscale",
+            : "bg-muted/60 text-muted-foreground opacity-50 grayscale",
         )}
       >
         {children}

@@ -3,7 +3,7 @@
 -- tapped_at, review times), and the seeded history is fixed, so nothing depends on the real date.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(18);
 
 -- finalize_periods scans every habit; start from none (rolled back at the end).
 delete from public.habits;
@@ -20,7 +20,8 @@ update public.group_members set joined_at = '2026-09-01' where group_id = (selec
 insert into t select 'mary', private.create_child_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'fam'), 'Mary', '🐼', 'peach', true);
 
 -- e1 Read (Anna, from 1 Oct), e2 Walk (Anna, a long history), e3 Stretch (Anna, a mixed history),
--- e4 Water (Anna, a late tap), e5 Gym (the family, approval), e6 Brush teeth (Mary).
+-- e4 Water (Anna, a late tap), e5 Gym (the family, approval), e6 Brush teeth (Mary), e7 Family walk
+-- (the family, Mary taking part).
 set local session_replication_role = replica;
 insert into public.habits (id, owner_id, group_id, title, category, emoji, target_count, period, starts_on, week_start, requires_approval, created_at, created_by)
 select x.id::uuid, x.owner::uuid, x.grp, x.title, null, '⭐', 1, 'day', x.starts::date, 1, x.appr, (x.starts || ' 08:00+02')::timestamptz,
@@ -31,8 +32,11 @@ select x.id::uuid, x.owner::uuid, x.grp, x.title, null, '⭐', 1, 'day', x.start
     ('00000000-0000-0000-0000-0000000000e3', '00000000-0000-0000-0000-0000000000a1', null, 'Stretch', '2026-09-01', false),
     ('00000000-0000-0000-0000-0000000000e4', '00000000-0000-0000-0000-0000000000a1', null, 'Water', '2026-09-01', false),
     ('00000000-0000-0000-0000-0000000000e5', null, (select v from t where k = 'fam'), 'Gym', '2026-09-01', true),
-    ('00000000-0000-0000-0000-0000000000e6', (select v::text from t where k = 'mary'), null, 'Brush teeth', '2026-10-01', false)
+    ('00000000-0000-0000-0000-0000000000e6', (select v::text from t where k = 'mary'), null, 'Brush teeth', '2026-10-01', false),
+    ('00000000-0000-0000-0000-0000000000e7', null, (select v from t where k = 'fam'), 'Family walk', '2026-10-01', false)
   ) x(id, owner, grp, title, starts, appr);
+-- Family walk: Mary takes part.
+insert into public.group_habit_participants (habit_id, profile_id) values ('00000000-0000-0000-0000-0000000000e7', (select v from t where k = 'mary'));
 -- Walk: 1–25 Sep done. Stretch: 1–2 done, 3 missed, 4 done, 5 rested, 6 skipped, 7 done.
 -- Water: 1–3 done, 4 missed, 5 done.
 insert into public.period_results (habit_id, period_start, outcome, finalized_at)
@@ -125,6 +129,14 @@ select private.check_in_impl('00000000-0000-0000-0000-0000000000e6', '00000000-0
 insert into t select 'm2', (private.check_in_impl('00000000-0000-0000-0000-0000000000e6', '00000000-0000-0000-0000-0000000000a1', '2026-10-02 19:00+02',
   (select v from t where k = 'mary'))).id;
 select is(pg_temp.amount_of((select v from t where k = 'm2')), 11, 'a child''s second day in a row earns the child 11');
+
+-- 18. A child on a group habit: her own part counts (the adults never checked in, so the family's
+-- days aren't done).
+select private.check_in_impl('00000000-0000-0000-0000-0000000000e7', '00000000-0000-0000-0000-0000000000a1', '2026-10-01 18:00+02', (select v from t where k = 'mary'));
+select private.check_in_impl('00000000-0000-0000-0000-0000000000e7', '00000000-0000-0000-0000-0000000000a1', '2026-10-02 18:00+02', (select v from t where k = 'mary'));
+insert into t select 'mw', (private.check_in_impl('00000000-0000-0000-0000-0000000000e7', '00000000-0000-0000-0000-0000000000a1', '2026-10-03 18:00+02',
+  (select v from t where k = 'mary'))).id;
+select is(pg_temp.amount_of((select v from t where k = 'mw')), 12, 'a child''s own part of a group habit: the 3rd day earns 12');
 
 select * from finish();
 rollback;

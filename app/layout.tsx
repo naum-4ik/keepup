@@ -3,16 +3,13 @@ import localFont from "next/font/local";
 import { ServiceWorker } from "@/components/pwa/service-worker";
 import "./globals.css";
 
-// Self-hosted (no build-time fetch from Google): the exact latin files next/font/google served,
-// Nunito's variable file once per weight we use, as before. Licences: app/fonts/*-OFL.txt.
+// Self-hosted (no build-time fetch from Google). Nunito: one variable file (v3.602, the version Google
+// serves), subset to Google's latin + latin-ext ranges, so names like Łukasz or Gülşen stay in one font.
+// Built from googlefonts/nunito Nunito[wght].ttf with fonttools: pyftsubset --unicodes=<latin,latin-ext>
+// --layout-features='*' --flavor=woff2. Geist Mono: Google's latin file. Licences: app/fonts/*-OFL.txt.
 const nunito = localFont({
   variable: "--font-nunito",
-  src: [
-    { path: "./fonts/nunito-latin.woff2", weight: "400", style: "normal" },
-    { path: "./fonts/nunito-latin.woff2", weight: "600", style: "normal" },
-    { path: "./fonts/nunito-latin.woff2", weight: "700", style: "normal" },
-    { path: "./fonts/nunito-latin.woff2", weight: "800", style: "normal" },
-  ],
+  src: [{ path: "./fonts/nunito-latin-ext.woff2", weight: "400 800", style: "normal" }],
   display: "swap",
 });
 
