@@ -105,3 +105,10 @@ test("Subtle shows a toast instead", async ({ page }) => {
   await expect(page.getByRole("status", { name: "Celebration" })).toContainText("Planted");
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
 });
+
+test("Settings → Celebrations remembers Full or Subtle", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await setCelebrations(page, "full");
+  await page.reload();
+  await expect(page.getByRole("radiogroup", { name: "Celebrations" }).getByRole("radio", { name: "Full" })).toBeChecked();
+});

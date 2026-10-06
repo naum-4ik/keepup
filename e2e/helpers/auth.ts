@@ -15,6 +15,8 @@ export async function signUp(page: Page, email: string, { startOnSignupPage = fa
   await page.getByLabel("Password", { exact: true }).fill(TEST_PASSWORD);
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page).not.toHaveURL(/\/login/);
+  // The account exists once the page has left /signup.
+  await expect(page).not.toHaveURL(/\/signup(\?|$)/);
   quietCelebrations(email);
 }
 
@@ -24,10 +26,11 @@ export async function signUp(page: Page, email: string, { startOnSignupPage = fa
 export function quietCelebrations(rawEmail: string): void {
   const email = rawEmail.toLowerCase();
   if (!/^[a-z0-9.+-]+@example\.com$/.test(email)) return; // not a generated test account: leave it on Full
-  execSync(`docker exec -i supabase_db_keepup psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q`, {
-    input: `update public.profiles set celebrations = 'subtle' where id = (select id from auth.users where email = '${email}');`,
-    stdio: ["pipe", "ignore", "inherit"],
+  const updated = execSync(`docker exec -i supabase_db_keepup psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -At`, {
+    input: `with u as (update public.profiles set celebrations = 'subtle' where id = (select id from auth.users where email = '${email}') returning 1) select count(*) from u;`,
+    stdio: ["pipe", "pipe", "inherit"],
   });
+  if (updated.toString().trim() !== "1") throw new Error(`No profile to set to Subtle for ${email}`);
 }
 
 export async function setCelebrations(page: Page, mode: "full" | "subtle"): Promise<void> {
