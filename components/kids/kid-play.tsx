@@ -59,7 +59,7 @@ const DANCE_MS = 2000;
 // Two quick taps on the same card (a toddler's double tap) count once.
 const SAME_CARD_GAP_MS = 2000;
 
-// A card that turns green stays put a moment (the star flies, the scene grows), then slides down to the
+// A card that turns green stays put a moment (its item shows big and lands), then slides down to the
 // done ones. While it slides, the moving cards don't take taps (lib/kid-order.ts createTapGuard). A
 // finger on the list holds the slide back, up to MAX_HOLD_MS after the tap.
 const SETTLE_MS = 1000;
