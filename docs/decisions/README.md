@@ -21,3 +21,9 @@ Short records of the choices that shape Keepup: what was decided, why, and what 
 | [0015](0015-offline-check-ins-count-the-tap.md) | Offline check-ins count the tap | Accepted |
 | [0016](0016-the-database-decides-push-tags-coalesce.md) | The database decides push; tags coalesce | Accepted |
 | [0017](0017-reminders-only-for-devices-that-asked.md) | Reminders only for devices that asked | Accepted |
+| [0018](0018-one-xp-ledger.md) | One XP ledger, idempotent by key, levels synced once per path | Accepted |
+| [0019](0019-milestones-once-per-streak.md) | Streak milestones once per streak; "Back to N" after a break | Accepted |
+| [0020](0020-badges-are-awarded-once-and-never-revoked.md) | Badges are awarded once and never revoked | Accepted |
+| [0021](0021-rest-days-instead-of-streak-freezes.md) | Rest days instead of streak freezes | Accepted |
+| [0022](0022-recaps-show-wins-only.md) | Recaps show wins only, arrive in the Inbox, and run once | Accepted |
+| [0023](0023-achievements-arrive-quietly.md) | Achievements arrive quietly; only level-ups and badges take the screen | Accepted |
