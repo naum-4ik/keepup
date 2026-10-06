@@ -7,6 +7,7 @@ import { Confetti } from "@/components/celebrations/confetti";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { useOfflineQueue } from "@/components/offline/offline-queue-provider";
 import { ProgressRing } from "@/components/overview/week-overview";
+import { takeBurstTurn } from "@/lib/burst-turns";
 import { todayLine, todayProgress, withQueuedProgress, type ProgressHabit } from "@/lib/today-progress";
 import { cn } from "@/lib/utils";
 
@@ -42,14 +43,31 @@ export function TodayCard({
 
   useEffect(() => {
     if (!allSaved) return;
+    const mark = () => {
+      try {
+        localStorage.setItem(SEEN_KEY, dayKey);
+      } catch {
+        // Private mode: celebrate anyway, it just may repeat.
+      }
+    };
     try {
       if (localStorage.getItem(SEEN_KEY) === dayKey) return;
-      localStorage.setItem(SEEN_KEY, dayKey);
     } catch {
-      // Private mode: celebrate anyway, it just may repeat.
+      // Private mode: as above.
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- plays once, after the day's last check-in
-    if (!quiet) setCelebrate(true);
+    if (quiet) return mark();
+    // In turn with the other bursts (lib/burst-turns.ts): usually at once, after a moment that's showing.
+    const turn = takeBurstTurn();
+    let played = false;
+    const timer = window.setTimeout(() => {
+      played = true;
+      mark();
+      setCelebrate(true);
+    }, turn.wait);
+    return () => {
+      window.clearTimeout(timer);
+      if (!played) turn.release();
+    };
   }, [allSaved, dayKey, quiet]);
 
   return (

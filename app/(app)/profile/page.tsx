@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, Settings, Sparkles, Users, type LucideIcon } from "lucide-react";
+import { Award, ChevronRight, Settings, Sparkles, Users, type LucideIcon } from "lucide-react";
 import { AvatarEdit } from "@/components/avatar-edit";
 import { LevelCard } from "@/components/profile/level-card";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -12,6 +12,7 @@ import { saveAvatar } from "./actions";
 
 // Where to go from Profile, as one list. Self-contained, so cards can sit above it later.
 const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/profile/achievements", label: "Achievements", icon: Award },
   { href: "/profile/settings", label: "Settings", icon: Settings },
   { href: "/whats-new", label: "What's new", icon: Sparkles },
   { href: "/groups", label: "Groups", icon: Users },

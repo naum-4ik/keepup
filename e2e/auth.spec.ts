@@ -274,12 +274,12 @@ test("saving settings twice confirms both saves", async ({ page }) => {
   await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");
 });
 
-test("Profile is a list: Settings, What's new and Groups, then Sign out", async ({ page }) => {
+test("Profile is a list: Achievements, Settings, What's new and Groups, then Sign out", async ({ page }) => {
   await signUp(page, uniqueEmail());
   await completeOnboarding(page);
   await page.goto("/profile");
   const list = page.getByRole("navigation", { name: "Account" });
-  await expect(list.getByRole("link")).toHaveText(["Settings", "What's new", "Groups"]);
+  await expect(list.getByRole("link")).toHaveText(["Achievements", "Settings", "What's new", "Groups"]);
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
   await list.getByRole("link", { name: "Settings" }).click();
   await expect(page).toHaveURL(/\/profile\/settings$/);

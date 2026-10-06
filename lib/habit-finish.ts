@@ -23,13 +23,3 @@ export function startAgainEnd(startsOn: string, endsOn: string, today: string): 
   const days = Math.round((toDate(endsOn) - toDate(startsOn)) / 86_400_000);
   return new Date(toDate(today) + days * 86_400_000).toISOString().slice(0, 10);
 }
-
-// Finish cards take turns with their confetti (never two bursts at once): each waits until the one
-// before it is over. The burst runs 900 ms; a little air after it. `turns.freeAt` is shared by the
-// cards on screen; returns how long this card waits.
-export const CONFETTI_TURN_MS = 1200;
-export function takeConfettiTurn(turns: { freeAt: number }, now: number): number {
-  const start = Math.max(now, turns.freeAt);
-  turns.freeAt = start + CONFETTI_TURN_MS;
-  return start - now;
-}

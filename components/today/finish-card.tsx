@@ -5,12 +5,10 @@ import { finishHabit, keepGoing } from "@/app/(app)/habits/actions";
 import { Confetti } from "@/components/celebrations/confetti";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { Button } from "@/components/ui/button";
-import { CONFETTI_TURN_MS, takeConfettiTurn } from "@/lib/habit-finish";
+import { takeBurstTurn } from "@/lib/burst-turns";
 import type { HabitCategory } from "@/lib/habit-schema";
 
 const seenKey = (habitId: string, endsOn: string) => `keepup:finish-celebrated:${habitId}:${endsOn}`;
-// Shared by the finish cards on screen, so their bursts play one after another.
-const turns = { freeAt: 0 };
 
 function seen(key: string): boolean {
   try {
@@ -32,7 +30,7 @@ function markSeen(key: string) {
 // is removed) or Finish (to the Finished list). Only the owner, or an admin for a group habit, decides.
 // The confetti plays once per habit and end on this device (the card can stay for days, e.g. for a
 // member waiting on an admin), and not when another celebration is on screen (`quiet`). Two finish
-// cards each play theirs, in turn.
+// cards each play theirs, in turn (lib/burst-turns.ts), as do the other bursts.
 export function FinishCard({
   habitId,
   endsOn,
@@ -58,18 +56,17 @@ export function FinishCard({
   useEffect(() => {
     const key = seenKey(habitId, endsOn);
     if (!celebrate || quiet || seen(key)) return;
-    const now = Date.now();
-    const wait = takeConfettiTurn(turns, now);
+    const turn = takeBurstTurn();
     let played = false;
     const timer = window.setTimeout(() => {
       played = true;
       markSeen(key);
       setConfetti(true);
-    }, wait);
+    }, turn.wait);
     return () => {
       window.clearTimeout(timer);
       // Gone before its turn: hand the turn back if nobody queued behind it.
-      if (!played && turns.freeAt === now + wait + CONFETTI_TURN_MS) turns.freeAt = now + wait;
+      if (!played) turn.release();
     };
   }, [celebrate, quiet, habitId, endsOn]);
   const [pending, startTransition] = useTransition();

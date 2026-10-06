@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { markSeen } from "@/app/(app)/today/actions";
 import { Avatar } from "@/components/avatar";
 import { Confetti } from "@/components/celebrations/confetti";
+import { takeBurstTurn } from "@/lib/burst-turns";
 
 export type CardMember = { id: string; name: string; avatar_emoji: string | null; avatar_color: string | null };
 
@@ -27,8 +28,18 @@ export function EveryoneDidIt(props: Props) {
   useEffect(() => {
     if (!key) return;
     let timer: number | null = null;
+    // The confetti waits its turn with the other bursts (lib/burst-turns.ts); the card shows at once.
+    let turn: { wait: number; release: () => void } | null = null;
+    let burst: number | null = null;
+    let played = false;
     const arm = () => {
-      setShown(true);
+      if (!turn) {
+        turn = takeBurstTurn();
+        burst = window.setTimeout(() => {
+          played = true;
+          setShown(true);
+        }, turn.wait);
+      }
       if (timer) window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         timer = null;
@@ -50,6 +61,8 @@ export function EveryoneDidIt(props: Props) {
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
       if (timer) window.clearTimeout(timer);
+      if (burst) window.clearTimeout(burst);
+      if (turn && !played) turn.release();
     };
   }, [key]);
 

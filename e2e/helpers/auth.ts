@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { expect, type Page } from "@playwright/test";
 
 export function uniqueEmail(prefix = "e2e"): string {
@@ -14,6 +15,29 @@ export async function signUp(page: Page, email: string, { startOnSignupPage = fa
   await page.getByLabel("Password", { exact: true }).fill(TEST_PASSWORD);
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page).not.toHaveURL(/\/login/);
+  // The account exists once the page has left /signup.
+  await expect(page).not.toHaveURL(/\/signup(\?|$)/);
+  quietCelebrations(email);
+}
+
+// Celebrations for test accounts (M5): every account made here starts on Subtle, a toast that never
+// covers a control, so the suite's other tests run as before. Tests about the full-screen moment
+// switch it to Full in Settings. Local stack only.
+export function quietCelebrations(rawEmail: string): void {
+  const email = rawEmail.toLowerCase();
+  if (!/^[a-z0-9.+-]+@example\.com$/.test(email)) return; // not a generated test account: leave it on Full
+  const updated = execSync(`docker exec -i supabase_db_keepup psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -At`, {
+    input: `with u as (update public.profiles set celebrations = 'subtle' where id = (select id from auth.users where email = '${email}') returning 1) select count(*) from u;`,
+    stdio: ["pipe", "pipe", "inherit"],
+  });
+  if (updated.toString().trim() !== "1") throw new Error(`No profile to set to Subtle for ${email}`);
+}
+
+export async function setCelebrations(page: Page, mode: "full" | "subtle"): Promise<void> {
+  await page.goto("/profile/settings");
+  const section = page.getByRole("region", { name: "Celebrations settings" });
+  await section.getByRole("radiogroup", { name: "Celebrations" }).getByRole("radio", { name: mode === "full" ? "Full" : "Subtle" }).check();
+  await expect(section).toContainText("Saved");
 }
 
 // Email first, then the password (the sign-in screen asks one at a time).
