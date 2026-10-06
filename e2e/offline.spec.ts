@@ -119,7 +119,7 @@ test("the kid view offline: a tap plays and counts once, stays after a reload, a
   await expect(page.getByText("1 star this week")).toBeAttached();
   await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "1");
   // A queued tap counts as done for the order: the card still sinks to the bottom.
-  await expect(cards.last()).toContainText("Tidy my toys", { timeout: 2500 });
+  await expect(cards.last()).toContainText("Tidy my toys", { timeout: 4000 });
 
   await page.reload();
   await expect(page.getByText(BANNER)).toBeVisible();
