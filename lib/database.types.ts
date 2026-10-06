@@ -473,6 +473,31 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"recap_runs": {
+                  Row: {
+                    "group_id": string | null,"kind": string,"period_start": string,"processed_at": string,"user_id": string | null
+                  }
+                  Insert: {
+                    "group_id"?: string | null,"kind": string,"period_start": string,"processed_at": string,"user_id"?: string | null
+                  }
+                  Update: {
+                    "group_id"?: string | null,"kind"?: string,"period_start"?: string,"processed_at"?: string,"user_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "recap_runs_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "recap_runs_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"treat_goals": {
                   Row: {
                     "child_id": string,"created_at": string,"created_by": string | null,"emoji": string,"id": string,"reached_at": string | null,"received_at": string | null,"target": number,"title": string
@@ -932,6 +957,9 @@ isOneToOne: false
                            },
 "push_job":
 { Args: { "p_id": string,"p_now"?: string }; Returns: Json
+                           },
+"recaps":
+{ Args: { "p_count"?: number,"p_kind": string }; Returns: Json[]
                            },
 "refresh_push_subscription":
 { Args: { "p_auth": string,"p_endpoint": string,"p_p256dh": string,"p_user_agent"?: string }; Returns: boolean
