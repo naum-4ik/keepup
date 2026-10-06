@@ -28,6 +28,9 @@ describe("an online tap", () => {
     const { client } = setup();
     expect(await client.submitTap({ habitId: "h1" }, async () => ({ ok: true, xp: 10 }))).toEqual({ ok: true, queued: false, xp: 10 });
     expect(await client.submitTap({ habitId: "h2" }, async () => ({ ok: true, xp: 0 }))).toEqual({ ok: true, queued: false });
+    expect(await client.submitTap({ habitId: "h3" }, async () => ({ ok: true, xp: 23 }))).toEqual({ ok: true, queued: false, xp: 23 });
+    // Counted, amount unknown (the ledger read failed): kept, so the float says "+XP".
+    expect(await client.submitTap({ habitId: "h4" }, async () => ({ ok: true, xp: null }))).toEqual({ ok: true, queued: false, xp: null });
   });
 
   it("is saved on the phone before it is tried, sent with its id only, and leaves the queue once it lands", async () => {

@@ -308,15 +308,16 @@ select is((select sum(amount)::int from public.xp_events where user_id = '000000
 select ok((select seen_at is not null from public.level_ups where user_id = '00000000-0000-0000-0000-0000000000f1' and level = 2), 'backfilled levels are marked seen');
 select is((select count(*)::int from public.notifications where user_id = '00000000-0000-0000-0000-0000000000f1'), 0, 'and quiet: no Inbox rows');
 
--- The set-based backfill writes exactly what the triggers wrote one by one (for history that still exists).
+-- The set-based backfill writes exactly what the triggers wrote one by one (for history that still exists),
+-- except that it pays every past check-in the flat 10: streak-scaled check-in XP is from now on only.
 create temp table snap on commit drop as
-  select x.user_id, x.amount, x.reason, x.source_type, x.source_id, x.habit_id from public.xp_events x
+  select x.user_id, case when x.reason = 'check_in' then 10 else x.amount end as amount, x.reason, x.source_type, x.source_id, x.habit_id from public.xp_events x
    where x.reason in ('check_in', 'approval', 'period_done')
      and (x.source_type <> 'check_in' or exists (select 1 from public.check_ins c where c.id::text = x.source_id));
 delete from public.xp_events;
 select is(private.backfill_xp(), (select count(*)::int from snap), 'on an empty ledger: one new row per past grant');
 select bag_eq('select user_id, amount, reason, source_type, source_id, habit_id from public.xp_events', 'select * from snap',
-  'the same rows the triggers wrote');
+  'the same rows the triggers wrote (check-ins at the flat 10)');
 select is(private.backfill_xp(), 0, 'running it again grants nothing');
 
 select * from finish();

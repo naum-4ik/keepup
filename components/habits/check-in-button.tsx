@@ -13,7 +13,7 @@ import { ringOf, type RingInput } from "@/lib/today";
 import { ringDash } from "@/lib/week-overview";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
-import { tapXp } from "@/lib/xp";
+import { tapXp, xpLabel, type TapXp } from "@/lib/xp";
 
 const LABEL: Record<CheckInState, string> = {
   open: "Check in",
@@ -50,7 +50,7 @@ export function CheckInButton({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [celebrating, setCelebrating] = useState(false);
-  // The "+10 XP" float of the latest check-in on this habit (components/habits/xp-float.ts).
+  // The "+N XP" float of the latest check-in on this habit (components/habits/xp-float.ts).
   const xpFloat = useXpFloat(habitId);
   // Bumped on every successful check-in and used as the button's key, so a quick repeat tap on a
   // multi-count habit remounts the node and replays the bounce, even if the previous one is still playing.
@@ -74,7 +74,7 @@ export function CheckInButton({
   const ring = progress ? ringOf(progress, change) : null;
   const shownRing = ring && (shown === "open" || shown === "checked-today") ? ring : null;
 
-  function celebrate(earned = 0) {
+  function celebrate(earned: TapXp = 0) {
     dismissFirstCheckinTip();
     // The check-in moment: a soft haptic tick where supported (Android; iPhone Safari has none)
     // and a short bounce. CSS drops the animation under prefers-reduced-motion.
@@ -83,7 +83,7 @@ export function CheckInButton({
     setCelebrating(true);
     if (celebrateTimeout.current) window.clearTimeout(celebrateTimeout.current);
     celebrateTimeout.current = window.setTimeout(() => setCelebrating(false), 450);
-    if (earned > 0) floatXp(habitId, earned);
+    if (earned === null || earned > 0) floatXp(habitId, earned);
   }
 
   function run(childIds: string[]) {
@@ -158,7 +158,7 @@ export function CheckInButton({
       {xpFloat && (
         // Decorative: the level on Profile says it in words. Hidden under reduced motion.
         <span aria-hidden data-xp-float key={xpFloat.id} className="pointer-events-none absolute -top-4 right-0 animate-xp-float text-xs font-bold whitespace-nowrap text-primary motion-reduce:hidden">
-          +{xpFloat.xp} XP
+          {xpLabel(xpFloat.xp)}
         </span>
       )}
       {choosing && shown === "open" && (
