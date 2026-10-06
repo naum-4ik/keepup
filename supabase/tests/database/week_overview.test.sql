@@ -126,8 +126,12 @@ select is((select row(o->>'week_start', (o->>'done')::int, (o->>'prev_done')::in
              from (select private.week_overview_impl('00000000-0000-0000-0000-0000000000d7', '2026-10-25T23:30:00Z') as o) x),
   '(2026-10-26,0,6,7)', 'an hour after that it is Monday in Rome, and the week has moved on');
 
+-- The API runs on the real clock, so it is checked against the implementation at that same now()
+-- (one transaction, one now()); a fixed count would change once the seeded October weeks are past.
+create temp table api_expected on commit drop as select private.week_overview_impl('00000000-0000-0000-0000-0000000000a7', now()) as o;
+grant select on api_expected to authenticated;
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000a7');
-select is((select (public.week_overview()->>'active_habits')::int), 5, 'the owner gets their overview through the API');
+select is(public.week_overview(), (select o from api_expected), 'the owner gets their overview through the API');
 select throws_ok($$select private.week_overview_impl(auth.uid(), now())$$, '42501', null, 'API users cannot call the implementation');
 
 select tests.authenticate_as('00000000-0000-0000-0000-0000000000b7');

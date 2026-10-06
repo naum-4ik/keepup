@@ -21,14 +21,15 @@ export async function createHabit(page: Page, habit: NewHabit): Promise<void> {
 
 // Makes a habit look like it ran for three days and ended yesterday (ideas/habit-end-date.md), without
 // waiting 30 days: the dates are moved in the local test database with triggers off for this one
-// statement (habit_rules refuses a start in the past). Local stack only.
+// statement (habit_rules refuses a start in the past). Days are the habit's own (private.habit_today),
+// not the database's UTC current_date, which is a day behind Rome after 22:00 UTC. Local stack only.
 export function endHabitYesterday(habitId: string): void {
   if (!/^[0-9a-f-]{36}$/.test(habitId)) throw new Error(`Not a habit id: ${habitId}`);
   execSync(
     `docker exec -i supabase_db_keepup psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q`,
     {
       input: `set session_replication_role = replica;
-update public.habits set starts_on = current_date - 3, ends_on = current_date - 1 where id = '${habitId}';`,
+update public.habits h set starts_on = private.habit_today(h, now()) - 3, ends_on = private.habit_today(h, now()) - 1 where h.id = '${habitId}';`,
       stdio: ["pipe", "ignore", "inherit"],
     },
   );
@@ -41,7 +42,7 @@ export function startHabitDaysAgo(habitId: string, days: number): void {
     `docker exec -i supabase_db_keepup psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q`,
     {
       input: `set session_replication_role = replica;
-update public.habits set starts_on = current_date - ${days} where id = '${habitId}';`,
+update public.habits h set starts_on = private.habit_today(h, now()) - ${days} where h.id = '${habitId}';`,
       stdio: ["pipe", "ignore", "inherit"],
     },
   );
@@ -56,8 +57,9 @@ export function seedPastCheckIns(habitId: string, userEmail: string, daysAgo: nu
   execSync(`docker exec -i supabase_db_keepup psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q`, {
     input: `set session_replication_role = replica;
 insert into public.check_ins (habit_id, user_id, local_date, period_start, status, created_at, logged_by)
-select '${habitId}', u.id, current_date - d, current_date - d, 'approved', now() - make_interval(days => d), u.id
-  from (select id from auth.users where email = '${userEmail}') u, unnest(array[${daysAgo.join(",")}]::int[]) d;
+select h.id, u.id, private.habit_today(h, now()) - d, private.habit_today(h, now()) - d, 'approved', now() - make_interval(days => d), u.id
+  from public.habits h, (select id from auth.users where email = '${userEmail}') u, unnest(array[${daysAgo.join(",")}]::int[]) d
+ where h.id = '${habitId}';
 update public.profiles set created_at = now() - interval '30 days' where id = (select id from auth.users where email = '${userEmail}');`,
     stdio: ["pipe", "ignore", "inherit"],
   });
