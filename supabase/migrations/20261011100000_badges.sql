@@ -120,8 +120,10 @@ end;
 $$;
 
 -- Copied from 20261009100000_xp_ledger.sql (its latest definition). New: the queued badges
--- (keepup.unbadged) are written here too, and an empty level list no longer returns early. One batch,
--- per person in user id order: the level, then that person's badges (Locks, at the top).
+-- (keepup.unbadged) are written here too, and an empty level list no longer returns early. The
+-- queued Perfect week judgements (keepup.unjudged) are made first, once per person and week, when
+-- everything the transaction settled is visible (reads only). One batch, per person in user id
+-- order: the level, then that person's badges (Locks, at the top).
 create or replace function private.sync_deferred_levels()
 returns void
 language plpgsql
@@ -130,13 +132,27 @@ as $$
 declare
   v_list text := nullif(current_setting('keepup.unsynced', true), '');
   v_badges text := nullif(current_setting('keepup.unbadged', true), '');
+  v_weeks text := nullif(current_setting('keepup.unjudged', true), '');
   r record;
 begin
   perform set_config('keepup.unsynced', '', true);
   perform set_config('keepup.unbadged', '', true);
-  if v_list is null and v_badges is null then
+  perform set_config('keepup.unjudged', '', true);
+  if v_list is null and v_badges is null and v_weeks is null then
     return;
   end if;
+  for r in
+    select distinct on (w.id, w.week) w.id, w.week, w.at, w.late
+      from (select split_part(b, '|', 1)::uuid as id, split_part(b, '|', 2)::date as week,
+                   split_part(b, '|', 3)::timestamptz as at, split_part(b, '|', 4)::boolean as late
+              from unnest(string_to_array(v_weeks, ';')) b) w
+     order by w.id, w.week, w.at desc
+  loop
+    if not exists (select 1 from public.user_achievements a where a.user_id = r.id and a.achievement_code = 'perfect_week')
+       and private.perfect_week(r.id, r.week, r.at) then
+      v_badges := coalesce(v_badges || ';', '') || r.id || '|perfect_week|' || r.at || '|' || r.late;
+    end if;
+  end loop;
   for r in
     select x.id, x.step, x.code, x.at, x.late
       from (select distinct u::uuid as id, 0 as step, null::text as code, null::timestamptz as at, false as late
@@ -183,40 +199,75 @@ $$;
 
 -- Perfect week: in the person's week starting p_week_start, every period of every daily and weekly habit
 -- they had all week is done (or skipped: the habit paused), with at least two habits done. A group
--- habit judges the person's own part (private.person_period_outcome, owner 2026-10-06: the ring's,
--- "This week"'s and the calendar's rule): done when their own check-ins reach the target, whatever
--- the others did; a period they weren't required for (paused, not yet joined) is left out, neither
--- done nor missed. p_now: the moment judged (only the period still open at p_now isn't done).
+-- habit judges the person's own part (owner 2026-10-06: the ring's, "This week"'s and the calendar's
+-- rule, private.person_period_outcome): done when their own check-ins reach the target, whatever the
+-- others did; a period they weren't required for (paused, not yet joined) is left out, neither done
+-- nor missed. p_now: the moment judged (the period still open at p_now isn't done).
+-- Same outcome as person_period_outcome per period, computed cheaply: private habits first, the
+-- first period that fails ends it, and required_members is asked only for a group period whose own
+-- part isn't done, or once per habit to confirm a done one counts.
 create function private.perfect_week(p_user uuid, p_week_start date, p_now timestamptz default now())
 returns boolean
-language sql
+language plpgsql
 stable
 set search_path = ''
 as $$
-  with hs as (
-    select h as habit, h.id, h.period
-      from public.habits h
-     where h.period in ('day', 'week')
-       and (h.owner_id = p_user or h.id in (select private.person_group_habits(p_user)))
-       and h.starts_on <= p_week_start
-       and (h.ends_on is null or h.ends_on >= p_week_start + 6)
-       and (h.archived_at is null or h.archived_at >= private.local_midnight(p_week_start + 7, private.habit_timezone(h)))
-  ), expected as (
-    select distinct hs.id, private.habit_period_start(hs.habit, d::date) as ps
-      from hs cross join generate_series(p_week_start::timestamp, (p_week_start + 6)::timestamp, interval '1 day') d
-     where hs.period = 'day' or private.habit_period_start(hs.habit, d::date) >= p_week_start
-  ), judged as (
-    select e.id, h.group_id is not null as shared,
-           case when h.group_id is null
-                then (select x.outcome from public.period_results x where x.habit_id = e.id and x.period_start = e.ps)
-                else (select o.outcome from private.person_period_outcome(h, p_user, e.ps, p_now) o) end as outcome
-      from expected e join public.habits h on h.id = e.id
-  )
-  select count(distinct j.id) >= 2
-     and coalesce(bool_and(coalesce(j.outcome in ('done', 'skipped'), false)), false)
-     and count(distinct j.id) filter (where j.outcome = 'done') >= 2
-    from judged j
-   where not (j.shared and j.outcome is null);
+declare
+  h public.habits;
+  v_ps date;
+  v_current date;
+  v_counted boolean;
+  v_done boolean;
+  v_habits_done int := 0;
+  v_out text;
+begin
+  for h in
+    select x.* from public.habits x
+     where x.period in ('day', 'week')
+       and (x.owner_id = p_user or x.id in (select private.person_group_habits(p_user)))
+       and x.starts_on <= p_week_start
+       and (x.ends_on is null or x.ends_on >= p_week_start + 6)
+       and (x.archived_at is null or x.archived_at >= private.local_midnight(p_week_start + 7, private.habit_timezone(x)))
+     order by x.group_id is not null, x.id
+  loop
+    v_counted := false;
+    v_done := false;
+    v_current := private.habit_period_start(h, private.habit_today(h, p_now));
+    for v_ps in
+      select distinct private.habit_period_start(h, d::date)
+        from generate_series(p_week_start::timestamp, (p_week_start + 6)::timestamp, interval '1 day') d
+       where h.period = 'day' or private.habit_period_start(h, d::date) >= p_week_start
+       order by 1
+    loop
+      if h.group_id is null then
+        select x.outcome into v_out from public.period_results x where x.habit_id = h.id and x.period_start = v_ps;
+        if v_out is null or v_out not in ('done', 'skipped') then
+          return false;
+        end if;
+        v_counted := true;
+        v_done := v_done or v_out = 'done';
+      elsif (select count(*) from public.check_ins c
+              where c.habit_id = h.id and c.user_id = p_user and c.period_start = v_ps and c.status = 'approved') >= h.target_count then
+        -- Own part done: 'done' if they were required for it, else left out. One is enough per habit.
+        if not v_done and p_user in (select m from private.required_members(h, v_ps) m) then
+          v_counted := true;
+          v_done := true;
+        end if;
+      elsif p_user in (select m from private.required_members(h, v_ps) m) then
+        if v_ps = v_current or coalesce(
+             (select x.outcome from public.period_results x where x.habit_id = h.id and x.period_start = v_ps),
+             private.period_outcome(h, v_ps)) <> 'skipped' then
+          return false; -- open, or missed
+        end if;
+        v_counted := true;
+      end if;
+    end loop;
+    if v_counted and v_done then
+      v_habits_done := v_habits_done + 1;
+    end if;
+  end loop;
+  return v_habits_done >= 2;
+end;
 $$;
 
 -- Hooks. Each judges one moment (p_at) for the people it concerns. They only read; the awards are
@@ -297,6 +348,8 @@ as $$
 declare
   v_run int;
   v_start date;
+  v_week date;
+  v_profile public.profiles;
   v_month date := date_trunc('month', p_period_start::timestamp)::date;
   v_next date := (date_trunc('month', p_period_start::timestamp) + interval '1 month')::date;
   v_count int;
@@ -313,8 +366,19 @@ begin
        where x.id is not null
        order by x.id
     loop
-      if private.perfect_week(u, private.period_start('week', p_period_start, (select p.week_start from public.profiles p where p.id = u)), p_at) then
-        perform private.award_badge(u, 'perfect_week', p_at, p_quiet, p_sync, p_late);
+      select p.* into v_profile from public.profiles p where p.id = u;
+      v_week := private.period_start('week', p_period_start, v_profile.week_start);
+      -- Only once the person's week is over (no earlier settle can complete it), and not again.
+      continue when p_at < private.local_midnight(v_week + 7, v_profile.timezone)
+                 or exists (select 1 from public.user_achievements a where a.user_id = u and a.achievement_code = 'perfect_week');
+      if p_sync or p_quiet then
+        if private.perfect_week(u, v_week, p_at) then
+          perform private.award_badge(u, 'perfect_week', p_at, p_quiet, p_sync, p_late);
+        end if;
+      elsif strpos(';' || coalesce(current_setting('keepup.unjudged', true), ''), ';' || u || '|' || v_week || '|') = 0 then
+        -- Judged once per person and week by sync_deferred_levels, after everything this transaction settles.
+        perform set_config('keepup.unjudged',
+          coalesce(nullif(current_setting('keepup.unjudged', true), '') || ';', '') || u || '|' || v_week || '|' || coalesce(p_at, now()) || '|' || p_late, true);
       end if;
     end loop;
   end if;

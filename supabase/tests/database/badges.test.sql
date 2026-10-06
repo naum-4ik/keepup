@@ -2,7 +2,7 @@
 -- One assertion per badge (spec: every rule has a test), plus the wiring, quiet, RLS and setting.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(57);
+select plan(60);
 
 select tests.create_user(id::uuid, n || '@example.com', jsonb_build_object('full_name', n))
   from (values ('00000000-0000-0000-0000-0000000000a1', 'Anna'), ('00000000-0000-0000-0000-0000000000b1', 'Dan'),
@@ -307,6 +307,53 @@ select ok(not pg_temp.has('00000000-0000-0000-0000-0000000000a8', 'perfect_week'
 select ok(pg_temp.has('00000000-0000-0000-0000-0000000000a9', 'perfect_week'), 'a day I was paused doesn''t break it');
 select private.badges_on_period(h, '2026-06-07', 'done', '2026-06-08 12:00+00') from public.habits h where h.id = '00000000-0000-0000-0000-000000000402';
 select ok(not pg_temp.has('00000000-0000-0000-0000-0000000000aa', 'perfect_week'), 'and a paused period doesn''t count as done (one habit left)');
+
+-- Fix round 2: Perfect week through the period trigger (real settles at the week's end, Mon 15 June).
+-- Vic: the last day of one habit settles missed → not. Wyn: the last day settles done → yes. Xan: a
+-- group habit's last day settles missed (Yul didn't), but Xan's own part is done → yes, through the
+-- trigger's non-done branch.
+select tests.create_user(id::uuid, n || '@example.com', jsonb_build_object('full_name', n))
+  from (values ('00000000-0000-0000-0000-0000000000ac', 'Vic'), ('00000000-0000-0000-0000-0000000000ad', 'Wyn'),
+               ('00000000-0000-0000-0000-0000000000ae', 'Xan'), ('00000000-0000-0000-0000-0000000000af', 'Yul')) v(id, n);
+update public.profiles set timezone = 'UTC'
+ where id in ('00000000-0000-0000-0000-0000000000ac', '00000000-0000-0000-0000-0000000000ad', '00000000-0000-0000-0000-0000000000ae',
+              '00000000-0000-0000-0000-0000000000af');
+insert into t select 'xy', (private.create_group_impl('00000000-0000-0000-0000-0000000000ae', 'Pair', 'friends')).id;
+insert into public.group_members (group_id, user_id) values ((select v from t where k = 'xy'), '00000000-0000-0000-0000-0000000000af');
+update public.group_members set joined_at = '2026-05-01' where group_id = (select v from t where k = 'xy');
+update public.groups set timezone = 'UTC' where id = (select v from t where k = 'xy');
+set local session_replication_role = replica;
+select pg_temp.habit(x.id::uuid, x.owner::uuid, 'mind', 'day', 1, '2026-06-15', x.grp)
+  from (values ('00000000-0000-0000-0000-0000000006c1', '00000000-0000-0000-0000-0000000000ac', null::uuid),
+               ('00000000-0000-0000-0000-0000000006c2', '00000000-0000-0000-0000-0000000000ac', null),
+               ('00000000-0000-0000-0000-0000000006d1', '00000000-0000-0000-0000-0000000000ad', null),
+               ('00000000-0000-0000-0000-0000000006d2', '00000000-0000-0000-0000-0000000000ad', null),
+               ('00000000-0000-0000-0000-0000000006e1', '00000000-0000-0000-0000-0000000000ae', (select v from t where k = 'xy')),
+               ('00000000-0000-0000-0000-0000000006e2', '00000000-0000-0000-0000-0000000000ae', (select v from t where k = 'xy'))) x(id, owner, grp);
+-- Every period of the week settled done, except the last day of 6c1, 6d1 and 6e1 (settled below, for real).
+insert into public.period_results (habit_id, period_start, outcome, finalized_at)
+select h.id, '2026-06-15'::date + d, 'done', '2026-06-16'::timestamptz + make_interval(days => d)
+  from public.habits h, generate_series(0, 6) d
+ where h.id::text like '00000000-0000-0000-0000-0000000006%'
+   and not (d = 6 and h.id in ('00000000-0000-0000-0000-0000000006c1', '00000000-0000-0000-0000-0000000006d1', '00000000-0000-0000-0000-0000000006e1'));
+insert into public.check_ins (habit_id, user_id, local_date, period_start, status, created_at, logged_by)
+select h.id, u::uuid, '2026-06-15'::date + d, '2026-06-15'::date + d, 'approved', '2026-06-15 09:00+00'::timestamptz + make_interval(days => d), u::uuid
+  from public.habits h, generate_series(0, 6) d,
+       unnest(array['00000000-0000-0000-0000-0000000000ad', '00000000-0000-0000-0000-0000000000ae', '00000000-0000-0000-0000-0000000000af']) u
+ where (h.owner_id = u::uuid or (h.group_id = (select v from t where k = 'xy') and u <> '00000000-0000-0000-0000-0000000000ad'))
+   and h.id::text like '00000000-0000-0000-0000-0000000006%'
+   and not (h.id = '00000000-0000-0000-0000-0000000006e1' and d = 6 and u = '00000000-0000-0000-0000-0000000000af');
+set local session_replication_role = origin;
+insert into public.period_results (habit_id, period_start, outcome, finalized_at) values
+  ('00000000-0000-0000-0000-0000000006c1', '2026-06-21', 'missed', '2026-06-22 01:00+00');
+select ok(not pg_temp.has('00000000-0000-0000-0000-0000000000ac', 'perfect_week'), 'trigger: the week''s last day settling missed leaves it unawarded');
+insert into public.period_results (habit_id, period_start, outcome, finalized_at) values
+  ('00000000-0000-0000-0000-0000000006d1', '2026-06-21', 'done', '2026-06-22 01:00+00');
+select ok(pg_temp.has('00000000-0000-0000-0000-0000000000ad', 'perfect_week'), 'trigger: the settle that completes a perfect week awards it');
+insert into public.period_results (habit_id, period_start, outcome, finalized_at) values
+  ('00000000-0000-0000-0000-0000000006e1', '2026-06-21', 'missed', '2026-06-22 01:00+00');
+select ok(pg_temp.has('00000000-0000-0000-0000-0000000000ae', 'perfect_week') and not pg_temp.has('00000000-0000-0000-0000-0000000000af', 'perfect_week'),
+  'trigger: a group day settling missed still awards the member whose own part is done');
 
 -- Fair judge through the real review: Oli has approved 19; the 20th is review_check_in_impl.
 set local session_replication_role = replica;
