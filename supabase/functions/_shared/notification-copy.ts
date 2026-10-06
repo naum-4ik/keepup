@@ -119,7 +119,13 @@ export function weeklyRecap(
   return { title: "Your week", body: longest ? `${base} ${longestLine(longest)}` : base };
 }
 
-export const levelUp = (level: number, levelName: string): Copy => ({ title: `Level ${level}`, body: `${levelName} 🌱` });
+// One emoji per stage of the growth path (levels.ts names), so a Forest level-up doesn't say 🌱.
+const LEVEL_EMOJI: Record<string, string> = { Seedling: "🌱", Sprout: "🌿", Sapling: "🪴", Tree: "🌲", Forest: "🌳" };
+
+export const levelUp = (level: number, levelName: string): Copy => ({
+  title: `Level ${level}`,
+  body: `${levelName} ${LEVEL_EMOJI[levelName] ?? "🌱"}`,
+});
 
 export const badgeUnlocked = (badgeName: string): Copy => ({ title: "Unlocked", body: badgeName });
 

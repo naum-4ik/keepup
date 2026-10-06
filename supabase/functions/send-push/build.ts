@@ -116,7 +116,8 @@ function tagFor(job: PushJob): string {
 }
 
 function urlFor(job: PushJob): string {
-  if (job.kind === "level_up" || job.kind === "badge_unlocked") return "/profile";
+  if (job.kind === "level_up") return "/profile";
+  if (job.kind === "badge_unlocked") return "/profile/achievements";
   if (job.kind === "weekly_recap" || job.kind === "monthly_recap") return "/progress/recaps";
   if (job.kind === "family_recap") return "/inbox";
   if (job.kind === "approval_needed" || job.kind === "approval_expiring") return "/inbox";

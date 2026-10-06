@@ -80,7 +80,7 @@ export async function checkIn(habitId: string, tap?: TapId): Promise<ActionResul
   refresh(habitId);
   // XP only for a counted row this request inserted, not a resend's or a merge's (lib/xp.ts).
   if (!data || !countsNow(data, tap, startedAt)) return { ok: true, xp: 0 };
-  // The amount the database granted (10 + the streak, private.check_in_streak), read back from the
+  // The amount the database granted (10, + the streak on the period's first, rewards_on_check_in), read back from the
   // ledger (RLS: own rows). Fails soft: "+XP" with no number.
   const { data: granted, error: readError } = await supabase
     .from("xp_events")

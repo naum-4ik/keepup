@@ -89,11 +89,12 @@ Deno.test("every payload keeps the voice: at most one emoji", () => {
 
 Deno.test("M5: a level-up names the level, opens Profile", () => {
   const p = buildPush(job({ kind: "level_up", habit_id: null, habit: null, group: null, payload: { level: 6 } }))!;
-  assertEquals([p.title, p.body, p.url, p.tag], ["Level 6", "Sprout 🌱", "/profile", "level_up:n1"]);
+  assertEquals([p.title, p.body, p.url, p.tag], ["Level 6", "Sprout 🌿", "/profile", "level_up:n1"]);
 });
 
-Deno.test("M5: a new badge, and a personal milestone with its Back to wording", () => {
-  assertEquals(buildPush(job({ kind: "badge_unlocked", habit_id: null, payload: { code: "bookworm", name: "Bookworm" } }))!.body, "Bookworm");
+Deno.test("M5: a new badge (opens Achievements), and a personal milestone with its Back to wording", () => {
+  const b = buildPush(job({ kind: "badge_unlocked", habit_id: null, payload: { code: "bookworm", name: "Bookworm" } }))!;
+  assertEquals([b.body, b.url], ["Bookworm", "/profile/achievements"]);
   const m = buildPush(job({ kind: "streak_milestone", group: null, payload: { streak: 30, period: "day", back: true } }))!;
   assertEquals([m.title, m.body, m.url], ["Read 20 min", "Back to 30 days of Read 20 min 🔥", "/habits/h1"]);
 });
