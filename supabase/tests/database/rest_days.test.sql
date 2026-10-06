@@ -1,7 +1,7 @@
 -- supabase/tests/database/rest_days.test.sql
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(22);
 
 delete from public.habits;
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
@@ -56,8 +56,19 @@ select pg_temp.tap('00000000-0000-0000-0000-0000000000e1', '2026-09-29', '2026-1
 select pg_temp.tap('00000000-0000-0000-0000-0000000000e2', '2026-09-28', '2026-10-04', null, '00000000-0000-0000-0000-0000000000b1');
 select pg_temp.tap('00000000-0000-0000-0000-0000000000e3', '2026-09-28', '2026-10-04', null, '00000000-0000-0000-0000-0000000000b1');
 
--- One catch-up call settles everything up to 21 Oct.
-select private.finalize_periods('2026-10-22 01:00+02');
+-- One catch-up call settles everything up to 21 Oct. Rest well (and every other badge) is queued in its
+-- habit loop and written once after it (per-person rows after the last habit lock).
+create function tests.no_badge_in_finalize_loop() returns trigger language plpgsql as $$
+begin
+  if current_setting('keepup.defer_levels', true) = 'on' then
+    raise exception 'user_achievements written inside the finalize habit loop';
+  end if;
+  return new;
+end;
+$$;
+create trigger user_achievements_not_in_loop before insert on public.user_achievements for each row execute function tests.no_badge_in_finalize_loop();
+select lives_ok($$select private.finalize_periods('2026-10-22 01:00+02')$$, 'finalize writes no badge row inside its habit loop');
+drop trigger user_achievements_not_in_loop on public.user_achievements;
 create function pg_temp.outcomes(p_habit uuid, p_from date, p_to date) returns text[] language sql as $$
   select array_agg(outcome order by period_start) from public.period_results where habit_id = p_habit and period_start between p_from and p_to;
 $$;
