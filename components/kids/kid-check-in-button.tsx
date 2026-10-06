@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Check, Clock, Plus, Snowflake, Undo2 } from "lucide-react";
-import { checkInFor, undoForChild } from "@/app/(app)/kids/actions";
+import { undoForChild } from "@/app/(app)/kids/actions";
 import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
 import { SAVING } from "@/lib/offline-copy";
 import { queueKey } from "@/lib/offline-queue";
@@ -73,7 +73,7 @@ export function KidCheckInButton({
                 timer.current = window.setTimeout(() => setStar(0), 1200);
               };
               // Saved on this phone first, then tried online (offline it just waits): lib/offline-client.ts.
-              const result = await submitTap({ habitId, subjectId: childId }, (tap) => checkInFor(habitId, childId, false, tap));
+              const result = await submitTap({ habitId, subjectId: childId });
               if (!result.ok) {
                 setError(result.message);
                 return;

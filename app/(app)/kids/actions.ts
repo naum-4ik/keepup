@@ -7,7 +7,6 @@ import { isAvatarColor, isAvatarEmoji } from "@/lib/avatars";
 import { errorCode, habitErrorMessage } from "@/lib/habit-errors";
 import { isOneEmoji, isUuid, parseHabit } from "@/lib/habit-schema";
 import { isKidTheme } from "@/lib/garden";
-import { isTap, tapArgs, type TapId } from "@/lib/offline-sync";
 import { isKidTemplateId, KID_TEMPLATES } from "@/lib/kid-templates";
 import { parseChildName, parseGoal } from "@/lib/kid-schema";
 
@@ -143,17 +142,6 @@ export async function addChildHabit(childId: string, _prev: KidFormState, formDa
   if (error) return { status: "error", message: habitErrorMessage(error) };
   refresh(childId);
   return { status: "saved" };
-}
-
-// byChild: a tap in the kid view (logged_by stays null, "Mary did it"). tap: see checkIn (habits/actions.ts).
-export async function checkInFor(habitId: string, childId: string, byChild: boolean, tap?: TapId): Promise<KidActionResult> {
-  if (!isUuid(habitId) || !isUuid(childId) || !isTap(tap)) return NOT_FOUND;
-  const { supabase } = await requireUser();
-  const result = await call(childId, () =>
-    supabase.rpc("check_in_for", { p_habit_id: habitId, p_child_id: childId, p_by_child: byChild === true, ...tapArgs(tap) }),
-  );
-  if (result.ok) revalidatePath(`/habits/${habitId}`);
-  return result;
 }
 
 export async function undoForChild(checkInId: string, habitId: string, childId: string): Promise<KidActionResult> {

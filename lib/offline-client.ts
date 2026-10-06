@@ -12,7 +12,8 @@ import type { TapXp } from "@/lib/xp";
 export type Counts = ReadonlyMap<string, number> & { readonly queue?: readonly QueueEntry[] };
 export type Flushed = { counts: Counts; changed: boolean; poisoned: number };
 export type TapResult = { ok: true; queued: boolean; xp?: TapXp } | { ok: false; message: string };
-type Online = (tap: { clientId: string }) => Promise<{ ok: true; xp?: TapXp } | { ok: false; message: string; code?: string }>;
+// The online try (lib/offline-sync.ts tapSender): `signal` aborts it when it takes too long.
+type Online = (tap: { clientId: string }, signal: AbortSignal) => Promise<{ ok: true; xp?: TapXp } | { ok: false; message: string; code?: string }>;
 
 // A database rule refused it: final, the same answers the sync route maps to 409. An expired session
 // isn't one (the next signed-in flush sends it).
@@ -30,8 +31,9 @@ export function createOfflineClient(deps: {
   send: Sender;
   locks?: Locks | null;
   isOnline: () => boolean;
-  // A tap saved or forgotten: show it now.
-  onCounts: (counts: Counts) => void;
+  // A tap saved or forgotten: show it now. landed: an online tap reached the server and left the
+  // queue; show that together with a page refresh (it's on the server now, not on the phone).
+  onCounts: (counts: Counts, landed: boolean) => void;
   // A flush finished (or another tab's did): apply the counts together with a page refresh.
   onFlushed: (flushed: Flushed) => void;
   channel?: Channel | null;
@@ -44,6 +46,10 @@ export function createOfflineClient(deps: {
   const clearTimer = deps.clearTimer ?? ((t) => clearTimeout(t as ReturnType<typeof setTimeout>));
   let flushing = false;
   let held: Counts | null = null;
+  // An online tap is leaving the queue because it landed (onCounts' landed), and whether that
+  // happened while a flush held the counts back (the flush then refreshes).
+  let landing = false;
+  let heldLanded = false;
   let last: Counts = new Map();
   // Entries waiting, as of the latest change (also while a flush holds its counts back), and online
   // tries running now: what holdsRefresh needs.
@@ -53,10 +59,10 @@ export function createOfflineClient(deps: {
   let timer: unknown = null;
   let step = 0;
 
-  const emit = (counts: Counts) => {
+  const emit = (counts: Counts, landed = false) => {
     saw(counts);
     last = counts;
-    deps.onCounts(counts);
+    deps.onCounts(counts, landed);
   };
   const queue = createOfflineQueue({
     storage: deps.storage,
@@ -65,8 +71,10 @@ export function createOfflineClient(deps: {
     now: deps.now,
     onChange: (counts) => {
       saw(counts);
-      if (flushing) held = counts;
-      else emit(counts);
+      if (flushing) {
+        held = counts;
+        heldLanded ||= landing;
+      } else emit(counts, landing);
     },
   });
 
@@ -83,6 +91,7 @@ export function createOfflineClient(deps: {
     if (!deps.isOnline()) return null;
     flushing = true;
     held = null;
+    heldLanded = false;
     let r: FlushResult;
     try {
       r = await queue.flush();
@@ -93,12 +102,15 @@ export function createOfflineClient(deps: {
     saw(counts);
     const changed = r.synced.length + r.rejected.length + r.dropped.length + r.poisoned.length > 0;
     last = counts;
-    deps.onFlushed({ counts, changed, poisoned: r.poisoned.length });
+    deps.onFlushed({ counts, changed: changed || heldLanded, poisoned: r.poisoned.length });
     if (changed) deps.channel?.post();
     // Still waiting while the phone says it's online (a server problem, or a network that lies): try
-    // again later, backing off. Offline, the `online` event brings the next flush.
+    // again later, backing off. Offline, the `online` event brings the next flush. An entry added
+    // while this flush ran (an Undo of the tap it was sending) wasn't in its snapshot: it is sent by
+    // the next flush, soon, rather than waiting for the app to come back into view.
+    const left = counts.queue?.length ?? r.remaining.length;
     if (r.remaining.length === 0) step = 0;
-    else if (deps.isOnline()) scheduleFlush();
+    if (left > 0 && deps.isOnline()) scheduleFlush();
     return r;
   }
 
@@ -126,17 +138,30 @@ export function createOfflineClient(deps: {
     if (!deps.isOnline()) return { ok: true, queued: true };
     await queue.markMaybeSent(tap.clientId);
     let result: Awaited<ReturnType<Online>>;
+    // Too slow: the request is aborted, so its answer never arrives to redraw anything. The tap stays
+    // queued (it may still have landed: its client id makes the resend count once).
+    const abort = new AbortController();
     trying++;
     try {
-      result = await withTimeout(online({ clientId: tap.clientId }), deps.tapTimeoutMs ?? TAP_TIMEOUT_MS, setTimer, clearTimer);
+      result = await withTimeout(online({ clientId: tap.clientId }, abort.signal), deps.tapTimeoutMs ?? TAP_TIMEOUT_MS, setTimer, clearTimer, () => abort.abort());
     } catch {
       scheduleFlush();
       return { ok: true, queued: true };
     } finally {
       trying--;
     }
+    // Answered, but this tap no longer waits here: another tab took it back (Undo) or sent it. That
+    // answer is about a tap the screen no longer shows as this one; whoever changed it refreshes.
+    if (!(await deps.storage.load()).some((e) => e.kind === "check_in" && e.clientId === tap.clientId)) {
+      return result.ok ? { ok: true, queued: false } : { ok: false, message: result.message };
+    }
     if (result.ok) {
-      await queue.forget(tap.clientId);
+      landing = true;
+      try {
+        await queue.forget(tap.clientId);
+      } finally {
+        landing = false;
+      }
       // The XP float shows only for a check-in that counted now (lib/xp.ts); null: counted, amount unknown.
       return result.xp === 0 || result.xp === undefined ? { ok: true, queued: false } : { ok: true, queued: false, xp: result.xp };
     }
@@ -158,6 +183,8 @@ export function createOfflineClient(deps: {
     const last = (await deps.storage.load()).findLast((e) => e.kind === "check_in" && queueKey(e.habitId, e.subjectId) === key);
     if (!last) return false;
     await queue.undo(last.clientId, habitId);
+    // An undo the server has to apply (the tap may have landed) goes out with the next flush.
+    if (deps.isOnline() && (await deps.storage.load()).some((e) => e.kind === "undo" && e.clientId === last.clientId)) scheduleFlush();
     return true;
   }
 
@@ -197,9 +224,18 @@ export function createOfflineClient(deps: {
   };
 }
 
-function withTimeout<T>(p: Promise<T>, ms: number, setTimer: (fn: () => void, ms: number) => unknown, clearTimer: (t: unknown) => void): Promise<T> {
+function withTimeout<T>(
+  p: Promise<T>,
+  ms: number,
+  setTimer: (fn: () => void, ms: number) => unknown,
+  clearTimer: (t: unknown) => void,
+  onTimeout: () => void = () => {},
+): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const t = setTimer(() => reject(new Error("timeout")), ms);
+    const t = setTimer(() => {
+      onTimeout();
+      reject(new Error("timeout"));
+    }, ms);
     p.then(
       (v) => (clearTimer(t), resolve(v)),
       (e: unknown) => (clearTimer(t), reject(e)),

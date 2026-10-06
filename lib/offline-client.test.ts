@@ -7,17 +7,21 @@ function setup(o: { send?: Sender; online?: boolean; channel?: Channel; tapTimeo
   const storage = memoryStorage();
   let online = o.online ?? true;
   const counts: string[][] = [];
+  const landed: boolean[] = [];
   const flushed: Flushed[] = [];
   const client = createOfflineClient({
     storage,
     send: o.send ?? (async () => "synced"),
     isOnline: () => online,
-    onCounts: (c) => counts.push([...c.keys()]),
+    onCounts: (c, l) => {
+      counts.push([...c.keys()]);
+      landed.push(l);
+    },
     onFlushed: (f) => flushed.push(f),
     channel: o.channel,
     tapTimeoutMs: o.tapTimeoutMs,
   });
-  return { storage, client, counts, flushed, setOnline: (v: boolean) => void (online = v) };
+  return { storage, client, counts, landed, flushed, setOnline: (v: boolean) => void (online = v) };
 }
 
 beforeEach(() => vi.useFakeTimers());
@@ -250,6 +254,67 @@ describe("Undo for a tap the server may have", () => {
     expect((await storage.load())[0]).toMatchObject({ maybeSent: true });
     await client.undoQueued("h1");
     expect((await storage.load()).map((e) => e.kind)).toEqual(["undo"]);
+  });
+});
+
+describe("a late answer, and an Undo while a flush sends", () => {
+  it("a tap that landed online leaves the queue together with a page refresh (landed)", async () => {
+    const { client, landed } = setup();
+    await client.submitTap({ habitId: "h1" }, async () => ({ ok: true, xp: 10 }));
+    expect(landed.at(-1)).toBe(true);
+    expect(landed.slice(0, -1).every((l) => !l)).toBe(true); // saving it first was no landing
+  });
+
+  it("too slow: the request is aborted, and its answer, if it still came, would change nothing", async () => {
+    const { client, storage, landed } = setup({ tapTimeoutMs: 100 });
+    let signal!: AbortSignal;
+    let answer!: (v: { ok: true }) => void;
+    const done = client.submitTap({ habitId: "h1" }, (_t, s) => ((signal = s), new Promise<{ ok: true }>((r) => (answer = r))));
+    await vi.advanceTimersByTimeAsync(100);
+    expect(await done).toEqual({ ok: true, queued: true });
+    expect(signal.aborted).toBe(true);
+    // Undo it, and say the undo synced; then the old answer turns up.
+    await client.undoQueued("h1");
+    await client.flush();
+    expect(await storage.load()).toEqual([]);
+    const before = landed.length;
+    answer({ ok: true });
+    await vi.advanceTimersByTimeAsync(10);
+    expect(landed.length).toBe(before); // no count change, no refresh
+    expect(landed.includes(true)).toBe(false);
+  });
+
+  it("an answer for a tap that no longer waits here (another tab took it back) doesn't refresh the page", async () => {
+    const { client, storage, landed } = setup();
+    let answer!: (v: { ok: true; xp: number }) => void;
+    const done = client.submitTap({ habitId: "h1" }, () => new Promise((r) => (answer = r)));
+    await vi.waitFor(() => expect(answer).toBeTypeOf("function"));
+    await storage.save([]); // another tab's Undo
+    answer({ ok: true, xp: 10 });
+    expect(await done).toEqual({ ok: true, queued: false }); // no XP to float either
+    expect(landed.includes(true)).toBe(false);
+  });
+
+  it("an Undo made while a flush is sending its tap goes out with a follow-up flush", async () => {
+    const sent: string[] = [];
+    let release!: () => void;
+    const send: Sender = async (e) => {
+      sent.push(e.kind);
+      if (e.kind === "check_in") await new Promise<void>((r) => (release = r));
+      return "synced";
+    };
+    const { client, storage, setOnline } = setup({ online: false, send });
+    await client.submitTap({ habitId: "h1" }, async () => ({ ok: true }));
+    setOnline(true);
+    const flushing = client.flush();
+    await vi.waitFor(() => expect(sent).toEqual(["check_in"]));
+    await client.undoQueued("h1"); // the tap is in flight: an undo is queued after it
+    release();
+    await flushing;
+    expect((await storage.load()).map((e) => e.kind)).toEqual(["undo"]);
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(sent).toEqual(["check_in", "undo"]);
+    expect(await storage.load()).toEqual([]);
   });
 });
 

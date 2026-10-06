@@ -1,7 +1,9 @@
 // lib/offline-sync.ts
 // The page's side of the offline queue: what the sync route accepts, and what its answers mean.
+import { GENERIC_ERROR } from "@/lib/habit-errors";
 import { isUuid } from "@/lib/habit-schema";
 import { queueKey, type QueueEntry, type Sender, type SendOutcome } from "@/lib/offline-queue";
+import type { TapXp } from "@/lib/xp";
 
 export function parseEntry(body: unknown): QueueEntry | null {
   if (!body || typeof body !== "object") return null;
@@ -87,23 +89,54 @@ export function withQueuedTaps<T extends { id: string; done: number; target: num
 }
 
 // Every tap carries an id made on the phone (ideas/offline.md §4), so a resend of the same tap never
-// counts twice. Only a tap that waited in the queue sends the phone's time; an online tap sends none and
-// the server uses its own clock (addendum 6, amended), so a phone clock that's off can't move it.
-export type TapId = { clientId: string; tappedAt?: string };
-
-export function newTap(now = new Date()): Required<TapId> {
+// counts twice. Only a tap that waited in the queue sends the phone's time; an online tap
+// (app/api/check-ins/tap) sends none and the server uses its own clock (addendum 6, amended), so a
+// phone clock that's off can't move it.
+export function newTap(now = new Date()): { clientId: string; tappedAt: string } {
   return { clientId: crypto.randomUUID(), tappedAt: now.toISOString() };
 }
 
-export function isTap(tap: unknown): tap is TapId | undefined {
-  if (tap === undefined) return true;
-  if (!tap || typeof tap !== "object") return false;
-  const t = tap as Record<string, unknown>;
-  if (typeof t.clientId !== "string" || !isUuid(t.clientId)) return false;
-  return t.tappedAt === undefined || (typeof t.tappedAt === "string" && !Number.isNaN(Date.parse(t.tappedAt)));
+// A tap tried online (app/api/check-ins/tap): mine, or for a child (subjectId; byChild: in the kid view).
+export type OnlineTap = { clientId: string; habitId: string; subjectId: string | null; byChild?: boolean };
+export type OnlineAnswer = { ok: true; xp?: TapXp } | { ok: false; message: string; code?: string };
+
+export function parseTap(body: unknown): OnlineTap | null {
+  if (!body || typeof body !== "object") return null;
+  const b = body as Record<string, unknown>;
+  if (typeof b.clientId !== "string" || !isUuid(b.clientId) || typeof b.habitId !== "string" || !isUuid(b.habitId)) return null;
+  if (b.subjectId !== null && b.subjectId !== undefined && (typeof b.subjectId !== "string" || !isUuid(b.subjectId))) return null;
+  return {
+    clientId: b.clientId,
+    habitId: b.habitId,
+    subjectId: (b.subjectId as string | null | undefined) ?? null,
+    ...(b.byChild === true ? { byChild: true } : {}),
+  };
 }
 
-export function tapArgs(tap: TapId | undefined): { p_client_id?: string; p_tapped_at?: string } {
-  if (!tap) return {};
-  return tap.tappedAt ? { p_client_id: tap.clientId, p_tapped_at: new Date(tap.tappedAt).toISOString() } : { p_client_id: tap.clientId };
+// The tap route's answer, as submitTap reads it. A refusal carries its rule's code (final); an expired
+// session carries not_authenticated (kept queued: the next signed-in flush sends it); anything else,
+// a 200 without its JSON (a captive portal) included, has no code and keeps the tap queued.
+export function tapAnswer(status: number, body: unknown): OnlineAnswer {
+  const b = (body ?? {}) as { xp?: unknown; code?: unknown; message?: unknown };
+  if (status === 200 && body && typeof body === "object" && "xp" in b) {
+    return { ok: true, xp: typeof b.xp === "number" || b.xp === null ? b.xp : 0 };
+  }
+  const message = typeof b.message === "string" ? b.message : GENERIC_ERROR;
+  if ((status === 409 || status === 401) && typeof b.code === "string") return { ok: false, message, code: b.code };
+  return { ok: false, message };
+}
+
+// Sends one online tap; `signal` aborts it (submitTap's timeout), so a late answer never arrives.
+// No network, or aborted: thrown (submitTap keeps the tap queued).
+export function tapSender(fetchImpl: typeof fetch = (input, init) => fetch(input, init)) {
+  return async (tap: OnlineTap, signal?: AbortSignal): Promise<OnlineAnswer> => {
+    const res = await fetchImpl("/api/check-ins/tap", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(tap),
+      signal,
+    });
+    return tapAnswer(res.status, await res.json().catch(() => null));
+  };
 }

@@ -224,26 +224,35 @@ test("Undo after an online try that got no answer in time: the server ends witho
   await signUpAndOnboard(page);
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
   const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
-  // The check-in reaches the server at once, but its answer is held past the 10 s tap timeout.
-  let held = false;
-  await page.route("**/today", async (route) => {
-    const req = route.request();
-    if (held || req.method() !== "POST" || !req.headers()["next-action"]) return route.continue();
-    held = true;
+  // The check-in reaches the server at once, but its answer is held until the end of the test (past
+  // the 10 s tap timeout). The sync route is down until the Undo is made, so no flush can send the
+  // tap again first: the order is fixed, whatever the machine's load.
+  let release = () => {};
+  const held = new Promise<void>((r) => (release = r));
+  await page.route("**/api/check-ins/tap", async (route) => {
     const res = await route.fetch();
-    await new Promise((r) => setTimeout(r, 12_000));
-    await route.fulfill({ response: res }).catch(() => undefined);
+    await held;
+    await route.fulfill({ response: res }).catch(() => undefined); // the phone gave up on it
   });
+  await page.route("**/api/check-ins/sync", (route) => route.abort());
   await page.getByRole("button", { name: "Check in: Walk" }).click();
   await expect.poll(() => countCheckIns(id)).toBe(1); // the server has it
   const undo = page.getByRole("button", { name: "Undo check-in for Walk" });
   await expect(undo).toBeVisible({ timeout: 15_000 }); // the try timed out: it waits on the phone
   await undo.click();
   await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible(); // open again at once
-  await expect.poll(() => countCheckIns(id), { timeout: 20_000 }).toBe(0); // the queued undo reached the server
+  await page.unroute("**/api/check-ins/sync");
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await expect.poll(() => countCheckIns(id), { timeout: 15_000 }).toBe(0); // the queued undo reached the server
+  // Now the late answer turns up: it never draws "Done" (the phone aborted that request).
+  release();
+  await page.waitForTimeout(1_500);
+  await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Done: Walk" })).toHaveCount(0);
   await page.unrouteAll({ behavior: "ignoreErrors" });
   await page.reload();
   await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible();
+  expect(countCheckIns(id)).toBe(0);
 });
 
 test("a tap right after the page opens keeps Saving… and Undo through live refreshes until it syncs", async ({ page }) => {
@@ -253,9 +262,7 @@ test("a tap right after the page opens keeps Saving… and Undo through live ref
   const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
   // The online try reaches the server, but its answer never comes back; the sync route is down, so
   // the tap stays on the phone (it may have landed: maybeSent).
-  await page.route("**/today", async (route) => {
-    const req = route.request();
-    if (req.method() !== "POST" || !req.headers()["next-action"]) return route.continue();
+  await page.route("**/api/check-ins/tap", async (route) => {
     await route.fetch();
     await route.abort();
   });
@@ -290,9 +297,7 @@ test("a live refresh while the online try is still running doesn't show the tap 
   // The try reaches the server and its answer is held, then dropped; the sync route is down.
   let release = () => {};
   const held = new Promise<void>((r) => (release = r));
-  await page.route("**/today", async (route) => {
-    const req = route.request();
-    if (req.method() !== "POST" || !req.headers()["next-action"]) return route.continue();
+  await page.route("**/api/check-ins/tap", async (route) => {
     await route.fetch();
     await held;
     await route.abort().catch(() => undefined);

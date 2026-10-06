@@ -2,7 +2,6 @@
 
 import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useOptimistic, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { Check, Volume2, VolumeX } from "lucide-react";
-import { checkInFor } from "@/app/(app)/kids/actions";
 import { Avatar } from "@/components/avatar";
 import { Confetti } from "@/components/celebrations/confetti";
 import { GardenPicture } from "@/components/kids/garden";
@@ -572,7 +571,7 @@ export function KidPlay({
                     // Saved on this phone first, then tried online; offline it just waits (the effect
                     // above already played). lib/offline-client.ts submitTap.
                     try {
-                      const r = await submitTap({ habitId: h.id, subjectId: child.id, byChild: true }, (id) => checkInFor(h.id, child.id, true, id));
+                      const r = await submitTap({ habitId: h.id, subjectId: child.id, byChild: true });
                       if (!r.ok) setError(r.message);
                     } finally {
                       inFlight.current.delete(h.id);

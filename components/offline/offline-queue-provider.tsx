@@ -7,7 +7,7 @@ import { GENERIC_ERROR } from "@/lib/habit-errors";
 import { claimSavedPages, clearSavedPages, savePageOffline } from "@/lib/offline-pages";
 import { queuedDelta, type ShownPeriods } from "@/lib/offline-queue";
 import { deleteOfflineQueue, indexedDbStorage, offlineDbName, type Locks } from "@/lib/offline-queue-store";
-import { httpSender } from "@/lib/offline-sync";
+import { httpSender, tapSender } from "@/lib/offline-sync";
 import type { TapPeriods } from "@/lib/rendered-taps";
 
 type Client = ReturnType<typeof createOfflineClient>;
@@ -108,10 +108,14 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
       send: httpSender(),
       locks: (navigator as Navigator & { locks?: Locks }).locks ?? null,
       isOnline: () => navigator.onLine,
-      // In a transition, like the flush below: when an online tap lands, the queue forgets it while the
-      // check-in's own page refresh is still on its way. Applied together, the Today card and the
-      // buttons never count that tap twice (the refreshed count plus the queued one).
-      onCounts: (counts) => startTransition(() => setQueued(counts)),
+      // In a transition, like the flush below. When an online tap lands (landed), the queue forgets it
+      // and the page is refreshed in the same transition: applied together, the Today card and the
+      // buttons never count that tap twice (the refreshed count plus the queued one), nor drop it.
+      onCounts: (counts, landed) =>
+        startTransition(() => {
+          setQueued(counts);
+          if (landed) router.refresh();
+        }),
       onFlushed: ({ counts, changed, poisoned }) => {
         // The saved state and the fresh page land together: clearing "Saving…" before the refresh
         // would flip the card back to open for a moment (and slide it in the kid view).
@@ -200,17 +204,20 @@ export function useForgetOfflineHabits() {
   );
 }
 
-type Online = (tap: { clientId: string }) => Promise<{ ok: true } | { ok: false; message: string }>;
+const sendTap = tapSender();
 
-// A check-in tap: saved on this phone first, then tried online (lib/offline-client.ts submitTap).
-// Once it lands, the saved Today / kid view is refreshed so the offline copy isn't stale.
+// A check-in tap: saved on this phone first, then tried online (lib/offline-client.ts submitTap,
+// app/api/check-ins/tap). Once it lands, the saved Today / kid view is refreshed so the offline copy
+// isn't stale. subjectId: a child's tap; byChild: made in the kid view.
 export function useSubmitTap() {
   const { client } = useContext(OfflineQueueContext);
   return useCallback(
-    async (tap: { habitId: string; subjectId?: string | null; byChild?: boolean }, online: Online): Promise<TapResult> => {
+    async (tap: { habitId: string; subjectId?: string | null; byChild?: boolean }): Promise<TapResult> => {
       if (!client) return { ok: false, message: GENERIC_ERROR };
       try {
-        const r = await client.submitTap(tap, online);
+        const r = await client.submitTap(tap, ({ clientId }, signal) =>
+          sendTap({ clientId, habitId: tap.habitId, subjectId: tap.subjectId ?? null, ...(tap.byChild ? { byChild: true } : {}) }, signal),
+        );
         if (r.ok && !r.queued) savePageOffline();
         return r;
       } catch (e) {
