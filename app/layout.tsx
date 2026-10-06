@@ -19,10 +19,20 @@ const geistMono = localFont({
   display: "swap",
 });
 
+// Shared links (LinkedIn, WhatsApp, Slack…) show a card: this title and text, and app/opengraph-image.png.
+// The card needs absolute URLs; on Vercel the project's production address, locally localhost.
+const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : "http://localhost:3000";
+const shareText = "A habit tracker for one person or a whole family, kids included.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Keepup",
   description: "Habits, together.",
   applicationName: "Keepup",
+  openGraph: { type: "website", siteName: "Keepup", title: "Keepup: Habits, together", description: shareText, url: "/" },
+  twitter: { card: "summary_large_image", title: "Keepup: Habits, together", description: shareText },
   // iPhone "Add to Home Screen": full screen, named Keepup (the icon is app/apple-icon.png).
   appleWebApp: { capable: true, title: "Keepup", statusBarStyle: "default" },
 };
