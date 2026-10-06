@@ -62,3 +62,17 @@ test("the Profile tab's ring shows the way to the next level, on every tab", asy
     await expect(nav.getByTestId("xp-ring")).toHaveAttribute("data-progress", "0.20");
   }
 });
+
+test("Profile → Achievements shows earned badges in colour with the date, locked ones with a hint", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createHabit(page, { title: "Walk", count: 1, period: "day" });
+  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await page.goto("/profile");
+  await page.getByRole("navigation", { name: "Account" }).getByRole("link", { name: "Achievements" }).click();
+  await expect(page).toHaveURL(/\/profile\/achievements$/);
+  const badges = page.getByRole("region", { name: "Achievements" });
+  await expect(badges).toContainText("2 of 24 earned"); // Planted and First step
+  await expect(badges.getByRole("listitem", { name: /^First step, earned / })).toBeVisible();
+  await expect(badges.getByRole("listitem", { name: "Bookworm, locked: 30 times done in Learning." })).toBeVisible();
+});
