@@ -68,7 +68,7 @@ const SOUNDS: Record<KidSound, (a: AudioContext) => void> = {
   },
   // A new picture (3, 7, 12, 18 stars): a bright three-note chime.
   chime: (a) => [784, 988, 1175].forEach((f, i) => note(a, f, i * 0.09, 0.35, { gain: 0.1 })),
-  // The big reveal (a tap that finishes a habit): a bouncy run up and a sparkle on top, from 0.1 s, as
+  // The big reveal (every tap that earns a star): a bouncy run up and a sparkle on top, from 0.1 s, as
   // the new thing springs in big (lib/kid-reveal.ts SHOW_AT), so it follows the tap's pop.
   reveal: (a) => {
     [659, 831, 988, 1319].forEach((f, i) => note(a, f, 0.1 + i * 0.06, 0.2, { type: "triangle", gain: 0.1 }));

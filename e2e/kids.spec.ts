@@ -365,13 +365,14 @@ test("the kid view: the third star brings the sprout, and the last habit of the 
   await page.getByRole("button", { name: /Tidy my toys/ }).click();
   await page.getByRole("button", { name: /Brush teeth/ }).click();
   await expect(page.getByRole("img", { name: "A sprout" })).toBeVisible(); // 3 stars: the next picture
-  // The new picture zooms in big over the screen for ~2 s, then settles into the scene.
-  await expect(page.locator("[data-milestone]")).toHaveText("🌱");
+  // After the three items' reveals (quick taps wait their turn), the new picture zooms in big over the
+  // screen for ~2 s, then settles into the scene.
+  await expect(page.locator("[data-milestone]")).toHaveText("🌱", { timeout: 8000 });
   await expect(page.locator("[data-milestone]")).toHaveCount(0, { timeout: 4000 });
   await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "3");
-  await page.waitForTimeout(2100);
   await page.getByRole("button", { name: /Brush teeth/ }).click(); // the last one today
-  await expect(page.locator("[data-items] .animate-dance").first()).toBeAttached();
+  // The scene dances once its item has landed.
+  await expect(page.locator("[data-items] .animate-dance").first()).toBeAttached({ timeout: 5000 });
   await expect(page.locator("[data-items] .animate-dance")).toHaveCount(0, { timeout: 4000 }); // ~2 seconds, then still
 });
 
@@ -413,7 +414,7 @@ test("the kid view with five habits: a done card slides to the bottom, and the p
   // …then about a second later it slides to the bottom. The move doesn't take the focus.
   const sound = page.getByRole("button", { name: "Sound" });
   await sound.focus();
-  await expect(cards.last()).toContainText(title, { timeout: 2500 });
+  await expect(cards.last()).toContainText(title, { timeout: 4000 });
   await expect(sound).toBeFocused();
   // A reload keeps the order: open first, done last.
   await page.reload();
@@ -463,8 +464,8 @@ test("the kid view: while a done card slides down, a card that isn't moving stil
   const second = titles.findIndex((t, i) => i > 0 && t !== "Brush teeth");
   await cards.nth(second).getByRole("button").click();
   await expect(page.getByText("1 star this week")).toBeAttached();
-  // The slide starts (the list order changes at once; the cards move for ~350 ms)…
-  await expect(cards.last()).toContainText(titles[second], { timeout: 2500 });
+  // The slide starts once its item has landed (the list order changes at once; the cards move for ~350 ms)…
+  await expect(cards.last()).toContainText(titles[second], { timeout: 4000 });
   // …and the first card, which isn't moving, counts a tap right away.
   await cards.first().getByRole("button").click();
   await expect(page.getByText("2 stars this week")).toBeAttached();
@@ -511,7 +512,7 @@ test("the kid view: a finishing tap shows the new thing big in the middle, then 
   await expect(page).toHaveURL(/\/play$/);
   await page.getByRole("button", { name: /Tidy my toys/ }).click();
   await expect(page.getByText("1 star this week")).toBeAttached(); // said at once, for screen readers
-  // Big and centred (about 60% of the width), springing in over the first second.
+  // Big and centred (about 70% of the width), springing in over the first half second.
   const reveal = page.locator("[data-reveal]");
   await expect(reveal).toHaveAttribute("data-phase", "show");
   await expect(reveal).toHaveAttribute("aria-hidden", "true");
@@ -522,7 +523,7 @@ test("the kid view: a finishing tap shows the new thing big in the middle, then 
       if (!box) return false;
       const dx = Math.abs(box.x + box.width / 2 - 195);
       const dy = Math.abs(box.y + box.height / 2 - 422);
-      return box.width >= 195 && dx < 20 && dy < 20;
+      return box.width >= 390 * 0.65 && dx < 20 && dy < 20;
     }, { timeout: 1000, intervals: [50] })
     .toBe(true);
   // The real one in the scene shows only once the big one has landed there, right on its spot.
@@ -534,25 +535,117 @@ test("the kid view: a finishing tap shows the new thing big in the middle, then 
   await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "1");
 });
 
-test("the kid view: two quick finishing taps both land, and both cards sink after", async ({ page }) => {
+// Records every frame what's big on screen: the reveal's emoji (once drawn) and the milestone's.
+async function watchBig(page: Page) {
+  await page.evaluate(() => {
+    const w = window as unknown as { big: { t: number; reveal: string | null; milestone: string | null }[] };
+    w.big = [];
+    const tick = (t: number) => {
+      const reveal = document.querySelector("[data-reveal-glyph]")?.textContent ?? null;
+      const milestone = document.querySelector("[data-milestone]")?.textContent ?? null;
+      w.big.push({ t, reveal, milestone });
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  // How long each one was on screen (first to last frame), in the order they showed, and whether two
+  // were ever drawn at once.
+  return async () => {
+    const frames = await page.evaluate(() => (window as unknown as { big: { t: number; reveal: string | null; milestone: string | null }[] }).big);
+    const shows: { what: string; from: number; to: number }[] = [];
+    for (const f of frames) {
+      const what = f.reveal ? `reveal ${f.reveal}` : f.milestone ? `milestone ${f.milestone}` : null;
+      if (!what) continue;
+      const last = shows.at(-1);
+      if (last?.what === what) last.to = f.t;
+      else shows.push({ what, from: f.t, to: f.t });
+    }
+    return { shows: shows.map((x) => ({ what: x.what, ms: x.to - x.from })), together: frames.some((f) => f.reveal && f.milestone) };
+  };
+}
+
+test("the kid view: a 2×-a-day habit's first tap shows its new thing big in the middle too", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await addChild(page, "Family", "Mary");
   await page.getByRole("link", { name: "Open Mary's view" }).click();
   await expect(page).toHaveURL(/\/play$/);
-  await page.getByRole("button", { name: /Tidy my toys/ }).click();
-  await expect(page.locator("[data-reveal]")).toBeAttached();
-  // A tap mid-reveal: the first one lands at once and the second one starts.
-  await page.getByRole("button", { name: /Read a book together/ }).click();
-  await expect(page.getByText("2 stars this week")).toBeAttached();
+  await page.getByRole("button", { name: /Brush teeth/ }).click(); // 1 of 2: it earns a star
+  await expect(page.getByText("1 star this week")).toBeAttached();
+  const reveal = page.locator("[data-reveal]");
+  await expect(reveal).toHaveAttribute("data-phase", "show");
+  await expect(reveal).toContainText("🌸");
+  await expect
+    .poll(async () => {
+      const box = await page.locator("[data-reveal-item]").boundingBox();
+      if (!box) return false;
+      return box.width >= 390 * 0.65 && Math.abs(box.x + box.width / 2 - 195) < 20 && Math.abs(box.y + box.height / 2 - 422) < 20;
+    }, { timeout: 1500, intervals: [50] })
+    .toBe(true);
+  if (process.env.SHOT_DIR) await page.screenshot({ path: `${process.env.SHOT_DIR}/reveal2-partial-tap.png` });
+  // The card isn't done yet: it stays open, and the thing lands in the scene.
+  await expect(page.getByRole("button", { name: "Brush teeth , done" })).toHaveCount(0);
+  expect(await landingOffset(page, 0)).toBeLessThan(20);
   await expect(page.locator('[data-item="0"]')).toBeVisible();
-  await expect(page.locator("[data-reveal]")).toContainText("🍄");
-  await expect(page.locator("[data-reveal]")).toHaveCount(0, { timeout: 2500 });
+});
+
+test("the kid view: a new-picture tap shows its new thing first, then the new picture, never both at once", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await expect(page).toHaveURL(/\/play$/);
+  await page.getByRole("button", { name: /Read a book together/ }).click();
+  await page.getByRole("button", { name: /Tidy my toys/ }).click();
+  await expect(page.locator('[data-item="1"]')).toBeVisible({ timeout: 5000 }); // both have landed
+  await expect(page.locator("[data-reveal]")).toHaveCount(0);
+  const seen = await watchBig(page);
+  await page.getByRole("button", { name: /Brush teeth/ }).click(); // the third star: a sprout
+  await expect(page.locator("[data-reveal]")).toContainText("🪻");
+  if (process.env.SHOT_DIR) {
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: `${process.env.SHOT_DIR}/reveal2-milestone-1-item.png` });
+  }
+  await expect(page.locator("[data-milestone]")).toHaveText("🌱", { timeout: 4000 });
+  if (process.env.SHOT_DIR) {
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${process.env.SHOT_DIR}/reveal2-milestone-2-picture.png` });
+  }
+  await expect(page.locator("[data-milestone]")).toHaveCount(0, { timeout: 4000 });
+  const { shows, together } = await seen();
+  expect(shows.map((x) => x.what)).toEqual(["reveal 🪻", "milestone 🌱"]);
+  expect(shows[0].ms).toBeGreaterThan(1900); // the reveal plays in full first (2.1 s drawn)
+  expect(together).toBe(false);
+  await expect(page.getByRole("img", { name: "A sprout" })).toBeVisible();
+  await expect(page.locator('[data-item="2"]')).toBeVisible();
+});
+
+test("the kid view: two taps 200 ms apart both show big, each long enough to see, and both cards sink after", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await expect(page).toHaveURL(/\/play$/);
+  const seen = await watchBig(page);
+  await page.getByRole("button", { name: /Tidy my toys/ }).click();
+  await page.waitForTimeout(200);
+  await page.getByRole("button", { name: /Read a book together/ }).click();
+  // Both count at once; only the second picture waits its turn.
+  await expect(page.getByText("2 stars this week")).toBeAttached();
+  await expect(page.locator("[data-reveal]")).toContainText("🌸");
+  await expect(page.locator("[data-reveal]")).toContainText("🍄", { timeout: 2000 });
+  await expect(page.locator('[data-item="0"]')).toBeVisible();
+  await expect(page.locator("[data-reveal]")).toHaveCount(0, { timeout: 4000 });
   await expect(page.locator('[data-item="1"]')).toBeVisible();
   await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "2");
+  const { shows } = await seen();
+  expect(shows.map((x) => x.what)).toEqual(["reveal 🌸", "reveal 🍄"]);
+  for (const x of shows) expect(x.ms).toBeGreaterThanOrEqual(700);
   // Both green cards go to the bottom once their things are in the picture.
-  await expect(page.getByRole("listitem").first()).toContainText("Brush teeth", { timeout: 2500 });
+  await expect(page.getByRole("listitem").first()).toContainText("Brush teeth", { timeout: 4000 });
 });
 
 test("the kid view with Reduce Motion: no zoom, the new thing fades in at its spot", async ({ page }) => {
