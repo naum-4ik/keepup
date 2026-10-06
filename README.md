@@ -25,6 +25,10 @@ A warm, mobile-first habit tracker for one person and for families. Pick a habit
   - an optional end (30 days, 8 weeks, a date…), shown as "Day 12 of 30"; at the end, keep going or finish it;
   - edit the habit; delete it (only if it has no check-ins) or archive it (keeps its history).
 - **Progress:** a "Your week" card (tap a day to see what you did), a month-by-month **calendar** back to your first habit, and active, finished and archived habits by category, each with its last 7 days as dots. Finished habits can start again.
+- **XP and levels:** every counted check-in earns XP (+10, growing with your streak up to +30), finished periods and streak milestones add more, and levels grow from Seedling to Forest. A ring around your Profile avatar fills towards the next level; Profile shows "Level 7 · Sprout" with a bar.
+- **Badges and milestones:** 24 badges under Profile → Achievements (no tiers): earned in colour with the date, locked ones with a hint. Streak milestones (1, 2, 5, 7 days… 365) arrive in the Inbox, once per streak, "Back to 30" after a break. Level-ups and badges get a short full-screen moment, or a quiet toast (Settings → Celebrations).
+- **Rest days:** a week of a daily habit earns one (up to 2); a missed day uses it automatically and the streak stays safe.
+- **Recaps:** a weekly and a monthly recap of your wins in the Inbox, and their history under Progress → Recaps.
 - **Onboarding:** name, detected time zone and week start, then pick up to 3 habits to start with.
 - **Fair streaks:**
   - Periods follow your time zone and your week start (Sunday or Monday).
@@ -40,7 +44,7 @@ A warm, mobile-first habit tracker for one person and for families. Pick a habit
 - **Reminders and pushes:**
   - a daily summary at your hour, or a habit's own time ("Remind me at…", on the quarter hour);
   - group check-ins, approvals, nudges and kids' moments can reach your phone;
-  - per kind: Sound, Silent or Inbox only (Silent by default);
+  - per kind: Sound, Silent or Inbox only (Silent by default; Achievements: Inbox only);
   - pause all, and mute a habit.
 - **Offline:** check in without signal. It's saved on the phone and counts for the day you tapped once you're back online. The last Today and kid view open offline.
 
@@ -48,6 +52,12 @@ A warm, mobile-first habit tracker for one person and for families. Pick a habit
   <img src="docs/screenshots/habit.png" width="220" alt="A habit's page: today's check-in with undo, streaks, history">
   <img src="docs/screenshots/kid-view.png" width="220" alt="The kid view: a garden scene above big habit buttons, open habits first and a done one at the bottom">
   <img src="docs/screenshots/notifications.png" width="220" alt="Settings, Notifications: Sound, Silent or Inbox only for each kind, and this phone listed as a device">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/achievements.png" width="220" alt="Profile, Achievements: earned badges in colour with icons, locked ones faint">
+  <img src="docs/screenshots/celebration.png" width="220" alt="A level-up moment: a sprout, Level 12, Sapling, soft confetti over Today">
+  <img src="docs/screenshots/recaps.png" width="220" alt="Progress, Recaps: one card per week with check-ins done and the longest streak">
 </p>
 
 ## Interesting problems
@@ -59,6 +69,8 @@ A warm, mobile-first habit tracker for one person and for families. Pick a habit
 **Push decided in the database.** Pushes start from many places: a check-in, an approval, a pause, a cron job. So the decision isn't in app code. A trigger on the feed table sets each row's category and `push` from the person's preferences (Pause all and mutes always win), then `pg_net` calls an Edge Function that sends one push per device. A missing secret only logs a warning and never blocks the action. Each push carries a tag, so a newer one replaces the older, and on the last check-in of a group habit the superseded push is skipped: the family buzzes once, not four times.
 
 **Offline taps count the tap day.** Every tap gets a client-made id, so a resend after a lost response can't count twice. A queued tap carries the phone's time, and the server uses `least(tap, arrival)` for the day, accepted from 3 days back, so a fast clock can't push a tap into tomorrow. Even online taps go queue-first: saved on the phone, then sent, and removed only once the server answers. The database stays the only judge of what counts.
+
+**An XP ledger a late check-in can't fool.** XP is an append-only table with one unique key per grant, written by one function, so every grant is idempotent and an undo is a negative row. Period XP, streak milestones and badges hang off a trigger that fires when a period is settled and again when an offline check-in upgrades it from missed to done up to three days later. Milestones are keyed by the streak's first day, so a merged streak can earn its 14-day bonus on a later day, but never twice. Rest days are computed from the same results, so the upgrade hands back a used rest day by itself. Levels are synced once at the end of any path that touches many habits, in a fixed order, so finalization can't deadlock.
 
 ## Roadmap
 

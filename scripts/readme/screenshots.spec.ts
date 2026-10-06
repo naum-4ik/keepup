@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 import { expect, test } from "@playwright/test";
-import { completeOnboarding, signUp, uniqueEmail } from "../../e2e/helpers/auth";
+import { completeOnboarding, setCelebrations, signUp, uniqueEmail } from "../../e2e/helpers/auth";
 import { createGroup } from "../../e2e/helpers/groups";
 import { createHabit } from "../../e2e/helpers/habits";
 
@@ -32,7 +32,12 @@ select h.id, s.d::date, private.period_outcome(h, s.d::date), now()
     private.habit_period_start(h, private.habit_today(h, now()))::timestamp - private.period_step(h.period),
     private.period_step(h.period)) s(d)
  where h.owner_id = (select id from u)
-on conflict (habit_id, period_start) do nothing;`;
+on conflict (habit_id, period_start) do nothing;
+-- Count the seeded history once and quietly, as the app did for existing people.
+update public.profiles set created_at = now() - interval '40 days' where id = (select id from u);
+select private.backfill_xp();
+select private.backfill_milestones();
+select private.backfill_badges();`;
   execSync("docker exec -i supabase_db_keepup psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q", {
     input: sql,
     stdio: ["pipe", "ignore", "inherit"],
@@ -86,7 +91,11 @@ test("README screenshots", async ({ page, context }) => {
   await page.getByRole("button", { name: /: \d+ of \d+ done$/ }).last().click();
   await page.screenshot({ path: `${OUT}/calendar.png` });
 
-  await page.getByRole("link", { name: "Back to Progress" }).click();
+  await page.goto("/progress/recaps");
+  await expect(page.getByRole("region", { name: "Weeks" }).getByRole("listitem").first()).toBeVisible();
+  await page.screenshot({ path: `${OUT}/recaps.png` });
+
+  await page.goto("/progress");
   await page.getByRole("link", { name: /Meditate/ }).click();
   await expect(page).toHaveURL(/\/habits\/[0-9a-f-]{36}$/);
   await page.screenshot({ path: `${OUT}/habit.png` });
@@ -103,8 +112,26 @@ test("README screenshots", async ({ page, context }) => {
     await page.waitForTimeout(400);
   }
   await page.evaluate(() => window.scrollTo(0, 0));
-  await page.waitForTimeout(3500); // let the scene settle: the new sprout grows, then rests
+  await page.waitForTimeout(7000); // let the scene settle: each big reveal flies to its spot, then rests
   await page.screenshot({ path: `${OUT}/kid-view.png` });
+
+  // Achievements, then one fresh level-up in Full mode. The backfill marked everything seen, and any toast
+  // on the way here marked what it showed, so un-see the top level right before the page that plays it.
+  await page.goto("/profile/achievements");
+  await expect(page.getByRole("heading", { name: "Achievements" })).toBeVisible();
+  await page.screenshot({ path: `${OUT}/achievements.png` });
+
+  await setCelebrations(page, "full");
+  execSync("docker exec -i supabase_db_keepup psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q", {
+    input: `update public.level_ups set seen_at = null where user_id = (select id from auth.users where email = '${email}')
+              and level = (select max(l.level) from public.level_ups l join auth.users au on au.id = l.user_id where au.email = '${email}');`,
+    stdio: ["pipe", "ignore", "inherit"],
+  });
+  await page.goto("/today");
+  await expect(page.getByRole("alertdialog", { name: "Celebration" })).toContainText(/Level \d+/);
+  await page.waitForTimeout(400); // the confetti mid-flight
+  await page.screenshot({ path: `${OUT}/celebration.png` });
+  await page.keyboard.press("Escape");
 
   // Settings → Notifications: a non-default choice, and this device listed (a stand-in push
   // subscription, as in e2e/notifications.spec.ts: headless Chromium can't subscribe).
