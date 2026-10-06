@@ -933,6 +933,9 @@ isOneToOne: false
 "push_job":
 { Args: { "p_id": string,"p_now"?: string }; Returns: Json
                            },
+"recaps":
+{ Args: { "p_count"?: number,"p_kind": string }; Returns: Json[]
+                           },
 "refresh_push_subscription":
 { Args: { "p_auth": string,"p_endpoint": string,"p_p256dh": string,"p_user_agent"?: string }; Returns: boolean
                            },
