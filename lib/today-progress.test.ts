@@ -132,3 +132,31 @@ describe("withQueuedProgress with waiting undos and taps the page already has", 
     expect(withQueuedProgress([water], queuedDelta([tap], new Set()))[0]).toMatchObject({ done_count: 2 });
   });
 });
+
+describe("withQueuedProgress keyed by the shown period", () => {
+  // Today in Rome is Tue 6 Oct; the week (Monday start) began on Mon 5 Oct.
+  const periods = new Map([
+    ["read", { start: "2026-10-06", timeZone: "Europe/Rome" }],
+    ["walk", { start: "2026-10-05", timeZone: "Europe/Rome" }],
+  ]);
+  const tap = (habitId: string, tappedAt: string): QueuedCheckIn => ({ kind: "check_in", clientId: `${habitId}-${tappedAt}`, habitId, subjectId: null, tappedAt });
+
+  it("a late tap from yesterday, still waiting, doesn't make today's daily habit done", () => {
+    // 23:50 on Mon 5 Oct in Rome (21:50 UTC).
+    const [shown] = withQueuedProgress([h("read", "open")], queuedDelta([tap("read", "2026-10-05T21:50:00.000Z")], new Set(), periods));
+    expect(shown).toMatchObject({ done_count: 0, checked_in_today: false });
+  });
+
+  it("a tap made today counts, also just after local midnight", () => {
+    // 00:10 on Tue 6 Oct in Rome is still 5 Oct in UTC.
+    const [shown] = withQueuedProgress([h("read", "open")], queuedDelta([tap("read", "2026-10-05T22:10:00.000Z")], new Set(), periods));
+    expect(shown).toMatchObject({ done_count: 1, checked_in_today: true });
+  });
+
+  it("a weekly habit counts this week's waiting taps, not last week's", () => {
+    const walk = { ...h("walk", "open", "week"), target_count: 3 };
+    const q = [tap("walk", "2026-10-04T18:00:00.000Z"), tap("walk", "2026-10-05T07:00:00.000Z")];
+    expect(withQueuedProgress([walk], queuedDelta(q, new Set(), periods))[0]).toMatchObject({ done_count: 1 });
+  });
+});
+

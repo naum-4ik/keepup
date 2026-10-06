@@ -8,7 +8,7 @@ import { withoutEnded } from "@/lib/habit-end";
 import { getGroupTimezones, getHabitEnds, getRecentTapRows } from "@/lib/habits";
 import { isUuid } from "@/lib/habit-schema";
 import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
-import { currentPeriods, renderedTapIds } from "@/lib/rendered-taps";
+import { currentPeriods, renderedTapIds, tapPeriods } from "@/lib/rendered-taps";
 import { stateOf } from "@/lib/today";
 
 export default async function KidViewPage({ params }: { params: Promise<{ id: string }> }) {
@@ -28,7 +28,8 @@ export default async function KidViewPage({ params }: { params: Promise<{ id: st
   const renderedTaps = renderedTapIds(tapRows, [id], currentPeriods(running));
   // A habit past its end (in the group's calendar) takes no more check-ins, so it leaves this view.
   const ends = await getHabitEnds(running.map((h) => h.habit_id));
-  const today = todayIn(zones.get(child.group_id) ?? profile.timezone);
+  const zone = zones.get(child.group_id) ?? profile.timezone;
+  const today = todayIn(zone);
   // What the child can do now, and what's already done (a child likes to see those). Paused,
   // not-started and ended habits stay out of this view.
   const habits = withoutEnded(running, ends, () => today)
@@ -37,7 +38,7 @@ export default async function KidViewPage({ params }: { params: Promise<{ id: st
 
   return (
     <>
-      <RenderedTaps ids={renderedTaps} />
+      <RenderedTaps ids={renderedTaps} periods={tapPeriods(running, () => zone)} />
       <KidPlay
         child={{ id, name: child.name, emoji: child.avatar_emoji, color: child.avatar_color, theme: child.kid_theme }}
         habits={habits}

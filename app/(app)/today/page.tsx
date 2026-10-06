@@ -24,7 +24,7 @@ import { todayIn } from "@/lib/dates";
 import { getPendingApprovals } from "@/lib/inbox";
 import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { parsePurpose } from "@/lib/profile-schema";
-import { currentPeriods, renderedTapIds } from "@/lib/rendered-taps";
+import { currentPeriods, renderedTapIds, tapPeriods } from "@/lib/rendered-taps";
 import { allCheckedOffKey, groupForToday } from "@/lib/today";
 import { todayProgress } from "@/lib/today-progress";
 import { chooseGentleCard } from "@/lib/today-cards";
@@ -53,10 +53,11 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   // Two chains run side by side: the kids' sections (habits, stars, ends) and mine (ends, finish cards).
   const active = summaries.filter((h) => !h.archived_at);
   const endsP = getHabitEnds(active.map((h) => h.habit_id));
-  const todayOfP = getGroupTimezones([...active.map((h) => h.group_id), ...children.map((c) => c.group_id)]).then(
-    (zones) => (groupId: string | null | undefined) => todayIn((groupId && zones.get(groupId)) || profile.timezone),
+  const zonesP = getGroupTimezones([...active.map((h) => h.group_id), ...children.map((c) => c.group_id)]).then(
+    (zones) => (groupId: string | null | undefined) => (groupId && zones.get(groupId)) || profile.timezone,
   );
-  const [kids, ends, finishes, todayOf] = await Promise.all([
+  const todayOfP = zonesP.then((zoneOf) => (groupId: string | null | undefined) => todayIn(zoneOf(groupId)));
+  const [kids, ends, finishes, todayOf, zoneOf] = await Promise.all([
     (async () => {
       // A section per child: the child's active habits and this week's stars (both fail soft).
       const kidRows = await Promise.all(
@@ -76,6 +77,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       return Promise.all(ended.map(async (h) => ({ h, summary: await getFinishSummary(h.habit_id) })));
     })(),
     todayOfP,
+    zonesP,
   ]);
   const habits = active.filter((h) => !finishes.some((f) => f.h === h));
   // The check-ins these counts include, for taps still waiting on this phone (RenderedTaps).
@@ -84,6 +86,11 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     [profile.id, ...children.map((c) => c.child_id)],
     currentPeriods([...summaries, ...kids.flatMap((k) => k.habits)]),
   );
+  // Each habit's shown period, so a waiting tap from an earlier one doesn't count here.
+  const shownPeriods = {
+    ...tapPeriods(summaries, (h) => zoneOf(h.group_id)),
+    ...Object.assign({}, ...kids.map((k) => tapPeriods(k.habits, () => zoneOf(k.child.group_id)))),
+  };
   const sections = sectionsForToday(habits, groups);
   // A solo user's Today looks as before: the "Mine" heading shows only next to a group section.
   const withHeadings = sections.some((s) => s.key !== "mine") || kids.length > 0;
@@ -142,7 +149,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
 
   return (
     <section className="flex flex-col gap-4 py-6">
-      <RenderedTaps ids={renderedTaps} />
+      <RenderedTaps ids={renderedTaps} periods={shownPeriods} />
       <h1 className="text-xl font-bold">Today</h1>
       {progress.total > 0 && (
         <TodayCard

@@ -12,3 +12,11 @@ export function renderedTapIds(rows: readonly TapRow[], subjects: Iterable<strin
 // habit id → its current period's start, from the summaries a page draws.
 export const currentPeriods = (habits: readonly { habit_id: string; period_start: string }[]): Map<string, string> =>
   new Map(habits.map((h) => [h.habit_id, h.period_start]));
+
+// What each habit's counts on a page are for (lib/offline-queue.ts queuedDelta): the current period's
+// first day in the habit's own calendar. `zoneOf`: a group habit (and a child's) runs on the group's
+// time zone, a private one on the person's. As a plain object, so the page can hand it to the client.
+export type TapPeriods = Record<string, { start: string; timeZone: string }>;
+export function tapPeriods<T extends { habit_id: string; period_start: string }>(habits: readonly T[], zoneOf: (h: T) => string): TapPeriods {
+  return Object.fromEntries(habits.map((h) => [h.habit_id, { start: h.period_start, timeZone: zoneOf(h) }]));
+}

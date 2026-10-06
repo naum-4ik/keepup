@@ -5,9 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { createOfflineClient, type Channel, type Counts, type TapResult } from "@/lib/offline-client";
 import { GENERIC_ERROR } from "@/lib/habit-errors";
 import { claimSavedPages, savePageOffline } from "@/lib/offline-pages";
-import { queuedDelta } from "@/lib/offline-queue";
+import { queuedDelta, type ShownPeriods } from "@/lib/offline-queue";
 import { deleteOfflineQueue, indexedDbStorage, offlineDbName, type Locks } from "@/lib/offline-queue-store";
 import { httpSender } from "@/lib/offline-sync";
+import type { TapPeriods } from "@/lib/rendered-taps";
 
 type Client = ReturnType<typeof createOfflineClient>;
 // queued: check-ins waiting on this phone, per habit and person (lib/offline-queue.ts queueKey).
@@ -19,8 +20,10 @@ type Client = ReturnType<typeof createOfflineClient>;
 // (the drawn state can wait behind a running check-in).
 type Ctx = {
   client: Client | null; userId: string | null; queued: Counts; delta: ReadonlyMap<string, number>; busy: boolean; holdsRefresh: () => boolean;
-  ready: boolean; notice: boolean; dismissNotice: () => void; setRendered: (ids: ReadonlySet<string>) => void;
+  ready: boolean; notice: boolean; dismissNotice: () => void; setRendered: (drawn: Drawn) => void;
 };
+// What the page was drawn with: its check-ins' client ids, and each habit's shown period.
+type Drawn = { ids: ReadonlySet<string>; periods: ShownPeriods | null };
 const NONE: Counts = new Map();
 const OfflineQueueContext = createContext<Ctx>({
   client: null, userId: null, queued: NONE, delta: NONE, busy: false, holdsRefresh: () => false, ready: false, notice: false, dismissNotice: () => {},
@@ -35,13 +38,19 @@ export function useOfflineQueue() {
 
 // The client ids of the check-ins a page was drawn with (lib/rendered-taps.ts renderedTapIds), so a
 // waiting tap the page already counts isn't added again, and a waiting undo of one takes it back.
-// A layout effect: set before the browser paints the new page, so no frame counts a tap twice.
-export function RenderedTaps({ ids }: { ids: string[] }) {
+// periods (lib/rendered-taps.ts tapPeriods): the period each habit's counts are for, so a waiting tap
+// from an earlier period doesn't add to this one. A layout effect: set before the browser paints the
+// new page, so no frame counts a tap twice.
+export function RenderedTaps({ ids, periods }: { ids: string[]; periods?: TapPeriods }) {
   const { setRendered } = useContext(OfflineQueueContext);
   const key = ids.join(",");
+  const periodsKey = periods ? JSON.stringify(periods) : "";
   useLayoutEffect(() => {
-    setRendered(new Set(key ? key.split(",") : []));
-  }, [key, setRendered]);
+    setRendered({
+      ids: new Set(key ? key.split(",") : []),
+      periods: periodsKey ? new Map(Object.entries(JSON.parse(periodsKey) as TapPeriods)) : null,
+    });
+  }, [key, periodsKey, setRendered]);
   return null;
 }
 
@@ -91,7 +100,7 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
   const [ready, setReady] = useState(false);
   const [notice, setNotice] = useState(false);
   const [claimed, setClaimed] = useState(false);
-  const [rendered, setRendered] = useState<ReadonlySet<string> | null>(null);
+  const [rendered, setRendered] = useState<Drawn | null>(null);
   const client = useMemo(() => {
     if (typeof window === "undefined") return null;
     return createOfflineClient({
@@ -154,7 +163,7 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
   }, [claimed, pathname]);
 
   const dismissNotice = useCallback(() => setNotice(false), []);
-  const delta = useMemo(() => queuedDelta(queued.queue ?? [], rendered), [queued, rendered]);
+  const delta = useMemo(() => queuedDelta(queued.queue ?? [], rendered?.ids ?? null, rendered?.periods ?? null), [queued, rendered]);
   const busy = (queued.queue?.length ?? 0) > 0;
   const value = useMemo(
     () => ({ client, userId, queued, delta, busy, holdsRefresh, ready, notice, dismissNotice, setRendered }),
