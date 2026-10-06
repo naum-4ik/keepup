@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/app-shell/app-header";
 import { BottomNav } from "@/components/app-shell/bottom-nav";
+import { CelebrationMoment } from "@/components/celebrations/celebration-moment";
 import { LiveRefresh } from "@/components/habits/live-refresh";
 import { OfflineBanner } from "@/components/offline/offline-banner";
 import { OfflineQueueProvider } from "@/components/offline/offline-queue-provider";
@@ -30,6 +31,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           xpProgress={level ? levelFraction(level.xp) : null}
         />
         <PushRefresh />
+        {/* Level-ups and new badges, once each, when a page opens (Settings → Celebrations). */}
+        <CelebrationMoment />
         {/* New Inbox rows (approvals asked, check-ins, nudges) refresh whatever page is open, so the
             bell's count is never stale off the Inbox; RLS applies. */}
         <LiveRefresh table="notifications" filter={`user_id=eq.${profile.id}`} />

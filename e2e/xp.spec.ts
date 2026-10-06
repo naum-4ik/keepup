@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signUpAndOnboard } from "./helpers/auth";
+import { setCelebrations, signUpAndOnboard } from "./helpers/auth";
 import { createHabit } from "./helpers/habits";
 
 test("a counted check-in floats +10 XP", async ({ page }) => {
@@ -75,4 +75,33 @@ test("Profile → Achievements shows earned badges in colour with the date, lock
   await expect(badges).toContainText("2 of 24 earned"); // Planted and First step
   await expect(badges.getByRole("listitem", { name: /^First step, earned / })).toBeVisible();
   await expect(badges.getByRole("listitem", { name: "Bookworm, locked: 30 times done in Learning." })).toBeVisible();
+});
+
+test("the level-up moment plays once, on the next page, and closes on tap", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await setCelebrations(page, "full");
+  for (const title of ["Walk", "Read", "Stretch", "Water", "Tidy"]) await createHabit(page, { title, count: 1, period: "day" });
+  await page.goto("/today");
+  await page.keyboard.press("Escape"); // the Planted badge's moment, if it is showing
+  for (const title of ["Walk", "Read", "Stretch", "Water", "Tidy"]) {
+    await page.getByRole("button", { name: `Check in: ${title}` }).click();
+    await expect(page.getByRole("button", { name: `Done: ${title}` })).toBeVisible();
+  }
+  // Nothing interrupts the run of check-ins on Today.
+  await expect(page.getByRole("alertdialog", { name: "Celebration" })).toHaveCount(0);
+  await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Progress" }).click();
+  const moment = page.getByRole("alertdialog", { name: "Celebration" });
+  await expect(moment).toContainText("Level 2");
+  await moment.click();
+  await expect(moment).toContainText("Unlocked");
+  for (let i = 0; i < 4; i++) await page.keyboard.press("Escape");
+  await page.reload();
+  await expect(page.getByRole("alertdialog", { name: "Celebration" })).toHaveCount(0);
+});
+
+test("Subtle shows a toast instead", async ({ page }) => {
+  await signUpAndOnboard(page); // Subtle (signUp's default for tests)
+  await createHabit(page, { title: "Walk", count: 1, period: "day" }); // lands on /today: a page opens
+  await expect(page.getByRole("status", { name: "Celebration" })).toContainText("Planted");
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
 });
