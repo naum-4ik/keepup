@@ -20,12 +20,42 @@
 --     M4: a period not settled yet is read with settled_outcome (what finalize will write), so a day a
 --     saved rest day will cover keeps the streak during the minutes before finalize runs, as
 --     check_in_streak already does. Group and monthly habits have no rest days (unchanged).
+--   private.push_allowed               20261010100000_streak_milestones.sql
+--     Owner 2026-10-06: late personal notes never push. streak_milestone, badge_unlocked and
+--     level_up with late = true stay in the Inbox, like the late group kinds.
+--   private.sync_level                 20261009100000_xp_ledger.sql
+--   private.sync_deferred_levels       20261011100000_badges.sql
+--     A level_up note carries late = true when the person's XP in this transaction came from a late
+--     check-in: rewards_on_check_in marks the author of a late check-in, and rewards_on_period_result
+--     marks everyone a late upgrade pays (the owner, or the period's required members), in the
+--     transaction-local keepup.late_users. sync_level reads it; sync_deferred_levels clears it with the
+--     other queues. In one "Approve all" batch, an author with a late and an on-time item gets one
+--     level_up (one per sync, as before), marked late.
+--   private.rewards_on_check_in        20261014100000_streak_check_in_xp.sql
+--     Owner 2026-10-06: the streak bonus counts once per habit per period. The person's first counted
+--     check-in of a period earns 10 + min(streak before, 20); a further one, while an earlier counted
+--     one of theirs stands, earns 10 (8 a day on a 20-day streak: 30 + 7 × 10 = 100). An undo still
+--     reverses exactly what was granted (the ledger amount); undoing the first doesn't re-grant the
+--     others. The author of a late check-in is marked for a late level_up (above).
+--   private.rewards_on_period_result (above) also marks a late upgrade's payees.
 --
 -- Locks: unchanged (habit → check-in → period_results → per-habit rows → per-person rows, in user id
 -- order). The new reads (the walk's last done period, own_streak) take no locks; the second
 -- badges_on_period call queues its awards for sync_deferred_levels like the first.
 
--- Copied from 20261012100000_rest_days.sql (its latest definition). New: I1 (header).
+-- The people whose level-up in this transaction comes from a late check-in (sync_level marks the
+-- note late). Transaction-local, cleared by sync_deferred_levels.
+create function private.mark_late_levels(p_users uuid[])
+returns void
+language sql
+set search_path = ''
+as $$
+  select set_config('keepup.late_users',
+    concat_ws(',', nullif(current_setting('keepup.late_users', true), ''), nullif(array_to_string(p_users, ','), '')), true);
+$$;
+
+-- Copied from 20261012100000_rest_days.sql (its latest definition). New: I1, and a late upgrade's
+-- payees are marked for a late level_up (header).
 create or replace function private.rewards_on_period_result()
 returns trigger
 language plpgsql
@@ -54,6 +84,13 @@ begin
        order by coalesce(c.reviewed_at, c.created_at) desc, c.id desc limit 1;
       v_late := found and private.is_late_check_in(v_habit, v_check_in);
       v_at := coalesce(v_check_in.reviewed_at, v_check_in.created_at, now());
+    end if;
+    if v_late then
+      perform private.mark_late_levels(array(
+        select p_id from (select v_habit.owner_id as p_id where v_habit.group_id is null
+                          union
+                          select m.profile_id from private.required_members(v_habit, new.period_start) m(profile_id)
+                           where v_habit.group_id is not null) u where p_id is not null));
     end if;
     perform private.grant_period_xp(v_habit, new.period_start, v_at, false, false);
     perform private.period_milestones(v_habit, new.period_start, v_at, false, false, v_late);
@@ -282,6 +319,183 @@ begin
   current_streak := v_run;
   best_streak := v_best;
   return next;
+end;
+$$;
+
+-- Copied from 20261010100000_streak_milestones.sql (its latest definition). New: late personal notes stay in the Inbox (header).
+create or replace function private.push_allowed(
+  p_user uuid, p_kind text, p_habit_id uuid, p_group_id uuid, p_payload jsonb, p_now timestamptz)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select coalesce((
+    select c.category is not null
+       and p.kind = 'adult'
+       and (p.muted_until is null or p.muted_until <= p_now)
+       and not coalesce(s.muted, false)
+       and not (c.category = 'reminders' and p_habit_id is not null and not coalesce(s.reminders, true))
+       and (c.category = 'always'
+            or coalesce(np.delivery, case when c.category = 'achievements' then 'inbox' else 'silent' end) <> 'inbox')
+       and (p_kind <> 'group_streak_ended'
+            or (case when p_payload ->> 'streak' ~ '^\d{1,9}$' then (p_payload ->> 'streak')::int else 0 end) >= 3)
+       and (p_kind <> 'member_joined' or private.is_admin(p_group_id, p_user))
+       and (p_kind <> 'streak_back' or p_group_id is not null)
+       and (p_kind not in ('group_check_in', 'everyone_done', 'kid_garden_full', 'group_milestone', 'kid_streak',
+                           'streak_milestone', 'badge_unlocked', 'level_up')
+            or p_payload ->> 'late' is distinct from 'true')
+      from (select private.push_category(p_kind) as category) c
+      join public.profiles p on p.id = p_user
+      left join public.habit_user_settings s on s.user_id = p_user and s.habit_id = p_habit_id
+      left join public.notification_prefs np on np.user_id = p_user and np.category = c.category), false);
+$$;
+
+
+-- Copied from 20261009100000_xp_ledger.sql (its only definition). New: a late level_up (header).
+create or replace function private.sync_level(p_user uuid, p_quiet boolean)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_level int;
+  v_top int;
+begin
+  select private.level_for(coalesce(sum(x.amount), 0)) into v_level from public.xp_events x where x.user_id = p_user;
+  if v_level < 2 then
+    return;
+  end if;
+  with ins as (
+    insert into public.level_ups (user_id, level, seen_at)
+    select p_user, l, case when p_quiet then now() end from generate_series(2, v_level) l
+    on conflict (user_id, level) do nothing
+    returning level)
+  select max(level) into v_top from ins;
+  if v_top is not null and not p_quiet
+     and (select p.kind from public.profiles p where p.id = p_user) = 'adult' then
+    perform private.notify(array[p_user], 'level_up', 'level_up:' || v_top, null, null, null, null, null,
+      jsonb_build_object('level', v_top)
+        || case when p_user::text = any (string_to_array(current_setting('keepup.late_users', true), ','))
+                then jsonb_build_object('late', true) else '{}'::jsonb end);
+  end if;
+end;
+$$;
+
+
+-- Copied from 20261011100000_badges.sql (its latest definition). New: keepup.late_users is cleared with the other queues.
+create or replace function private.sync_deferred_levels()
+returns void
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_list text := nullif(current_setting('keepup.unsynced', true), '');
+  v_badges text := nullif(current_setting('keepup.unbadged', true), '');
+  v_weeks text := nullif(current_setting('keepup.unjudged', true), '');
+  r record;
+begin
+  perform set_config('keepup.unsynced', '', true);
+  perform set_config('keepup.unbadged', '', true);
+  perform set_config('keepup.unjudged', '', true);
+  if v_list is null and v_badges is null and v_weeks is null then
+    perform set_config('keepup.late_users', '', true);
+    return;
+  end if;
+  for r in
+    select distinct on (w.id, w.week) w.id, w.week, w.at, w.late
+      from (select split_part(b, '|', 1)::uuid as id, split_part(b, '|', 2)::date as week,
+                   split_part(b, '|', 3)::timestamptz as at, split_part(b, '|', 4)::boolean as late
+              from unnest(string_to_array(v_weeks, ';')) b) w
+     order by w.id, w.week, w.at desc
+  loop
+    if not exists (select 1 from public.user_achievements a where a.user_id = r.id and a.achievement_code = 'perfect_week')
+       and private.perfect_week(r.id, r.week, r.at) then
+      v_badges := coalesce(v_badges || ';', '') || r.id || '|perfect_week|' || r.at || '|' || r.late;
+    end if;
+  end loop;
+  for r in
+    select x.id, x.step, x.code, x.at, x.late
+      from (select distinct u::uuid as id, 0 as step, null::text as code, null::timestamptz as at, false as late
+              from unnest(string_to_array(v_list, ',')) u
+            union all
+            -- The earliest moment queued for each badge, with its late flag.
+            select * from (
+              select distinct on (q.id, q.code) q.id, 1, q.code, q.at, q.late
+                from (select split_part(b, '|', 1)::uuid as id, split_part(b, '|', 2) as code,
+                             split_part(b, '|', 3)::timestamptz as at, split_part(b, '|', 4)::boolean as late
+                        from unnest(string_to_array(v_badges, ';')) b) q
+               order by q.id, q.code, q.at) e) x
+     order by x.id, x.step, x.code
+  loop
+    if r.step = 0 then
+      perform private.sync_level(r.id, false);
+    else
+      perform private.award_badge(r.id, r.code, r.at, false, true, r.late);
+    end if;
+  end loop;
+  perform set_config('keepup.late_users', '', true);
+end;
+$$;
+
+
+-- Copied from 20261014100000_streak_check_in_xp.sql (its latest definition). New: the streak bonus once per period, and the
+-- author of a late check-in is marked for a late level_up (header).
+create or replace function private.rewards_on_check_in()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  r record;
+  v_habit public.habits;
+  v_upgrade boolean := false;
+  v_late boolean;
+  v_at timestamptz := case when tg_op = 'UPDATE' then coalesce(new.reviewed_at, new.created_at) else new.created_at end;
+  v_amount int := 10;
+begin
+  if new.status <> 'approved' or (tg_op = 'UPDATE' and old.status = 'approved') then
+    return new;
+  end if;
+  select h.* into v_habit from public.habits h where h.id = new.habit_id;
+  -- Will this check-in upgrade a settled period (check_in_impl / review_check_in_impl call
+  -- resettle_period right after, and it upgrades exactly when this holds)? Then the members' period
+  -- grants follow, and everyone's levels are synced once, together, by the period trigger.
+  if v_habit.id is not null and exists (select 1 from public.period_results x
+              where x.habit_id = new.habit_id and x.period_start = new.period_start and x.outcome in ('missed', 'skipped', 'rested')) then
+    v_upgrade := private.period_outcome(v_habit, new.period_start) = 'done';
+  end if;
+  if v_habit.id is not null then
+    -- The streak bonus once per period: only while no other counted check-in of theirs stands in it.
+    v_amount := 10 + case when exists (select 1 from public.check_ins c
+                                        where c.habit_id = new.habit_id and c.user_id = new.user_id
+                                          and c.period_start = new.period_start and c.status = 'approved' and c.id <> new.id)
+                          then 0
+                          else private.check_in_streak(v_habit, new.user_id, new.period_start, v_at, 20) end;
+  end if;
+  for r in
+    select v.who, v.amount, v.reason
+      from (values (new.user_id, v_amount, 'check_in'),
+                   (case when tg_op = 'UPDATE' and new.reviewed_by is distinct from new.user_id then new.reviewed_by end,
+                    2, 'approval')) v(who, amount, reason)
+     where v.who is not null
+     order by v.who
+  loop
+    perform private.grant_xp(r.who, r.amount, r.reason, 'check_in', new.id::text, new.habit_id, v_at, false, false);
+  end loop;
+  v_late := v_habit.id is not null and private.is_late_check_in(v_habit, new);
+  if v_late then
+    perform private.mark_late_levels(array[new.user_id]);
+  end if;
+  perform private.badges_on_check_in(new, false, false, v_late);
+  if tg_op = 'UPDATE' then
+    perform private.badges_on_review(new, false, false);
+  end if;
+  if not v_upgrade and current_setting('keepup.defer_levels', true) is distinct from 'on' then
+    perform private.sync_deferred_levels(); -- author and reviewer, in user id order (levels, then badges)
+  end if;
+  return new;
 end;
 $$;
 

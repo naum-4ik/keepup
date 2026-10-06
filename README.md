@@ -25,7 +25,7 @@ A warm, mobile-first habit tracker for one person and for families. Pick a habit
   - an optional end (30 days, 8 weeks, a date…), shown as "Day 12 of 30"; at the end, keep going or finish it;
   - edit the habit; delete it (only if it has no check-ins) or archive it (keeps its history).
 - **Progress:** a "Your week" card (tap a day to see what you did), a month-by-month **calendar** back to your first habit, and active, finished and archived habits by category, each with its last 7 days as dots. Finished habits can start again.
-- **XP and levels:** every counted check-in earns XP (+10, growing with your streak up to +30), finished periods and streak milestones add more, and levels grow from Seedling to Forest. A ring around your Profile avatar fills towards the next level; Profile shows "Level 7 · Sprout" with a bar.
+- **XP and levels:** every counted check-in earns XP (+10; the first of the day, week or month grows with your streak, up to +30), finished periods and streak milestones add more, and levels grow from Seedling to Forest. A ring around your Profile avatar fills towards the next level; Profile shows "Level 7 · Sprout" with a bar.
 - **Badges and milestones:** 24 badges under Profile → Achievements (no tiers): earned in colour with the date, locked ones with a hint. Streak milestones (1, 2, 5, 7 days… 365) arrive in the Inbox, once per streak, "Back to 30" after a break. Level-ups and badges get a short full-screen moment, or a quiet toast (Settings → Celebrations).
 - **Rest days:** a week of a daily habit earns one (up to 2); a missed day uses it automatically and the streak stays safe.
 - **Recaps:** a weekly and a monthly recap of your wins in the Inbox, and their history under Progress → Recaps.

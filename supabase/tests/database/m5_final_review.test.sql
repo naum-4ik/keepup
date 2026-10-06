@@ -5,7 +5,7 @@
 -- (M4). Every time is pinned, except check_in_with, which uses now() (its fixture is built from now()).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(26);
 
 -- finalize_periods scans every habit; start from none (rolled back at the end).
 delete from public.habits;
@@ -119,6 +119,63 @@ select is((select s.current_streak from private.habit_streaks('00000000-0000-000
           || ':' || (select outcome from public.period_results where habit_id = '00000000-0000-0000-0000-0000000000d4' and period_start = '2026-12-08'),
   '7:rested',
   'and the same after finalize settles it rested');
+
+-- Owner 2026-10-06: late personal notes never push. Lia (Achievements on Sound) is 15 XP short of
+-- level 2 until her late tap for 5 Jan upgrades it; Max crosses it with an on-time check-in.
+select tests.create_user(id::uuid, n || '@example.com', jsonb_build_object('full_name', n))
+  from (values ('00000000-0000-0000-0000-0000000000a2', 'Lia'), ('00000000-0000-0000-0000-0000000000a3', 'Max'),
+               ('00000000-0000-0000-0000-0000000000a4', 'Oli')) v(id, n);
+update public.profiles set timezone = 'UTC', week_start = 1
+ where id in ('00000000-0000-0000-0000-0000000000a2', '00000000-0000-0000-0000-0000000000a3', '00000000-0000-0000-0000-0000000000a4');
+select private.set_notification_delivery_impl(u, 'achievements', 'sound')
+  from unnest(array['00000000-0000-0000-0000-0000000000a2', '00000000-0000-0000-0000-0000000000a3']::uuid[]) u;
+select is(array(select private.push_allowed('00000000-0000-0000-0000-0000000000a2', k, null, null, x.p::jsonb, '2027-01-01 12:00Z')
+                  from unnest(array['streak_milestone', 'badge_unlocked', 'level_up']) k cross join (values ('{"late": true}'), ('{}')) x(p)),
+  array[false, true, false, true, false, true], 'late milestone, badge and level-up notes stay in the Inbox; on time they push');
+set local session_replication_role = replica;
+insert into public.habits (id, owner_id, group_id, title, category, emoji, target_count, period, starts_on, week_start, requires_approval, created_at, created_by)
+select x.id::uuid, x.owner::uuid, null, x.title, null, '⭐', x.target, 'day', x.starts::date, 1, false, (x.starts || ' 08:00Z')::timestamptz, x.owner::uuid
+  from (values ('00000000-0000-0000-0000-0000000000d8', '00000000-0000-0000-0000-0000000000a2', 'Draw', '2027-01-04', 1),
+               ('00000000-0000-0000-0000-0000000000d9', '00000000-0000-0000-0000-0000000000a3', 'Draw', '2027-01-04', 1),
+               ('00000000-0000-0000-0000-0000000000da', '00000000-0000-0000-0000-0000000000a4', 'Water', '2027-02-01', 8)) x(id, owner, title, starts, target);
+insert into public.xp_events (user_id, amount, reason, source_type, source_id) values ('00000000-0000-0000-0000-0000000000a3', 45, 'check_in', 'check_in', 'raw-a3');
+-- Oli: 1–20 Feb done (a 20-day streak going into the 21st).
+insert into public.period_results (habit_id, period_start, outcome, finalized_at)
+select '00000000-0000-0000-0000-0000000000da', d::date, 'done', d + interval '1 day 1 hour' from generate_series('2027-02-01'::timestamp, '2027-02-20', '1 day') d;
+set local session_replication_role = origin;
+select private.check_in_impl('00000000-0000-0000-0000-0000000000d8', '00000000-0000-0000-0000-0000000000a2', '2027-01-04 09:00Z');
+select private.check_in_impl('00000000-0000-0000-0000-0000000000d9', '00000000-0000-0000-0000-0000000000a3', '2027-01-04 09:00Z');
+select private.finalize_periods('2027-01-06 01:00Z');
+select is((select coalesce(sum(amount), 0)::int from public.xp_events where user_id = '00000000-0000-0000-0000-0000000000a2'), 35,
+  'Lia: 35 XP before the late tap (10 + 20 + day 1''s 5), still level 1');
+select private.check_in_impl('00000000-0000-0000-0000-0000000000d8', '00000000-0000-0000-0000-0000000000a2', '2027-01-06 09:00Z',
+  null, false, 'c0000000-0000-0000-0000-0000000000a2', '2027-01-05 20:00Z');
+select is((select (payload ->> 'late') || ':' || push::text from public.notifications
+            where user_id = '00000000-0000-0000-0000-0000000000a2' and kind = 'level_up'), 'true:false',
+  'a level-up from a late tap is marked late and doesn''t push, even on Sound');
+select is((select bool_and((payload ->> 'late')::boolean and not push) from public.notifications
+            where user_id = '00000000-0000-0000-0000-0000000000a2' and kind = 'streak_milestone' and payload ->> 'streak' = '2'), true,
+  'the late 2-day milestone stays in the Inbox too');
+select is((select coalesce(payload ->> 'late', 'none') || ':' || push::text from public.notifications
+            where user_id = '00000000-0000-0000-0000-0000000000a3' and kind = 'level_up'), 'none:true',
+  'an on-time level-up isn''t late and pushes');
+
+-- Owner 2026-10-06: the streak bonus once per habit per period. Oli: 8 glasses on 21 Feb, on a 20-day streak.
+insert into t select 'w' || i, (private.check_in_impl('00000000-0000-0000-0000-0000000000da', '00000000-0000-0000-0000-0000000000a4',
+  '2027-02-21 09:00Z'::timestamptz + make_interval(mins => i))).id from generate_series(1, 8) i;
+create temp view oli as
+  select x.source_id::uuid as check_in, x.reason, x.amount from public.xp_events x
+   where x.user_id = '00000000-0000-0000-0000-0000000000a4' and x.source_type = 'check_in';
+select is(array(select (select amount from oli where check_in = (select v from t where k = 'w' || i) and reason = 'check_in') from generate_series(1, 8) i),
+  array[30, 10, 10, 10, 10, 10, 10, 10], 'the first check-in of the day earns the streak bonus, the others the base 10');
+select is((select sum(amount)::int from oli where reason = 'check_in'), 100, '8 a day on a 20-day streak: 30 + 7 × 10 = 100');
+select private.undo_check_in_impl((select v from t where k = 'w1'), '00000000-0000-0000-0000-0000000000a4', '2027-02-21 10:00Z');
+select is((select amount from oli where check_in = (select v from t where k = 'w1') and reason = 'check_in_undone'), -30,
+  'undoing the first takes back exactly its 30');
+select is((select sum(amount)::int from oli), 70, 'and the others keep theirs (no re-grant)');
+insert into t select 'w9', (private.check_in_impl('00000000-0000-0000-0000-0000000000da', '00000000-0000-0000-0000-0000000000a4', '2027-02-21 10:05Z')).id;
+select is((select amount from oli where check_in = (select v from t where k = 'w9') and reason = 'check_in'), 10,
+  'a new one while the others stand earns the base 10');
 
 -- M7. check_in_with takes the children in id order, whatever order the app sends (two parents can't
 -- lock the same children in opposite orders). Built from now(): it checks in at now().

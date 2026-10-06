@@ -1,6 +1,7 @@
 // lib/xp.ts
 // The "+N XP" float (ideas/achievements-and-rewards.md §1). The database decides the XP: a check-in earns
-// 10 + 1 per day (or week, month) of the streak before it, at most +30 (private.check_in_streak). This
+// 10, and the first one of its period also 1 per day (or week, month) of the streak before it, at most
+// +30 (private.check_in_streak, rewards_on_check_in). This
 // only says whether the check-in a request just returned counts now, and how to show what it earned.
 // A check-in waiting for approval earns its XP when it's approved, so it shows nothing now.
 
