@@ -21,5 +21,5 @@ test("Progress → Recaps lists last week with its check-ins and longest streak"
   seedPastCheckIns(id, email, [7, 8, 9, 10, 11, 12, 13, 14]);
   await page.goto("/progress/recaps");
   const weeks = page.getByRole("region", { name: "Weeks" });
-  await expect(weeks.getByRole("listitem").first()).toContainText(/check-ins? last week/);
+  await expect(weeks.getByRole("listitem").first()).toContainText(/\d+ of \d+ check-ins?\./);
 });

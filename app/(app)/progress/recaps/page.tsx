@@ -31,7 +31,7 @@ export default async function RecapsPage() {
             {weeks.map((r) => (
               <li key={r.start} className="flex flex-col gap-1 rounded-2xl bg-card p-4 shadow-soft">
                 <p className="text-xs font-semibold text-muted-foreground">{recapTitle(r)}</p>
-                <p className="font-semibold">{recapLine(r)}</p>
+                <p className="font-semibold">{recapLine(r, "history")}</p>
               </li>
             ))}
           </ul>
@@ -48,7 +48,7 @@ export default async function RecapsPage() {
                 <li key={r.start} className="flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-soft">
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground">{recapTitle(r)}</p>
-                    <p className="font-semibold">{recapLine(r)}</p>
+                    <p className="font-semibold">{recapLine(r, "history")}</p>
                   </div>
                   <MonthHeatmap recap={r} weekStart={weekStart} />
                   {rested > 0 && <p className="text-sm text-muted-foreground">Rest days: {rested} (dashed)</p>}

@@ -43,9 +43,10 @@ export function recapTitle(r: Recap): string {
 }
 
 // Wins only (owner 2026-10-04): never "0 of N".
-export function recapLine(r: Recap): string {
+// `context`: "history" drops the Inbox row's "last week" (the card is dated already).
+export function recapLine(r: Recap, context: "inbox" | "history" = "inbox"): string {
   if (r.possible > 0 && r.done === 0) return r.kind === "week" ? "A quiet week." : "A quiet month.";
-  return recapCopy(r as unknown as Record<string, unknown>)?.body ?? "Nothing was due.";
+  return recapCopy(r as unknown as Record<string, unknown>, context)?.body ?? "Nothing was due.";
 }
 
 // 0 = nothing due that day; 1–4 = a share of it done (1 is a soft tint, never red).

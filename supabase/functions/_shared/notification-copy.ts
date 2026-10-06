@@ -105,10 +105,18 @@ export const restDayUsed = (habit: string, streakLength: number, period: "day" |
   body: `Rest ${period} used. Your ${streakLength}-${period} streak is safe 💤`,
 });
 
-export function weeklyRecap({ done, possible, longest }: { done: number; possible: number; longest: { habit: string; length: number } | null }): Copy | null {
+type RecapStreak = { habit: string; length: number; period?: PeriodUnit };
+const longestLine = (l: RecapStreak) => `Longest streak: ${l.habit} 🔥 ${plural(l.length, l.period ?? "day")}`;
+
+// `context`: the Inbox row and push say "last week"; Progress → Recaps lists the week under its own
+// date, so its line is just the count.
+export function weeklyRecap(
+  { done, possible, longest }: { done: number; possible: number; longest: RecapStreak | null },
+  context: "inbox" | "history" = "inbox",
+): Copy | null {
   if (possible === 0) return null;
-  const base = `${done} of ${plural(possible, "check-in")} last week.`;
-  return { title: "Your week", body: longest ? `${base} Longest streak: ${longest.habit} 🔥 ${longest.length}` : base };
+  const base = `${done} of ${plural(possible, "check-in")}${context === "history" ? "" : " last week"}.`;
+  return { title: "Your week", body: longest ? `${base} ${longestLine(longest)}` : base };
 }
 
 export const levelUp = (level: number, levelName: string): Copy => ({ title: `Level ${level}`, body: `${levelName} 🌱` });
@@ -134,10 +142,10 @@ export function streakMilestone(habit: string, length: number, period: PeriodUni
   return { title: habit, body: milestoneCard(habit, length, period) };
 }
 
-export function monthlyRecap({ month, done, possible, longest }: { month: string; done: number; possible: number; longest: { habit: string; length: number } | null }): Copy | null {
+export function monthlyRecap({ month, done, possible, longest }: { month: string; done: number; possible: number; longest: RecapStreak | null }): Copy | null {
   if (possible === 0) return null;
   const base = `${done} of ${plural(possible, "check-in")} in ${month}.`;
-  return { title: "Your month", body: longest ? `${base} Longest streak: ${longest.habit} 🔥 ${longest.length}` : base };
+  return { title: "Your month", body: longest ? `${base} ${longestLine(longest)}` : base };
 }
 
 // The weekly family recap's push (owner 2026-10-04: an Inbox card plus a push). Same words as the card
@@ -159,15 +167,15 @@ function monthOf(iso: unknown): string {
 }
 
 // A weekly or monthly recap row's payload (private.recap_impl) → its text. null when it's malformed or empty.
-export function recapCopy(payload: Record<string, unknown>): Copy | null {
+export function recapCopy(payload: Record<string, unknown>, context: "inbox" | "history" = "inbox"): Copy | null {
   const done = count(payload.done);
   const possible = count(payload.possible);
   if (done === null || possible === null) return null;
   const l = isRecord(payload.longest) ? payload.longest : null;
-  const longest = l && typeof l.title === "string" && count(l.length) ? { habit: l.title, length: count(l.length)! } : null;
+  const longest = l && typeof l.title === "string" && count(l.length) ? { habit: l.title, length: count(l.length)!, period: PERIOD_UNITS.has(String(l.period)) ? (String(l.period) as PeriodUnit) : "day" } : null;
   return payload.kind === "month"
     ? monthlyRecap({ month: monthOf(payload.start), done, possible, longest })
-    : weeklyRecap({ done, possible, longest });
+    : weeklyRecap({ done, possible, longest }, context);
 }
 
 export function familyRecapCopy(group: string, payload: Record<string, unknown>): Copy | null {

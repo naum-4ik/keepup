@@ -19,7 +19,10 @@ describe("recaps", () => {
     expect(recapTitle(parseRecap({ ...week, kind: "month", start: "2026-09-01", end: "2026-10-01" })!)).toBe("September 2026");
   });
   it("uses the Inbox words, and stays gentle when nothing was due", () => {
-    expect(recapLine(parseRecap(week)!)).toBe("10 of 11 check-ins last week. Longest streak: Read 🔥 7");
+    expect(recapLine(parseRecap(week)!)).toBe("10 of 11 check-ins last week. Longest streak: Read 🔥 7 days");
+    expect(recapLine(parseRecap(week)!, "history")).toBe("10 of 11 check-ins. Longest streak: Read 🔥 7 days");
+    expect(recapLine(parseRecap({ ...week, longest: { title: "Gym", emoji: "", length: 1, period: "week" } })!)).toContain("Gym 🔥 1 week");
+    expect(recapLine(parseRecap({ ...week, kind: "month", start: "2026-09-01", longest: { title: "Gym", emoji: "", length: 3, period: "month" } })!, "history")).toContain("in September. Longest streak: Gym 🔥 3 months");
     expect(recapLine(parseRecap({ ...week, done: 0, possible: 0, longest: null })!)).toBe("Nothing was due.");
   });
   it("never writes 0 of N", () => {
