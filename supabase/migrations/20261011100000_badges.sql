@@ -368,8 +368,9 @@ begin
     loop
       select p.* into v_profile from public.profiles p where p.id = u;
       v_week := private.period_start('week', p_period_start, v_profile.week_start);
-      -- Only once the person's week is over (no earlier settle can complete it), and not again.
-      continue when p_at < private.local_midnight(v_week + 7, v_profile.timezone)
+      -- Only once the week is over in this habit's zone (no earlier settle of it can complete the
+      -- week; the person's other habits re-judge at their own settles), and not again.
+      continue when p_at < private.local_midnight(v_week + 7, private.habit_timezone(p_habit))
                  or exists (select 1 from public.user_achievements a where a.user_id = u and a.achievement_code = 'perfect_week');
       if p_sync or p_quiet then
         if private.perfect_week(u, v_week, p_at) then
