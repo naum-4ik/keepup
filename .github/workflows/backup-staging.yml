@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 
-# Shared with the staging backup: both force-push one orphan commit to keepup-backups, so two runs
+# Shared with the production backup: both force-push one orphan commit to keepup-backups, so two runs
 # at once could drop each other's new dump. One at a time, across both workflows.
 concurrency:
   group: keepup-backups-push
