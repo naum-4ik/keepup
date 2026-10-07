@@ -50,3 +50,14 @@ export async function clearSavedPages(): Promise<void> {
     // no Cache Storage here: nothing was saved
   }
 }
+
+// Delete account: the saved pages' owner becomes a name no account has, so whoever signs in next on
+// this phone still has any leftover pages wiped by claimSavedPages (removing the key would skip that).
+export const DELETED_OWNER = "deleted";
+export function markPagesOwnerDeleted(): void {
+  try {
+    localStorage.setItem(OWNER, DELETED_OWNER);
+  } catch {
+    // no storage (private mode): nothing was kept
+  }
+}

@@ -4,23 +4,11 @@ import { useState, useTransition } from "react";
 import { deleteChild, exportChild, moveChild, resetChild } from "@/app/(app)/kids/actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { downloadJson } from "@/lib/download-json";
 import { exportFileName } from "@/lib/kid-schema";
 import { cn } from "@/lib/utils";
 
 export type MoveTarget = { id: string; name: string };
-
-// Saves the child's export as keepup-{nickname}-{date}.json through a Blob URL.
-function download(name: string, data: unknown) {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = exportFileName(name);
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  // Revoked later: some browsers start the download after click() returns.
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 
 export function ExportChildButton({ childId, childName, label, className }: { childId: string; childName: string; label?: string; className?: string }) {
   const [pending, startTransition] = useTransition();
@@ -37,7 +25,8 @@ export function ExportChildButton({ childId, childName, label, className }: { ch
             const r = await exportChild(childId);
             if (!r.ok) return setError(r.message);
             setError(null);
-            download(childName, r.data);
+            // Saved as keepup-{nickname}-{date}.json.
+            downloadJson(exportFileName(childName), r.data);
           })
         }
       >

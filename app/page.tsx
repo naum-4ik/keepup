@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { authErrorReason } from "@/lib/auth-errors";
+import { DELETED_NOTE } from "@/lib/my-data";
 
 export default async function Home({
   searchParams,
@@ -30,6 +31,7 @@ export default async function Home({
       </div>
       {/* Most visitors here are new (signed-in people go straight to Today), so the one button signs up. */}
       <div className="flex flex-col gap-3">
+        {params.deleted === "1" && <p role="status" className="text-sm text-muted-foreground">{DELETED_NOTE}</p>}
         <Button asChild size="lg" className="h-12 w-full">
           <Link href="/signup">Get started</Link>
         </Button>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { NotificationSettingsCard } from "@/components/notifications/notification-settings";
 import { CelebrationsSetting } from "@/components/profile/celebrations-setting";
+import { MyData } from "@/components/profile/my-data";
 import { ResetMyData } from "@/components/profile/reset-my-data";
 import { ProfileForm } from "@/components/profile-form";
 import { getProfile } from "@/lib/auth";
@@ -43,6 +44,7 @@ export default async function SettingsPage() {
       <NotificationSettingsCard settings={notifications} />
       <CelebrationsSetting saved={celebrations} />
       <ResetMyData privateHabitIds={privateHabitIds} />
+      <MyData />
     </section>
   );
 }

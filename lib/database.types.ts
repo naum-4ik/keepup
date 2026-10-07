@@ -760,6 +760,9 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"delete_account_preview":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
 "delete_child":
 { Args: { "p_child_id": string }; Returns: undefined
                            },
@@ -769,6 +772,9 @@ isOneToOne: false
 "delete_habit":
 { Args: { "p_habit_id": string }; Returns: undefined
                            },
+"delete_my_account":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
 "delete_push_subscription":
 { Args: { "p_endpoint": string }; Returns: undefined
                            },
@@ -777,6 +783,9 @@ isOneToOne: false
                            },
 "export_child":
 { Args: { "p_child_id": string }; Returns: Json
+                           },
+"export_my_data":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            },
 "family_recaps":
 { Args: Record<PropertyKey, never>; Returns: {
