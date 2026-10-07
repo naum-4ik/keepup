@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/naum-4ik/keepup/compare/v0.6.0...v0.6.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* post-M5 follow-ups — reset my data, faster finalize, offline and Progress fixes ([#151](https://github.com/naum-4ik/keepup/issues/151)) ([dffe8d0](https://github.com/naum-4ik/keepup/commit/dffe8d02172050ac52dfea1b00f4b3a327707c39))
+
 ## [0.6.0](https://github.com/naum-4ik/keepup/compare/v0.5.0...v0.6.0) (2026-10-06)
 
 
