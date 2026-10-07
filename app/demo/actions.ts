@@ -3,17 +3,17 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-// "Try it": a fresh anonymous login (every anonymous login is a demo profile, deleted after 24h), seeded as
-// Sam by start_demo. Already signed in: straight to Today, so start_demo never runs for an onboarded
-// account (it would be a no-op there and leave an empty demo). See the demo ADR.
+// "Try it", step 2: the browser has just signed in anonymously (TryDemoButton: so each visitor counts
+// against Supabase's per-IP limit with their own IP, not the server's). Every anonymous login is a demo
+// profile, deleted after 24h; start_demo seeds it as Sam (a second call is a no-op). A real login never
+// reaches start_demo: it goes to Today. See the demo ADR.
 export async function startDemo(formData: FormData): Promise<void> {
   const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  if (claims?.claims) redirect("/today");
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims) redirect("/?demo=failed");
+  if (!data.claims.is_anonymous) redirect("/today");
   // The page may post before hydration fills the zone in; the database falls back to UTC for a bad one.
   const timezone = String(formData.get("timezone") || "UTC");
-  const { error: signInError } = await supabase.auth.signInAnonymously();
-  if (signInError) redirect("/?demo=failed");
   const { error } = await supabase.rpc("start_demo", { p_timezone: timezone });
   if (error) {
     await supabase.auth.signOut({ scope: "local" });
