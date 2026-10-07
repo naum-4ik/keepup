@@ -76,6 +76,10 @@ grant execute on function public.export_my_data() to authenticated;
 -- Delete account. One transaction: hand over admin, delete groups left empty (children and group habits
 -- go with them), then delete the login; the on_auth_user_deleted trigger deletes the profile and every
 -- personal row cascades. "Others" are active members (left_at is null) other than the person.
+-- Lock order (as db_hardening.sql, top): every habit the delete can remove or cascade through (the
+-- person's private habits, their groups' habits, their groups' children's habits) is locked FOR UPDATE in
+-- one query in id order first, then the groups in id order. Feed and XP inserts take KEY SHARE on the
+-- group or profile while holding a habit, so locking a group or profile before its habits could deadlock.
 -- Concurrency: the groups are locked FOR UPDATE in id order before counting, so two last admins
 -- deleting at the same moment run one after the other and the second sees the first's handover.
 
@@ -129,6 +133,17 @@ begin
   if not exists (select 1 from public.profiles where id = p_user and kind = 'adult') then
     raise exception 'keepup:not_found' using errcode = 'P0002';
   end if;
+  -- Habits first, in one query in id order (the set lock_group_habits takes per group, plus the
+  -- person's private habits), then the groups.
+  perform 1 from public.habits h
+   where (h.owner_id = p_user and h.group_id is null)
+      or h.group_id in (select m.group_id from public.group_members m where m.user_id = p_user and m.left_at is null)
+      or h.owner_id in (select c.id from public.profiles c
+                         where c.kind = 'child'
+                           and c.group_id in (select m.group_id from public.group_members m
+                                               where m.user_id = p_user and m.left_at is null))
+   order by h.id
+     for update of h;
   perform 1 from public.groups g
     where g.id in (select m.group_id from public.group_members m where m.user_id = p_user and m.left_at is null)
     order by g.id for update;
