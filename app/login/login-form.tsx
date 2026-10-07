@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId, useState } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,15 +15,56 @@ const initialState: LoginState = { status: "idle" };
 // or not the person remembers how they signed up.
 export function LoginForm({ next }: { next: string }) {
   const [state, action, pending] = useActionState(submitCredentials, initialState);
-  const [reset, resetAction, resetPending] = useActionState(requestPasswordReset, initialState);
-  const resetFormId = useId();
+  const [reset, resetAction] = useActionState(requestPasswordReset, initialState);
+  const [resetPending, startReset] = useTransition();
+  const emailRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState("");
   const [step, setStep] = useState<"email" | "password">("email");
   const [emailError, setEmailError] = useState<string | null>(null);
-  const [showForgot, setShowForgot] = useState(false);
+  const [needEmail, setNeedEmail] = useState(false);
   // An error belongs to the attempt that caused it: going back to change the email dismisses it.
   const [dismissed, setDismissed] = useState<LoginState | null>(null);
   const error = step === "password" && state.status === "error" && state !== dismissed ? state : null;
+
+  // Forgot password? sends the link at once to the email typed above; with none, it asks for one.
+  function forgotPassword() {
+    const trimmed = email.trim();
+    if (!isValidEmail(trimmed)) {
+      setNeedEmail(true);
+      emailRef.current?.focus();
+      return;
+    }
+    setNeedEmail(false);
+    const data = new FormData();
+    data.set("email", trimmed);
+    startReset(() => resetAction(data));
+  }
+
+  const forgot = (
+    <div className="flex flex-col">
+      <button
+        type="button"
+        disabled={resetPending}
+        onClick={forgotPassword}
+        className="min-h-11 self-start text-sm font-semibold text-primary hover:underline disabled:opacity-60"
+      >
+        {resetPending ? "Sending…" : "Forgot password?"}
+      </button>
+      {needEmail && (
+        <p role="status" className="text-sm text-muted-foreground">
+          Type your email above, then tap Forgot password? again.
+        </p>
+      )}
+      {!needEmail && reset.status === "reset_sent" && reset.email === email.trim() && (
+        <>
+          <p role="status" className="text-sm">
+            {reset.message}
+          </p>
+          <p className="text-sm text-muted-foreground">Or sign in with Google using the same email.</p>
+        </>
+      )}
+    </div>
+  );
 
   if (step === "email") {
     return (
@@ -54,8 +95,12 @@ export function LoginForm({ next }: { next: string }) {
           autoFocus
           placeholder="you@example.com"
           className="h-11 rounded-xl px-3"
+          ref={emailRef}
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setNeedEmail(false);
+          }}
           aria-invalid={Boolean(emailError)}
           aria-describedby={emailError ? "login-error" : undefined}
         />
@@ -67,6 +112,7 @@ export function LoginForm({ next }: { next: string }) {
         <Button type="submit" className="h-11">
           Continue
         </Button>
+        {forgot}
       </form>
     );
   }
@@ -96,7 +142,7 @@ export function LoginForm({ next }: { next: string }) {
             type="button"
             onClick={() => {
               setStep("email");
-              setShowForgot(false);
+              setNeedEmail(false);
               setDismissed(state);
             }}
             className="min-h-11 rounded-lg px-2 text-sm font-semibold text-primary hover:bg-accent"
@@ -114,37 +160,7 @@ export function LoginForm({ next }: { next: string }) {
           invalid={Boolean(error)}
           describedBy={error ? "login-error" : undefined}
         />
-        <div className="-mt-2 flex flex-col">
-          <button
-            type="button"
-            aria-expanded={showForgot}
-            onClick={() => setShowForgot((s) => !s)}
-            className="min-h-11 self-start text-sm font-semibold text-primary hover:underline"
-          >
-            Forgot password?
-          </button>
-          {showForgot && (
-            // Forms can't nest, so "Send reset link" submits its own small form below by id; Enter in the
-            // password field still signs in.
-            <div className="flex flex-col gap-2">
-              <p className="text-sm text-muted-foreground">We&apos;ll email you a link to choose a new password.</p>
-              <Button type="submit" form={resetFormId} variant="outline" disabled={resetPending} className="h-11">
-                {resetPending ? "Sending…" : "Send reset link"}
-              </Button>
-              {reset.status === "reset_sent" && reset.email === email && (
-                <p role="status" className="text-sm">
-                  {reset.message}
-                </p>
-              )}
-              {reset.status === "error" && reset.email === email && (
-                <p role="alert" className="text-sm text-destructive">
-                  {reset.message}
-                </p>
-              )}
-              <p className="text-sm text-muted-foreground">Or sign in with Google using the same email.</p>
-            </div>
-          )}
-        </div>
+        <div className="-mt-2">{forgot}</div>
 
         {error && (
           <p id="login-error" role="alert" className="text-sm text-destructive">
@@ -155,9 +171,6 @@ export function LoginForm({ next }: { next: string }) {
         <Button type="submit" disabled={pending} className="h-11">
           {pending ? "Signing in…" : "Sign in"}
         </Button>
-      </form>
-      <form id={resetFormId} action={resetAction} hidden>
-        <input type="hidden" name="email" value={email} />
       </form>
     </>
   );
