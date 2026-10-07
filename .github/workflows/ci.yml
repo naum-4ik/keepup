@@ -55,8 +55,14 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
+      # Cache node_modules itself (not just npm's download cache): a hit skips `npm ci` (~15 s).
+      - id: modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: modules-${{ runner.os }}-${{ hashFiles('.nvmrc', 'package-lock.json') }}
+      - if: steps.modules.outputs.cache-hit != 'true'
+        run: npm ci
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
