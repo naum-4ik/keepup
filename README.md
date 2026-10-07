@@ -10,11 +10,13 @@ A warm, mobile-first habit tracker for one person and for families. Pick a habit
 
 <p align="center">
   <img src="docs/screenshots/today.png" width="220" alt="Today: a progress card, then habits left to do, then Done for today">
-  <img src="docs/screenshots/offline.png" width="220" alt="Today offline: a banner says you're seeing the last update, and a tapped habit shows Saving until the phone is back online">
   <img src="docs/screenshots/progress.png" width="220" alt="Progress: your week, streaks, and habits by category">
+  <img src="docs/screenshots/kid-view.png" width="220" alt="The kid view: a garden scene above big habit buttons, open habits first and a done one at the bottom">
 </p>
 
 ## What works today
+
+### Every day
 
 - **Today:** a progress card (a ring of today's habits, what's left, and a small celebration when all are done), then a card per habit with its emoji, one-tap check-in, progress (e.g. `3 / 8 today`, `1 of 3 this week`) and a streak badge. It lists what's left to do first, then **Done for today**, then **Later** (habits that start later, or paused ones). Group and kid habits follow in their own sections.
 - **Ready-made habits:** 48 templates, 6 in each of 8 categories (Health, Fitness, Mind, Learning, People, Home, Work & money, Break a habit), or create your own with any emoji. Schedules are *X times a day, week or month*. Choose a start date (today, tomorrow, next week, or any day on the calendar).
@@ -24,22 +26,48 @@ A warm, mobile-first habit tracker for one person and for families. Pick a habit
   - pause (with an optional return date) and resume;
   - an optional end (30 days, 8 weeks, a date…), shown as "Day 12 of 30"; at the end, keep going or finish it;
   - edit the habit; delete it (only if it has no check-ins) or archive it (keeps its history).
-- **Progress:** a "Your week" card (tap a day to see what you did), a month-by-month **calendar** back to your first habit, and active, finished and archived habits by category, each with its last 7 days as dots. Finished habits can start again.
-- **XP and levels:** every counted check-in earns XP (+10; the first of the day, week or month grows with your streak, up to +30), finished periods and streak milestones add more, and levels grow from Seedling to Forest. A ring around your Profile avatar fills towards the next level; Profile shows "Level 7 · Sprout" with a bar.
-- **Badges and milestones:** 24 badges under Profile → Achievements (no tiers): earned in colour with the date, locked ones with a hint. Streak milestones (1, 2, 5, 7 days… 365) arrive in the Inbox, once per streak, "Back to 30" after a break. Level-ups and badges get a short full-screen moment, or a quiet toast (Settings → Celebrations).
-- **Rest days:** a week of a daily habit earns one (up to 2); a missed day uses it automatically and the streak stays safe.
-- **Recaps:** a weekly and a monthly recap of your wins in the Inbox, and their history under Progress → Recaps.
 - **Onboarding:** name, detected time zone and week start, then pick up to 3 habits to start with.
 - **Fair streaks:**
   - Periods follow your time zone and your week start (Sunday or Monday).
   - A pause never breaks a streak.
   - A habit started mid-week doesn't count as missed.
-- **Groups and kids:**
-  - groups (family, friends, couple, roommates) with invite links and emoji avatars;
-  - habits done together: a period is done when everyone required has checked in, with optional approval by another adult;
-  - kids without a login: an adult checks in for them, or they tap in a kid view (open habits first, done ones sink; the picture stays in sight while scrolling and moves gently, and every tap grows the scene); each approved check-in is a star, and the week's stars grow a garden (or an aquarium, space, a dino egg or a town);
-  - treat goals chosen with the child ("20 ⭐ for a trip to the zoo"), and a reset that keeps only the nickname and avatar;
-  - an Inbox for activity, nudges and cheers, updating live.
+
+<p align="center">
+  <img src="docs/screenshots/new-habit.png" width="220" alt="New habit: category chips above popular templates, and Create your own">
+  <img src="docs/screenshots/habit.png" width="220" alt="A habit's page: today's check-in with undo, streaks, history">
+</p>
+
+### Progress
+
+- **Progress:** a "Your week" card (tap a day to see what you did), a month-by-month **calendar** back to your first habit, and active, finished and archived habits by category, each with its last 7 days as dots. Finished habits can start again.
+- **Recaps:** a weekly and a monthly recap of your wins in the Inbox, and their history under Progress → Recaps.
+
+<p align="center">
+  <img src="docs/screenshots/calendar.png" width="220" alt="Progress, Calendar: a month of filled days, and what you did on the selected day">
+  <img src="docs/screenshots/recaps.png" width="220" alt="Progress, Recaps: one card per week with check-ins done and the longest streak">
+</p>
+
+### XP, levels and badges
+
+- **XP and levels:** every counted check-in earns XP (+10; the first of the day, week or month grows with your streak, up to +30), finished periods and streak milestones add more, and levels grow from Seedling to Forest. A ring around your Profile avatar fills towards the next level; Profile shows "Level 7 · Sprout" with a bar.
+- **Badges and milestones:** 24 badges under Profile → Achievements (no tiers): earned in colour with the date, locked ones with a hint. Streak milestones (1, 2, 5, 7 days… 365) arrive in the Inbox, once per streak, "Back to 30" after a break. Level-ups and badges get a short full-screen moment, or a quiet toast (Settings → Celebrations).
+- **Rest days:** a week of a daily habit earns one (up to 2); a missed day uses it automatically and the streak stays safe.
+
+<p align="center">
+  <img src="docs/screenshots/achievements.png" width="220" alt="Profile, Achievements: earned badges in colour with icons, locked ones faint">
+  <img src="docs/screenshots/celebration.png" width="220" alt="A level-up moment: a sprout, Level 12, Sapling, soft confetti over Today">
+</p>
+
+### Groups and kids
+
+- groups (family, friends, couple, roommates) with invite links and emoji avatars;
+- habits done together: a period is done when everyone required has checked in, with optional approval by another adult;
+- kids without a login: an adult checks in for them, or they tap in a kid view (open habits first, done ones sink; the picture stays in sight while scrolling and moves gently, and every tap grows the scene); each approved check-in is a star, and the week's stars grow a garden (or an aquarium, space, a dino egg or a town);
+- treat goals chosen with the child ("20 ⭐ for a trip to the zoo"), and a reset that keeps only the nickname and avatar;
+- an Inbox for activity, nudges and cheers, updating live.
+
+### On your phone
+
 - **Installable app:** add it to the Home Screen; it opens full screen.
 - **Reminders and pushes:**
   - a daily summary at your hour, or a habit's own time ("Remind me at…", on the quarter hour);
@@ -49,15 +77,8 @@ A warm, mobile-first habit tracker for one person and for families. Pick a habit
 - **Offline:** check in without signal. It's saved on the phone and counts for the day you tapped once you're back online. The last Today and kid view open offline.
 
 <p align="center">
-  <img src="docs/screenshots/habit.png" width="220" alt="A habit's page: today's check-in with undo, streaks, history">
-  <img src="docs/screenshots/kid-view.png" width="220" alt="The kid view: a garden scene above big habit buttons, open habits first and a done one at the bottom">
   <img src="docs/screenshots/notifications.png" width="220" alt="Settings, Notifications: Sound, Silent or Inbox only for each kind, and this phone listed as a device">
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/achievements.png" width="220" alt="Profile, Achievements: earned badges in colour with icons, locked ones faint">
-  <img src="docs/screenshots/celebration.png" width="220" alt="A level-up moment: a sprout, Level 12, Sapling, soft confetti over Today">
-  <img src="docs/screenshots/recaps.png" width="220" alt="Progress, Recaps: one card per week with check-ins done and the longest streak">
+  <img src="docs/screenshots/offline.png" width="220" alt="Today offline: a banner says you're seeing the last update, and a tapped habit shows Saving until the phone is back online">
 </p>
 
 ## Interesting problems
