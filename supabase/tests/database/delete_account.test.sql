@@ -30,11 +30,11 @@ insert into public.habits (owner_id, created_by, title, emoji, category, target_
 values ('00000000-0000-0000-0000-0000000004a1', '00000000-0000-0000-0000-0000000004a1', 'Anna reads', '📚', 'learning', 1, 'day', current_date);
 
 -- Supabase Auth's sign-in history (auth.audit_log_entries): Anna's rows match by actor_id only, by
--- actor_username only, or by traits.user_email only (e.g. an admin action on her); Ben's row stays.
+-- actor_username only, or by traits.user_email only (e.g. an admin action on her), emails in another case; Ben's row stays.
 insert into auth.audit_log_entries (instance_id, id, payload, created_at) values
   ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), '{"action":"login","actor_id":"00000000-0000-0000-0000-0000000004a1","actor_username":"renamed@example.com","traits":{"provider":"email"}}', now()),
-  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), '{"action":"user_repeated_signup","actor_id":"00000000-0000-0000-0000-00000000ffff","actor_username":"del-anna@example.com","traits":{"provider":"email"}}', now()),
-  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), '{"action":"user_invited","actor_id":"00000000-0000-0000-0000-00000000fffe","actor_username":"admin@example.com","traits":{"user_email":"del-anna@example.com"}}', now()),
+  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), '{"action":"user_repeated_signup","actor_id":"00000000-0000-0000-0000-00000000ffff","actor_username":"Del-Anna@Example.com","traits":{"provider":"email"}}', now()),
+  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), '{"action":"user_invited","actor_id":"00000000-0000-0000-0000-00000000fffe","actor_username":"admin@example.com","traits":{"user_email":"DEL-ANNA@example.com"}}', now()),
   ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), '{"action":"login","actor_id":"00000000-0000-0000-0000-0000000004b1","actor_username":"del-ben@example.com","traits":{"provider":"email"}}', now());
 
 select ok(not has_function_privilege('anon', 'public.delete_my_account()', 'execute'), 'anon cannot delete');
@@ -66,7 +66,7 @@ select is((select count(*)::int from public.groups where id = (select v from t w
 select is((select count(*)::int from public.groups where id = (select v from t where k='fam')), 1, 'Family stays');
 
 select is((select count(*)::int from auth.audit_log_entries
-             where payload::text like '%00000000-0000-0000-0000-0000000004a1%' or payload::text like '%del-anna@example.com%'),
+             where payload::text like '%00000000-0000-0000-0000-0000000004a1%' or payload::text ilike '%del-anna@example.com%'),
           0, 'her sign-in history gone (by id, by email, by traits email)');
 select is((select count(*)::int from auth.audit_log_entries where payload->>'actor_id' = '00000000-0000-0000-0000-0000000004b1'),
           1, 'Ben''s sign-in history untouched');
