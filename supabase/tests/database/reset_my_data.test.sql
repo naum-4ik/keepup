@@ -127,7 +127,7 @@ select is((select count(*)::int from public.habits where id = (select v from t w
 select is((select count(*)::int from public.profiles where id = (select v from t where k = 'mary')), 1, 'Mary stays');
 
 -- Again: nothing left to clear.
-select lives_ok($$select private.reset_my_data_impl('00000000-0000-0000-0000-0000000002a1')$$, 'a second reset is fine');
+select lives_ok($$select private.reset_my_data_impl('00000000-0000-0000-0000-0000000002a1', now())$$, 'a second reset is fine');
 select results_eq($$select habits, xp, levels, badges, inbox, dismissed from mine$$, $$values (0, 0, 0, 0, 0, 0)$$, 'and changes nothing');
 
 select * from finish();
