@@ -10,6 +10,7 @@ import { MAX_STARTER_HABITS, onboardingTemplates } from "@/lib/habit-templates";
 import { parseOnboarding, parsePurpose, readOnboardingForm, type OnboardingFormState } from "@/lib/profile-schema";
 import { saveProfile } from "@/lib/profile-update";
 import { listTimezones } from "@/lib/timezones";
+import { track } from "@/lib/log";
 
 export type PickHabitsState = { status: "idle" } | { status: "error"; message: string };
 
@@ -24,17 +25,18 @@ export async function completeOnboarding(_prev: OnboardingFormState, formData: F
   const parsed = parseOnboarding(values, new Set(listTimezones()));
   if (!parsed.ok) return { status: "error", errors: parsed.errors, values };
 
-  const { supabase, userId } = await requireUser();
+  const { supabase, userId, who } = await requireUser();
   // Marking onboarded also records terms_accepted_at (server-set, see the migration).
   const message = await saveProfile(supabase, userId, parsed.value, { markOnboarded: true });
   if (message) return { status: "error", message, values };
 
+  track("onboarding_completed", who);
   const joined = readJoined(formData);
   redirect(`/onboarding/habits${joined ? `?joined=${joined}` : ""}`);
 }
 
 export async function startWithHabits(_prev: PickHabitsState, formData: FormData): Promise<PickHabitsState> {
-  const { supabase, userId, profile } = await getProfile();
+  const { supabase, userId, who, profile } = await getProfile();
   if (!profile.onboarded_at) redirect("/onboarding");
   const joined = readJoined(formData);
   const today = joined ? `/today?joined=${joined}` : "/today";
@@ -65,8 +67,11 @@ export async function startWithHabits(_prev: PickHabitsState, formData: FormData
     habits.push(parsed.value);
   }
 
-  const { error } = await insertHabits(supabase, habits);
+  const { error, ids: created } = await insertHabits(supabase, habits);
   if (error) return { status: "error", message: habitErrorMessage(error) };
+  habits.forEach((h, i) =>
+    track("habit_created", who, { "habit.scope": "private", "habit.id": created[i], "habit.title": h.title, "habit.category": h.category, "habit.period": h.period, "habit.target_count": h.targetCount }),
+  );
 
   revalidatePath("/today");
   revalidatePath("/progress");

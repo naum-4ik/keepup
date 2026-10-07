@@ -9,7 +9,7 @@ import type { DeletePreview } from "@/lib/my-data";
 import { parseProfile, readProfileForm, type ProfileFormState } from "@/lib/profile-schema";
 import { saveProfile } from "@/lib/profile-update";
 import { listTimezones } from "@/lib/timezones";
-import { logError } from "@/lib/log";
+import { logError, track } from "@/lib/log";
 
 export async function updateProfile(_prev: ProfileFormState, formData: FormData): Promise<ProfileFormState> {
   const values = readProfileForm(formData);
@@ -38,12 +38,13 @@ export async function setCelebrations(mode: string): Promise<{ ok: true } | { ok
 // their history, XP, levels, badges and Inbox (public.reset_my_data). The page then clears what waits
 // on the phone and opens Today, which says so calmly.
 export async function resetMyData(): Promise<{ ok: true } | { ok: false; message: string }> {
-  const { supabase } = await requireUser();
+  const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("reset_my_data");
   if (error) {
     logError("reset my data", error.message);
     return { ok: false, message: GENERIC_ERROR };
   }
+  track("data_reset", who);
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -51,12 +52,13 @@ export async function resetMyData(): Promise<{ ok: true } | { ok: false; message
 // Settings → Your data (M6): everything Keepup keeps about this person, as one JSON object
 // (public.export_my_data). The page saves it as a file.
 export async function exportMyData(): Promise<{ ok: true; data: unknown } | { ok: false; message: string }> {
-  const { supabase } = await requireUser();
+  const { supabase, who } = await requireUser();
   const { data, error } = await supabase.rpc("export_my_data");
   if (error) {
     logError("export my data", error.message);
     return { ok: false, message: GENERIC_ERROR };
   }
+  track("data_exported", who);
   return { ok: true, data };
 }
 
@@ -76,12 +78,13 @@ export async function deleteAccountPreview(): Promise<DeletePreview | null> {
 // session's token still verifies until it expires, but its user is gone: drop the cookies here and
 // leave for the landing page, which says so.
 export async function deleteMyAccount(): Promise<{ ok: false; message: string }> {
-  const { supabase } = await requireUser();
+  const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("delete_my_account");
   if (error) {
     logError("delete my account", error.message);
     return { ok: false, message: GENERIC_ERROR };
   }
+  track("account_deleted", who);
   await supabase.auth.signOut({ scope: "local" });
   redirect("/?deleted=1");
 }

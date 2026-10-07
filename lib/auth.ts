@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { tagUser } from "@/lib/telemetry";
+import { tagUser, userAttributes } from "@/lib/telemetry";
 import type { Database } from "@/lib/database.types";
 
 export type Profile = Pick<
@@ -20,11 +20,12 @@ export const requireUser = cache(async () => {
   const userId = data?.claims?.sub;
   if (!userId) redirect("/login");
   tagUser(data.claims);
-  return { supabase, userId };
+  // who: the user's id and email, for product events (lib/log.ts track).
+  return { supabase, userId, who: userAttributes(data.claims) };
 });
 
 export const getProfile = cache(async () => {
-  const { supabase, userId } = await requireUser();
+  const { supabase, userId, who } = await requireUser();
   // avatar_* arrive with the M3 migration; during a deploy the app can briefly run before it.
   let { data, error } = await supabase
     .from("profiles")
@@ -35,5 +36,5 @@ export const getProfile = cache(async () => {
     ({ data, error } = await supabase.from("profiles").select(BASE).eq("id", userId).single<Profile>());
   }
   if (error || !data) throw new Error(`Profile missing for ${userId}: ${error?.message ?? "no row"}`);
-  return { supabase, userId, profile: data };
+  return { supabase, userId, who, profile: data };
 });

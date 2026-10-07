@@ -1,5 +1,6 @@
 "use server";
 
+import type { Attributes } from "@opentelemetry/api";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
@@ -9,7 +10,7 @@ import { isOneEmoji, isUuid, parseHabit } from "@/lib/habit-schema";
 import { isKidTheme } from "@/lib/garden";
 import { isKidTemplateId, KID_TEMPLATES } from "@/lib/kid-templates";
 import { parseChildName, parseGoal } from "@/lib/kid-schema";
-import { logError } from "@/lib/log";
+import { logError, track } from "@/lib/log";
 
 // code: the database rule that refused it ("keepup:<code>"), when there was one (an offline-queued
 // tap is dropped only for a rule refusal; anything else keeps it queued).
@@ -34,9 +35,19 @@ const codeOf = (error: { message?: string }) => {
   return code ? { code } : {};
 };
 
-async function call(childId: string | undefined, run: () => PromiseLike<{ error: { message: string } | null }>): Promise<KidActionResult> {
+// event: the product event to send (lib/log.ts track): INFO when it worked, WARN with the rule that refused it.
+async function call(
+  childId: string | undefined,
+  run: () => PromiseLike<{ error: { message: string } | null }>,
+  event?: { name: string; who: Attributes; fields?: Attributes },
+): Promise<KidActionResult> {
   const { error } = await run();
-  if (error) return { ok: false, message: habitErrorMessage(error), ...codeOf(error) };
+  if (error) {
+    const code = errorCode(error);
+    if (event && code) track(event.name, event.who, { ...event.fields, "refusal.code": code }, "WARN");
+    return { ok: false, message: habitErrorMessage(error), ...codeOf(error) };
+  }
+  if (event) track(event.name, event.who, event.fields);
   refresh(childId);
   return { ok: true };
 }
@@ -57,7 +68,7 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
   const avatar = readAvatar(formData);
   const picked = new Set(formData.getAll("templates").map(String).filter(isKidTemplateId));
 
-  const { supabase } = await requireUser();
+  const { supabase, who } = await requireUser();
   const { data: childId, error } = await supabase.rpc("create_child", {
     p_group_id: groupId,
     p_name: name.value,
@@ -67,6 +78,7 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
     p_guardian_confirmed: true,
   });
   if (error || !childId) return { status: "error", message: habitErrorMessage(error) };
+  track("child_added", who, { "child.id": childId, "child.nickname": name.value, "group.id": groupId });
 
   let habitsFailed = false;
   // In template order, so her habit list reads like the picker.
@@ -81,6 +93,8 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
     if (habitError) {
       logError("create_child_habit failed", habitError.message);
       habitsFailed = true;
+    } else {
+      track("child_habit_added", who, { "child.id": childId, "child.nickname": name.value, "habit.title": t.title, "habit.period": t.period, "habit.target_count": t.targetCount });
     }
   }
   refresh(childId);
@@ -132,7 +146,7 @@ export async function addChildHabit(childId: string, _prev: KidFormState, formDa
     }
     habit = { title: parsed.value.title, emoji: emoji || "⭐", targetCount: parsed.value.targetCount, period: parsed.value.period };
   }
-  const { supabase } = await requireUser();
+  const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("create_child_habit", {
     p_child_id: childId,
     p_title: habit.title,
@@ -141,14 +155,19 @@ export async function addChildHabit(childId: string, _prev: KidFormState, formDa
     p_period: habit.period,
   });
   if (error) return { status: "error", message: habitErrorMessage(error) };
+  track("child_habit_added", who, { "child.id": childId, "habit.title": habit.title, "habit.period": habit.period, "habit.target_count": habit.targetCount });
   refresh(childId);
   return { status: "saved" };
 }
 
 export async function undoForChild(checkInId: string, habitId: string, childId: string): Promise<KidActionResult> {
   if (!isUuid(checkInId) || !isUuid(habitId) || !isUuid(childId)) return NOT_FOUND;
-  const { supabase } = await requireUser();
-  const result = await call(childId, () => supabase.rpc("undo_check_in", { p_check_in_id: checkInId }));
+  const { supabase, who } = await requireUser();
+  const result = await call(childId, () => supabase.rpc("undo_check_in", { p_check_in_id: checkInId }), {
+    name: "check_in_undone",
+    who,
+    fields: { "check_in.id": checkInId, "habit.id": habitId, "child.id": childId },
+  });
   if (result.ok) revalidatePath(`/habits/${habitId}`);
   return result;
 }
@@ -161,7 +180,7 @@ export async function setGoal(childId: string, _prev: KidFormState, formData: Fo
     target: String(formData.get("target") ?? ""),
   });
   if (!goal.ok) return { status: "error", message: goal.error };
-  const { supabase } = await requireUser();
+  const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("set_treat_goal", {
     p_child_id: childId,
     p_title: goal.value.title,
@@ -169,6 +188,7 @@ export async function setGoal(childId: string, _prev: KidFormState, formData: Fo
     p_target: goal.value.target,
   });
   if (error) return { status: "error", message: habitErrorMessage(error) };
+  track("treat_goal_set", who, { "child.id": childId, "goal.target": goal.value.target });
   refresh(childId);
   return { status: "saved" };
 }
@@ -181,8 +201,12 @@ export async function cancelGoal(goalId: string, childId: string): Promise<KidAc
 
 export async function markReceived(goalId: string, childId: string): Promise<KidActionResult> {
   if (!isUuid(goalId) || !isUuid(childId)) return NOT_FOUND;
-  const { supabase } = await requireUser();
-  return call(childId, () => supabase.rpc("mark_treat_received", { p_goal_id: goalId }));
+  const { supabase, who } = await requireUser();
+  return call(childId, () => supabase.rpc("mark_treat_received", { p_goal_id: goalId }), {
+    name: "treat_received",
+    who,
+    fields: { "child.id": childId, "goal.id": goalId },
+  });
 }
 
 // Admins of both groups (the RPC enforces it).
@@ -205,8 +229,8 @@ export async function deleteChild(childId: string): Promise<KidActionResult> {
 // Reset (admins; the RPC enforces it): everything except the nickname and avatar is cleared.
 export async function resetChild(childId: string): Promise<KidActionResult> {
   if (!isUuid(childId)) return NOT_FOUND;
-  const { supabase } = await requireUser();
-  return call(childId, () => supabase.rpc("reset_child", { p_child_id: childId }));
+  const { supabase, who } = await requireUser();
+  return call(childId, () => supabase.rpc("reset_child", { p_child_id: childId }), { name: "child_reset", who, fields: { "child.id": childId } });
 }
 
 // The JSON for "Export {Mary}'s data"; the client saves it as a file.

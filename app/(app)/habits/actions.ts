@@ -10,7 +10,7 @@ import { getGroupDetail } from "@/lib/groups";
 import { GENERIC_ERROR, habitErrorMessage, REFRESH_ON_ERROR } from "@/lib/habit-errors";
 import { reminderError } from "@/lib/reminder-mode";
 import { isUuid, LOCAL_DATE, parseDetailsEdit, parseHabit, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
-import { logError } from "@/lib/log";
+import { logError, track } from "@/lib/log";
 
 const NOT_FOUND: ActionResult = { ok: false, message: "That habit isn't available." };
 
@@ -47,7 +47,7 @@ export async function createHabit(_prev: HabitFormState, formData: FormData): Pr
   if (!parsed.ok) return { status: "error", errors: parsed.errors, values };
   if (await endBeforeStart(formData, parsed.value.startsOn)) return { status: "error", message: END_BEFORE_START, values };
 
-  const { supabase } = await requireUser();
+  const { supabase, who } = await requireUser();
   const { error, ids } = await insertHabits(supabase, [parsed.value]);
   if (error) {
     const message = habitErrorMessage(error);
@@ -56,6 +56,8 @@ export async function createHabit(_prev: HabitFormState, formData: FormData): Pr
   const endError = ids[0] ? await setHabitEnd(supabase, ids[0], readEndsOn(formData)) : null;
   if (endError) logError("set_habit_end failed", endError.message);
 
+  const h = parsed.value;
+  track("habit_created", who, { "habit.scope": "private", "habit.id": ids[0], "habit.title": h.title, "habit.category": h.category, "habit.period": h.period, "habit.target_count": h.targetCount });
   refresh();
   redirect("/today");
 }
@@ -77,9 +79,10 @@ export async function checkInWith(habitId: string, childIds: string[]): Promise<
 
 export async function undoCheckIn(checkInId: string, habitId: string): Promise<ActionResult> {
   if (!isUuid(checkInId) || !isUuid(habitId)) return NOT_FOUND;
-  const { supabase } = await requireUser();
+  const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("undo_check_in", { p_check_in_id: checkInId });
   if (error) return { ok: false, message: habitErrorMessage(error) };
+  track("check_in_undone", who, { "check_in.id": checkInId, "habit.id": habitId });
   refresh(habitId);
   return { ok: true };
 }
@@ -125,12 +128,13 @@ export async function updateHabitDetails(habitId: string, _prev: FormActionState
   }
   const startsOn = String(formData.get("startsOn") ?? "");
   if (startsOn !== "" && !LOCAL_DATE.test(startsOn)) return { status: "error", message: "Pick a start date." };
-  const { supabase } = await requireUser();
+  const { supabase, who } = await requireUser();
   const { error } = await supabase
     .from("habits")
     .update({ ...parsed.value, ...(startsOn ? { starts_on: startsOn } : {}) })
     .eq("id", habitId);
   if (error) return { status: "error", message: habitErrorMessage(error) };
+  track("habit_edited", who, { "habit.id": habitId, "habit.title": parsed.value.title, "habit.category": parsed.value.category ?? undefined });
   refresh(habitId);
   return { status: "saved" };
 }
@@ -146,10 +150,11 @@ async function backTo(supabase: Awaited<ReturnType<typeof requireUser>>["supabas
 
 export async function archiveHabit(habitId: string): Promise<FormActionState> {
   if (!isUuid(habitId)) return { status: "error", message: "That habit isn't available." };
-  const { supabase, userId } = await requireUser();
+  const { supabase, userId, who } = await requireUser();
   const next = await backTo(supabase, userId, habitId, "/progress?view=archived");
   const { error } = await supabase.from("habits").update({ archived_at: new Date().toISOString() }).eq("id", habitId);
   if (error) return { status: "error", message: habitErrorMessage(error) };
+  track("habit_archived", who, { "habit.id": habitId });
   refresh(habitId);
   if (next.startsWith("/kids/")) revalidatePath(next);
   redirect(next);
@@ -159,9 +164,10 @@ export async function archiveHabit(habitId: string): Promise<FormActionState> {
 // skipped, never missed (the RPC settles them).
 export async function restoreHabit(habitId: string): Promise<ActionResult> {
   if (!isUuid(habitId)) return NOT_FOUND;
-  const { supabase, userId } = await requireUser();
+  const { supabase, userId, who } = await requireUser();
   const { error } = await supabase.rpc("restore_habit", { p_habit_id: habitId });
   if (error) return { ok: false, message: habitErrorMessage(error) };
+  track("habit_restored", who, { "habit.id": habitId });
   refresh(habitId);
   // A guardian restoring a child's habit goes back to the child's page.
   const next = await backTo(supabase, userId, habitId, "/today");
@@ -171,10 +177,11 @@ export async function restoreHabit(habitId: string): Promise<ActionResult> {
 
 export async function deleteHabit(habitId: string): Promise<FormActionState> {
   if (!isUuid(habitId)) return { status: "error", message: "That habit isn't available." };
-  const { supabase, userId } = await requireUser();
+  const { supabase, userId, who } = await requireUser();
   const next = await backTo(supabase, userId, habitId, "/today");
   const { error } = await supabase.rpc("delete_habit", { p_habit_id: habitId });
   if (error) return { status: "error", message: habitErrorMessage(error) };
+  track("habit_deleted", who, { "habit.id": habitId });
   refresh();
   if (next.startsWith("/kids/")) revalidatePath(next);
   redirect(next);
@@ -191,7 +198,7 @@ export async function createGroupHabit(_prev: HabitFormState, formData: FormData
   const group = readEndsOn(formData) && !parsed.value.startsOn ? await getGroupDetail(groupId) : null;
   if (await endBeforeStart(formData, parsed.value.startsOn, group?.timezone)) return { status: "error", message: END_BEFORE_START, values };
   const children = formData.getAll("children").map(String).filter(isUuid);
-  const { supabase } = await requireUser();
+  const { supabase, who } = await requireUser();
   const { data: created, error } = await supabase.rpc("create_group_habit", {
     p_group_id: groupId,
     p_title: parsed.value.title,
@@ -206,6 +213,8 @@ export async function createGroupHabit(_prev: HabitFormState, formData: FormData
   if (error) return { status: "error", message: habitErrorMessage(error), values };
   const endError = created ? await setHabitEnd(supabase, created.id, readEndsOn(formData)) : null;
   if (endError) logError("set_habit_end failed", endError.message);
+  const h = parsed.value;
+  track("habit_created", who, { "habit.scope": "group", "habit.id": created?.id, "group.id": groupId, "habit.title": h.title, "habit.category": h.category, "habit.period": h.period, "habit.target_count": h.targetCount });
   refresh();
   revalidatePath(`/groups/${groupId}`);
   redirect("/today");
@@ -263,9 +272,10 @@ export async function keepGoing(habitId: string): Promise<ActionResult> {
 
 export async function finishHabit(habitId: string): Promise<ActionResult> {
   if (!isUuid(habitId)) return { ok: false, message: "That habit isn't available." };
-  const { supabase } = await requireUser();
+  const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("finish_habit", { p_habit_id: habitId });
   if (error) return { ok: false, message: habitErrorMessage(error) };
+  track("habit_finished", who, { "habit.id": habitId });
   refresh(habitId);
   return { ok: true };
 }
@@ -279,7 +289,7 @@ export type StartAgainResult = ActionResult | { ok: false; message: string; star
 
 export async function startAgain(habitId: string): Promise<StartAgainResult> {
   if (!isUuid(habitId)) return { ok: false, message: "That habit isn't available." };
-  const { supabase, profile } = await getProfile();
+  const { supabase, who, profile } = await getProfile();
   const { data: h, error: readError } = await supabase.from("habits").select("*").eq("id", habitId).maybeSingle();
   if (readError || !h || !h.finished_at || !h.category) return { ok: false, message: "That habit isn't available." };
   let newId: string | undefined;
@@ -312,6 +322,7 @@ export async function startAgain(habitId: string): Promise<StartAgainResult> {
     if (error) return { ok: false, message: habitErrorMessage(error) };
     newId = ids[0];
   }
+  track("habit_restarted", who, { "habit.id": newId, "habit.restarted_from": habitId, "group.id": h.group_id ?? undefined, "habit.title": h.title, "habit.category": h.category, "habit.period": h.period, "habit.target_count": h.target_count });
   if (newId && h.ends_on) {
     const endError = await setHabitEnd(supabase, newId, startAgainEnd(h.starts_on, h.ends_on, todayIn(timeZone)));
     if (endError) {
@@ -329,13 +340,14 @@ export async function setHabitReminder(habitId: string, mode: string, remindAt: 
   if (!isUuid(habitId)) return NOT_FOUND;
   const invalid = reminderError(mode, remindAt);
   if (invalid) return { ok: false, message: invalid };
-  const { supabase } = await requireUser();
+  const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("set_habit_reminder", {
     p_habit_id: habitId,
     p_mode: mode,
     ...(mode === "time" && remindAt ? { p_remind_at: remindAt } : {}),
   });
   if (error) return { ok: false, message: habitErrorMessage(error) };
+  track("reminder_set", who, { "habit.id": habitId, "reminder.mode": mode, "reminder.time": mode === "time" ? (remindAt ?? undefined) : undefined });
   revalidatePath(`/habits/${habitId}`);
   return { ok: true };
 }
