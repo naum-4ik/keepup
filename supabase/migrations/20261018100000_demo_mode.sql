@@ -52,3 +52,24 @@ begin
 end; $$;
 create trigger push_subscriptions_demo_guard before insert on public.push_subscriptions
   for each row execute function private.demo_guard_push();
+
+create function private.cleanup_demo(p_now timestamptz)
+returns int language plpgsql set search_path = '' as $$
+declare
+  v_cutoff timestamptz := p_now - interval '24 hours';
+  v_count int;
+begin
+  -- A demo login later converted to a real one (updateUser with an email) is no longer anonymous: never touched.
+  delete from public.groups g
+   where exists (select 1 from public.profiles p where p.id = g.created_by and p.is_demo and p.created_at < v_cutoff
+                   and not exists (select 1 from auth.users u where u.id = p.id and not u.is_anonymous));
+  with gone as (
+    delete from public.profiles p where p.is_demo and p.kind = 'adult' and p.created_at < v_cutoff
+       and not exists (select 1 from auth.users u where u.id = p.id and not u.is_anonymous) returning p.id)
+  select count(*) into v_count from gone;
+  delete from auth.users u where u.is_anonymous and u.created_at < v_cutoff
+    and not exists (select 1 from public.profiles p where p.id = u.id);
+  return v_count;
+end; $$;
+
+select cron.schedule('keepup-demo-cleanup', '41 * * * *', $$select private.cleanup_demo(now())$$);
