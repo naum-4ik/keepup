@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Input } from "@/components/ui/input";
 import { GENERIC_ERROR } from "@/lib/habit-errors";
 import { NEEDS_CONNECTION } from "@/lib/offline-copy";
-import { isResetWord, RESET_CLEARS, RESET_KEEPS, RESET_WORD } from "@/lib/reset-my-data";
+import { isResetWord, RESET_CLEARS, RESET_KEEPS, RESET_WORD, runReset } from "@/lib/reset-my-data";
 
 // Settings → Reset my data (owner 2026-10-06): a fresh start that keeps the account and the family.
 // The database decides what goes (public.reset_my_data); typing "reset" guards the button. Once it
@@ -32,15 +32,12 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
     }
     startTransition(async () => {
       try {
-        const r = await resetMyData();
-        if (!r.ok) return setError(r.message);
-        try {
-          await forgetOffline(privateHabitIds);
-        } catch (e) {
-          // The reset happened; a leftover tap on a removed habit is refused when it syncs.
-          console.error("reset: clearing the phone's queue", e);
-        }
-        router.replace("/today?reset=1");
+        const message = await runReset({
+          reset: resetMyData,
+          clearPhone: () => forgetOffline(privateHabitIds),
+          openToday: () => router.replace("/today?reset=1"),
+        });
+        if (message) setError(message);
       } catch {
         setError(navigator.onLine ? GENERIC_ERROR : NEEDS_CONNECTION);
       }

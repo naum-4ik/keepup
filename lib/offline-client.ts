@@ -27,6 +27,8 @@ export const TAP_TIMEOUT_MS = 10_000;
 export const RETRY_DELAYS_MS = [3_000, 9_000, 30_000, 300_000] as const;
 // An undo held for its tap's online try is tried this long after the hold ends.
 const HOLD_MARGIN_MS = 250;
+// How much longer than the tap timeout the stored hold lasts (it is written before the timeout starts).
+const HOLD_SLACK_MS = 1_000;
 
 export function createOfflineClient(deps: {
   storage: QueueStorage;
@@ -124,16 +126,22 @@ export function createOfflineClient(deps: {
     if (r.remaining.length === 0) step = 0;
     // An undo held for its tap's online try (any tab's) goes just after the hold ends, not on the
     // backoff: the tab that made the try may be gone.
+    if (!armHoldTimer(stored) && stored.length > 0 && deps.isOnline()) scheduleFlush();
+    return r;
+  }
+
+  // An undo held for its tap's online try (any tab's): the next flush runs just after the earliest
+  // hold ends, replacing a backoff timer. False when nothing is held.
+  function armHoldTimer(stored: readonly QueueEntry[]): boolean {
     const now = deps.now?.() ?? new Date();
     const holds = stored.map((e) => undoOnHold(e, now)).filter((t): t is number => t !== null);
-    if (holds.length > 0 && deps.isOnline()) {
-      if (timer !== null) clearTimer(timer);
-      timer = setTimer(() => {
-        timer = null;
-        void flush();
-      }, Math.min(...holds) - now.getTime() + HOLD_MARGIN_MS);
-    } else if (stored.length > 0 && deps.isOnline()) scheduleFlush();
-    return r;
+    if (holds.length === 0 || !deps.isOnline()) return false;
+    if (timer !== null) clearTimer(timer);
+    timer = setTimer(() => {
+      timer = null;
+      void flush();
+    }, Math.min(...holds) - now.getTime() + HOLD_MARGIN_MS);
+    return true;
   }
 
   // Another tab sent (or added) some: if anything this tab shows as waiting is gone, refresh.
@@ -159,7 +167,9 @@ export function createOfflineClient(deps: {
     await queue.checkIn(t.habitId, t.subjectId ?? null, { clientId: tap.clientId, byChild: t.byChild, tappedAt: tap.tappedAt });
     if (!deps.isOnline()) return { ok: true, queued: true };
     // Every tab sees that this try may run until the timeout: an undo of it waits until then.
-    await queue.markTrying(tap.clientId, new Date((deps.now?.() ?? new Date()).getTime() + (deps.tapTimeoutMs ?? TAP_TIMEOUT_MS)).toISOString());
+    // HOLD_SLACK_MS: the timeout starts only after this write, so the hold always outlasts the abort.
+    const until = (deps.now?.() ?? new Date()).getTime() + (deps.tapTimeoutMs ?? TAP_TIMEOUT_MS) + HOLD_SLACK_MS;
+    await queue.markTrying(tap.clientId, new Date(until).toISOString());
     let result: Awaited<ReturnType<Online>>;
     // Too slow: the request is aborted, so its answer never arrives to redraw anything. The tap stays
     // queued (it may still have landed: its client id makes the resend count once).
@@ -173,7 +183,11 @@ export function createOfflineClient(deps: {
     } finally {
       trying--;
       // Ended (answered, failed or aborted): the hold goes, and an undo made meanwhile goes out.
-      await queue.tryEnded(tap.clientId);
+      try {
+        await queue.tryEnded(tap.clientId);
+      } catch (e) {
+        console.error("offline queue: clearing a tap's hold", e); // it ends on its own at tryingUntil
+      }
       void sendWaitingUndo(tap.clientId);
     }
     // Answered, but this tap no longer waits here: another tab took it back (Undo) or sent it. That
@@ -212,7 +226,8 @@ export function createOfflineClient(deps: {
     // An undo the server has to apply (the tap may have landed) goes out with the next flush; while
     // the tap's online try still runs, once it ends (sendWaitingUndo).
     const undo = (await deps.storage.load()).find((e) => e.kind === "undo" && e.clientId === last.clientId);
-    if (undo && undoOnHold(undo, deps.now?.() ?? new Date()) === null && deps.isOnline()) scheduleFlush();
+    // On hold: whoever ends the try sends it (sendWaitingUndo); if that tab is gone, this timer does.
+    if (undo && !armHoldTimer([undo]) && deps.isOnline()) scheduleFlush();
     return true;
   }
 

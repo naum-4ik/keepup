@@ -348,6 +348,40 @@ describe("the undo hold is shared by every tab (stored on the entry)", () => {
     expect(await storage.load()).toEqual([]);
   });
 
+  it("an Undo pressed in another tab while the tap is on hold goes out just after the hold ends, with no flush asked for", async () => {
+    vi.setSystemTime(new Date("2026-10-07T08:00:00Z"));
+    // Tab A tried the tap online and closed; its hold ends at +10 s.
+    const storage = memoryStorage([
+      { kind: "check_in", clientId: "c1", habitId: "h1", subjectId: null, tappedAt: "2026-10-07T08:00:00.000Z", maybeSent: true, tryingUntil: "2026-10-07T08:00:10.000Z" },
+    ]);
+    const sent: string[] = [];
+    const b = client(storage, async (e) => (sent.push(e.kind), "synced"));
+    expect(await b.undoQueued("h1")).toBe(true);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(sent).toEqual([]);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(sent).toEqual(["undo"]);
+  });
+
+  it("the hold is cleared when the try fails, and when it is aborted", async () => {
+    const failed = setup({ tapTimeoutMs: 100, send: async () => "wait" });
+    await failed.client.submitTap({ habitId: "h1" }, async () => ({ ok: false, message: "Something went wrong." }));
+    expect((await failed.storage.load())[0]).not.toHaveProperty("tryingUntil");
+    const thrown = setup({ tapTimeoutMs: 100, send: async () => "wait" });
+    await thrown.client.submitTap({ habitId: "h1" }, async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    expect((await thrown.storage.load())[0]).not.toHaveProperty("tryingUntil");
+    const aborted = setup({ tapTimeoutMs: 100, send: async () => "wait" });
+    const done = aborted.client.submitTap({ habitId: "h1" }, () => new Promise(() => undefined));
+    await vi.advanceTimersByTimeAsync(50);
+    expect((await aborted.storage.load())[0]).toHaveProperty("tryingUntil"); // held while it runs
+    await vi.advanceTimersByTimeAsync(50);
+    await done;
+    expect((await aborted.storage.load())[0]).toMatchObject({ kind: "check_in", maybeSent: true });
+    expect((await aborted.storage.load())[0]).not.toHaveProperty("tryingUntil");
+  });
+
   it("if the tab that made the try is gone, another tab sends the undo just after the hold ends, not on the backoff", async () => {
     vi.setSystemTime(new Date("2026-10-07T08:00:00Z"));
     const until = "2026-10-07T08:00:10.000Z";
