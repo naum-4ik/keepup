@@ -30,3 +30,4 @@ Short records of the choices that shape Keepup: what was decided, why, and what 
 | [0024](0024-pr-checks-in-a-minute.md) | PR checks in about a minute; the slow suites run after the merge | Accepted |
 | [0025](0025-delete-account-is-one-database-transaction.md) | Delete account is one database transaction | Accepted |
 | [0026](0026-the-demo-is-a-database-seed.md) | The demo is a database seed | Accepted |
+| [0027](0027-telemetry-goes-to-grafana-cloud-over-opentelemetry.md) | Telemetry goes to Grafana Cloud over OpenTelemetry, through one redacted path | Accepted |
