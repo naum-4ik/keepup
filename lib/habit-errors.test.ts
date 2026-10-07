@@ -15,6 +15,10 @@ describe("habitErrorMessage", () => {
     expect(habitErrorMessage({ message: "keepup:invite_invalid" })).toMatch(/expired/);
   });
 
+  it("says what's off in the demo", () => {
+    expect(habitErrorMessage({ message: "keepup:demo" })).toBe("That's off in the demo.");
+  });
+
   it("maps end and range rules", () => {
     expect(habitErrorMessage({ message: "keepup:end_passed" })).toMatch(/has ended, so its end can't change/);
     expect(habitErrorMessage({ message: "keepup:bad_range" })).toBe("Pick a valid date range (up to two months).");

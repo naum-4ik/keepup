@@ -70,6 +70,11 @@ export function spanProcessors(env: Record<string, string | undefined> = process
 }
 
 // Who is acting, on the current span; TraceQL finds the whole trace through it (owner, 2026-10-07).
-export function tagUser(claims: { sub: string; email?: string }) {
-  trace.getActiveSpan()?.setAttributes({ "user.id": claims.sub, ...(claims.email && { "user.email": claims.email }) });
+// A demo login is anonymous: its email is empty, so it's tagged by ID only.
+export function userAttributes(claims: { sub: string; email?: string | null }): Attributes {
+  return { "user.id": claims.sub, ...(claims.email ? { "user.email": claims.email } : {}) };
+}
+
+export function tagUser(claims: { sub: string; email?: string | null }) {
+  trace.getActiveSpan()?.setAttributes(userAttributes(claims));
 }
