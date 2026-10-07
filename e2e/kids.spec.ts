@@ -829,3 +829,28 @@ test("a child's data export has its own Data section, outside the danger zone", 
   await page.getByRole("region", { name: "Data", exact: true }).getByRole("button", { name: "Export Mary's data" }).click();
   expect((await download).suggestedFilename()).toMatch(/^keepup-Mary-\d{4}-\d{2}-\d{2}\.json$/);
 });
+
+test("the garden picture scrolls under the tab bar, never over it", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.setViewportSize({ width: 412, height: 420 }); // short, so the page scrolls under the tab bar
+  // The scene ignores the pointer; let it take hits here so elementFromPoint follows what's painted on top.
+  await page.addStyleTag({ content: "[data-scene] * { pointer-events: auto !important; }" });
+  const hero = page.getByRole("region", { name: "This week's garden" }).locator("[data-hero]");
+  const nav = page.getByRole("navigation", { name: "Main" });
+  // Scroll so the picture's big emoji sits in the middle of the tab bar.
+  const [heroBox, navBox] = [await hero.boundingBox(), await nav.boundingBox()];
+  if (!heroBox || !navBox) throw new Error("no layout");
+  await page.mouse.wheel(0, heroBox.y + heroBox.height / 2 - (navBox.y + navBox.height / 2));
+  await expect
+    .poll(async () => {
+      const box = await hero.boundingBox();
+      if (!box) return false;
+      return page.evaluate(
+        ({ x, y }) => !!document.elementFromPoint(x, y)?.closest('nav[aria-label="Main"]'),
+        { x: box.x + box.width / 2, y: box.y + box.height / 2 },
+      );
+    })
+    .toBe(true);
+});
