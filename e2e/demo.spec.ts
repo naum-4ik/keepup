@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { completeOnboarding, signUp, uniqueEmail } from "./helpers/auth";
 
 // The banner and its Sign in come in the next task (M6 PR 3, task 3.2), with their own test.
 test("Try it: a full account in under 5 seconds, with a check-in to approve", async ({ page }) => {
@@ -17,4 +18,17 @@ test("Try it: a full account in under 5 seconds, with a check-in to approve", as
   // exact: "Approve" is also a substring of "Not approved".
   await page.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(page.getByText("Nothing waiting for you.")).toBeVisible();
+});
+
+test("Try it on a stale landing tab keeps the real login", async ({ page, context }) => {
+  const stale = await context.newPage();
+  await stale.goto("/");
+  await signUp(page, uniqueEmail());
+  await completeOnboarding(page, { name: "Stale Tab" });
+
+  await stale.getByRole("button", { name: "Try it" }).click();
+  await expect(stale).toHaveURL(/\/today/);
+  await expect(stale.getByRole("button", { name: "Check in: Read", exact: true })).toHaveCount(0);
+  await stale.goto("/profile");
+  await expect(stale.getByText("Stale Tab").first()).toBeVisible();
 });

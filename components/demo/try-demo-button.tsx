@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { unstable_rethrow } from "next/navigation";
 import { startDemo } from "@/app/demo/actions";
 import { Button } from "@/components/ui/button";
 import { DEMO_FAILED, SETTING_UP, TRY_IT } from "@/lib/demo-copy";
 import { createClient } from "@/lib/supabase/client";
+import { runTryIt } from "@/lib/try-demo";
 
 // "Try it" on the landing page. The anonymous sign-in happens here, in the browser, so Supabase's per-IP
 // limit counts each visitor's own IP (from the server, every visitor would share Vercel's). Then the
@@ -20,9 +22,15 @@ export function TryDemoButton() {
   // A form action: useFormStatus stays pending through both steps.
   async function tryIt(formData: FormData) {
     setFailed(false);
-    const { error } = await createClient().auth.signInAnonymously();
-    if (error) return setFailed(true);
-    await startDemo(formData);
+    const supabase = createClient();
+    const result = await runTryIt({
+      hasSession: async () => Boolean((await supabase.auth.getSession()).data.session),
+      signIn: () => supabase.auth.signInAnonymously(),
+      start: () => startDemo(formData),
+      signOut: async () => void (await supabase.auth.signOut({ scope: "local" })),
+      rethrow: unstable_rethrow,
+    });
+    if (result === "failed") setFailed(true);
   }
 
   return (
