@@ -321,13 +321,12 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                   weekStart={weekStart}
                 />
               </Manage>
-              {totalCheckIns === 0 ? (
+              <Manage title="Archive" hint="Keeps its history, leaves Today">
+                <ArchiveHabitButton habitId={h.habit_id} title={h.title} />
+              </Manage>
+              {totalCheckIns === 0 && (
                 <Manage title="Delete" hint="It has no check-ins yet, so nothing is lost" danger>
                   <DeleteHabitButton habitId={h.habit_id} title={h.title} />
-                </Manage>
-              ) : (
-                <Manage title="Archive" hint="Keeps its history, leaves Today">
-                  <ArchiveHabitButton habitId={h.habit_id} title={h.title} />
                 </Manage>
               )}
             </>
