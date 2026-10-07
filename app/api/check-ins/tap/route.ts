@@ -1,4 +1,5 @@
 // app/api/check-ins/tap/route.ts
+import { trace } from "@opentelemetry/api";
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { errorCode, habitErrorMessage, REFRESH_ON_ERROR } from "@/lib/habit-errors";
@@ -6,6 +7,7 @@ import { parseTap, type OnlineTap } from "@/lib/offline-sync";
 import { parseJson, readBody } from "@/lib/request-body";
 import { isSameOrigin } from "@/lib/review-request";
 import { createClient } from "@/lib/supabase/server";
+import { tagUser } from "@/lib/telemetry";
 import { countsNow } from "@/lib/xp";
 
 // The pages that show a check-in on this habit (and the child's, for a tap for a child).
@@ -39,6 +41,8 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   if (!claims?.claims?.sub) return NextResponse.json({ code: "not_authenticated" }, { status: 401 });
+  tagUser(claims.claims);
+  trace.getActiveSpan()?.setAttributes({ "habit.id": tap.habitId, ...(tap.subjectId && { "child.id": tap.subjectId }) });
 
   const startedAt = Date.now();
   const { data, error } = tap.subjectId

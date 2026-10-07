@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { tagUser } from "@/lib/telemetry";
 import type { Database } from "@/lib/database.types";
 
 export type Profile = Pick<
@@ -18,6 +19,7 @@ export const requireUser = cache(async () => {
   const { data } = await supabase.auth.getClaims();
   const userId = data?.claims?.sub;
   if (!userId) redirect("/login");
+  tagUser(data.claims);
   return { supabase, userId };
 });
 
