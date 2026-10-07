@@ -298,6 +298,22 @@ test.describe("Habit detail", () => {
     await expect(page.getByText("Make the bed")).toHaveCount(0);
   });
 
+  test("a habit with no check-ins can be archived too; Delete is offered beside it", async ({ page }) => {
+    await signUpAndOnboard(page);
+    await createHabit(page, { template: "Tidy up", tab: "Home" });
+    await page.getByRole("link", { name: /Tidy up/ }).click();
+    await expect(page.locator("summary").filter({ hasText: /^Archive/ })).toHaveCount(1);
+    await expect(page.locator("summary").filter({ hasText: /^Delete/ })).toHaveCount(1);
+    await openSection(page, "Archive");
+    await page.getByRole("button", { name: "Archive habit" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Archive", exact: true }).click();
+    await expect(page).toHaveURL(/\/progress\?view=archived$/);
+    await expect(page.getByRole("link", { name: /Tidy up/ })).toBeVisible();
+
+    await page.goto("/today");
+    await expect(page.getByText("Tidy up")).toHaveCount(0);
+  });
+
   test("an archived habit can be restored, from Progress or its page, with its history", async ({ page }) => {
     await signUpAndOnboard(page);
     await createHabit(page, { template: "Make the bed", tab: "Home" });
