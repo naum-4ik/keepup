@@ -1,0 +1,49 @@
+name: E2E after merge
+
+# The full Playwright suite after each merge to develop (decision 0024). It doesn't block anything:
+# PRs are already merged and the staging deploy waits on CI's database tests, not on this. A failure
+# points to one merge, and GitHub emails the owner.
+on:
+  push:
+    branches: [develop]
+    paths-ignore: ["**/*.md", "docs/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+      - id: modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: modules-${{ runner.os }}-${{ hashFiles('.nvmrc', 'package-lock.json') }}
+      - if: steps.modules.outputs.cache-hit != 'true'
+        run: npm ci
+      - run: npx supabase start
+      - run: node scripts/local-env.mjs
+      - run: npx playwright install --with-deps chromium
+      - name: End-to-end tests
+        run: npm run e2e
+        env:
+          CI: "true"
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
