@@ -42,6 +42,9 @@ select ok(exists (select 1 from cron.job where jobname = 'keepup-demo-cleanup'),
 select tests.create_anonymous_user('00000000-0000-0000-0000-0000000005a3');
 insert into t select 'conv', (private.create_group_impl('00000000-0000-0000-0000-0000000005a3', 'Converted family', 'family')).id;
 update public.groups set created_at = now() - interval '25 hours' where id = (select v from t where k='conv');
+-- The old bot is an active member of the converted user's group: the group must still survive.
+insert into public.profiles (id, display_name, is_demo, created_at) values ('00000000-0000-0000-0000-0000000005b3', 'Alex', true, now() - interval '25 hours');
+insert into public.group_members (group_id, user_id) values ((select v from t where k='conv'), '00000000-0000-0000-0000-0000000005b3');
 -- A demo group whose creator is gone (created_by null) with only an old bot left in it.
 insert into public.profiles (id, display_name, is_demo, created_at) values ('00000000-0000-0000-0000-0000000005b2', 'Alex', true, now() - interval '25 hours');
 with g as (insert into public.groups (name, kind, timezone, week_start, created_by) values ('Orphan', 'family', 'UTC', 1, null) returning id)

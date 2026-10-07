@@ -62,14 +62,18 @@ begin
   -- "Expiring" = demo, older than 24h, not converted to a real login (updateUser with an email makes the
   -- user non-anonymous: never touched). A group goes if an expiring demo profile created it, or is still a
   -- member: groups.created_by is set null when its creator deletes their account, and groups are all-demo
-  -- or all-real (member guard), so one expiring demo member proves the group is demo.
+  -- or all-real (member guard), so one expiring demo member proves the group is demo. But a group whose
+  -- creator or any active member is a converted login is real now (the old bot is still a member): it stays.
   delete from public.groups g
    where exists (select 1 from public.profiles p
                   where p.is_demo and p.created_at < v_cutoff
                     and not exists (select 1 from auth.users u where u.id = p.id and not u.is_anonymous)
                     and (p.id = g.created_by
                          or exists (select 1 from public.group_members m
-                                     where m.group_id = g.id and m.user_id = p.id and m.left_at is null)));
+                                     where m.group_id = g.id and m.user_id = p.id and m.left_at is null)))
+     and not exists (select 1 from auth.users u2 where u2.id = g.created_by and not u2.is_anonymous)
+     and not exists (select 1 from public.group_members m2 join auth.users u3 on u3.id = m2.user_id
+                      where m2.group_id = g.id and m2.left_at is null and not u3.is_anonymous);
   with gone as (
     delete from public.profiles p where p.is_demo and p.kind = 'adult' and p.created_at < v_cutoff
        and not exists (select 1 from auth.users u where u.id = p.id and not u.is_anonymous) returning p.id)
