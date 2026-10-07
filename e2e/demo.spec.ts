@@ -12,7 +12,7 @@ test("Try it: a full account in under 5 seconds, with a check-in to approve", as
   const started = Date.now();
   // The anonymous sign-in runs in the browser (each visitor's own IP against Supabase's per-IP limit).
   const signIn = page.waitForRequest((r) => r.method() === "POST" && r.url().includes("/auth/v1/signup"));
-  await page.getByRole("button", { name: "Try it" }).click();
+  await page.getByRole("button", { name: "Try the demo" }).click();
   await signIn;
   await expect(page.getByRole("button", { name: "Check in: Read", exact: true })).toBeVisible({ timeout: 5000 });
   expect(Date.now() - started).toBeLessThan(5000);
@@ -60,7 +60,7 @@ test("Try it on a stale landing tab keeps the real login", async ({ page, contex
   await signUp(page, uniqueEmail());
   await completeOnboarding(page, { name: "Stale Tab" });
 
-  await stale.getByRole("button", { name: "Try it" }).click();
+  await stale.getByRole("button", { name: "Try the demo" }).click();
   await expect(stale).toHaveURL(/\/today/);
   await expect(stale.getByRole("button", { name: "Check in: Read", exact: true })).toHaveCount(0);
   await stale.goto("/profile");
@@ -85,7 +85,7 @@ test("an invite link opened in the demo: Sign in leaves the demo and comes back 
   await joinerContext.close();
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Try it" }).click();
+  await page.getByRole("button", { name: "Try the demo" }).click();
   await expect(page).toHaveURL(/\/today/);
   await page.goto(new URL(url).pathname);
   await expect(page.getByText(BANNER)).toBeVisible();

@@ -1,5 +1,7 @@
 // The demo's lines (M6 PR 3). Voice: short, warm, no hype; lib/demo-copy.test.ts checks them.
-export const TRY_IT = "Try it";
+// The landing's quiet demo link: "Just looking? Try the demo".
+export const JUST_LOOKING = "Just looking?";
+export const TRY_DEMO = "Try the demo";
 export const SETTING_UP = "Setting up…";
 export const DEMO_BANNER = "You're in the demo. Data resets after 24 hours.";
 export const DEMO_SIGN_IN = "Sign in";

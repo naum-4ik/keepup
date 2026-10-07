@@ -4,12 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { unstable_rethrow } from "next/navigation";
 import { startDemo } from "@/app/demo/actions";
-import { Button } from "@/components/ui/button";
-import { DEMO_FAILED, SETTING_UP, TRY_IT } from "@/lib/demo-copy";
+import { DEMO_FAILED, JUST_LOOKING, SETTING_UP, TRY_DEMO } from "@/lib/demo-copy";
 import { createClient } from "@/lib/supabase/client";
 import { runTryIt } from "@/lib/try-demo";
 
-// "Try it" on the landing page. The anonymous sign-in happens here, in the browser, so Supabase's per-IP
+// "Try the demo" on the landing page: a quiet link-style button under Sign in. The anonymous sign-in happens here, in the browser, so Supabase's per-IP
 // limit counts each visitor's own IP (from the server, every visitor would share Vercel's). Then the
 // server seeds the demo. The device's time zone goes along, so the demo's days match the visitor's.
 export function TryDemoButton() {
@@ -34,10 +33,12 @@ export function TryDemoButton() {
   }
 
   return (
-    <form action={tryIt} className="flex flex-col gap-2">
+    <form action={tryIt} className="flex flex-col gap-1">
       <input ref={zone} type="hidden" name="timezone" defaultValue="" />
       {failed && <p role="alert" className="text-sm text-destructive">{DEMO_FAILED}</p>}
-      <Submit />
+      <p className="text-sm text-muted-foreground">
+        {JUST_LOOKING} <Submit />
+      </p>
       {/* Plain text until /privacy exists (M6), then a link. Same line as onboarding's: the seed onboards. */}
       <p className="text-center text-xs text-muted-foreground">By continuing, you agree to the Privacy Policy</p>
     </form>
@@ -48,8 +49,12 @@ export function TryDemoButton() {
 function Submit() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="lg" className="h-12 w-full" disabled={pending}>
-      {pending ? SETTING_UP : TRY_IT}
-    </Button>
+    <button
+      type="submit"
+      disabled={pending}
+      className="font-semibold text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
+    >
+      {pending ? SETTING_UP : TRY_DEMO}
+    </button>
   );
 }
