@@ -47,8 +47,10 @@ export function GardenPicture({
       role="img"
       aria-label={stage.label}
       data-scene
+      // isolate: the items' and the hero's z-index order the scene only; without it they paint over the
+      // fixed tab bar when the picture scrolls under it.
       className={cn(
-        "relative flex flex-col items-center justify-end overflow-hidden rounded-3xl bg-gradient-to-b transition-colors duration-700",
+        "relative isolate flex flex-col items-center justify-end overflow-hidden rounded-3xl bg-gradient-to-b transition-colors duration-700",
         stage.sky,
         { sm: "h-20 w-28 rounded-2xl", md: "h-36 w-full", lg: "h-[28vh] min-h-40 max-h-60 w-full" }[size],
         className,
