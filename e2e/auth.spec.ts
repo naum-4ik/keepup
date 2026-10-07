@@ -6,17 +6,19 @@ test("signed-out visitors are sent to sign in", async ({ page }) => {
   await expect(page).toHaveURL(/\/login\?next=%2Ftoday$/);
 });
 
-test("the landing page: Try it, Get started, Sign in, the sections and the footer", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Keepup" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Try it" })).toBeVisible();
-  for (const name of ["Your habits", "Together", "For kids", "Private by design"]) {
-    await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+test("the landing page: one screen, Get started, a Sign in link and a quiet demo link", async ({ page }) => {
+  for (const height of [844, 700]) {
+    await page.setViewportSize({ width: 390, height });
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Keepup" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Try the demo" })).toBeVisible();
+    await expect(page.getByText("By continuing, you agree to the Privacy Policy")).toBeVisible();
+    // No scrolling: everything fits on one phone screen.
+    expect(await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight)).toBe(true);
   }
-  await expect(page.getByRole("link", { name: "GitHub" })).toHaveAttribute("href", "https://github.com/naum-4ik/keepup");
   const start = page.getByRole("link", { name: "Get started" });
   const width = (await start.boundingBox())?.width ?? 0;
-  expect(width).toBeGreaterThanOrEqual(340); // fills the column (max 384px minus 2 × 16px margins)
+  expect(width).toBeGreaterThanOrEqual(340); // the main button fills the column (max 384px minus 2 × 16px margins)
   await start.click();
   await expect(page).toHaveURL(/\/signup$/);
   await page.goto("/");
