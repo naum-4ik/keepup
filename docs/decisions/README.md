@@ -27,3 +27,4 @@ Short records of the choices that shape Keepup: what was decided, why, and what 
 | [0021](0021-rest-days-instead-of-streak-freezes.md) | Rest days instead of streak freezes | Accepted |
 | [0022](0022-recaps-show-wins-only.md) | Recaps show wins only, arrive in the Inbox, and run once | Accepted |
 | [0023](0023-achievements-arrive-quietly.md) | Achievements arrive quietly; only level-ups and badges take the screen | Accepted |
+| [0024](0024-pr-checks-in-a-minute.md) | PR checks in about a minute; the slow suites run after the merge and nightly | Accepted |

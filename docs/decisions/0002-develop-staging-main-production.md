@@ -9,7 +9,7 @@ Keepup is built alone but should be run like a team product. `main` should only 
 - Work happens on `feature/*`, `fix/*` or `docs/*` branches. Each one opens a PR into `develop`, and PRs are squash-merged.
 - `develop` deploys to **staging** (Vercel + a staging Supabase project). Database migrations deploy automatically after CI passes.
 - release-please keeps a release PR with the next SemVer version and changelog. A release PR `develop` → `main` ships to **production** (from v1.0.0).
-- Branch protection: required checks (lint, types, unit, pgTAP, e2e) and a Conventional Commits PR title.
+- Branch protection: required checks (lint, types, unit; pgTAP and e2e as described in decision 0024) and a Conventional Commits PR title.
 - Until v1.0.0, `develop` is the GitHub default branch, so scheduled and manual workflows can run.
 
 ## Consequences

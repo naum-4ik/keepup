@@ -1,13 +1,23 @@
 name: CI
 
+# What runs when (owner, 2026-10-07: PR checks should finish in about a minute):
+# - every PR: lint, types, unit tests, Edge Function tests (~50 s);
+# - a push to develop or main (a merge): the database tests too, which gate the staging deploy;
+# - nightly, on demand, or a PR labelled `full-ci`: the database tests and the full e2e suite.
 on:
-  # Every PR, including stacked PRs that target another feature branch.
+  # Every PR, including stacked PRs that target another feature branch. `labeled` lets the
+  # `full-ci` label start the full run on an open PR.
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [develop, main]
+  schedule:
+    - cron: "37 1 * * *" # 01:37 UTC nightly, on develop
+  workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # Per event, so the nightly run never cancels a merge's run (the staging deploy waits on that one).
+  group: ci-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 permissions:
@@ -65,9 +75,14 @@ jobs:
       # otherwise make Deno look for npm: packages in node_modules, which this job doesn't install.
       - run: deno test --no-lock --node-modules-dir=none supabase/functions
       - run: deno check --no-lock --node-modules-dir=none supabase/functions/send-push/index.ts
+  # Not on ordinary PRs: starting Supabase alone takes ~1.5 min and e2e ~8 min. A skipped job counts
+  # as passed for the required checks.
   integration:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: >-
+      needs.changes.outputs.code == 'true' && (
+        github.event_name != 'pull_request' ||
+        contains(github.event.pull_request.labels.*.name, 'full-ci'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -89,19 +104,19 @@ jobs:
         run: |
           npm run db:types
           git diff --exit-code lib/database.types.ts
-      # E2E runs on pull requests only. The push run after a merge tests the same code the PR
-      # already passed, and the staging deploy waits on it; DB tests above still gate that deploy.
-      - if: github.event_name == 'pull_request'
+      # E2E runs nightly, on demand, and on PRs labelled `full-ci`; not on a merge's push run, so the
+      # staging deploy (which waits on that run) is gated by the DB tests above.
+      - if: github.event_name != 'push'
         run: node scripts/local-env.mjs
-      - if: github.event_name == 'pull_request'
+      - if: github.event_name != 'push'
         run: npx playwright install --with-deps chromium
       - name: End-to-end tests
-        if: github.event_name == 'pull_request'
+        if: github.event_name != 'push'
         run: npm run e2e
         env:
           CI: "true"
       - uses: actions/upload-artifact@v4
-        if: failure() && github.event_name == 'pull_request'
+        if: failure() && github.event_name != 'push'
         with:
           name: playwright-report
           path: playwright-report
