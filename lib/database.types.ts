@@ -1123,6 +1123,9 @@ isOneToOne: false
         isOneToOne: true
         isSetofReturn: false
       } },
+"start_demo":
+{ Args: { "p_timezone": string }; Returns: undefined
+                           },
 "undo_check_in":
 { Args: { "p_check_in_id": string }; Returns: undefined
                            },

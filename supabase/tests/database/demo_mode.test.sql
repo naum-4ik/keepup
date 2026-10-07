@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(44);
 
 select tests.create_anonymous_user('00000000-0000-0000-0000-0000000005a1');
 select tests.create_user('00000000-0000-0000-0000-0000000005f1', 'demo-real@example.com', '{"full_name":"Real"}');
@@ -56,6 +56,65 @@ select private.cleanup_demo(now());
 select is((select count(*)::int from public.profiles where id = '00000000-0000-0000-0000-0000000005a3'), 1, 'a converted login is never cleaned up');
 select is((select count(*)::int from public.groups where id = (select v from t where k='conv')), 1, 'a converted login''s group is never cleaned up');
 select is((select count(*)::int from public.groups where id = (select v from t where k='orphan')), 0, 'a demo group with no creator goes with its old bot');
+
+-- start_demo: Sam's 30 days
+select tests.create_anonymous_user('00000000-0000-0000-0000-0000000005c1');
+select tests.authenticate_as('00000000-0000-0000-0000-0000000005f1');
+select throws_ok($$select public.start_demo('Europe/Berlin')$$, '42501', 'keepup:not_demo', 'a real user cannot seed');
+reset role;
+select tests.authenticate_as('00000000-0000-0000-0000-0000000005c1');
+select lives_ok($$select public.start_demo('Europe/Berlin')$$, 'the visitor seeds (real call path: replica role inside security definer)');
+reset role;
+\set sam '''00000000-0000-0000-0000-0000000005c1'''
+select is((select display_name from public.profiles where id = :sam), 'Sam', 'you are Sam');
+select ok((select onboarded_at is not null from public.profiles where id = :sam), 'onboarded');
+select is((select count(*)::int from public.habits where owner_id = :sam and group_id is null), 4, '4 private habits');
+select is((select current_streak from private.habit_streaks((select id from public.habits where owner_id = :sam and title = 'Read'), now())), 12, 'Read streak 12');
+select ok(exists (select 1 from public.habit_freezes f join public.habits h on h.id = f.habit_id where h.owner_id = :sam), 'a paused week');
+select is((select count(*)::int from public.group_members m join public.groups g on g.id = m.group_id where g.created_by = :sam and m.left_at is null), 2, 'Sam and Alex in Family');
+select is((select display_name from public.profiles where kind = 'child' and group_id = (select id from public.groups where created_by = :sam)), 'Nova', 'Nova');
+select is((select count(*)::int from public.check_ins c join public.habits h on h.id = c.habit_id
+            where h.group_id = (select id from public.groups where created_by = :sam) and c.status = 'pending'), 1, 'one check-in waiting');
+select is((select target::int from public.treat_goals where received_at is null and child_id = (select id from public.profiles where display_name = 'Nova' and kind = 'child' and group_id = (select id from public.groups where created_by = :sam))), 20, 'treat goal 20 stars');
+select is(private.level_for((select sum(amount) from public.xp_events where user_id = :sam)), 4, 'level 4');
+select ok((select count(*) from public.level_ups where user_id = :sam and seen_at is null) = 0, 'no level moment waiting');
+select ok((select count(*) from public.user_achievements where user_id = :sam) >= 3, 'a few badges');
+select ok((select count(*) from public.user_achievements where user_id = :sam and seen_at is null) = 0, 'no badge moment waiting');
+-- The seeded results follow the real rules (finalize's settled_outcome, rest days included).
+create temp table seeded as select h.id from public.habits h
+  where h.owner_id = :sam or h.group_id = (select id from public.groups where created_by = :sam)
+     or h.owner_id = (select id from public.profiles where kind = 'child' and group_id = (select id from public.groups where created_by = :sam));
+select is((select count(*)::int from seeded), 9, '9 seeded habits');
+select is((select count(*)::int from public.period_results x join public.habits h on h.id = x.habit_id
+            where h.id in (select id from seeded) and x.outcome <> private.settled_outcome(h, x.period_start)), 0,
+          'every seeded result matches the real rule');
+select is((select current_streak from private.habit_streaks((select id from public.habits where title = 'Family dinner'
+            and group_id = (select id from public.groups where created_by = :sam)), now())), 5, 'Family dinner streak 5');
+select ok(exists (select 1 from public.period_results x join public.habits h on h.id = x.habit_id
+                   where h.title = 'Walk together' and h.id in (select id from seeded) and x.outcome = 'missed'), 'Walk together missed a week');
+select is((select count(*)::int from public.check_ins c where c.user_id = (select id from public.profiles where display_name = 'Nova' and kind = 'child'
+            and group_id = (select id from public.groups where created_by = :sam)) and c.created_at > now()), 0, 'no check-in in the future');
+select is((select count(*)::int from public.notifications where user_id = :sam), 1, 'one Inbox row: the approval request');
+select is((select count(*)::int from public.profiles where display_name = 'Alex' and is_demo
+            and id in (select user_id from public.group_members where group_id = (select id from public.groups where created_by = :sam))), 1, 'Alex is a demo profile');
+-- Nothing left for the cron.
+create temp table before_results as select count(*) n from public.period_results where habit_id in (select id from seeded);
+select private.finalize_periods(now());
+select is((select count(*) from public.period_results where habit_id in (select id from seeded)), (select n from before_results),
+          'finalize adds no result for seeded habits');
+-- Idempotent.
+select tests.authenticate_as('00000000-0000-0000-0000-0000000005c1');
+select public.start_demo('Europe/Berlin');
+reset role;
+select is((select count(*)::int from public.habits where owner_id = :sam and group_id is null), 4, 'a second tap seeds nothing more');
+-- First real tap: XP as expected, no surprise badges or level-ups.
+create temp table ach_before as select count(*) n from public.user_achievements where user_id = :sam;
+select tests.authenticate_as('00000000-0000-0000-0000-0000000005c1');
+select public.check_in((select id from public.habits where owner_id = :sam and title = 'Read'));
+reset role;
+select is((select amount from public.xp_events where user_id = :sam and reason = 'check_in' order by created_at desc limit 1), 22, 'day-13 check-in earns 10 + 12');
+select is((select count(*) from public.user_achievements where user_id = :sam), (select n from ach_before), 'no surprise badge');
+select is(private.level_for((select sum(amount) from public.xp_events where user_id = :sam)), 4, 'still level 4');
 
 select * from finish();
 rollback;
