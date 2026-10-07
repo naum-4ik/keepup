@@ -1,4 +1,4 @@
-name: Keep staging awake
+name: Keep staging and production awake
 
 on:
   schedule:
@@ -21,6 +21,22 @@ jobs:
           echo "HTTP $code"
           [ "$code" != "000" ] && [ "$code" -lt 500 ]
 
+  # Its own job: the PRODUCTION_* secrets live in the production environment, and only a job that
+  # names the environment can read them. Dormant until production is set up.
+  ping-production:
+    if: vars.PRODUCTION_READY == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Query production
+        run: |
+          # Same check as staging: a 401/403 from RLS still counts as database activity.
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            "${{ secrets.PRODUCTION_SUPABASE_URL }}/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: ${{ secrets.PRODUCTION_PUBLISHABLE_KEY }}")
+          echo "HTTP $code"
+          [ "$code" != "000" ] && [ "$code" -lt 500 ]
+
   # GitHub switches off scheduled workflows after 60 days without a commit to the default branch.
   # Turning them on again every day keeps the nightly backup, the monthly restore test and this ping
   # running through quiet spells (enabling an enabled workflow changes nothing). If GitHub ever
@@ -36,7 +52,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          for wf in keepalive.yml backup-staging.yml backup-restore-test.yml; do
+          for wf in keepalive.yml backup-staging.yml backup-production.yml backup-restore-test.yml; do
             gh api -X PUT "repos/$REPO/actions/workflows/$wf/enable"
             echo "enabled $wf"
           done
