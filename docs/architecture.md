@@ -25,7 +25,7 @@ flowchart TB
     end
     PushSvc["Apple / Google / Mozilla push services"]
     subgraph GitHub["GitHub Actions"]
-        CI["CI: PR checks, pgTAP on merge, nightly e2e"]
+        CI["CI: PR checks, pgTAP on merge, e2e after merge"]
         Deploy["Deploy migrations to staging"]
         Backup["Nightly encrypted backup, monthly restore test"]
         Keep["Daily keep-awake ping"]
@@ -122,7 +122,7 @@ Vercel's serverless functions are stateless and scale horizontally by request â€
 | Session response caching | Responses that refresh a Supabase session carry no-cache headers | Live |
 | Secrets handling | Secrets live in GitHub/Vercel/Supabase secret stores, never in the repo | Live |
 | Supply chain | Lockfile-pinned dependencies (`package-lock.json`, `npm ci`) | Live |
-| CI gates | Every PR: lint, types, unit and Edge Function tests (~1 min). Every merge: pgTAP too, gating the staging deploy. Nightly and on `full-ci` PRs: Playwright e2e (decision 0024) | Live |
+| CI gates | Every PR: lint, types, unit and Edge Function tests (~1 min, required) and one sanity e2e test (~3 min, not required). Every merge: pgTAP, gating the staging deploy, and the full Playwright suite after it. `full-ci` PRs: everything before the merge (decision 0024) | Live |
 | Data region | EU (Frankfurt) for Postgres and Auth | Live |
 | Kids' data minimization | Current schema stores no photos or birthdates; kid profiles keep a nickname, emoji and colour only | Live |
 | Encrypted nightly backups | Staging schema, data and logins dumped nightly, encrypted with age, kept 30 days in a private repo; a monthly job restores the latest into a throwaway database and checks it | Live (M3) |
