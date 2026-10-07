@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { completeOnboarding, signIn, signUp, signUpAndOnboard, uniqueEmail } from "./helpers/auth";
@@ -25,6 +26,9 @@ test("Settings → Delete account: the other member becomes admin, the login is 
   const ben = await benContext.newPage();
   await joinByLink(ben, url, "Ben");
 
+  const annaId = sql(`select id from auth.users where email = '${anna}';`);
+  expect(signInHistoryOf(annaId, anna)).toBeGreaterThan(0); // sign-up and sign-in rows: the count below means something
+
   await page.goto("/profile/settings");
   await page.getByRole("region", { name: "Your data" }).getByRole("button", { name: "Delete account" }).click();
   const dialog = page.getByRole("dialog", { name: "Delete your account?" });
@@ -38,6 +42,8 @@ test("Settings → Delete account: the other member becomes admin, the login is 
   // The landing page says so (signed out: not sent on to Today).
   await expect(page).toHaveURL(/\/\?deleted=1$/);
   await expect(page.getByRole("status")).toHaveText("Your account and data are deleted.");
+  // The sign-in history went with the login, and signing out afterwards wrote nothing new.
+  expect(signInHistoryOf(annaId, anna)).toBe(0);
 
   await signIn(page, anna);
   await expect(page.locator("#login-error")).toHaveText("That email and password don't match. Try again.");
@@ -48,3 +54,14 @@ test("Settings → Delete account: the other member becomes admin, the login is 
   await expect(ben.getByText("Anna", { exact: true })).toHaveCount(0);
   await benContext.close();
 });
+
+// Local stack only: one value from the test database.
+function sql(query: string): string {
+  return execSync(`docker exec -i supabase_db_keepup psql -U postgres -d postgres -tA -v ON_ERROR_STOP=1`, { input: query, encoding: "utf8" }).trim();
+}
+
+// Supabase Auth's sign-in history rows that mention the person by account id or email.
+function signInHistoryOf(userId: string, email: string): number {
+  if (!/^[0-9a-f-]{36}$/.test(userId) || !/^[a-z0-9.+-]+@example\.com$/.test(email)) throw new Error("Not a test account");
+  return Number(sql(`select count(*) from auth.audit_log_entries where payload::text like '%${userId}%' or payload::text like '%${email}%';`));
+}
