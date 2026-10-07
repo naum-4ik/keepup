@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(18);
 
 -- Anna: admin of Family (Ben joined first, Cara later), sole member of Solo (with child Leo),
 -- co-admin of Club (Dan is admin too), and in Book with Eve who has left.
@@ -29,6 +29,14 @@ insert into t select 'leo', private.create_child_impl('00000000-0000-0000-0000-0
 insert into public.habits (owner_id, created_by, title, emoji, category, target_count, period, starts_on)
 values ('00000000-0000-0000-0000-0000000004a1', '00000000-0000-0000-0000-0000000004a1', 'Anna reads', '📚', 'learning', 1, 'day', current_date);
 
+-- Supabase Auth's sign-in history (auth.audit_log_entries): Anna's rows match by actor_id only, by
+-- actor_username only, or by traits.user_email only (e.g. an admin action on her), emails in another case; Ben's row stays.
+insert into auth.audit_log_entries (instance_id, id, payload, created_at) values
+  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), '{"action":"login","actor_id":"00000000-0000-0000-0000-0000000004a1","actor_username":"renamed@example.com","traits":{"provider":"email"}}', now()),
+  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), '{"action":"user_repeated_signup","actor_id":"00000000-0000-0000-0000-00000000ffff","actor_username":"Del-Anna@Example.com","traits":{"provider":"email"}}', now()),
+  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), '{"action":"user_invited","actor_id":"00000000-0000-0000-0000-00000000fffe","actor_username":"admin@example.com","traits":{"user_email":"DEL-ANNA@example.com"}}', now()),
+  ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), '{"action":"login","actor_id":"00000000-0000-0000-0000-0000000004b1","actor_username":"del-ben@example.com","traits":{"provider":"email"}}', now());
+
 select ok(not has_function_privilege('anon', 'public.delete_my_account()', 'execute'), 'anon cannot delete');
 
 create temp table preview (j jsonb) on commit drop;
@@ -56,6 +64,12 @@ select is((select count(*)::int from public.groups where id = (select v from t w
 select is((select count(*)::int from public.profiles where id = (select v from t where k='leo')), 0, 'its child deleted with it');
 select is((select count(*)::int from public.groups where id = (select v from t where k='book')), 0, 'group with only a left member deleted');
 select is((select count(*)::int from public.groups where id = (select v from t where k='fam')), 1, 'Family stays');
+
+select is((select count(*)::int from auth.audit_log_entries
+             where payload::text like '%00000000-0000-0000-0000-0000000004a1%' or payload::text ilike '%del-anna@example.com%'),
+          0, 'her sign-in history gone (by id, by email, by traits email)');
+select is((select count(*)::int from auth.audit_log_entries where payload->>'actor_id' = '00000000-0000-0000-0000-0000000004b1'),
+          1, 'Ben''s sign-in history untouched');
 
 select * from finish();
 rollback;

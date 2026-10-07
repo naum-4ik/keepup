@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(44);
+select plan(47);
 
 select tests.create_anonymous_user('00000000-0000-0000-0000-0000000005a1');
 select tests.create_user('00000000-0000-0000-0000-0000000005f1', 'demo-real@example.com', '{"full_name":"Real"}');
@@ -31,12 +31,21 @@ update public.profiles set created_at = now() - interval '25 hours' where id in 
 update auth.users set created_at = now() - interval '25 hours' where id in ('00000000-0000-0000-0000-0000000005a1', '00000000-0000-0000-0000-0000000005f1');
 update public.groups set created_at = now() - interval '25 hours' where id = (select v from t where k='real');
 insert into public.profiles (id, display_name, is_demo, created_at) values ('00000000-0000-0000-0000-0000000005b1', 'Alex', true, now() - interval '25 hours');
+-- Sign-in history (auth.audit_log_entries) of the old demo login, the fresh one and the old real user.
+insert into auth.audit_log_entries (instance_id, id, payload, created_at, ip_address)
+select '00000000-0000-0000-0000-000000000000', gen_random_uuid(),
+       json_build_object('action', 'login', 'actor_id', u, 'actor_username', '', 'traits', json_build_object('provider', 'anonymous')),
+       now() - interval '25 hours', '203.0.113.7'
+  from unnest(array['00000000-0000-0000-0000-0000000005a1', '00000000-0000-0000-0000-0000000005a2', '00000000-0000-0000-0000-0000000005f1']) u;
 select is(private.cleanup_demo(now()), 2, 'old visitor and old bot removed');
 select is((select count(*)::int from auth.users where id = '00000000-0000-0000-0000-0000000005a1'), 0, 'old demo login deleted');
 select is((select count(*)::int from public.groups where id = (select v from t where k='demo')), 0, 'its group deleted');
 select is((select count(*)::int from public.profiles where id = '00000000-0000-0000-0000-0000000005a2'), 1, 'a visitor under 24h stays');
 select is((select count(*)::int from public.profiles where id = '00000000-0000-0000-0000-0000000005f1'), 1, 'an old real user stays');
 select is((select count(*)::int from public.groups where id = (select v from t where k='real')), 1, 'an old real group stays');
+select is((select count(*)::int from auth.audit_log_entries where payload->>'actor_id' = '00000000-0000-0000-0000-0000000005a1'), 0, 'the old demo login''s sign-in history deleted');
+select is((select count(*)::int from auth.audit_log_entries where payload->>'actor_id' = '00000000-0000-0000-0000-0000000005a2'), 1, 'a fresh visitor''s sign-in history stays');
+select is((select count(*)::int from auth.audit_log_entries where payload->>'actor_id' = '00000000-0000-0000-0000-0000000005f1'), 1, 'an old real user''s sign-in history stays');
 select ok(exists (select 1 from cron.job where jobname = 'keepup-demo-cleanup'), 'cleanup is scheduled');
 -- A converted login keeps is_demo but is real now: cleanup must not delete it.
 select tests.create_anonymous_user('00000000-0000-0000-0000-0000000005a3');

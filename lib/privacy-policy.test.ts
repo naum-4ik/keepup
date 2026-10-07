@@ -28,6 +28,8 @@ describe("privacy policy", () => {
     expect(policy).toContain("30 days"); // encrypted backups
     expect(policy).toContain("14 days"); // Grafana Cloud traces and events
     expect(policy).toMatch(/no analytics/i);
+    expect(policy).toContain("**Sign-in history (Supabase Auth):** until you delete your account"); // delete_account_impl purges auth.audit_log_entries
+    expect(policy).not.toContain("except the sign-in history");
   });
 
   it("names every service provider", () => {
