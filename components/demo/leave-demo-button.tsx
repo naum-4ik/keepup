@@ -8,6 +8,7 @@ import { forgetPushSubscription } from "@/app/(app)/profile/settings/notificatio
 import { useOfflineSignOut } from "@/components/offline/offline-queue-provider";
 import { DEMO_SIGN_IN } from "@/lib/demo-copy";
 import { GENERIC_ERROR } from "@/lib/habit-errors";
+import { NEEDS_CONNECTION } from "@/lib/offline-copy";
 import { clearOfflineCaches, markPagesOwnerDeleted } from "@/lib/offline-pages";
 import { browserSubscription, signOutCleanup } from "@/lib/push-support";
 import { runLeaveDemo } from "@/lib/try-demo";
@@ -16,10 +17,12 @@ import { runLeaveDemo } from "@/lib/try-demo";
 // ends the session and opens /login (lib/try-demo.ts runLeaveDemo).
 export function LeaveDemoButton() {
   const queue = useOfflineSignOut();
-  const [failed, setFailed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function leave() {
-    setFailed(false);
+    // Offline, the sign-out can't reach the server: don't clear the phone for nothing (as Delete account).
+    if (!navigator.onLine) return setError(NEEDS_CONNECTION);
+    setError(null);
     const result = await runLeaveDemo({
       clearPhone: async () => {
         await signOutCleanup({
@@ -33,13 +36,13 @@ export function LeaveDemoButton() {
       leave: leaveDemo,
       rethrow: unstable_rethrow,
     });
-    if (result === "failed") setFailed(true);
+    if (result === "failed") setError(GENERIC_ERROR);
   }
 
   return (
     <form action={leave} className="inline">
       <Submit />
-      {failed && <span role="alert" className="block text-destructive">{GENERIC_ERROR}</span>}
+      {error && <span role="alert" className="block text-destructive">{error}</span>}
     </form>
   );
 }
