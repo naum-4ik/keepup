@@ -2,8 +2,10 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { errorCode } from "@/lib/habit-errors";
+import { track } from "@/lib/log";
 import { parseReviewRequest } from "@/lib/review-request";
 import { createClient } from "@/lib/supabase/server";
+import { userAttributes } from "@/lib/telemetry";
 
 // Approve / Don't approve from a notification (spec: Pipeline). The RPC applies every rule: a
 // current member, not the author, still pending, before the deadline.
@@ -23,6 +25,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/check-ins/[
 
   const { error } = await supabase.rpc("review_check_in", { p_check_in_id: parsed.checkInId, p_approve: parsed.approve });
   if (error) return NextResponse.json({ error: errorCode(error) ?? "failed" }, { status: 409 });
+  track("check_in_reviewed", userAttributes(data.claims), { "check_in.id": parsed.checkInId, "review.decision": parsed.approve ? "approve" : "reject", "review.count": 1 });
   revalidatePath("/inbox");
   revalidatePath("/today");
   return NextResponse.json({ ok: true });

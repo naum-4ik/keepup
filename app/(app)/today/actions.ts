@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/habit-schema";
-import { logError } from "@/lib/log";
+import { logError, track } from "@/lib/log";
 
 const MAX_BATCH = 100;
 
@@ -30,12 +30,13 @@ export async function markSeen(ids: string[]): Promise<void> {
 // The Invite card's one tap: create the group and open its share link.
 export async function startInviteGroup(kind: "family" | "friends"): Promise<{ message: string } | void> {
   if (kind !== "family" && kind !== "friends") return { message: "Pick family or friends." };
-  const { supabase } = await requireUser();
+  const { supabase, who } = await requireUser();
   const { data, error } = await supabase.rpc("create_group", { p_name: kind === "family" ? "Family" : "Friends", p_kind: kind });
   if (error || !data) {
     logError("create_group failed", error?.message);
     return { message: "Couldn't create the group. Try again." };
   }
+  track("group_created", who, { "group.id": data.id, "group.kind": kind });
   revalidatePath("/groups");
   revalidatePath("/today");
   redirect(`/groups/${data.id}?invite=1`);

@@ -7,7 +7,8 @@ import { parseEntry } from "@/lib/offline-sync";
 import { parseJson, readBody } from "@/lib/request-body";
 import { isSameOrigin } from "@/lib/review-request";
 import { createClient } from "@/lib/supabase/server";
-import { logError } from "@/lib/log";
+import { logError, track } from "@/lib/log";
+import { userAttributes } from "@/lib/telemetry";
 
 type Db = Awaited<ReturnType<typeof createClient>>;
 
@@ -55,10 +56,13 @@ export async function POST(request: Request) {
   const { data: claims } = await supabase.auth.getClaims();
   if (!claims?.claims?.sub) return NextResponse.json({ error: "not_authenticated" }, { status: 401 });
 
+  const who = userAttributes(claims.claims);
+  const fields = { "sync.items": 1, "sync.kind": entry.kind, "habit.id": entry.habitId, "child.id": entry.kind === "check_in" ? (entry.subjectId ?? undefined) : undefined };
   const { landed, error } = await send(supabase, entry);
   if (error) {
     const code = errorCode(error);
     if (code === "not_authenticated") return NextResponse.json({ error: code }, { status: 401 });
+    if (code) track("offline_synced", who, { ...fields, "sync.outcome": "refused", "refusal.code": code }, "WARN");
     if (!code) logError("offline sync", error.message);
     return code ? NextResponse.json({ error: code }, { status: 409 }) : NextResponse.json({ error: "unavailable" }, { status: 503 });
   }
@@ -69,5 +73,6 @@ export async function POST(request: Request) {
     revalidatePath(`/kids/${entry.subjectId}`);
     revalidatePath(`/kids/${entry.subjectId}/play`);
   }
+  track("offline_synced", who, { ...fields, "sync.outcome": landed ? "synced" : "rejected" });
   return NextResponse.json({ outcome: landed ? "synced" : "rejected" });
 }

@@ -6,6 +6,8 @@ const getClaims = vi.fn();
 const revalidatePath = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ rpc, auth: { getClaims } }) }));
 vi.mock("next/cache", () => ({ revalidatePath: (p: string) => revalidatePath(p) }));
+const logEvent = vi.fn();
+vi.mock("@/lib/telemetry", async (original) => ({ userAttributes: (await original<typeof import("@/lib/telemetry")>()).userAttributes, logEvent: (...args: unknown[]) => logEvent(...args), flushLogs: async () => {} }));
 
 const { POST } = await import("@/app/api/check-ins/sync/route");
 
@@ -23,6 +25,7 @@ function post(body: unknown, origin: string | null = "https://keepup.test") {
 beforeEach(() => {
   rpc.mockReset();
   revalidatePath.mockReset();
+  logEvent.mockReset();
   getClaims.mockReset().mockResolvedValue({ data: { claims: { sub: "u1" } } });
 });
 
@@ -71,6 +74,11 @@ describe("POST /api/check-ins/sync", () => {
     expect(revalidatePath).toHaveBeenCalledWith("/today");
     expect(revalidatePath).toHaveBeenCalledWith(`/habits/${H}`);
     expect(revalidatePath).toHaveBeenCalledWith(`/kids/${K}/play`);
+    expect(logEvent).toHaveBeenCalledWith(
+      "keepup.offline_synced",
+      expect.objectContaining({ "user.id": "u1", "sync.kind": "check_in", "sync.outcome": "synced", "habit.id": H, "child.id": K }),
+      "INFO",
+    );
   });
 
   it("too old: nothing kept, so rejected (the feed note explains)", async () => {
@@ -83,6 +91,7 @@ describe("POST /api/check-ins/sync", () => {
     const refused = await post(TAP);
     expect(refused.status).toBe(409);
     expect(await refused.json()).toEqual({ error: "habit_archived" });
+    expect(logEvent).toHaveBeenCalledWith("keepup.offline_synced", expect.objectContaining({ "sync.outcome": "refused", "refusal.code": "habit_archived" }), "WARN");
     rpc.mockResolvedValue({ data: null, error: { message: "connection reset" } });
     expect((await post(TAP)).status).toBe(503);
     rpc.mockResolvedValue({ data: null, error: { message: "keepup:not_authenticated" } });

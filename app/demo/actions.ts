@@ -1,8 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { track } from "@/lib/log";
 import { safeNextPath, withNext } from "@/lib/paths";
 import { createClient } from "@/lib/supabase/server";
+import { userAttributes } from "@/lib/telemetry";
 
 // "Try it", step 2: the browser has just signed in anonymously (TryDemoButton: so each visitor counts
 // against Supabase's per-IP limit with their own IP, not the server's). Every anonymous login is a demo
@@ -20,6 +22,7 @@ export async function startDemo(formData: FormData): Promise<void> {
     await supabase.auth.signOut({ scope: "local" });
     redirect("/?demo=failed");
   }
+  track("demo_started", userAttributes(data.claims));
   redirect("/today");
 }
 
