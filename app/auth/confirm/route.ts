@@ -15,8 +15,9 @@ function isOtpType(value: string | null): value is EmailOtpType {
 // /auth/v1/verify and comes back with a PKCE `code` (works only in the browser that asked for it).
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
-  const reason = authErrorReason(searchParams);
-  if (reason) return NextResponse.redirect(new URL(`/auth/error?reason=${reason}`, origin));
+  // Any failure here is an email link that didn't work (used, expired, or from another browser).
+  const failed = NextResponse.redirect(new URL("/auth/error?reason=link", origin));
+  if (authErrorReason(searchParams)) return failed;
 
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type");
@@ -33,5 +34,5 @@ export async function GET(request: NextRequest) {
     if (!error) return NextResponse.redirect(new URL(next, origin));
   }
 
-  return NextResponse.redirect(new URL("/auth/error?reason=expired", origin));
+  return failed;
 }

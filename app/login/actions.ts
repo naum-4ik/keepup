@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isValidEmail } from "@/lib/email";
-import { CONFIRM_EMAIL_SENT, RESET_LINK_SENT, credentialsError, newPasswordError, passwordAuthMessage } from "@/lib/password";
+import { CONFIRM_EMAIL_SENT, RESET_LINK_SENT, RESET_LINK_STALE, credentialsError, isFreshRecovery, newPasswordError, passwordAuthMessage } from "@/lib/password";
 import { safeNextPath } from "@/lib/paths";
 import { requestOrigin } from "@/lib/request-origin";
 import type { LoginState } from "./state";
@@ -64,7 +64,8 @@ export async function requestPasswordReset(_prev: LoginState, formData: FormData
   return { status: "reset_sent", message: RESET_LINK_SENT, email };
 }
 
-// The new-password page, signed in by the reset link.
+// The new-password page, signed in by the reset link minutes ago (isFreshRecovery); any other session
+// would change the password without knowing the current one.
 export async function setNewPassword(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const password = String(formData.get("password") ?? "");
   const tooShort = newPasswordError(password);
@@ -72,7 +73,9 @@ export async function setNewPassword(_prev: LoginState, formData: FormData): Pro
 
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
-  if (!data?.claims) redirect("/auth/error?reason=expired");
+  if (!data?.claims) redirect("/auth/error?reason=link");
+  if (!isFreshRecovery(data.claims, new Date()))
+    return { status: "error", message: RESET_LINK_STALE, field: "password", email: "", mode: "signup" };
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { status: "error", message: passwordAuthMessage(error), field: "password", email: "", mode: "signup" };
 

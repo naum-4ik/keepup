@@ -58,6 +58,8 @@ test("forgot password: the emailed link sets a new one, and only the new one wor
 test("forgot password: an unknown email gets the same answer, and no email", async ({ page }) => {
   const email = uniqueEmail("nobody");
   await askForResetLink(page, email);
+  // Give a (wrongly) sent email time to arrive before saying there is none.
+  await page.waitForTimeout(1500);
   expect(await mailCount(email)).toBe(0);
 });
 
@@ -86,12 +88,23 @@ test("a token-hash reset link works on another device", async ({ page, browser }
   const other = await browser.newContext();
   const otherPage = await other.newPage();
   await otherPage.goto(link);
-  await expect(otherPage).toHaveURL(/\/auth\/error\?reason=expired$/);
-  await expect(otherPage.getByText("This link was already used or has expired.")).toBeVisible();
+  await expect(otherPage).toHaveURL(/\/auth\/error\?reason=link$/);
+  await expect(otherPage.getByRole("heading", { name: "That link didn't work" })).toBeVisible();
   await other.close();
 });
 
 test("the new-password page sends a signed-out visitor to sign in", async ({ page }) => {
   await page.goto("/auth/new-password");
   await expect(page).toHaveURL(/\/login$/);
+});
+
+test("a normal sign-in can't set a new password without the current one", async ({ page }) => {
+  const email = uniqueEmail();
+  await signUpOnboardAndSignOut(page, email);
+  await signIn(page, email);
+  await expect(page).toHaveURL(/\/today$/);
+
+  await page.goto("/auth/new-password");
+  await expect(page).toHaveURL(/\/auth\/error\?reason=link$/);
+  await expect(page.getByRole("heading", { name: "That link didn't work" })).toBeVisible();
 });

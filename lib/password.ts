@@ -28,6 +28,28 @@ export function newPasswordError(password: string): string | null {
   return [...password].length < PASSWORD_MIN ? `Use at least ${PASSWORD_MIN} characters.` : null;
 }
 
+// Setting a new password without the current one is allowed only right after a reset (or confirm)
+// link: the session's amr must hold "recovery" (PKCE code exchange) or "otp" (token_hash verifyOtp)
+// from the last 15 minutes. A normal password, Google or demo session never qualifies, so a stolen
+// cookie or an unlocked phone can't change the password.
+export const RECOVERY_WINDOW_SECONDS = 15 * 60;
+
+type AuthClaims = { amr?: unknown; is_anonymous?: unknown } | null | undefined;
+
+export function isFreshRecovery(claims: AuthClaims, now: Date): boolean {
+  if (!claims || claims.is_anonymous === true || !Array.isArray(claims.amr)) return false;
+  const nowSeconds = now.getTime() / 1000;
+  return claims.amr.some(
+    (entry: { method?: unknown; timestamp?: unknown }) =>
+      (entry?.method === "recovery" || entry?.method === "otp") &&
+      typeof entry.timestamp === "number" &&
+      nowSeconds - entry.timestamp <= RECOVERY_WINDOW_SECONDS,
+  );
+}
+
+// Said when the new-password form is sent after that window.
+export const RESET_LINK_STALE = "This reset link has expired. Ask for a new one from the sign-in screen.";
+
 // Sign-up succeeded but Supabase wants the address confirmed first (Confirm email on), so no session yet.
 export const CONFIRM_EMAIL_SENT = "Almost done: open the link we emailed you to confirm your address, then sign in.";
 
