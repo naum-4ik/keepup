@@ -3,6 +3,7 @@ import "server-only";
 import { requireUser } from "@/lib/auth";
 import { type CategoryKey, type Delivery, deliveryByCategory } from "@/lib/notification-categories";
 import { deviceLabel } from "@/lib/push-support";
+import { logError } from "@/lib/log";
 
 export type NotificationSettings = {
   reminderHour: number;
@@ -20,7 +21,7 @@ export async function getNotificationSettings(): Promise<NotificationSettings> {
     supabase.from("notification_prefs").select("category, delivery"),
     supabase.from("push_subscriptions").select("endpoint, user_agent").order("created_at"),
   ]);
-  for (const r of [profile, prefs, subs]) if (r.error) console.error("notification settings", r.error.message);
+  for (const r of [profile, prefs, subs]) if (r.error) logError("notification settings", r.error.message);
   return {
     reminderHour: profile.data?.reminder_hour ?? 20,
     mutedUntil: profile.data?.muted_until ?? null,

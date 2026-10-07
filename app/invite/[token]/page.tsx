@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 import { signInWithGoogle } from "@/app/login/actions";
 import { acceptInvite } from "./actions";
 import { JoinButton } from "./join-button";
+import { logError } from "@/lib/log";
 
 // Outside (app) so it works signed out: the anonymous client may call invite_preview only.
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
@@ -18,7 +19,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     supabase.auth.getClaims(),
     supabase.rpc("invite_preview", { p_token: token }),
   ]);
-  if (error) console.error("invite_preview failed", error.message);
+  if (error) logError("invite_preview failed", error.message);
   const preview = rows?.[0];
 
   if (!preview) {
@@ -98,7 +99,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
 
 async function currentGroupOf(supabase: Awaited<ReturnType<typeof createClient>>, token: string): Promise<string | null> {
   const { data, error } = await supabase.rpc("invite_membership", { p_token: token });
-  if (error) console.error("invite_membership failed", error.message);
+  if (error) logError("invite_membership failed", error.message);
   return data ?? null;
 }
 

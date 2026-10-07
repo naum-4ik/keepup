@@ -9,6 +9,7 @@ import type { DeletePreview } from "@/lib/my-data";
 import { parseProfile, readProfileForm, type ProfileFormState } from "@/lib/profile-schema";
 import { saveProfile } from "@/lib/profile-update";
 import { listTimezones } from "@/lib/timezones";
+import { logError } from "@/lib/log";
 
 export async function updateProfile(_prev: ProfileFormState, formData: FormData): Promise<ProfileFormState> {
   const values = readProfileForm(formData);
@@ -40,7 +41,7 @@ export async function resetMyData(): Promise<{ ok: true } | { ok: false; message
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("reset_my_data");
   if (error) {
-    console.error("reset my data", error.message);
+    logError("reset my data", error.message);
     return { ok: false, message: GENERIC_ERROR };
   }
   revalidatePath("/", "layout");
@@ -53,7 +54,7 @@ export async function exportMyData(): Promise<{ ok: true; data: unknown } | { ok
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("export_my_data");
   if (error) {
-    console.error("export my data", error.message);
+    logError("export my data", error.message);
     return { ok: false, message: GENERIC_ERROR };
   }
   return { ok: true, data };
@@ -65,7 +66,7 @@ export async function deleteAccountPreview(): Promise<DeletePreview | null> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("delete_account_preview");
   if (error) {
-    console.error("delete account preview", error.message);
+    logError("delete account preview", error.message);
     return null;
   }
   return data as DeletePreview;
@@ -78,7 +79,7 @@ export async function deleteMyAccount(): Promise<{ ok: false; message: string }>
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("delete_my_account");
   if (error) {
-    console.error("delete my account", error.message);
+    logError("delete my account", error.message);
     return { ok: false, message: GENERIC_ERROR };
   }
   await supabase.auth.signOut({ scope: "local" });

@@ -9,6 +9,7 @@ import { isSameOrigin } from "@/lib/review-request";
 import { createClient } from "@/lib/supabase/server";
 import { flushLogs, logEvent, tagUser, userAttributes } from "@/lib/telemetry";
 import { countsNow } from "@/lib/xp";
+import { logError } from "@/lib/log";
 
 // The pages that show a check-in on this habit (and the child's, for a tap for a child).
 function refresh(tap: OnlineTap) {
@@ -97,7 +98,7 @@ export async function POST(request: Request) {
     .eq("source_type", "check_in")
     .eq("source_id", row.id)
     .maybeSingle();
-  if (readError) console.error("check-in XP read failed", readError.message);
+  if (readError) logError("check-in XP read failed", readError.message);
   event["check_in.xp"] = granted?.amount;
   return NextResponse.json({ xp: granted?.amount ?? null });
 }

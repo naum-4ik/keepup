@@ -8,6 +8,7 @@ import { isGroupKind, parseGroupName } from "@/lib/group-schema";
 import { errorCode, habitErrorMessage } from "@/lib/habit-errors";
 import { isUuid } from "@/lib/habit-schema";
 import { listTimezones } from "@/lib/timezones";
+import { logError } from "@/lib/log";
 
 export type GroupActionState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string; code?: string };
 
@@ -37,7 +38,7 @@ export async function createGroup(_prev: GroupActionState, formData: FormData): 
   // Optional: the group is created either way, so a failed avatar only logs (it can be set later).
   if (avatar.emoji || avatar.color !== "peach") {
     const { error: avatarError } = await supabase.rpc("set_group_avatar", { p_group_id: data.id, p_emoji: avatar.emoji ?? "", p_color: avatar.color });
-    if (avatarError) console.error("set_group_avatar failed", avatarError.message);
+    if (avatarError) logError("set_group_avatar failed", avatarError.message);
   }
   refresh();
   redirect(`/groups/${data.id}?invite=1`);

@@ -6,6 +6,7 @@ import { getHabitSummaries } from "@/lib/habits";
 import { getMyGroups } from "@/lib/groups";
 import { parsePurpose } from "@/lib/profile-schema";
 import { PickHabits } from "../pick-habits";
+import { logError } from "@/lib/log";
 
 export default async function PickHabitsPage({ searchParams }: { searchParams: Promise<{ joined?: string }> }) {
   const { supabase, userId, profile } = await getProfile();
@@ -25,7 +26,7 @@ export default async function PickHabitsPage({ searchParams }: { searchParams: P
   if (group) {
     // Only the heading's count: on an error it reads as none rather than failing the page.
     const summaries = await getHabitSummaries().catch((e: Error) => {
-      console.error(e.message);
+      logError(e.message);
       return [];
     });
     const together = summaries.filter((h) => h.group_id === group.group_id && !h.archived_at).length;

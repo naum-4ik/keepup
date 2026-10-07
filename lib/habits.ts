@@ -8,6 +8,7 @@ import type { HabitCategory } from "@/lib/habit-schema";
 import type { TapRow } from "@/lib/rendered-taps";
 import { getChildSummaries, getMyChildren } from "@/lib/kids";
 import { withTodayPending, type WeekOverview } from "@/lib/week-overview";
+import { logError } from "@/lib/log";
 
 // Kid habits (child_summaries) have no category; adult habits always have one.
 export type HabitSummary = Omit<Database["public"]["Functions"]["habit_summaries"]["Returns"][number], "category"> & {
@@ -35,7 +36,7 @@ export async function getWeekOverview(): Promise<WeekOverview | null> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("week_overview");
   if (error || !data) {
-    console.error("week_overview failed", error?.message ?? "no data");
+    logError("week_overview failed", error?.message ?? "no data");
     return null;
   }
   return withTodayPending(data as unknown as WeekOverview);
@@ -59,7 +60,7 @@ export async function getRecentTapRows(children: readonly string[] = []): Promis
     .order("created_at", { ascending: false })
     .limit(500);
   if (error) {
-    console.error("rendered taps failed", error.message);
+    logError("rendered taps failed", error.message);
     return [];
   }
   return data ?? [];
@@ -76,7 +77,7 @@ export async function getMyCheckIns(from: string, to: string): Promise<DayCheckI
     .gte("local_date", from)
     .lte("local_date", to);
   if (error) {
-    console.error("my check-ins failed", error.message);
+    logError("my check-ins failed", error.message);
     return [];
   }
   return data ?? [];
@@ -89,7 +90,7 @@ export async function getHabitEnds(habitIds: string[]): Promise<Map<string, stri
   const { supabase } = await requireUser();
   const { data, error } = await supabase.from("habits").select("id, ends_on").in("id", habitIds).not("ends_on", "is", null);
   if (error) {
-    console.error("habit ends failed", error.message);
+    logError("habit ends failed", error.message);
     return new Map();
   }
   return new Map((data ?? []).map((r) => [r.id, r.ends_on as string]));
@@ -104,7 +105,7 @@ export async function getGroupTimezones(groupIds: (string | null | undefined)[])
   const { supabase } = await requireUser();
   const { data, error } = await supabase.from("groups").select("id, timezone").in("id", ids);
   if (error) {
-    console.error("group time zones failed", error.message);
+    logError("group time zones failed", error.message);
     return new Map();
   }
   return new Map((data ?? []).map((g) => [g.id, g.timezone]));
@@ -115,7 +116,7 @@ export async function getFinishedIds(): Promise<Set<string>> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.from("habits").select("id").not("finished_at", "is", null);
   if (error) {
-    console.error("finished habits failed", error.message);
+    logError("finished habits failed", error.message);
     return new Set();
   }
   return new Set((data ?? []).map((r) => r.id));
@@ -127,7 +128,7 @@ export async function getFinishSummary(habitId: string): Promise<FinishSummary |
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("habit_finish_summary", { p_habit_id: habitId });
   if (error || !data?.[0]) {
-    if (error) console.error("habit_finish_summary failed", error.message);
+    if (error) logError("habit_finish_summary failed", error.message);
     return null;
   }
   return data[0];
@@ -210,13 +211,13 @@ export async function getHabitDetail(habitId: string): Promise<HabitDetail | nul
   }
   // Cheer and Nudge are extras: their reads fail soft.
   for (const r of [memberCheckIns, myNudges]) {
-    if (r?.error) console.error("habit detail extras failed", r.error.message);
+    if (r?.error) logError("habit detail extras failed", r.error.message);
   }
   const others = (memberCheckIns?.data ?? []).filter((c) => c.user_id !== userId && c.status === "approved").map((c) => c.id);
   const cheers = others.length
     ? await supabase.from("cheers").select("check_in_id").eq("user_id", userId).in("check_in_id", others)
     : null;
-  if (cheers?.error) console.error("cheers read failed", cheers.error.message);
+  if (cheers?.error) logError("cheers read failed", cheers.error.message);
 
   return {
     summary,
@@ -238,7 +239,7 @@ export async function getCalendarCells(from: string, to: string): Promise<Calend
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("calendar_cells", { p_from: from, p_to: to });
   if (error) {
-    console.error("calendar_cells failed", error.message);
+    logError("calendar_cells failed", error.message);
     return [];
   }
   return data ?? [];
@@ -250,7 +251,7 @@ export async function getFirstHabitStart(): Promise<string | null> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("calendar_start");
   if (error) {
-    console.error("calendar_start failed", error.message);
+    logError("calendar_start failed", error.message);
     return null;
   }
   return data ?? null;

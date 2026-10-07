@@ -1,11 +1,12 @@
 import "server-only";
 import { requireUser } from "@/lib/auth";
 import { celebrationQueue, isCelebrationMode, type Celebration, type CelebrationMode } from "@/lib/celebrations";
+import { logError } from "@/lib/log";
 
 export async function getCelebrationMode(): Promise<CelebrationMode> {
   const { supabase, userId } = await requireUser();
   const { data, error } = await supabase.from("profiles").select("celebrations").eq("id", userId).single();
-  if (error) console.error("celebrations mode failed", error.message);
+  if (error) logError("celebrations mode failed", error.message);
   return isCelebrationMode(data?.celebrations) ? data.celebrations : "full";
 }
 
@@ -18,7 +19,7 @@ export async function getPendingCelebrations(): Promise<{ mode: CelebrationMode;
     supabase.from("user_achievements").select("achievement_code, unlocked_at, achievements(name, icon)").is("seen_at", null),
   ]);
   if (levels.error || badges.error) {
-    console.error("celebrations failed", levels.error?.message ?? badges.error?.message);
+    logError("celebrations failed", levels.error?.message ?? badges.error?.message);
     return { mode, queue: [] };
   }
   return {

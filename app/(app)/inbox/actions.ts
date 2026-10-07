@@ -6,6 +6,7 @@ import { NUDGE_KINDS } from "@/lib/feed-copy";
 import { errorCode, habitErrorMessage, reviewerOf } from "@/lib/habit-errors";
 import { isUuid } from "@/lib/habit-schema";
 import { getPendingApprovals } from "@/lib/inbox";
+import { logError } from "@/lib/log";
 
 export type ReviewResult = { ok: true; reviewed: number } | { ok: false; message: string; code?: string; reviewer?: string };
 export type SendResult = { ok: boolean; message?: string; code?: string };
@@ -51,7 +52,7 @@ export async function markRead(ids: string[]): Promise<void> {
   if (valid.length === 0) return;
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("mark_feed_read", { p_ids: valid });
-  if (error) console.error("mark_feed_read failed", error.message);
+  if (error) logError("mark_feed_read failed", error.message);
   revalidatePath("/", "layout");
 }
 

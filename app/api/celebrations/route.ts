@@ -3,6 +3,7 @@ import { parseSeen } from "@/lib/celebrations";
 import { getPendingCelebrations } from "@/lib/celebrations-data";
 import { isSameOrigin } from "@/lib/review-request";
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/log";
 
 // The moment's reads and writes (components/celebrations/celebration-moment.tsx). A route, not server
 // actions: actions run one at a time, so these would hold up the next check-in.
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
       ? await supabase.rpc("mark_levels_seen", { p_up_to: item.level })
       : await supabase.rpc("mark_badges_seen", { p_codes: [item.badge] });
   if (error) {
-    console.error("marking a celebration seen failed", error.message);
+    logError("marking a celebration seen failed", error.message);
     return new NextResponse(null, { status: 500 });
   }
   return new NextResponse(null, { status: 204 });
