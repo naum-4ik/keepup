@@ -437,13 +437,13 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "avatar_color": string | null,"avatar_emoji": string | null,"celebrations": string,"created_at": string,"display_name": string,"group_id": string | null,"id": string,"kid_theme": string | null,"kind": string,"muted_until": string | null,"onboarded_at": string | null,"purpose": string | null,"reminder_hour": number,"terms_accepted_at": string | null,"timezone": string,"week_start": number
+                    "avatar_color": string | null,"avatar_emoji": string | null,"celebrations": string,"created_at": string,"data_reset_at": string | null,"display_name": string,"group_id": string | null,"id": string,"kid_theme": string | null,"kind": string,"muted_until": string | null,"onboarded_at": string | null,"purpose": string | null,"reminder_hour": number,"terms_accepted_at": string | null,"timezone": string,"week_start": number
                   }
                   Insert: {
-                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"celebrations"?: string,"created_at"?: string,"display_name": string,"group_id"?: string | null,"id": string,"kid_theme"?: string | null,"kind"?: string,"muted_until"?: string | null,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
+                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"celebrations"?: string,"created_at"?: string,"data_reset_at"?: string | null,"display_name": string,"group_id"?: string | null,"id": string,"kid_theme"?: string | null,"kind"?: string,"muted_until"?: string | null,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
                   }
                   Update: {
-                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"celebrations"?: string,"created_at"?: string,"display_name"?: string,"group_id"?: string | null,"id"?: string,"kid_theme"?: string | null,"kind"?: string,"muted_until"?: string | null,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
+                    "avatar_color"?: string | null,"avatar_emoji"?: string | null,"celebrations"?: string,"created_at"?: string,"data_reset_at"?: string | null,"display_name"?: string,"group_id"?: string | null,"id"?: string,"kid_theme"?: string | null,"kind"?: string,"muted_until"?: string | null,"onboarded_at"?: string | null,"purpose"?: string | null,"reminder_hour"?: number,"terms_accepted_at"?: string | null,"timezone"?: string,"week_start"?: number
                   }
                   Relationships: [
                     {
@@ -969,6 +969,9 @@ isOneToOne: false
                            },
 "reset_child":
 { Args: { "p_child_id": string }; Returns: undefined
+                           },
+"reset_my_data":
+{ Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "restore_habit":
 { Args: { "p_habit_id": string }; Returns: {

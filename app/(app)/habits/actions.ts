@@ -7,22 +7,15 @@ import { insertHabits, setHabitEnd } from "@/lib/habit-create";
 import { startAgainEnd } from "@/lib/habit-finish";
 import { todayIn } from "@/lib/dates";
 import { getGroupDetail } from "@/lib/groups";
-import { GENERIC_ERROR, habitErrorMessage } from "@/lib/habit-errors";
-import { isTap, tapArgs, type TapId } from "@/lib/offline-sync";
+import { GENERIC_ERROR, habitErrorMessage, REFRESH_ON_ERROR } from "@/lib/habit-errors";
 import { reminderError } from "@/lib/reminder-mode";
-import { countsNow, type TapXp } from "@/lib/xp";
 import { isUuid, LOCAL_DATE, parseDetailsEdit, parseHabit, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 
 const NOT_FOUND: ActionResult = { ok: false, message: "That habit isn't available." };
-// These errors mean another device (or midnight) already changed the habit; refresh so this card
-// stops showing stale data.
-const REFRESH_ON_ERROR = new Set(["target_reached", "already_checked_in_today", "habit_frozen", "habit_archived", "habit_not_found"]);
 
-// code: the database rule that refused it ("keepup:<code>"), when there was one (an offline-queued
-// tap is dropped only for a rule refusal; anything else keeps it queued).
-// xp: the XP a check-in just earned (lib/xp.ts), only from checkIn: null when it counted but the
-// ledger couldn't be read ("+XP").
-export type ActionResult = { ok: true; xp?: TapXp } | { ok: false; message: string; code?: string };
+// code: the database rule that refused it ("keepup:<code>"), when there was one. (A check-in tap
+// goes through app/api/check-ins/tap instead, so the phone can stop waiting for it.)
+export type ActionResult = { ok: true } | { ok: false; message: string; code?: string };
 export type FormActionState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string };
 
 function refresh(habitId?: string) {
@@ -64,33 +57,6 @@ export async function createHabit(_prev: HabitFormState, formData: FormData): Pr
 
   refresh();
   redirect("/today");
-}
-
-// tap: the id and time the phone gave this tap (lib/offline-sync.ts), so a resend never counts twice.
-export async function checkIn(habitId: string, tap?: TapId): Promise<ActionResult> {
-  if (!isUuid(habitId) || !isTap(tap)) return NOT_FOUND;
-  const { supabase } = await requireUser();
-  const startedAt = Date.now();
-  const { data, error } = await supabase.rpc("check_in", { p_habit_id: habitId, ...tapArgs(tap) });
-  if (error) {
-    const code = error.message?.match(/keepup:([a-z_]+)/)?.[1];
-    if (code && REFRESH_ON_ERROR.has(code)) refresh(habitId);
-    return { ok: false, message: habitErrorMessage(error), ...(code ? { code } : {}) };
-  }
-  refresh(habitId);
-  // XP only for a counted row this request inserted, not a resend's or a merge's (lib/xp.ts).
-  if (!data || !countsNow(data, tap, startedAt)) return { ok: true, xp: 0 };
-  // The amount the database granted (10, + the streak on the period's first, rewards_on_check_in), read back from the
-  // ledger (RLS: own rows). Fails soft: "+XP" with no number.
-  const { data: granted, error: readError } = await supabase
-    .from("xp_events")
-    .select("amount")
-    .eq("reason", "check_in")
-    .eq("source_type", "check_in")
-    .eq("source_id", data.id)
-    .maybeSingle();
-  if (readError) console.error("check-in XP read failed", readError.message);
-  return { ok: true, xp: granted?.amount ?? null };
 }
 
 // "Me + Mary": my check-in and each child's in one call, all or nothing.

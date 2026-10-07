@@ -7,17 +7,21 @@ function setup(o: { send?: Sender; online?: boolean; channel?: Channel; tapTimeo
   const storage = memoryStorage();
   let online = o.online ?? true;
   const counts: string[][] = [];
+  const landed: boolean[] = [];
   const flushed: Flushed[] = [];
   const client = createOfflineClient({
     storage,
     send: o.send ?? (async () => "synced"),
     isOnline: () => online,
-    onCounts: (c) => counts.push([...c.keys()]),
+    onCounts: (c, l) => {
+      counts.push([...c.keys()]);
+      landed.push(l);
+    },
     onFlushed: (f) => flushed.push(f),
     channel: o.channel,
     tapTimeoutMs: o.tapTimeoutMs,
   });
-  return { storage, client, counts, flushed, setOnline: (v: boolean) => void (online = v) };
+  return { storage, client, counts, landed, flushed, setOnline: (v: boolean) => void (online = v) };
 }
 
 beforeEach(() => vi.useFakeTimers());
@@ -253,6 +257,146 @@ describe("Undo for a tap the server may have", () => {
   });
 });
 
+describe("a late answer, and an Undo while a flush sends", () => {
+  it("a tap that landed online leaves the queue together with a page refresh (landed)", async () => {
+    const { client, landed } = setup();
+    await client.submitTap({ habitId: "h1" }, async () => ({ ok: true, xp: 10 }));
+    expect(landed.at(-1)).toBe(true);
+    expect(landed.slice(0, -1).every((l) => !l)).toBe(true); // saving it first was no landing
+  });
+
+  it("too slow: the request is aborted, so its answer can't arrive, and the tap stays queued", async () => {
+    const { client, storage } = setup({ tapTimeoutMs: 100 });
+    let signal!: AbortSignal;
+    const done = client.submitTap({ habitId: "h1" }, (_t, s) => ((signal = s), new Promise(() => undefined)));
+    await vi.advanceTimersByTimeAsync(99);
+    expect(signal.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await done).toEqual({ ok: true, queued: true });
+    expect(signal.aborted).toBe(true);
+    expect(await storage.load()).toMatchObject([{ kind: "check_in", maybeSent: true }]);
+  });
+
+  it("an Undo while the tap's online try still runs waits for the try to end, then goes out", async () => {
+    const sent: string[] = [];
+    const { client, storage } = setup({ send: async (e) => (sent.push(e.kind), "synced") });
+    // A slow network: the check-in commits and answers at 5 s (under the 10 s timeout).
+    const done = client.submitTap({ habitId: "h1" }, () => new Promise((r) => setTimeout(() => r({ ok: true }), 5_000)));
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(await client.undoQueued("h1")).toBe(true);
+    await vi.advanceTimersByTimeAsync(3_900); // 4.9 s: a flush would have run at 4 s
+    expect(sent).toEqual([]);
+    await vi.advanceTimersByTimeAsync(100);
+    await done;
+    await vi.waitFor(() => expect(sent).toEqual(["undo"]));
+    expect(await storage.load()).toEqual([]);
+  });
+
+  it("an answer for a tap that no longer waits here (another tab took it back) doesn't refresh the page", async () => {
+    const { client, storage, landed } = setup();
+    let answer!: (v: { ok: true; xp: number }) => void;
+    const done = client.submitTap({ habitId: "h1" }, () => new Promise((r) => (answer = r)));
+    await vi.waitFor(() => expect(answer).toBeTypeOf("function"));
+    await storage.save([]); // another tab's Undo
+    answer({ ok: true, xp: 10 });
+    expect(await done).toEqual({ ok: true, queued: false }); // no XP to float either
+    expect(landed.includes(true)).toBe(false);
+  });
+
+  it("an Undo made while a flush is sending its tap goes out with a follow-up flush", async () => {
+    const sent: string[] = [];
+    let release!: () => void;
+    const send: Sender = async (e) => {
+      sent.push(e.kind);
+      if (e.kind === "check_in") await new Promise<void>((r) => (release = r));
+      return "synced";
+    };
+    const { client, storage, setOnline } = setup({ online: false, send });
+    await client.submitTap({ habitId: "h1" }, async () => ({ ok: true }));
+    setOnline(true);
+    const flushing = client.flush();
+    await vi.waitFor(() => expect(sent).toEqual(["check_in"]));
+    await client.undoQueued("h1"); // the tap is in flight: an undo is queued after it
+    release();
+    await flushing;
+    expect((await storage.load()).map((e) => e.kind)).toEqual(["undo"]);
+    await vi.advanceTimersByTimeAsync(3_000);
+    expect(sent).toEqual(["check_in", "undo"]);
+    expect(await storage.load()).toEqual([]);
+  });
+});
+
+describe("the undo hold is shared by every tab (stored on the entry)", () => {
+  const client = (storage: ReturnType<typeof memoryStorage>, send: Sender) =>
+    createOfflineClient({ storage, send, isOnline: () => true, onCounts: () => {}, onFlushed: () => {} });
+
+  it("another tab flushing during this tab's online try doesn't send the undo; it goes out when the try ends", async () => {
+    const storage = memoryStorage();
+    const sent: string[] = [];
+    const send: Sender = async (e) => (sent.push(`${e.kind}`), "synced");
+    const a = client(storage, send);
+    const b = client(storage, send); // the second tab: its own memory, the same queue
+    const done = a.submitTap({ habitId: "h1" }, () => new Promise((r) => setTimeout(() => r({ ok: true }), 5_000)));
+    await vi.advanceTimersByTimeAsync(1_000);
+    await a.undoQueued("h1");
+    await vi.advanceTimersByTimeAsync(1_000);
+    await b.flush(); // tab B comes into view at 2 s
+    expect(sent).toEqual([]);
+    await vi.advanceTimersByTimeAsync(3_000);
+    await done;
+    await vi.waitFor(() => expect(sent).toEqual(["undo"]));
+    expect(await storage.load()).toEqual([]);
+  });
+
+  it("an Undo pressed in another tab while the tap is on hold goes out just after the hold ends, with no flush asked for", async () => {
+    vi.setSystemTime(new Date("2026-10-07T08:00:00Z"));
+    // Tab A tried the tap online and closed; its hold ends at +10 s.
+    const storage = memoryStorage([
+      { kind: "check_in", clientId: "c1", habitId: "h1", subjectId: null, tappedAt: "2026-10-07T08:00:00.000Z", maybeSent: true, tryingUntil: "2026-10-07T08:00:10.000Z" },
+    ]);
+    const sent: string[] = [];
+    const b = client(storage, async (e) => (sent.push(e.kind), "synced"));
+    expect(await b.undoQueued("h1")).toBe(true);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(sent).toEqual([]);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(sent).toEqual(["undo"]);
+  });
+
+  it("the hold is cleared when the try fails, and when it is aborted", async () => {
+    const failed = setup({ tapTimeoutMs: 100, send: async () => "wait" });
+    await failed.client.submitTap({ habitId: "h1" }, async () => ({ ok: false, message: "Something went wrong." }));
+    expect((await failed.storage.load())[0]).not.toHaveProperty("tryingUntil");
+    const thrown = setup({ tapTimeoutMs: 100, send: async () => "wait" });
+    await thrown.client.submitTap({ habitId: "h1" }, async () => {
+      throw new TypeError("Failed to fetch");
+    });
+    expect((await thrown.storage.load())[0]).not.toHaveProperty("tryingUntil");
+    const aborted = setup({ tapTimeoutMs: 100, send: async () => "wait" });
+    const done = aborted.client.submitTap({ habitId: "h1" }, () => new Promise(() => undefined));
+    await vi.advanceTimersByTimeAsync(50);
+    expect((await aborted.storage.load())[0]).toHaveProperty("tryingUntil"); // held while it runs
+    await vi.advanceTimersByTimeAsync(50);
+    await done;
+    expect((await aborted.storage.load())[0]).toMatchObject({ kind: "check_in", maybeSent: true });
+    expect((await aborted.storage.load())[0]).not.toHaveProperty("tryingUntil");
+  });
+
+  it("if the tab that made the try is gone, another tab sends the undo just after the hold ends, not on the backoff", async () => {
+    vi.setSystemTime(new Date("2026-10-07T08:00:00Z"));
+    const until = "2026-10-07T08:00:10.000Z";
+    const storage = memoryStorage([{ kind: "undo", clientId: "c1", habitId: "h1", subjectId: null, tryingUntil: until }]);
+    const sent: string[] = [];
+    const b = client(storage, async (e) => (sent.push(e.kind), "synced"));
+    await b.flush();
+    expect(sent).toEqual([]);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(sent).toEqual([]);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(sent).toEqual(["undo"]);
+  });
+});
+
 describe("holdsRefresh", () => {
   it("holds while a tap waits or its online try runs, and lets go when nothing waits", async () => {
     const { client, setOnline } = setup({ tapTimeoutMs: 100 });
@@ -292,5 +436,18 @@ describe("holdsRefresh", () => {
     expect(client.holdsRefresh()).toBe(true);
     vi.setSystemTime(new Date("2026-10-05T08:02:01Z"));
     expect(client.holdsRefresh()).toBe(false);
+  });
+});
+
+describe("Reset my data", () => {
+  it("drops what waits on the given habits (taps and undos), keeps the rest, and tells other tabs", async () => {
+    const post = vi.fn();
+    const { client, storage } = setup({ online: false, channel: { post, listen: () => () => {} } });
+    await client.submitTap({ habitId: "mine" }, async () => ({ ok: true }));
+    await client.submitTap({ habitId: "group" }, async () => ({ ok: true }));
+    await storage.update((q) => [...q, { kind: "undo", clientId: "u1", habitId: "mine" }]);
+    await client.forgetHabits(["mine"]);
+    expect((await storage.load()).map((e) => `${e.kind}:${e.habitId}`)).toEqual(["check_in:group"]);
+    expect(post).toHaveBeenCalled();
   });
 });

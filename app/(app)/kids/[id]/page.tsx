@@ -23,7 +23,7 @@ import { todayIn } from "@/lib/dates";
 import { withoutEnded } from "@/lib/habit-end";
 import { getFinishedIds, getHabitEnds, getRecentTapRows, type HabitSummary } from "@/lib/habits";
 import { isUuid } from "@/lib/habit-schema";
-import { currentPeriods, renderedTapIds } from "@/lib/rendered-taps";
+import { currentPeriods, renderedTapIds, tapPeriods } from "@/lib/rendered-taps";
 import { getChildCheckIns, getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { stateOf } from "@/lib/today";
 
@@ -69,7 +69,7 @@ export default async function KidPage({
 
   return (
     <section className="flex flex-col gap-4 pt-2 pb-6">
-      <RenderedTaps ids={renderedTaps} />
+      <RenderedTaps ids={renderedTaps} periods={tapPeriods(habits, () => group?.timezone ?? profile.timezone)} />
       <Link
         href={`/groups/${child.group_id}`}
         className="-ml-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"

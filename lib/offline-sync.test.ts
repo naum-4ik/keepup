@@ -1,6 +1,6 @@
 // lib/offline-sync.test.ts
-import { describe, expect, it } from "vitest";
-import { httpSender, isTap, newTap, outcomeFor, parseEntry, tapArgs, withQueuedTaps } from "./offline-sync";
+import { describe, expect, it, vi } from "vitest";
+import { httpSender, newTap, outcomeFor, parseEntry, parseTap, tapAnswer, tapSender, withQueuedTaps } from "./offline-sync";
 
 const H = "00000000-0000-0000-0000-0000000000d1";
 const C = "c0000000-0000-4000-8000-000000000001";
@@ -151,23 +151,40 @@ describe("withQueuedTaps", () => {
 describe("a tap's id and time", () => {
   it("every tap gets a fresh id and the time it was made", () => {
     const tap = newTap(new Date("2026-10-05T20:58:00.000Z"));
-    expect(isTap(tap)).toBe(true);
     expect(tap.tappedAt).toBe("2026-10-05T20:58:00.000Z");
     expect(newTap().clientId).not.toBe(tap.clientId);
   });
+});
 
-  it("an online tap sends its id only; the server uses its own clock", () => {
-    expect(isTap({ clientId: C })).toBe(true);
-    expect(tapArgs({ clientId: C })).toEqual({ p_client_id: C });
+describe("an online tap (app/api/check-ins/tap)", () => {
+  it("the route takes a tap's id, habit and whose it is; nothing else counts", () => {
+    expect(parseTap({ clientId: C, habitId: H, subjectId: null })).toEqual({ clientId: C, habitId: H, subjectId: null });
+    expect(parseTap({ clientId: C, habitId: H })).toEqual({ clientId: C, habitId: H, subjectId: null });
+    expect(parseTap({ clientId: C, habitId: H, subjectId: C, byChild: true, tappedAt: "2026-10-05T20:58:00Z" })).toEqual({
+      clientId: C, habitId: H, subjectId: C, byChild: true,
+    });
+    expect(parseTap({ clientId: "x", habitId: H })).toBeNull();
+    expect(parseTap({ clientId: C, habitId: H, subjectId: "kid" })).toBeNull();
+    expect(parseTap(null)).toBeNull();
   });
 
-  it("the server actions take none, or a valid one only", () => {
-    expect(isTap(undefined)).toBe(true);
-    expect(isTap({ clientId: C, tappedAt: "2026-10-05T20:58:00Z" })).toBe(true);
-    expect(isTap({ clientId: "x", tappedAt: "2026-10-05T20:58:00Z" })).toBe(false);
-    expect(isTap({ clientId: C, tappedAt: "soon" })).toBe(false);
-    expect(isTap(null)).toBe(false);
-    expect(tapArgs(undefined)).toEqual({});
-    expect(tapArgs({ clientId: C, tappedAt: "2026-10-05T20:58:00Z" })).toEqual({ p_client_id: C, p_tapped_at: "2026-10-05T20:58:00.000Z" });
+  it("reads the answer: counted with its XP, a rule's refusal (final), or something that keeps it queued", () => {
+    expect(tapAnswer(200, { xp: 12 })).toEqual({ ok: true, xp: 12 });
+    expect(tapAnswer(200, { xp: null })).toEqual({ ok: true, xp: null });
+    expect(tapAnswer(409, { code: "habit_frozen", message: "This habit is paused." })).toEqual({ ok: false, message: "This habit is paused.", code: "habit_frozen" });
+    expect(tapAnswer(401, { code: "not_authenticated" })).toMatchObject({ ok: false, code: "not_authenticated" });
+    // A captive portal's 200 page, a server problem: no code.
+    expect(tapAnswer(200, null)).toEqual({ ok: false, message: expect.any(String) });
+    expect(tapAnswer(503, { message: "Something went wrong. Try again." })).toEqual({ ok: false, message: "Something went wrong. Try again." });
+  });
+
+  it("posts the tap without a time, and passes the abort signal on", async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({ xp: 10 }), { status: 200 }));
+    const abort = new AbortController();
+    expect(await tapSender(fetchImpl as unknown as typeof fetch)({ clientId: C, habitId: H, subjectId: null }, abort.signal)).toEqual({ ok: true, xp: 10 });
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/check-ins/tap");
+    expect(JSON.parse(init.body as string)).toEqual({ clientId: C, habitId: H, subjectId: null });
+    expect(init.signal).toBe(abort.signal);
   });
 });

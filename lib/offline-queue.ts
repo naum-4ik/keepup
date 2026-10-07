@@ -1,18 +1,23 @@
 // lib/offline-queue.ts
 // Check-ins and undos made without a connection, kept in order until they reach the server.
 // The server decides whether each one counts (ideas/offline.md); this module only stores and sends.
+import { todayIn } from "./dates";
 
 // byChild: a tap in the kid view (logged as by the child, "Mary did it"). attempts / firstFailedAt:
 // counted failures and when the first was (see GIVE_UP_AFTER); kept on the phone, never sent.
 // maybeSent: it was tried online or sent by a flush, so the server may have it although no answer
 // came back; an Undo then has to ask the server (addUndo). Kept on the phone, never sent.
+// tryingUntil: its online try may still be running until then (lib/offline-client.ts submitTap), so
+// the server may not have it yet; an undo of it waits (undoOnHold). Kept on the phone, never sent.
 type Failures = { attempts?: number; firstFailedAt?: string };
 export type QueuedCheckIn = {
   kind: "check_in"; clientId: string; habitId: string; subjectId: string | null; tappedAt: string; byChild?: boolean; maybeSent?: boolean;
+  tryingUntil?: string;
 } & Failures;
 // subjectId: whose tap it takes back (its tap's; older stored undos have none: mine). queuedAt: when
 // it was made (older stored undos have none). Both kept on the phone, never sent.
-export type QueuedUndo = { kind: "undo"; clientId: string; habitId: string; subjectId?: string | null; queuedAt?: string } & Failures;
+// tryingUntil: copied from its tap (an undo made while the tap's online try runs).
+export type QueuedUndo = { kind: "undo"; clientId: string; habitId: string; subjectId?: string | null; queuedAt?: string; tryingUntil?: string } & Failures;
 export type QueueEntry = QueuedCheckIn | QueuedUndo;
 
 // synced: the server has it. rejected: a rule refused it (final; the server's feed note explains).
@@ -47,7 +52,7 @@ export function addUndo(queue: QueueEntry[], undo: QueuedUndo, inFlight: Readonl
   const tap = queue.find(isTap) as QueuedCheckIn | undefined;
   const rest = queue.filter((e) => !isTap(e));
   if (tap && !tap.maybeSent && !inFlight.has(undo.clientId)) return rest;
-  const entry: QueuedUndo = tap ? { ...undo, subjectId: tap.subjectId } : undo;
+  const entry: QueuedUndo = tap ? { ...undo, subjectId: tap.subjectId, ...(tap.tryingUntil ? { tryingUntil: tap.tryingUntil } : {}) } : undo;
   return rest.some((e) => same(e, entry)) ? rest : [...rest, entry];
 }
 
@@ -87,12 +92,35 @@ export function holdsRefresh(queue: readonly QueueEntry[], now: Date, running: b
   return now.getTime() - Math.min(...times) <= STUCK_AFTER_MS;
 }
 
+// The period each habit's counts are drawn for (lib/rendered-taps.ts tapPeriods): its first local
+// day, and the time zone the habit's calendar runs on (a group's, or the person's).
+export type ShownPeriods = ReadonlyMap<string, { start: string; timeZone: string }>;
+
+// A waiting tap counts toward the period the page shows only if it was tapped in it or later: one
+// from before (a late tap from yesterday, still on the phone) lands in its own period when it is
+// sent, not in this one. A habit the page gives no period for counts every tap, as before; so does a
+// tap after the shown period (a saved page from yesterday, opened offline today).
+export function inShownPeriod(e: QueuedCheckIn, periods: ShownPeriods | null | undefined): boolean {
+  const p = periods?.get(e.habitId);
+  if (!p) return true;
+  try {
+    return todayIn(p.timeZone, new Date(e.tappedAt)) >= p.start;
+  } catch {
+    return true; // an unknown time zone or a broken time: count it, as before
+  }
+}
+
 // What the waiting entries change on screen, per queueKey, against the check-ins the page was
 // rendered with (`rendered`: their client ids). A tap adds one, unless the page already counts it
-// (it reached the server before the page was drawn). An undo takes one back only when the page
-// counts its tap; an undo of a tap the page never had changes nothing. Without a rendered list (a
-// page saved before the list existed), only taps count, as before.
-export function queuedDelta(queue: readonly QueueEntry[], rendered: ReadonlySet<string> | null): Map<string, number> {
+// (it reached the server before the page was drawn) or it belongs to an earlier period than the one
+// shown (`periods`, inShownPeriod). An undo takes one back only when the page counts its tap; an undo
+// of a tap the page never had changes nothing. Without a rendered list (a page saved before the list
+// existed), only taps count, as before.
+export function queuedDelta(
+  queue: readonly QueueEntry[],
+  rendered: ReadonlySet<string> | null,
+  periods: ShownPeriods | null = null,
+): Map<string, number> {
   const delta = new Map<string, number>();
   const add = (k: string, n: number) => {
     const v = (delta.get(k) ?? 0) + n;
@@ -101,7 +129,7 @@ export function queuedDelta(queue: readonly QueueEntry[], rendered: ReadonlySet<
   };
   for (const e of queue) {
     if (e.kind === "check_in") {
-      if (!rendered?.has(e.clientId)) add(queueKey(e.habitId, e.subjectId), 1);
+      if (!rendered?.has(e.clientId) && inShownPeriod(e, periods)) add(queueKey(e.habitId, e.subjectId), 1);
     } else if (rendered?.has(e.clientId)) {
       add(queueKey(e.habitId, e.subjectId ?? null), -1);
     }
@@ -150,4 +178,13 @@ export async function flush(queue: QueueEntry[], send: Sender, now: () => Date =
     if (entry.kind === "undo") undone.add(entry.clientId);
   }
   return { remaining: [], synced, rejected, dropped, poisoned, attempted: null };
+}
+
+// An undo whose tap's online try may still be running (in this tab or another: the hold is on the
+// stored entry) waits: sent now it could find nothing, and the check-in would land after it. Until
+// when, or null when it can go.
+export function undoOnHold(e: QueueEntry, now: Date): number | null {
+  if (e.kind !== "undo" || !e.tryingUntil) return null;
+  const until = Date.parse(e.tryingUntil);
+  return until > now.getTime() ? until : null;
 }

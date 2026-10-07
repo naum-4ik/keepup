@@ -480,6 +480,27 @@ test("a habit that ended: the finish card, Keep going, Finish, and Start again",
   await expect(page.getByRole("link", { name: /Stretch/ })).toContainText("Day 1 of 3");
 });
 
+test("Progress → Active leaves out a habit past its end, as Today does; Finished lists it until it's decided", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createHabit(page, { title: "Read", count: 1, period: "day" });
+  await createHabit(page, { title: "Walk", count: 1, period: "day" });
+  const read = (await page.getByRole("link", { name: /Read/ }).getAttribute("href"))!.split("/").pop()!;
+  endHabitYesterday(read);
+  await page.goto("/progress");
+  await expect(page.getByRole("link", { name: /Walk/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Read/ })).toHaveCount(0);
+  await page.goto("/progress?view=finished");
+  const ended = page.getByRole("link", { name: /Read/ });
+  await expect(ended).toContainText("Ended · decide on Today");
+  await expect(page.getByRole("button", { name: "Start Read again" })).toHaveCount(0); // not finished yet
+  // Keep going (on Today) brings it back to Active.
+  await page.goto("/today");
+  await page.getByRole("region", { name: "Read is finished" }).getByRole("button", { name: "Keep going" }).click();
+  await expect(page.getByRole("button", { name: "Check in: Read" })).toBeVisible();
+  await page.goto("/progress");
+  await expect(page.getByRole("link", { name: /Read/ })).toBeVisible();
+});
+
 test("after the end, the habit page offers only Keep going or Finish", async ({ page }) => {
   await signUpAndOnboard(page);
   await createHabit(page, { title: "Read", count: 1, period: "day" });

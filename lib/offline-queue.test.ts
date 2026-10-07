@@ -162,6 +162,21 @@ describe("queuedDelta: what waiting entries change on a rendered page", () => {
     expect(queuedDelta(undone, new Set(["a"]))).toEqual(new Map([["h1/kid1", -1]]));
   });
 
+  it("a tap from before the shown period doesn't add to it; one in it or after does", () => {
+    const periods = new Map([["h1", { start: "2026-10-06", timeZone: "Europe/Rome" }]]);
+    const yesterday = { ...tap("a"), tappedAt: "2026-10-05T21:59:00.000Z" }; // 23:59 in Rome
+    const today = { ...tap("b"), tappedAt: "2026-10-05T22:00:00.000Z" }; // midnight in Rome
+    const tomorrow = { ...tap("c"), tappedAt: "2026-10-07T08:00:00.000Z" }; // a saved page opened the next day
+    expect(queuedDelta([yesterday], new Set(), periods)).toEqual(new Map());
+    expect(queuedDelta([yesterday, today, tomorrow], new Set(), periods)).toEqual(new Map([["h1", 2]]));
+  });
+
+  it("a habit without a shown period, or with a zone the phone doesn't know, counts every tap (as before)", () => {
+    const old = { ...tap("a"), tappedAt: "2026-09-01T08:00:00.000Z" };
+    expect(queuedDelta([old], new Set(), new Map())).toEqual(new Map([["h1", 1]]));
+    expect(queuedDelta([old], new Set(), new Map([["h1", { start: "2026-10-06", timeZone: "Nowhere/Else" }]]))).toEqual(new Map([["h1", 1]]));
+  });
+
   it("without a rendered list, only taps count (as before)", () => {
     const q = [tap("a"), { kind: "undo" as const, clientId: "z", habitId: "h2" }];
     expect(queuedDelta(q, null)).toEqual(pendingCounts(q));

@@ -2,15 +2,24 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { NotificationSettingsCard } from "@/components/notifications/notification-settings";
 import { CelebrationsSetting } from "@/components/profile/celebrations-setting";
+import { ResetMyData } from "@/components/profile/reset-my-data";
 import { ProfileForm } from "@/components/profile-form";
 import { getProfile } from "@/lib/auth";
 import { getCelebrationMode } from "@/lib/celebrations-data";
+import { getHabitSummaries } from "@/lib/habits";
 import { getNotificationSettings } from "@/lib/notification-settings";
 import { listTimezones } from "@/lib/timezones";
 import { updateProfile } from "./actions";
 
 export default async function SettingsPage() {
-  const [{ profile }, notifications, celebrations] = await Promise.all([getProfile(), getNotificationSettings(), getCelebrationMode()]);
+  const [{ profile }, notifications, celebrations, summaries] = await Promise.all([
+    getProfile(),
+    getNotificationSettings(),
+    getCelebrationMode(),
+    getHabitSummaries(),
+  ]);
+  // Reset my data drops what waits on the phone for these (the habits it removes) before it runs.
+  const privateHabitIds = summaries.filter((h) => !h.group_id).map((h) => h.habit_id);
 
   return (
     <section className="flex flex-col gap-3 pt-2 pb-6">
@@ -33,6 +42,7 @@ export default async function SettingsPage() {
       </div>
       <NotificationSettingsCard settings={notifications} />
       <CelebrationsSetting saved={celebrations} />
+      <ResetMyData privateHabitIds={privateHabitIds} />
     </section>
   );
 }

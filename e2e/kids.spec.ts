@@ -105,6 +105,8 @@ test("the kid view: big buttons, a tap counts at once, and hold to exit", async 
   await page.waitForTimeout(500);
   await expect(page.getByText("2 stars this week")).toBeAttached();
   await expect(items).toHaveAttribute("data-items", "2");
+  // Kids earn XP behind the scenes only: no XP or level anywhere in their view (owner 2026-10-06).
+  await expect(page.getByRole("main")).not.toContainText(/\bXP\b|\blevel\b/i);
   // Sound is on by default; the grown-up can mute it, and it's remembered on this phone.
   const sound = page.getByRole("button", { name: "Sound" });
   await expect(sound).toHaveAttribute("aria-pressed", "true");
@@ -126,6 +128,8 @@ test("the kid view: big buttons, a tap counts at once, and hold to exit", async 
   await expect(garden).toContainText("1 more star to a sprout 🌱");
   await expect(garden).toContainText(/A new garden starts on \w+day 🌱/);
   await expect(garden.locator("[data-items]")).toHaveAttribute("data-items", "2");
+  // Nor on the child's page (the Profile tab's level is the grown-up's own).
+  await expect(page.getByRole("main")).not.toContainText(/\bXP\b|\blevel\b/i);
 });
 
 test("Me + Mary checks in both in one tap", async ({ page }) => {

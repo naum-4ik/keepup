@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Check, Clock, Plus, Snowflake } from "lucide-react";
-import { checkIn, checkInWith } from "@/app/(app)/habits/actions";
+import { checkInWith } from "@/app/(app)/habits/actions";
 import { dismissFirstCheckinTip } from "@/components/first-checkin-tip";
 import { floatXp, useXpFloat } from "@/components/habits/xp-float";
 import { useOfflineQueue, useSubmitTap, useUndoQueuedTap } from "@/components/offline/offline-queue-provider";
@@ -105,7 +105,7 @@ export function CheckInButton({
         return;
       }
       // Saved on this phone first, then tried online (offline it just waits): lib/offline-client.ts.
-      const result = await submitTap({ habitId }, (tap) => checkIn(habitId, tap));
+      const result = await submitTap({ habitId });
       if (!result.ok) {
         setError(result.message);
         return;

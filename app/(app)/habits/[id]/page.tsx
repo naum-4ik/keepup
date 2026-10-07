@@ -33,7 +33,7 @@ import { describeProgress, describeSchedule } from "@/lib/schedule";
 import { everyoneDidIt, memberStatus, membersOf, openChildrenOf } from "@/lib/today-sections";
 import { stateOf } from "@/lib/today";
 import { getMyChildren } from "@/lib/kids";
-import { currentPeriods, renderedTapIds } from "@/lib/rendered-taps";
+import { currentPeriods, renderedTapIds, tapPeriods } from "@/lib/rendered-taps";
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -146,7 +146,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
 
   return (
     <section className="flex flex-col gap-4 pt-2 pb-6">
-      <RenderedTaps ids={renderedTaps} />
+      <RenderedTaps ids={renderedTaps} periods={tapPeriods([h], () => group?.timezone ?? profile.timezone)} />
       <Link
         href={child ? `/kids/${child.id}` : "/today"}
         className="-ml-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"

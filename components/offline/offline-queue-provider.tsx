@@ -4,10 +4,11 @@ import { createContext, startTransition, useCallback, useContext, useEffect, use
 import { usePathname, useRouter } from "next/navigation";
 import { createOfflineClient, type Channel, type Counts, type TapResult } from "@/lib/offline-client";
 import { GENERIC_ERROR } from "@/lib/habit-errors";
-import { claimSavedPages, savePageOffline } from "@/lib/offline-pages";
-import { queuedDelta } from "@/lib/offline-queue";
+import { claimSavedPages, clearSavedPages, savePageOffline } from "@/lib/offline-pages";
+import { queuedDelta, type ShownPeriods } from "@/lib/offline-queue";
 import { deleteOfflineQueue, indexedDbStorage, offlineDbName, type Locks } from "@/lib/offline-queue-store";
-import { httpSender } from "@/lib/offline-sync";
+import { httpSender, tapSender } from "@/lib/offline-sync";
+import type { TapPeriods } from "@/lib/rendered-taps";
 
 type Client = ReturnType<typeof createOfflineClient>;
 // queued: check-ins waiting on this phone, per habit and person (lib/offline-queue.ts queueKey).
@@ -19,8 +20,10 @@ type Client = ReturnType<typeof createOfflineClient>;
 // (the drawn state can wait behind a running check-in).
 type Ctx = {
   client: Client | null; userId: string | null; queued: Counts; delta: ReadonlyMap<string, number>; busy: boolean; holdsRefresh: () => boolean;
-  ready: boolean; notice: boolean; dismissNotice: () => void; setRendered: (ids: ReadonlySet<string>) => void;
+  ready: boolean; notice: boolean; dismissNotice: () => void; setRendered: (drawn: Drawn) => void;
 };
+// What the page was drawn with: its check-ins' client ids, and each habit's shown period.
+type Drawn = { ids: ReadonlySet<string>; periods: ShownPeriods | null };
 const NONE: Counts = new Map();
 const OfflineQueueContext = createContext<Ctx>({
   client: null, userId: null, queued: NONE, delta: NONE, busy: false, holdsRefresh: () => false, ready: false, notice: false, dismissNotice: () => {},
@@ -35,13 +38,19 @@ export function useOfflineQueue() {
 
 // The client ids of the check-ins a page was drawn with (lib/rendered-taps.ts renderedTapIds), so a
 // waiting tap the page already counts isn't added again, and a waiting undo of one takes it back.
-// A layout effect: set before the browser paints the new page, so no frame counts a tap twice.
-export function RenderedTaps({ ids }: { ids: string[] }) {
+// periods (lib/rendered-taps.ts tapPeriods): the period each habit's counts are for, so a waiting tap
+// from an earlier period doesn't add to this one. A layout effect: set before the browser paints the
+// new page, so no frame counts a tap twice.
+export function RenderedTaps({ ids, periods }: { ids: string[]; periods?: TapPeriods }) {
   const { setRendered } = useContext(OfflineQueueContext);
   const key = ids.join(",");
+  const periodsKey = periods ? JSON.stringify(periods) : "";
   useLayoutEffect(() => {
-    setRendered(new Set(key ? key.split(",") : []));
-  }, [key, setRendered]);
+    setRendered({
+      ids: new Set(key ? key.split(",") : []),
+      periods: periodsKey ? new Map(Object.entries(JSON.parse(periodsKey) as TapPeriods)) : null,
+    });
+  }, [key, periodsKey, setRendered]);
   return null;
 }
 
@@ -91,7 +100,7 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
   const [ready, setReady] = useState(false);
   const [notice, setNotice] = useState(false);
   const [claimed, setClaimed] = useState(false);
-  const [rendered, setRendered] = useState<ReadonlySet<string> | null>(null);
+  const [rendered, setRendered] = useState<Drawn | null>(null);
   const client = useMemo(() => {
     if (typeof window === "undefined") return null;
     return createOfflineClient({
@@ -99,10 +108,14 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
       send: httpSender(),
       locks: (navigator as Navigator & { locks?: Locks }).locks ?? null,
       isOnline: () => navigator.onLine,
-      // In a transition, like the flush below: when an online tap lands, the queue forgets it while the
-      // check-in's own page refresh is still on its way. Applied together, the Today card and the
-      // buttons never count that tap twice (the refreshed count plus the queued one).
-      onCounts: (counts) => startTransition(() => setQueued(counts)),
+      // In a transition, like the flush below. When an online tap lands (landed), the queue forgets it
+      // and the page is refreshed in the same transition: applied together, the Today card and the
+      // buttons never count that tap twice (the refreshed count plus the queued one), nor drop it.
+      onCounts: (counts, landed) =>
+        startTransition(() => {
+          setQueued(counts);
+          if (landed) router.refresh();
+        }),
       onFlushed: ({ counts, changed, poisoned }) => {
         // The saved state and the fresh page land together: clearing "Saving…" before the refresh
         // would flip the card back to open for a moment (and slide it in the kid view).
@@ -154,7 +167,7 @@ export function OfflineQueueProvider({ userId, children }: { userId: string; chi
   }, [claimed, pathname]);
 
   const dismissNotice = useCallback(() => setNotice(false), []);
-  const delta = useMemo(() => queuedDelta(queued.queue ?? [], rendered), [queued, rendered]);
+  const delta = useMemo(() => queuedDelta(queued.queue ?? [], rendered?.ids ?? null, rendered?.periods ?? null), [queued, rendered]);
   const busy = (queued.queue?.length ?? 0) > 0;
   const value = useMemo(
     () => ({ client, userId, queued, delta, busy, holdsRefresh, ready, notice, dismissNotice, setRendered }),
@@ -178,17 +191,33 @@ export function useUndoQueuedTap() {
   );
 }
 
-type Online = (tap: { clientId: string }) => Promise<{ ok: true } | { ok: false; message: string }>;
+// Reset my data (components/profile/reset-my-data.tsx): drop what waits on these habits from this
+// phone, and the saved pages, before the reset runs.
+export function useForgetOfflineHabits() {
+  const { client } = useContext(OfflineQueueContext);
+  return useCallback(
+    async (habitIds: string[]): Promise<void> => {
+      await client?.forgetHabits(habitIds);
+      await clearSavedPages();
+    },
+    [client],
+  );
+}
 
-// A check-in tap: saved on this phone first, then tried online (lib/offline-client.ts submitTap).
-// Once it lands, the saved Today / kid view is refreshed so the offline copy isn't stale.
+const sendTap = tapSender();
+
+// A check-in tap: saved on this phone first, then tried online (lib/offline-client.ts submitTap,
+// app/api/check-ins/tap). Once it lands, the saved Today / kid view is refreshed so the offline copy
+// isn't stale. subjectId: a child's tap; byChild: made in the kid view.
 export function useSubmitTap() {
   const { client } = useContext(OfflineQueueContext);
   return useCallback(
-    async (tap: { habitId: string; subjectId?: string | null; byChild?: boolean }, online: Online): Promise<TapResult> => {
+    async (tap: { habitId: string; subjectId?: string | null; byChild?: boolean }): Promise<TapResult> => {
       if (!client) return { ok: false, message: GENERIC_ERROR };
       try {
-        const r = await client.submitTap(tap, online);
+        const r = await client.submitTap(tap, ({ clientId }, signal) =>
+          sendTap({ clientId, habitId: tap.habitId, subjectId: tap.subjectId ?? null, ...(tap.byChild ? { byChild: true } : {}) }, signal),
+        );
         if (r.ok && !r.queued) savePageOffline();
         return r;
       } catch (e) {

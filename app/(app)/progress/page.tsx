@@ -7,7 +7,11 @@ import { HabitDots, WeekCard } from "@/components/overview/week-overview";
 import { Button } from "@/components/ui/button";
 import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
 import { dayDetail } from "@/lib/day-detail";
-import { getFinishedIds, getHabitSummaries, getMyCheckIns, getWeekOverview } from "@/lib/habits";
+import { getProfile } from "@/lib/auth";
+import { todayIn } from "@/lib/dates";
+import { hasEnded } from "@/lib/habit-end";
+import { getFinishedIds, getGroupTimezones, getHabitEnds, getHabitSummaries, getMyCheckIns, getWeekOverview } from "@/lib/habits";
+import { inProgressTab, type ProgressTab } from "@/lib/progress-lists";
 import { RestoreHabitButton } from "@/components/habits/restore-habit-button";
 import { StartAgainButton } from "@/components/habits/start-again-button";
 import type { HabitPeriod } from "@/lib/habit-schema";
@@ -21,11 +25,15 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
   const { view } = await searchParams;
   const showFinished = view === "finished";
   const showArchived = view === "archived" || showFinished;
-  const [summaries, overview, finishedIds] = await Promise.all([getHabitSummaries(), getWeekOverview(), getFinishedIds()]);
-  // Finished habits (ideas/habit-end-date.md) are archived too; they get their own tab.
-  const habits = summaries.filter(
-    (h) => Boolean(h.archived_at) === showArchived && (!showArchived || finishedIds.has(h.habit_id) === showFinished),
-  );
+  const tab: ProgressTab = showFinished ? "finished" : showArchived ? "archived" : "active";
+  const [summaries, overview, finishedIds, { profile }] = await Promise.all([getHabitSummaries(), getWeekOverview(), getFinishedIds(), getProfile()]);
+  // Past its end, in the habit's own calendar (a group habit runs on the group's zone): not Active
+  // any more (lib/progress-lists.ts). Finished habits (ideas/habit-end-date.md) are archived too;
+  // they get their own tab.
+  const running = summaries.filter((h) => !h.archived_at);
+  const [ends, zones] = await Promise.all([getHabitEnds(running.map((h) => h.habit_id)), getGroupTimezones(running.map((h) => h.group_id))]);
+  const ended = (h: (typeof summaries)[number]) => hasEnded(ends.get(h.habit_id), todayIn((h.group_id && zones.get(h.group_id)) || profile.timezone));
+  const habits = summaries.filter((h) => inProgressTab(h, tab, finishedIds, ended));
   const cellsFor = new Map((overview?.per_habit ?? []).map((p) => [p.habit_id, p.cells]));
   const categories = CATEGORY_ORDER.filter((c) => habits.some((h) => h.category === c));
   // Tap a day: each day up to today, from the overview's cells plus my check-ins that week.
@@ -101,6 +109,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                           )}
                         </span>
                         <span className="text-sm text-muted-foreground">
+                          {!h.archived_at && ended(h) && "Ended · decide on Today · "}
                           {describeSchedule(h.target_count, h.period)}
                           {h.best_streak > 0 && ` · best ${h.best_streak} ${UNIT[h.period][h.best_streak === 1 ? 0 : 1]}`}
                         </span>
@@ -112,7 +121,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                       </span>
                       <StreakBadge count={h.current_streak} />
                     </Link>
-                    {showFinished && (!h.group_id || h.my_role === "admin") && (
+                    {showFinished && h.archived_at && (!h.group_id || h.my_role === "admin") && (
                       <span className="shrink-0 pr-2">
                         <StartAgainButton habitId={h.habit_id} title={h.title} />
                       </span>

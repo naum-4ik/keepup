@@ -55,6 +55,10 @@ const MESSAGES: Record<string, string> = {
   tap_in_future: "This phone's clock seems to be ahead. Check the time and try again.",
 };
 
+// These errors mean another device (or midnight) already changed the habit; refresh so its card stops
+// showing stale data.
+export const REFRESH_ON_ERROR = new Set(["target_reached", "already_checked_in_today", "habit_frozen", "habit_archived", "habit_not_found"]);
+
 // The rule name a database function raised ("keepup:<code>"), if any.
 export function errorCode(error: { message?: string } | null | undefined): string | undefined {
   return error?.message?.match(/keepup:([a-z_]+)/)?.[1];
