@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import type { AvatarColor } from "@/lib/avatars";
 import type { Database } from "@/lib/database.types";
 import type { GroupKind } from "@/lib/group-schema";
+import { logError } from "@/lib/log";
 
 export type MyGroup = Database["public"]["Functions"]["my_groups"]["Returns"][number];
 export type GroupMember = {
@@ -33,7 +34,7 @@ export async function getMyGroups(): Promise<MyGroup[]> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("my_groups");
   if (error) {
-    console.error("my_groups failed", error.message);
+    logError("my_groups failed", error.message);
     return [];
   }
   return data ?? [];
@@ -43,7 +44,7 @@ export async function getGroupDetail(groupId: string): Promise<GroupDetail | nul
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("group_detail", { p_group_id: groupId });
   if (error) {
-    console.error("group_detail failed", error.message);
+    logError("group_detail failed", error.message);
     return null;
   }
   return (data as unknown as GroupDetail | null) ?? null;

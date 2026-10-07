@@ -4,6 +4,7 @@ import type { AvatarColor } from "@/lib/avatars";
 import { habitEmoji, normalizeCategory } from "@/lib/categories";
 import type { Database } from "@/lib/database.types";
 import type { HabitSummary } from "@/lib/habits";
+import { logError } from "@/lib/log";
 
 export type MyChild = Omit<Database["public"]["Functions"]["my_children"]["Returns"][number], "avatar_color"> & {
   avatar_color: AvatarColor | null;
@@ -35,7 +36,7 @@ export async function getMyChildren(): Promise<MyChild[]> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("my_children");
   if (error) {
-    console.error("my_children failed", error.message);
+    logError("my_children failed", error.message);
     return [];
   }
   return (data ?? []) as MyChild[];
@@ -45,7 +46,7 @@ export async function getChildSummaries(childId: string): Promise<HabitSummary[]
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("child_summaries", { p_child_id: childId });
   if (error) {
-    console.error("child_summaries failed", error.message);
+    logError("child_summaries failed", error.message);
     return [];
   }
   // Same mapping as getHabitSummaries, except a kid habit's null category stays null (⭐ fallback).
@@ -65,7 +66,7 @@ export async function getChildRewards(childId: string): Promise<ChildRewards | n
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("child_rewards", { p_child_id: childId });
   if (error || !data) {
-    console.error("child_rewards failed", error?.message ?? "no data");
+    logError("child_rewards failed", error?.message ?? "no data");
     return null;
   }
   return data as unknown as ChildRewards;
@@ -83,7 +84,7 @@ export async function getChildCheckIns(childId: string, habits: Pick<HabitSummar
     .gte("period_start", habits.map((h) => h.period_start).sort()[0])
     .order("created_at", { ascending: false });
   if (error) {
-    console.error("child check-ins failed", error.message);
+    logError("child check-ins failed", error.message);
     return [];
   }
   const current = new Map(habits.map((h) => [h.habit_id, h.period_start]));

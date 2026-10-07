@@ -22,6 +22,7 @@ import { requestOrigin } from "@/lib/request-origin";
 import { describeSchedule } from "@/lib/schedule";
 import { listTimezones } from "@/lib/timezones";
 import { deleteGroup, leaveGroup, renameGroup, saveGroupAvatar, updateGroupSettings } from "../actions";
+import { logError } from "@/lib/log";
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -46,7 +47,7 @@ export default async function GroupPage({
     getGroupDetail(id),
     // Fail soft: on an error the group page shows no habits rather than the error screen.
     getHabitSummaries().catch((e: Error) => {
-      console.error(e.message);
+      logError(e.message);
       return [];
     }),
     getMyGroups(),

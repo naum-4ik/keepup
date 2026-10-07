@@ -7,6 +7,7 @@ import { parseEntry } from "@/lib/offline-sync";
 import { parseJson, readBody } from "@/lib/request-body";
 import { isSameOrigin } from "@/lib/review-request";
 import { createClient } from "@/lib/supabase/server";
+import { logError } from "@/lib/log";
 
 type Db = Awaited<ReturnType<typeof createClient>>;
 
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
   if (error) {
     const code = errorCode(error);
     if (code === "not_authenticated") return NextResponse.json({ error: code }, { status: 401 });
-    if (!code) console.error("offline sync", error.message);
+    if (!code) logError("offline sync", error.message);
     return code ? NextResponse.json({ error: code }, { status: 409 }) : NextResponse.json({ error: "unavailable" }, { status: 503 });
   }
   revalidatePath("/today");

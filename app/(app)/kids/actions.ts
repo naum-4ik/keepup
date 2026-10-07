@@ -9,6 +9,7 @@ import { isOneEmoji, isUuid, parseHabit } from "@/lib/habit-schema";
 import { isKidTheme } from "@/lib/garden";
 import { isKidTemplateId, KID_TEMPLATES } from "@/lib/kid-templates";
 import { parseChildName, parseGoal } from "@/lib/kid-schema";
+import { logError } from "@/lib/log";
 
 // code: the database rule that refused it ("keepup:<code>"), when there was one (an offline-queued
 // tap is dropped only for a rule refusal; anything else keeps it queued).
@@ -78,7 +79,7 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
       p_period: t.period,
     });
     if (habitError) {
-      console.error("create_child_habit failed", habitError.message);
+      logError("create_child_habit failed", habitError.message);
       habitsFailed = true;
     }
   }

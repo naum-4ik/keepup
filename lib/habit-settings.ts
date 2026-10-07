@@ -1,6 +1,7 @@
 import "server-only";
 import { requireUser } from "@/lib/auth";
 import { reminderMode, type ReminderMode } from "@/lib/reminder-mode";
+import { logError } from "@/lib/log";
 
 export type HabitSettings = { muted: boolean; mode: ReminderMode; remindAt: string | null; hasDevice: boolean; reminderHour: number };
 
@@ -12,7 +13,7 @@ export async function getHabitSettings(habitId: string): Promise<HabitSettings> 
     supabase.from("push_subscriptions").select("id", { count: "exact", head: true }),
     supabase.from("profiles").select("reminder_hour").eq("id", userId).single(),
   ]);
-  for (const r of [row, devices, profile]) if (r.error) console.error("habit settings", r.error.message);
+  for (const r of [row, devices, profile]) if (r.error) logError("habit settings", r.error.message);
   return {
     muted: row.data?.muted ?? false,
     ...reminderMode(row.data ?? null),

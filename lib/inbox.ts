@@ -2,6 +2,7 @@ import "server-only";
 import { requireUser } from "@/lib/auth";
 import type { Database } from "@/lib/database.types";
 import { FEED_KINDS, isFeedKind, type FeedItem } from "@/lib/feed-copy";
+import { logError } from "@/lib/log";
 
 export type PendingApproval = Database["public"]["Functions"]["pending_approvals"]["Returns"][number];
 
@@ -11,7 +12,7 @@ export async function getFeed(): Promise<FeedItem[]> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("inbox_feed", { p_limit: 60 });
   if (error) {
-    console.error("inbox_feed failed", error.message);
+    logError("inbox_feed failed", error.message);
     return [];
   }
   return (data ?? [])
@@ -23,7 +24,7 @@ export async function getPendingApprovals(): Promise<PendingApproval[]> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("pending_approvals");
   if (error) {
-    console.error("pending_approvals failed", error.message);
+    logError("pending_approvals failed", error.message);
     return [];
   }
   return data ?? [];
@@ -38,7 +39,7 @@ export async function getUnreadCount(): Promise<number> {
     .is("read_at", null)
     .in("kind", [...FEED_KINDS]);
   if (error) {
-    console.error("unread count failed", error.message);
+    logError("unread count failed", error.message);
     return 0;
   }
   return count ?? 0;

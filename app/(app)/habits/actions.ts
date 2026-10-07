@@ -10,6 +10,7 @@ import { getGroupDetail } from "@/lib/groups";
 import { GENERIC_ERROR, habitErrorMessage, REFRESH_ON_ERROR } from "@/lib/habit-errors";
 import { reminderError } from "@/lib/reminder-mode";
 import { isUuid, LOCAL_DATE, parseDetailsEdit, parseHabit, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
+import { logError } from "@/lib/log";
 
 const NOT_FOUND: ActionResult = { ok: false, message: "That habit isn't available." };
 
@@ -53,7 +54,7 @@ export async function createHabit(_prev: HabitFormState, formData: FormData): Pr
     return { status: "error", message: message === GENERIC_ERROR ? "Couldn't save the habit. Try again." : message, values };
   }
   const endError = ids[0] ? await setHabitEnd(supabase, ids[0], readEndsOn(formData)) : null;
-  if (endError) console.error("set_habit_end failed", endError.message);
+  if (endError) logError("set_habit_end failed", endError.message);
 
   refresh();
   redirect("/today");
@@ -204,7 +205,7 @@ export async function createGroupHabit(_prev: HabitFormState, formData: FormData
   });
   if (error) return { status: "error", message: habitErrorMessage(error), values };
   const endError = created ? await setHabitEnd(supabase, created.id, readEndsOn(formData)) : null;
-  if (endError) console.error("set_habit_end failed", endError.message);
+  if (endError) logError("set_habit_end failed", endError.message);
   refresh();
   revalidatePath(`/groups/${groupId}`);
   redirect("/today");
@@ -314,7 +315,7 @@ export async function startAgain(habitId: string): Promise<StartAgainResult> {
   if (newId && h.ends_on) {
     const endError = await setHabitEnd(supabase, newId, startAgainEnd(h.starts_on, h.ends_on, todayIn(timeZone)));
     if (endError) {
-      console.error("set_habit_end failed", endError.message);
+      logError("set_habit_end failed", endError.message);
       refresh();
       return { ok: false, message: "Started again, but the end couldn't be set. Set it on the habit page.", startedId: newId };
     }
