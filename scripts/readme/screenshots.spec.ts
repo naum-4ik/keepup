@@ -186,3 +186,45 @@ test("README screenshots", async ({ page, context }) => {
   await page.screenshot({ path: `${OUT}/offline.png` });
   await context.setOffline(false);
 });
+
+// Landing pictures (public/landing): the real demo, as a visitor sees it after Try it on /.
+// One anonymous sign-in (the local limit is 30 an hour). Run alone: npm run landing:screenshots
+test("landing screenshots", async ({ page }) => {
+  test.setTimeout(90_000);
+  const LANDING_OUT = "public/landing";
+  await page.goto("/");
+  await page.getByRole("button", { name: "Try it" }).click();
+  await expect(page.getByRole("button", { name: "Check in: Read", exact: true })).toBeVisible({ timeout: 15_000 });
+  const celebration = page.getByRole("alertdialog", { name: "Celebration" });
+  if (await celebration.isVisible()) await page.keyboard.press("Escape");
+
+  // Today, part done.
+  await page.getByRole("button", { name: "Check in: Read", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Done: Read", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: Drink water", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Done: Drink water", exact: true })).toBeVisible();
+  await page.goto("/today");
+  await expect(page.getByRole("button", { name: "Done: Read", exact: true })).toBeVisible();
+  if (await celebration.isVisible()) await page.keyboard.press("Escape");
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: `${LANDING_OUT}/today.png` });
+
+  // The family habit.
+  await page.goto("/groups");
+  await page.getByRole("link", { name: /Family/ }).first().click();
+  await expect(page).toHaveURL(/\/groups\/[0-9a-f-]{36}/);
+  const groupPage = page.url();
+  await page.getByRole("link", { name: /Family dinner/ }).first().click();
+  await expect(page).toHaveURL(/\/habits\/[0-9a-f-]{36}$/);
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: `${LANDING_OUT}/family.png` });
+
+  // Nova's view, settled (same waits as the README's kid view).
+  await page.goto(groupPage);
+  await page.getByRole("link", { name: /Nova/ }).first().click();
+  await page.getByRole("link", { name: "Open Nova's view" }).click();
+  await expect(page.getByRole("button", { name: "Hold to exit Nova's view" })).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(7000);
+  await page.screenshot({ path: `${LANDING_OUT}/kid.png` });
+});
