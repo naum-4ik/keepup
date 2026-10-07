@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { safeNextPath, withNext } from "@/lib/paths";
 import { createClient } from "@/lib/supabase/server";
 
 // "Try it", step 2: the browser has just signed in anonymously (TryDemoButton: so each visitor counts
@@ -24,8 +25,9 @@ export async function startDemo(formData: FormData): Promise<void> {
 
 // The banner's "Sign in": leave the demo session, then the normal sign-in page. Never convert the
 // anonymous login with updateUser: it would keep is_demo, and every demo guard would block it.
-export async function leaveDemo(): Promise<void> {
+// `next` (an invite link opened in the demo): sign-in then returns there. Same-site paths only.
+export async function leaveDemo(next?: string): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut({ scope: "local" });
-  redirect("/login");
+  redirect(withNext("/login", safeNextPath(next)));
 }

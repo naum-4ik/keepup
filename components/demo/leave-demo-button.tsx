@@ -14,8 +14,10 @@ import { browserSubscription, signOutCleanup } from "@/lib/push-support";
 import { runLeaveDemo } from "@/lib/try-demo";
 
 // The demo banner's "Sign in": the phone is cleared the way Delete account clears it, then leaveDemo
-// ends the session and opens /login (lib/try-demo.ts runLeaveDemo).
-export function LeaveDemoButton() {
+// ends the session and opens /login (lib/try-demo.ts runLeaveDemo), with `next` when given. Outside
+// OfflineQueueProvider (the invite page, onboarding) there is no queue to delete: useOfflineSignOut's
+// deleteQueue does nothing there; saved pages, push and the pages-owner sentinel are still cleared.
+export function LeaveDemoButton({ next }: { next?: string }) {
   const queue = useOfflineSignOut();
   const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +35,7 @@ export function LeaveDemoButton() {
         });
         markPagesOwnerDeleted();
       },
-      leave: leaveDemo,
+      leave: () => leaveDemo(next),
       rethrow: unstable_rethrow,
     });
     if (result === "failed") setError(GENERIC_ERROR);

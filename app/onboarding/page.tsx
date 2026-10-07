@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { DemoBanner } from "@/components/demo/demo-banner";
 import { getProfile } from "@/lib/auth";
 import { isGroupKind } from "@/lib/group-schema";
 import { getMyGroups } from "@/lib/groups";
@@ -23,6 +24,8 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
 
   return (
     <main className="mx-auto max-w-sm px-4 py-10">
+      {/* A demo login whose seeding never ran (the tab closed mid-way): a way out to a real account. */}
+      {(profile.is_demo || data?.claims?.is_anonymous) && <DemoBanner placement="top" />}
       <h1 className="text-2xl font-bold">Welcome to Keepup</h1>
       <p className="mb-6 text-sm text-muted-foreground">
         {invitedTo ? `You're joining ${invitedTo.name}. A little about you first.` : "A little about you, then your first habits."}
