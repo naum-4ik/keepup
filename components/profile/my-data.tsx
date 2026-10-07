@@ -11,6 +11,7 @@ import { downloadJson } from "@/lib/download-json";
 import { GENERIC_ERROR } from "@/lib/habit-errors";
 import {
   DELETE_BODY,
+  DELETE_FAILED,
   DELETE_TITLE,
   DELETE_WORD,
   deletePreviewLines,
@@ -18,9 +19,10 @@ import {
   EXPORT_HINT,
   isDeleteWord,
   myDataFileName,
+  runDelete,
 } from "@/lib/my-data";
 import { NEEDS_CONNECTION } from "@/lib/offline-copy";
-import { clearOfflineCaches, forgetPagesOwner } from "@/lib/offline-pages";
+import { clearOfflineCaches, markPagesOwnerDeleted } from "@/lib/offline-pages";
 import { browserSubscription, signOutCleanup } from "@/lib/push-support";
 
 // Saves everything Keepup keeps about this person as keepup-my-data-{date}.json.
@@ -52,8 +54,8 @@ function ExportMyDataButton() {
 
 // Settings → Your data (M6). Delete account works like Reset my data: typing "delete" guards the
 // button. The dialog says which groups go with the account and who becomes admin where this person
-// was the last one (public.delete_account_preview). The phone is cleared before the delete, the way
-// sign-out clears it (the action redirects, so nothing runs after it on success).
+// was the last one (public.delete_account_preview). Then lib/my-data.ts runDelete: waiting check-ins
+// are sent, the phone is cleared the way sign-out clears it, and the account is deleted.
 export function MyData() {
   const [open, setOpen] = useState(false);
   const [word, setWord] = useState("");
@@ -87,19 +89,25 @@ export function MyData() {
     }
     startTransition(async () => {
       try {
-        // Waiting check-ins, saved pages and this phone's push subscription go first.
-        await signOutCleanup({
-          getSubscription: browserSubscription,
-          forget: async (endpoint) => void (await forgetPushSubscription(endpoint)),
-          clearCaches: clearOfflineCaches,
-          deleteQueue: queue.deleteQueue,
+        const message = await runDelete({
+          flush: queue.flushQueue,
+          // Saved pages, the queue and this phone's push subscription, as at sign-out.
+          clearPhone: async () => {
+            await signOutCleanup({
+              getSubscription: browserSubscription,
+              forget: async (endpoint) => void (await forgetPushSubscription(endpoint)),
+              clearCaches: clearOfflineCaches,
+              deleteQueue: queue.deleteQueue,
+            });
+            markPagesOwnerDeleted();
+          },
+          // On success the action redirects to the landing page.
+          remove: deleteMyAccount,
         });
-        forgetPagesOwner();
-        const r = await deleteMyAccount();
-        // On success the action redirects to the landing page.
-        if (r && !r.ok) setError(r.message);
+        if (message) setError(message);
       } catch {
-        setError(navigator.onLine ? GENERIC_ERROR : NEEDS_CONNECTION);
+        // The phone may be cleared already: a reload brings the queue and push back.
+        setError(DELETE_FAILED);
       }
     });
   }

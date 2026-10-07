@@ -5,6 +5,8 @@ export const DELETE_BODY =
   "Your account, habits, check-ins, XP, badges and Inbox are deleted right away. This can't be undone.";
 export const EXPORT_HINT = "A file with everything Keepup keeps about you.";
 export const EXPORT_FIRST = "Export your data first if you want a copy.";
+// A failed delete after the phone was cleared: a reload brings back the check-in queue and push.
+export const DELETE_FAILED = "Couldn't delete your account. Reload Keepup and try again.";
 // The landing page, right after a delete (app/page.tsx, ?deleted=1).
 export const DELETED_NOTE = "Your account and data are deleted.";
 
@@ -35,4 +37,23 @@ export function deletePreviewLines(p: DeletePreview): string[] {
     ),
     ...p.admin_handover.map((h) => `${h.new_admin} becomes the admin of ${h.group}.`),
   ];
+}
+
+// The confirm button's steps (components/profile/my-data.tsx). Online, waiting check-ins are sent
+// first (as at sign-out), so only taps that couldn't be sent anyway are lost. Then the phone is
+// cleared, before the delete, because a successful delete redirects and nothing runs after it.
+// remove resolves only on failure. Returns the error to show, if any.
+export async function runDelete(steps: {
+  flush: () => Promise<void>;
+  clearPhone: () => Promise<void>;
+  remove: () => Promise<{ ok: false; message: string } | undefined>;
+}): Promise<string | null> {
+  try {
+    await steps.flush();
+  } catch (e) {
+    console.error("delete account: sending waiting check-ins", e);
+  }
+  await steps.clearPhone();
+  const r = await steps.remove();
+  return r && !r.ok ? DELETE_FAILED : null;
 }
