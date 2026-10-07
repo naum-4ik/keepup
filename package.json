@@ -16,6 +16,8 @@
     "readme:screenshots": "playwright test -c playwright.readme.config.ts && sips -Z 1300 docs/screenshots/*.png >/dev/null && node scripts/readme/check-sizes.mjs"
   },
   "dependencies": {
+    "@grafana/faro-web-sdk": "^2.12.1",
+    "@grafana/faro-web-tracing": "^2.12.1",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/api-logs": "^0.223.0",
     "@opentelemetry/exporter-logs-otlp-proto": "^0.223.0",
