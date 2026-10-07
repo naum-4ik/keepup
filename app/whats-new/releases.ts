@@ -18,6 +18,16 @@ export function releaseLabel(r: Release, appVersion: string): string {
 
 export const RELEASES: Release[] = [
   {
+    version: "0.6.1",
+    date: "2026-10-07",
+    notes: [
+      "Settings → Reset my data: start fresh with your own habits, XP and badges. Your family's shared habits and your kids stay as they are.",
+      "Undo is more reliable on a slow or flaky connection, also with Keepup open in more than one tab.",
+      "Progress → Active no longer lists habits that have reached their end; you'll find them under Finished.",
+      "A check-in saved offline yesterday now counts for yesterday, not today.",
+    ],
+  },
+  {
     version: "0.6.0",
     date: "2026-10-06",
     notes: [
