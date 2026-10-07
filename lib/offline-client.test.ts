@@ -326,6 +326,43 @@ describe("a late answer, and an Undo while a flush sends", () => {
   });
 });
 
+describe("the undo hold is shared by every tab (stored on the entry)", () => {
+  const client = (storage: ReturnType<typeof memoryStorage>, send: Sender) =>
+    createOfflineClient({ storage, send, isOnline: () => true, onCounts: () => {}, onFlushed: () => {} });
+
+  it("another tab flushing during this tab's online try doesn't send the undo; it goes out when the try ends", async () => {
+    const storage = memoryStorage();
+    const sent: string[] = [];
+    const send: Sender = async (e) => (sent.push(`${e.kind}`), "synced");
+    const a = client(storage, send);
+    const b = client(storage, send); // the second tab: its own memory, the same queue
+    const done = a.submitTap({ habitId: "h1" }, () => new Promise((r) => setTimeout(() => r({ ok: true }), 5_000)));
+    await vi.advanceTimersByTimeAsync(1_000);
+    await a.undoQueued("h1");
+    await vi.advanceTimersByTimeAsync(1_000);
+    await b.flush(); // tab B comes into view at 2 s
+    expect(sent).toEqual([]);
+    await vi.advanceTimersByTimeAsync(3_000);
+    await done;
+    await vi.waitFor(() => expect(sent).toEqual(["undo"]));
+    expect(await storage.load()).toEqual([]);
+  });
+
+  it("if the tab that made the try is gone, another tab sends the undo just after the hold ends, not on the backoff", async () => {
+    vi.setSystemTime(new Date("2026-10-07T08:00:00Z"));
+    const until = "2026-10-07T08:00:10.000Z";
+    const storage = memoryStorage([{ kind: "undo", clientId: "c1", habitId: "h1", subjectId: null, tryingUntil: until }]);
+    const sent: string[] = [];
+    const b = client(storage, async (e) => (sent.push(e.kind), "synced"));
+    await b.flush();
+    expect(sent).toEqual([]);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(sent).toEqual([]);
+    await vi.advanceTimersByTimeAsync(300);
+    expect(sent).toEqual(["undo"]);
+  });
+});
+
 describe("holdsRefresh", () => {
   it("holds while a tap waits or its online try runs, and lets go when nothing waits", async () => {
     const { client, setOnline } = setup({ tapTimeoutMs: 100 });

@@ -7,6 +7,7 @@ import {
   flush as flushQueue,
   pendingCounts,
   pendingHabitIds,
+  undoOnHold,
   undoneIds,
   type FlushResult,
   type QueueEntry,
@@ -149,6 +150,7 @@ export function createOfflineQueue(deps: {
     const snapshot = await deps.storage.load();
     // A check-in is marked maybe sent before its request goes: from then on an Undo asks the server.
     const send: Sender = async (e) => {
+      if (undoOnHold(e, now()) !== null) return "wait"; // its tap's online try may still land
       if (e.kind === "check_in" && !e.maybeSent) await markMaybeSent(e.clientId);
       return deps.send(e);
     };
@@ -192,6 +194,19 @@ export function createOfflineQueue(deps: {
     undo: undoEntry,
     // About to be tried online (lib/offline-client.ts submitTap): the server may get it from now on.
     markMaybeSent,
+    // An online try starts (lib/offline-client.ts submitTap): maybe sent, and its try may run until
+    // `until`, in any tab's view. tryEnded: it answered, failed or was aborted; its undo (if any) can go.
+    markTrying: (clientId: string, until: string) =>
+      update((q) => q.map((e) => (e.kind === "check_in" && e.clientId === clientId ? { ...e, maybeSent: true, tryingUntil: until } : e))),
+    tryEnded: (clientId: string) =>
+      update((q) =>
+        q.map((e) => {
+          if (e.clientId !== clientId || !e.tryingUntil) return e;
+          const rest = { ...e };
+          delete rest.tryingUntil;
+          return rest;
+        }),
+      ),
     // A tap that was saved here first and then reached the server online (or was refused): it needn't
     // wait any more. If a flush is sending it at the same time, the server keeps one (client_id).
     forget: (clientId: string) => update((q) => q.filter((e) => !(e.kind === "check_in" && e.clientId === clientId))),

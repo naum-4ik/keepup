@@ -45,6 +45,7 @@ export function httpSender(fetchImpl: typeof fetch = (input, init) => fetch(inpu
     const body = { ...entry };
     delete body.attempts;
     delete body.firstFailedAt;
+    delete body.tryingUntil;
     if (body.kind === "check_in") delete body.maybeSent;
     else {
       delete body.subjectId;

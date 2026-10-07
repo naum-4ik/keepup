@@ -7,13 +7,17 @@ import { todayIn } from "./dates";
 // counted failures and when the first was (see GIVE_UP_AFTER); kept on the phone, never sent.
 // maybeSent: it was tried online or sent by a flush, so the server may have it although no answer
 // came back; an Undo then has to ask the server (addUndo). Kept on the phone, never sent.
+// tryingUntil: its online try may still be running until then (lib/offline-client.ts submitTap), so
+// the server may not have it yet; an undo of it waits (undoOnHold). Kept on the phone, never sent.
 type Failures = { attempts?: number; firstFailedAt?: string };
 export type QueuedCheckIn = {
   kind: "check_in"; clientId: string; habitId: string; subjectId: string | null; tappedAt: string; byChild?: boolean; maybeSent?: boolean;
+  tryingUntil?: string;
 } & Failures;
 // subjectId: whose tap it takes back (its tap's; older stored undos have none: mine). queuedAt: when
 // it was made (older stored undos have none). Both kept on the phone, never sent.
-export type QueuedUndo = { kind: "undo"; clientId: string; habitId: string; subjectId?: string | null; queuedAt?: string } & Failures;
+// tryingUntil: copied from its tap (an undo made while the tap's online try runs).
+export type QueuedUndo = { kind: "undo"; clientId: string; habitId: string; subjectId?: string | null; queuedAt?: string; tryingUntil?: string } & Failures;
 export type QueueEntry = QueuedCheckIn | QueuedUndo;
 
 // synced: the server has it. rejected: a rule refused it (final; the server's feed note explains).
@@ -48,7 +52,7 @@ export function addUndo(queue: QueueEntry[], undo: QueuedUndo, inFlight: Readonl
   const tap = queue.find(isTap) as QueuedCheckIn | undefined;
   const rest = queue.filter((e) => !isTap(e));
   if (tap && !tap.maybeSent && !inFlight.has(undo.clientId)) return rest;
-  const entry: QueuedUndo = tap ? { ...undo, subjectId: tap.subjectId } : undo;
+  const entry: QueuedUndo = tap ? { ...undo, subjectId: tap.subjectId, ...(tap.tryingUntil ? { tryingUntil: tap.tryingUntil } : {}) } : undo;
   return rest.some((e) => same(e, entry)) ? rest : [...rest, entry];
 }
 
@@ -174,4 +178,13 @@ export async function flush(queue: QueueEntry[], send: Sender, now: () => Date =
     if (entry.kind === "undo") undone.add(entry.clientId);
   }
   return { remaining: [], synced, rejected, dropped, poisoned, attempted: null };
+}
+
+// An undo whose tap's online try may still be running (in this tab or another: the hold is on the
+// stored entry) waits: sent now it could find nothing, and the check-in would land after it. Until
+// when, or null when it can go.
+export function undoOnHold(e: QueueEntry, now: Date): number | null {
+  if (e.kind !== "undo" || !e.tryingUntil) return null;
+  const until = Date.parse(e.tryingUntil);
+  return until > now.getTime() ? until : null;
 }

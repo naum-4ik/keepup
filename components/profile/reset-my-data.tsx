@@ -34,7 +34,12 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
       try {
         const r = await resetMyData();
         if (!r.ok) return setError(r.message);
-        await forgetOffline(privateHabitIds);
+        try {
+          await forgetOffline(privateHabitIds);
+        } catch (e) {
+          // The reset happened; a leftover tap on a removed habit is refused when it syncs.
+          console.error("reset: clearing the phone's queue", e);
+        }
         router.replace("/today?reset=1");
       } catch {
         setError(navigator.onLine ? GENERIC_ERROR : NEEDS_CONNECTION);

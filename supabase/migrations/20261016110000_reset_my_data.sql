@@ -55,7 +55,8 @@ begin
   delete from public.habits h where h.owner_id = p_user and h.group_id is null;
   -- The ledger starts again from zero. Accepted (rare): an old group period upgraded late after the
   -- reset (a late check-in or approval within the window) pays its period XP again, since its earlier
-  -- row is gone; it earns no badge (private.after_reset).
+  -- row is gone. It earns no badge at that settle (private.after_reset), but its ledger row does count
+  -- toward later Team player and category badges (calm_mind, bookworm, good_company, go_getter).
   delete from public.xp_events x where x.user_id = p_user;
   delete from public.level_ups l where l.user_id = p_user;
   delete from public.user_achievements a where a.user_id = p_user;
