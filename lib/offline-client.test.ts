@@ -265,23 +265,31 @@ describe("a late answer, and an Undo while a flush sends", () => {
     expect(landed.slice(0, -1).every((l) => !l)).toBe(true); // saving it first was no landing
   });
 
-  it("too slow: the request is aborted, and its answer, if it still came, would change nothing", async () => {
-    const { client, storage, landed } = setup({ tapTimeoutMs: 100 });
+  it("too slow: the request is aborted, so its answer can't arrive, and the tap stays queued", async () => {
+    const { client, storage } = setup({ tapTimeoutMs: 100 });
     let signal!: AbortSignal;
-    let answer!: (v: { ok: true }) => void;
-    const done = client.submitTap({ habitId: "h1" }, (_t, s) => ((signal = s), new Promise<{ ok: true }>((r) => (answer = r))));
-    await vi.advanceTimersByTimeAsync(100);
+    const done = client.submitTap({ habitId: "h1" }, (_t, s) => ((signal = s), new Promise(() => undefined)));
+    await vi.advanceTimersByTimeAsync(99);
+    expect(signal.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
     expect(await done).toEqual({ ok: true, queued: true });
     expect(signal.aborted).toBe(true);
-    // Undo it, and say the undo synced; then the old answer turns up.
-    await client.undoQueued("h1");
-    await client.flush();
+    expect(await storage.load()).toMatchObject([{ kind: "check_in", maybeSent: true }]);
+  });
+
+  it("an Undo while the tap's online try still runs waits for the try to end, then goes out", async () => {
+    const sent: string[] = [];
+    const { client, storage } = setup({ send: async (e) => (sent.push(e.kind), "synced") });
+    // A slow network: the check-in commits and answers at 5 s (under the 10 s timeout).
+    const done = client.submitTap({ habitId: "h1" }, () => new Promise((r) => setTimeout(() => r({ ok: true }), 5_000)));
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(await client.undoQueued("h1")).toBe(true);
+    await vi.advanceTimersByTimeAsync(3_900); // 4.9 s: a flush would have run at 4 s
+    expect(sent).toEqual([]);
+    await vi.advanceTimersByTimeAsync(100);
+    await done;
+    await vi.waitFor(() => expect(sent).toEqual(["undo"]));
     expect(await storage.load()).toEqual([]);
-    const before = landed.length;
-    answer({ ok: true });
-    await vi.advanceTimersByTimeAsync(10);
-    expect(landed.length).toBe(before); // no count change, no refresh
-    expect(landed.includes(true)).toBe(false);
   });
 
   it("an answer for a tap that no longer waits here (another tab took it back) doesn't refresh the page", async () => {

@@ -49,8 +49,12 @@ test("Settings → Reset my data: private habits, XP, badges and Inbox go; the g
   await confirm.click();
 
   // Today, with a calm note: the private habit is gone, the group habit stays with my check-in.
-  await expect(page).toHaveURL(/\/today\?reset=1$/);
-  await expect(page.getByRole("status").filter({ hasText: "Your data is reset. A fresh start 🌱" })).toBeVisible();
+  const note = page.getByRole("status").filter({ hasText: "Your data is reset. A fresh start 🌱" });
+  await expect(note).toBeVisible();
+  await expect(note).toBeFocused(); // announced
+  await expect(page).toHaveURL(/\/today$/); // said once: not again on reload
+  await page.reload();
+  await expect(page.getByText("Your data is reset.")).toHaveCount(0);
   await expect(page.getByRole("link", { name: /^Walk/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Done: Family stretch" })).toBeVisible();
   expect(countCheckIns(groupHabitId)).toBe(1);

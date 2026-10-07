@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isCelebrationMode } from "@/lib/celebrations";
 import { GENERIC_ERROR } from "@/lib/habit-errors";
@@ -33,8 +32,9 @@ export async function setCelebrations(mode: string): Promise<{ ok: true } | { ok
 }
 
 // Settings → Reset my data (owner 2026-10-06): the database clears this person's private habits and
-// their history, XP, levels, badges and Inbox (public.reset_my_data), then Today says so calmly.
-export async function resetMyData(): Promise<{ ok: false; message: string }> {
+// their history, XP, levels, badges and Inbox (public.reset_my_data). The page then clears what waits
+// on the phone and opens Today, which says so calmly.
+export async function resetMyData(): Promise<{ ok: true } | { ok: false; message: string }> {
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("reset_my_data");
   if (error) {
@@ -42,5 +42,5 @@ export async function resetMyData(): Promise<{ ok: false; message: string }> {
     return { ok: false, message: GENERIC_ERROR };
   }
   revalidatePath("/", "layout");
-  redirect("/today?reset=1");
+  return { ok: true };
 }

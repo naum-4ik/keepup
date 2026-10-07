@@ -11,6 +11,7 @@ import { KidSection } from "@/components/kids/kid-section";
 import { NeedsConnection } from "@/components/offline/needs-connection";
 import { RenderedTaps } from "@/components/offline/offline-queue-provider";
 import { GentleCard } from "@/components/today/gentle-card";
+import { ResetNote } from "@/components/today/reset-note";
 import { TodayCard } from "@/components/today/today-card";
 import { Button } from "@/components/ui/button";
 import { getProfile } from "@/lib/auth";
@@ -24,7 +25,6 @@ import { todayIn } from "@/lib/dates";
 import { getPendingApprovals } from "@/lib/inbox";
 import { getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { parsePurpose } from "@/lib/profile-schema";
-import { RESET_DONE } from "@/lib/reset-my-data";
 import { currentPeriods, renderedTapIds, tapPeriods } from "@/lib/rendered-taps";
 import { allCheckedOffKey, groupForToday } from "@/lib/today";
 import { todayProgress } from "@/lib/today-progress";
@@ -153,11 +153,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       <RenderedTaps ids={renderedTaps} periods={shownPeriods} />
       <h1 className="text-xl font-bold">Today</h1>
       {/* Right after Settings → Reset my data. */}
-      {reset === "1" && (
-        <p role="status" className="rounded-2xl bg-card p-4 text-sm font-semibold shadow-soft">
-          {RESET_DONE}
-        </p>
-      )}
+      {reset === "1" && <ResetNote />}
       {progress.total > 0 && (
         <TodayCard
           date={date}

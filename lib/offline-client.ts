@@ -64,9 +64,12 @@ export function createOfflineClient(deps: {
     last = counts;
     deps.onCounts(counts, landed);
   };
+  // Taps whose online try is still running. The server may not have them yet, so an undo for one
+  // waits: sent now, it would find nothing (and be done with), and the check-in would land after it.
+  const tryingIds = new Set<string>();
   const queue = createOfflineQueue({
     storage: deps.storage,
-    send: deps.send,
+    send: (e) => (e.kind === "undo" && tryingIds.has(e.clientId) ? Promise.resolve("wait") : deps.send(e)),
     locks: deps.locks ?? null,
     now: deps.now,
     onChange: (counts) => {
@@ -142,6 +145,7 @@ export function createOfflineClient(deps: {
     // queued (it may still have landed: its client id makes the resend count once).
     const abort = new AbortController();
     trying++;
+    tryingIds.add(tap.clientId);
     try {
       result = await withTimeout(online({ clientId: tap.clientId }, abort.signal), deps.tapTimeoutMs ?? TAP_TIMEOUT_MS, setTimer, clearTimer, () => abort.abort());
     } catch {
@@ -149,6 +153,8 @@ export function createOfflineClient(deps: {
       return { ok: true, queued: true };
     } finally {
       trying--;
+      tryingIds.delete(tap.clientId);
+      void sendWaitingUndo(tap.clientId);
     }
     // Answered, but this tap no longer waits here: another tab took it back (Undo) or sent it. That
     // answer is about a tap the screen no longer shows as this one; whoever changed it refreshes.
@@ -183,9 +189,19 @@ export function createOfflineClient(deps: {
     const last = (await deps.storage.load()).findLast((e) => e.kind === "check_in" && queueKey(e.habitId, e.subjectId) === key);
     if (!last) return false;
     await queue.undo(last.clientId, habitId);
-    // An undo the server has to apply (the tap may have landed) goes out with the next flush.
-    if (deps.isOnline() && (await deps.storage.load()).some((e) => e.kind === "undo" && e.clientId === last.clientId)) scheduleFlush();
+    // An undo the server has to apply (the tap may have landed) goes out with the next flush; while
+    // the tap's online try still runs, once it ends (sendWaitingUndo).
+    if (!tryingIds.has(last.clientId) && deps.isOnline() && (await undoWaits(last.clientId))) scheduleFlush();
     return true;
+  }
+
+  const undoWaits = async (clientId: string) => (await deps.storage.load()).some((e) => e.kind === "undo" && e.clientId === clientId);
+  // A tap's online try ended (answered, failed or aborted): an undo made meanwhile goes out now.
+  async function sendWaitingUndo(clientId: string): Promise<void> {
+    if (!deps.isOnline() || !(await undoWaits(clientId))) return;
+    if (timer !== null) clearTimer(timer);
+    timer = null;
+    await flush().catch(() => undefined);
   }
 
   // Reset my data (Settings): the taps and undos still waiting on these habits are dropped first, so

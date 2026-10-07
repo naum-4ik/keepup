@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { resetMyData } from "@/app/(app)/profile/settings/actions";
 import { useForgetOfflineHabits } from "@/components/offline/offline-queue-provider";
 import { Button } from "@/components/ui/button";
@@ -11,14 +12,16 @@ import { NEEDS_CONNECTION } from "@/lib/offline-copy";
 import { isResetWord, RESET_CLEARS, RESET_KEEPS, RESET_WORD } from "@/lib/reset-my-data";
 
 // Settings → Reset my data (owner 2026-10-06): a fresh start that keeps the account and the family.
-// The database decides what goes (public.reset_my_data); typing "reset" guards the button. Waiting
-// taps on the private habits and the saved offline pages leave the phone first.
+// The database decides what goes (public.reset_my_data); typing "reset" guards the button. Once it
+// has, the waiting taps on the private habits and the saved offline pages leave the phone (if it
+// fails, nothing on the phone is lost).
 export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) {
   const [open, setOpen] = useState(false);
   const [word, setWord] = useState("");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const forgetOffline = useForgetOfflineHabits();
+  const router = useRouter();
   const inputId = useId();
 
   function reset() {
@@ -29,10 +32,10 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
     }
     startTransition(async () => {
       try {
-        await forgetOffline(privateHabitIds);
-        // On success the action goes to Today.
         const r = await resetMyData();
-        if (r && !r.ok) setError(r.message);
+        if (!r.ok) return setError(r.message);
+        await forgetOffline(privateHabitIds);
+        router.replace("/today?reset=1");
       } catch {
         setError(navigator.onLine ? GENERIC_ERROR : NEEDS_CONNECTION);
       }
