@@ -133,10 +133,10 @@ Next.js 16 (App Router, Server Actions) on Vercel talks to Supabase: Postgres wi
 
 ## How it was built
 
-Built with Claude Code as a pair programmer. I wrote the spec, made the product and architecture decisions, and reviewed and merged every PR; tests and CI gate every change. The reasons behind the big choices are in [docs/decisions](docs/decisions/README.md) (27 records so far).
+Built with Claude Code as a pair programmer. I wrote the spec, made the product and architecture decisions, and reviewed and merged every feature PR; tests and CI gate every code change. The reasons behind the big choices are in [docs/decisions](docs/decisions/README.md) (27 records so far).
 
 - **Flow:** `feature/*` → PR → `develop` (staging) → release PR → `main` (production), versions and changelog by release-please.
-- **CI:** every PR runs lint, types, unit and Edge Function tests in about a minute; each merge to `develop` runs pgTAP (it gates the staging database deploy) and the full Playwright suite ([decision 0024](docs/decisions/0024-pr-checks-in-a-minute.md)).
+- **CI:** every PR that changes code runs lint, types, unit and Edge Function tests in about a minute; each merge to `develop` runs pgTAP (it gates the staging database deploy) and the full Playwright suite ([decision 0024](docs/decisions/0024-pr-checks-in-a-minute.md)).
 
 ## Roadmap
 

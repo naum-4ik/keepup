@@ -3,9 +3,10 @@
 // - pgTAP: the sum of `select plan(N)` over supabase/tests/database/*.sql (fails if a file has none);
 // - Vitest: runs the suite once and reads `numTotalTests` from the JSON report;
 // - Playwright: `playwright test --list` (lists, doesn't run);
-// - Edge Function (Deno) tests: `deno test` when Deno is installed; otherwise excluded from the total.
+// - Edge Function (Deno) tests: `deno test` when Deno is installed, printed on their own line; never in
+//   `total`, so the total is the same on every machine.
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
@@ -27,8 +28,9 @@ for (const file of dbFiles) {
 const report = path.join(mkdtempSync(path.join(tmpdir(), "keepup-tests-")), "vitest.json");
 try {
   run("npx", ["vitest", "run", "--reporter=json", `--outputFile=${report}`, "--silent"], { stdio: "ignore" });
-} catch {
-  // A failing test still writes the report; the count is what matters here. Read it below.
+} catch (error) {
+  // A failing test still writes the report; the count is what matters here. No report: a real failure.
+  if (!existsSync(report)) throw error;
 }
 const vitestReport = JSON.parse(readFileSync(report, "utf8"));
 const vitest = vitestReport.numTotalTests;
@@ -64,8 +66,8 @@ console.log(
       pgtapFiles: dbFiles.length,
       vitest,
       e2e,
+      total: pgtap + vitest + e2e,
       edgeFunctions: edgeFunctions ?? "excluded (Deno not installed; CI runs them)",
-      total: pgtap + vitest + e2e + (edgeFunctions ?? 0),
     },
     null,
     2,
