@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Attributes } from "@opentelemetry/api";
 import { BasicTracerProvider, InMemorySpanExporter, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
-import { parseHeaders, REDACTED, RedactingSpanExporter, spanProcessors } from "./telemetry";
+import { parseHeaders, REDACTED, RedactingSpanExporter, spanProcessors, userAttributes } from "./telemetry";
 
 const JWT = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2ln";
 
@@ -34,6 +34,14 @@ describe("telemetry: no secret leaves the app", () => {
   it("keeps who and what (owner, 2026-10-07): user ID, email, habit", () => {
     const user = { "user.id": "6f1c0d3e-0000-4000-8000-000000000001", "user.email": "anna@example.com", "habit.id": "h-1" };
     expect(exportOne("POST /api/check-ins/tap", user).attributes).toMatchObject(user);
+  });
+
+  it("tags a demo login (no email) by ID only", () => {
+    const sub = "6f1c0d3e-0000-4000-8000-000000000002";
+    expect(userAttributes({ sub, email: "" })).toEqual({ "user.id": sub });
+    expect(userAttributes({ sub, email: null })).toEqual({ "user.id": sub });
+    expect(userAttributes({ sub })).toEqual({ "user.id": sub });
+    expect(userAttributes({ sub, email: "anna@example.com" })).toEqual({ "user.id": sub, "user.email": "anna@example.com" });
   });
 
   it("reads the OTel headers format", () => {

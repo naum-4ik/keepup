@@ -261,7 +261,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
         <section aria-label="Manage habit" className="overflow-hidden rounded-2xl bg-card shadow-soft">
           {takesPart && (
             <Manage title="Reminders" hint={reminderHint(settings)}>
-              <ReminderControl habitId={h.habit_id} settings={settings} />
+              <ReminderControl habitId={h.habit_id} settings={settings} isDemo={profile.is_demo} />
             </Manage>
           )}
           {members && (

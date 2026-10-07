@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
+import { DemoBanner } from "@/components/demo/demo-banner";
 import { GoogleIcon } from "@/components/google-icon";
 import { Button } from "@/components/ui/button";
 import { GROUP_KIND_EMOJI, isGroupKind } from "@/lib/group-schema";
@@ -61,6 +62,9 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         <Button asChild className="h-12 w-full rounded-xl text-base">
           <Link href={`/groups/${memberOf}`}>Open {group}</Link>
         </Button>
+      ) : claims?.claims?.is_anonymous ? (
+        // A demo login can't join a real group (keepup:demo): sign in first, then back here.
+        <DemoBanner placement="top" next={next} />
       ) : claims?.claims ? (
         <JoinButton action={acceptInvite.bind(null, token)} groupName={group} />
       ) : (

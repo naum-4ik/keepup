@@ -42,18 +42,27 @@ export function deletePreviewLines(p: DeletePreview): string[] {
 // The confirm button's steps (components/profile/my-data.tsx). Online, waiting check-ins are sent
 // first (as at sign-out), so only taps that couldn't be sent anyway are lost. Then the phone is
 // cleared, before the delete, because a successful delete redirects and nothing runs after it.
-// remove resolves only on failure. Returns the error to show, if any.
+// remove resolves only on failure; its redirect reaches here as a rejection (Next 16), which
+// `rethrow` (next/navigation's unstable_rethrow) passes on. Returns the error to show, if any.
 export async function runDelete(steps: {
   flush: () => Promise<void>;
   clearPhone: () => Promise<void>;
   remove: () => Promise<{ ok: false; message: string } | undefined>;
+  rethrow: (e: unknown) => void;
 }): Promise<string | null> {
   try {
     await steps.flush();
   } catch (e) {
     console.error("delete account: sending waiting check-ins", e);
   }
-  await steps.clearPhone();
-  const r = await steps.remove();
-  return r && !r.ok ? DELETE_FAILED : null;
+  try {
+    await steps.clearPhone();
+    const r = await steps.remove();
+    return r && !r.ok ? DELETE_FAILED : null;
+  } catch (e) {
+    steps.rethrow(e);
+    console.error("delete account", e);
+    // The phone may be cleared already: a reload brings the queue and push back.
+    return DELETE_FAILED;
+  }
 }

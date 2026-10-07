@@ -12,6 +12,7 @@ import { MemberRow } from "@/components/groups/member-row";
 import { RenameGroupForm } from "@/components/groups/rename-group-form";
 import { addButtonClass } from "@/components/ui/add-button";
 import { getProfile } from "@/lib/auth";
+import { DEMO_OFF } from "@/lib/demo-copy";
 import { GROUP_AVATAR_EMOJI } from "@/lib/avatars";
 import { childrenDeletionNotice, inviteUrl } from "@/lib/group-schema";
 import { getGroupDetail, getMyGroups } from "@/lib/groups";
@@ -168,7 +169,12 @@ export default async function GroupPage({
           still focuses the link (autoFocus scrolls it into view). */}
       {isAdmin && (
         <Card title="Invite">
-          <InviteLink groupId={group.id} groupName={group.name} url={url} validUntil={validUntil} autoFocus={invite === "1"} />
+          {/* A demo login can't invite anyone (the database refuses it). */}
+          {profile.is_demo ? (
+            <p className="text-sm text-muted-foreground">{DEMO_OFF}</p>
+          ) : (
+            <InviteLink groupId={group.id} groupName={group.name} url={url} validUntil={validUntil} autoFocus={invite === "1"} />
+          )}
         </Card>
       )}
 

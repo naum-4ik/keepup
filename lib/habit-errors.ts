@@ -1,3 +1,5 @@
+import { DEMO_OFF } from "@/lib/demo-copy";
+
 export const GENERIC_ERROR = "Something went wrong. Try again.";
 
 const MESSAGES: Record<string, string> = {
@@ -53,6 +55,7 @@ const MESSAGES: Record<string, string> = {
   invalid_subscription: "This device couldn't be set up for notifications.",
   invalid_time: "Pick a time on the quarter hour.",
   tap_in_future: "This phone's clock seems to be ahead. Check the time and try again.",
+  demo: DEMO_OFF,
 };
 
 // These errors mean another device (or midnight) already changed the habit; refresh so its card stops

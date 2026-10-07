@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { setHabitMute, setHabitReminder } from "@/app/(app)/habits/actions";
 import { TurnOnReminders } from "@/components/notifications/turn-on-reminders";
 import { Button } from "@/components/ui/button";
+import { DEMO_OFF } from "@/lib/demo-copy";
 import type { HabitSettings } from "@/lib/habit-settings";
 import { QUARTER_HOURS, type ReminderMode } from "@/lib/reminder-mode";
 
@@ -13,7 +14,7 @@ const MODES: { mode: ReminderMode; label: string }[] = [
   { mode: "off", label: "No reminders" },
 ];
 
-export function ReminderControl({ habitId, settings }: { habitId: string; settings: HabitSettings }) {
+export function ReminderControl({ habitId, settings, isDemo = false }: { habitId: string; settings: HabitSettings; isDemo?: boolean }) {
   const [mode, setMode] = useState<ReminderMode>(settings.mode);
   const [time, setTime] = useState(settings.remindAt ?? "08:00");
   const [muted, setMuted] = useState(settings.muted);
@@ -70,9 +71,12 @@ export function ReminderControl({ habitId, settings }: { habitId: string; settin
         </span>
       </label>
 
-      {!settings.hasDevice && mode !== "off" && (
-        <TurnOnReminders hour={settings.reminderHour} label="Turn on reminders on this device" />
-      )}
+      {!settings.hasDevice && mode !== "off" &&
+        (isDemo ? (
+          <p className="text-sm text-muted-foreground">{DEMO_OFF}</p>
+        ) : (
+          <TurnOnReminders hour={settings.reminderHour} label="Turn on reminders on this device" />
+        ))}
       {/* Always rendered so screen readers announce the text when it changes. */}
       <p role="status" className="text-sm text-done">{status}</p>
       <p role="alert" className="text-sm text-destructive">{error}</p>

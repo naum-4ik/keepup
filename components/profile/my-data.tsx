@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState, useTransition } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { deleteAccountPreview, deleteMyAccount, exportMyData } from "@/app/(app)/profile/settings/actions";
 import { forgetPushSubscription } from "@/app/(app)/profile/settings/notification-actions";
 import { useOfflineSignOut } from "@/components/offline/offline-queue-provider";
@@ -11,7 +12,6 @@ import { downloadJson } from "@/lib/download-json";
 import { GENERIC_ERROR } from "@/lib/habit-errors";
 import {
   DELETE_BODY,
-  DELETE_FAILED,
   DELETE_TITLE,
   DELETE_WORD,
   deletePreviewLines,
@@ -56,7 +56,8 @@ function ExportMyDataButton() {
 // button. The dialog says which groups go with the account and who becomes admin where this person
 // was the last one (public.delete_account_preview). Then lib/my-data.ts runDelete: waiting check-ins
 // are sent, the phone is cleared the way sign-out clears it, and the account is deleted.
-export function MyData() {
+// A demo login has no Delete account (the demo deletes itself after 24 hours); Export stays.
+export function MyData({ isDemo = false }: { isDemo?: boolean }) {
   const [open, setOpen] = useState(false);
   const [word, setWord] = useState("");
   const [lines, setLines] = useState<string[] | null>(null);
@@ -88,27 +89,23 @@ export function MyData() {
       return;
     }
     startTransition(async () => {
-      try {
-        const message = await runDelete({
-          flush: queue.flushQueue,
-          // Saved pages, the queue and this phone's push subscription, as at sign-out.
-          clearPhone: async () => {
-            await signOutCleanup({
-              getSubscription: browserSubscription,
-              forget: async (endpoint) => void (await forgetPushSubscription(endpoint)),
-              clearCaches: clearOfflineCaches,
-              deleteQueue: queue.deleteQueue,
-            });
-            markPagesOwnerDeleted();
-          },
-          // On success the action redirects to the landing page.
-          remove: deleteMyAccount,
-        });
-        if (message) setError(message);
-      } catch {
-        // The phone may be cleared already: a reload brings the queue and push back.
-        setError(DELETE_FAILED);
-      }
+      // A successful delete redirects to the landing page: runDelete passes that on, never DELETE_FAILED.
+      const message = await runDelete({
+        flush: queue.flushQueue,
+        // Saved pages, the queue and this phone's push subscription, as at sign-out.
+        clearPhone: async () => {
+          await signOutCleanup({
+            getSubscription: browserSubscription,
+            forget: async (endpoint) => void (await forgetPushSubscription(endpoint)),
+            clearCaches: clearOfflineCaches,
+            deleteQueue: queue.deleteQueue,
+          });
+          markPagesOwnerDeleted();
+        },
+        remove: deleteMyAccount,
+        rethrow: unstable_rethrow,
+      });
+      if (message) setError(message);
     });
   }
 
@@ -119,9 +116,11 @@ export function MyData() {
       <h2 id="my-data-title" className="text-base font-bold">Your data</h2>
       <p className="text-sm text-muted-foreground">{EXPORT_HINT}</p>
       <ExportMyDataButton />
-      <Button type="button" variant="outline" className="h-11 text-destructive hover:text-destructive" onClick={openDialog}>
-        Delete account
-      </Button>
+      {!isDemo && (
+        <Button type="button" variant="outline" className="h-11 text-destructive hover:text-destructive" onClick={openDialog}>
+          Delete account
+        </Button>
+      )}
       <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
         <DialogContent>
           <div className="flex flex-col gap-1 pr-10">

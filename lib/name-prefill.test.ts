@@ -19,6 +19,12 @@ describe("suggestDisplayName", () => {
     expect(suggestDisplayName({ email: "._@example.com" })).toBe("");
   });
 
+  it("copes with no email (a demo login is anonymous)", () => {
+    expect(suggestDisplayName({ email: null })).toBe("");
+    expect(suggestDisplayName({ email: "" })).toBe("");
+    expect(suggestDisplayName({ name: "Sam", email: null })).toBe("Sam");
+  });
+
   it("cuts to 40 characters and trims after the cut", () => {
     expect(suggestDisplayName({ fullName: "x".repeat(60) })).toBe("x".repeat(40));
     expect(suggestDisplayName({ fullName: `${"m".repeat(39)} zzzzz` })).toBe("m".repeat(39));

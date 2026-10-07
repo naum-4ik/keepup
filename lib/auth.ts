@@ -7,10 +7,10 @@ import type { Database } from "@/lib/database.types";
 
 export type Profile = Pick<
   Database["public"]["Tables"]["profiles"]["Row"],
-  "id" | "display_name" | "timezone" | "reminder_hour" | "week_start" | "onboarded_at" | "purpose" | "avatar_emoji" | "avatar_color"
+  "id" | "display_name" | "timezone" | "reminder_hour" | "week_start" | "onboarded_at" | "purpose" | "avatar_emoji" | "avatar_color" | "is_demo"
 >;
 
-const BASE = "id, display_name, timezone, reminder_hour, week_start, onboarded_at, purpose";
+const BASE = "id, display_name, timezone, reminder_hour, week_start, onboarded_at, purpose, is_demo";
 
 // Once per request: a page's loaders each call this, and getClaims (with its JWT check) needn't run
 // a dozen times for one render.
