@@ -192,6 +192,15 @@ test("README screenshots", async ({ page, context }) => {
 test("landing screenshots", async ({ page }) => {
   test.setTimeout(90_000);
   const LANDING_OUT = "public/landing";
+  // Marketing pictures: without the demo's banner (only in these captures; the app keeps it).
+  const shoot = async (name: string) => {
+    const line = page.getByRole("status").filter({ hasText: "You're in the demo." });
+    await expect(line).toBeVisible();
+    await line.evaluate((el) => ((el.parentElement as HTMLElement).style.display = "none"));
+    await expect(line).toBeHidden();
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: `${LANDING_OUT}/${name}` });
+  };
   await page.goto("/");
   await page.getByRole("button", { name: "Try it" }).click();
   await expect(page.getByRole("button", { name: "Check in: Read", exact: true })).toBeVisible({ timeout: 15_000 });
@@ -207,7 +216,7 @@ test("landing screenshots", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Done: Read", exact: true })).toBeVisible();
   if (await celebration.isVisible()) await page.keyboard.press("Escape");
   await page.waitForTimeout(800);
-  await page.screenshot({ path: `${LANDING_OUT}/today.png` });
+  await shoot("today.png");
 
   // The family habit.
   await page.goto("/groups");
@@ -217,7 +226,7 @@ test("landing screenshots", async ({ page }) => {
   await page.getByRole("link", { name: /Family dinner/ }).first().click();
   await expect(page).toHaveURL(/\/habits\/[0-9a-f-]{36}$/);
   await page.waitForTimeout(500);
-  await page.screenshot({ path: `${LANDING_OUT}/family.png` });
+  await shoot("family.png");
 
   // Nova's view, settled (same waits as the README's kid view).
   await page.goto(groupPage);
@@ -226,5 +235,5 @@ test("landing screenshots", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Hold to exit Nova's view" })).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(7000);
-  await page.screenshot({ path: `${LANDING_OUT}/kid.png` });
+  await shoot("kid.png");
 });
