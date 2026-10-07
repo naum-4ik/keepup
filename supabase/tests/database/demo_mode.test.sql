@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(15);
+select plan(17);
 
 select tests.create_anonymous_user('00000000-0000-0000-0000-0000000005a1');
 select tests.create_user('00000000-0000-0000-0000-0000000005f1', 'demo-real@example.com', '{"full_name":"Real"}');
@@ -40,10 +40,19 @@ select is((select count(*)::int from public.groups where id = (select v from t w
 select ok(exists (select 1 from cron.job where jobname = 'keepup-demo-cleanup'), 'cleanup is scheduled');
 -- A converted login keeps is_demo but is real now: cleanup must not delete it.
 select tests.create_anonymous_user('00000000-0000-0000-0000-0000000005a3');
+insert into t select 'conv', (private.create_group_impl('00000000-0000-0000-0000-0000000005a3', 'Converted family', 'family')).id;
+update public.groups set created_at = now() - interval '25 hours' where id = (select v from t where k='conv');
+-- A demo group whose creator is gone (created_by null) with only an old bot left in it.
+insert into public.profiles (id, display_name, is_demo, created_at) values ('00000000-0000-0000-0000-0000000005b2', 'Alex', true, now() - interval '25 hours');
+with g as (insert into public.groups (name, kind, timezone, week_start, created_by) values ('Orphan', 'family', 'UTC', 1, null) returning id)
+insert into t select 'orphan', id from g;
+insert into public.group_members (group_id, user_id) values ((select v from t where k='orphan'), '00000000-0000-0000-0000-0000000005b2');
 update auth.users set is_anonymous = false, email = 'converted@example.com', created_at = now() - interval '25 hours' where id = '00000000-0000-0000-0000-0000000005a3';
 update public.profiles set created_at = now() - interval '25 hours' where id = '00000000-0000-0000-0000-0000000005a3';
 select private.cleanup_demo(now());
 select is((select count(*)::int from public.profiles where id = '00000000-0000-0000-0000-0000000005a3'), 1, 'a converted login is never cleaned up');
+select is((select count(*)::int from public.groups where id = (select v from t where k='conv')), 1, 'a converted login''s group is never cleaned up');
+select is((select count(*)::int from public.groups where id = (select v from t where k='orphan')), 0, 'a demo group with no creator goes with its old bot');
 
 select * from finish();
 rollback;
