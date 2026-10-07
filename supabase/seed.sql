@@ -20,6 +20,21 @@ begin
 end;
 $$;
 
+-- An anonymous (demo) login: same columns as create_user, no email, is_anonymous = true.
+create or replace function tests.create_anonymous_user(p_id uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  insert into auth.users (id, instance_id, aud, role, is_anonymous, raw_user_meta_data, raw_app_meta_data, created_at, updated_at)
+  values (p_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
+          true, '{}'::jsonb, '{}'::jsonb, now(), now());
+  return p_id;
+end;
+$$;
+
 -- Act as a signed-in user for the rest of the transaction. Undo with `reset role;`.
 create or replace function tests.authenticate_as(p_user_id uuid)
 returns void
