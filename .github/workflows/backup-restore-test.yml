@@ -10,6 +10,13 @@ permissions:
 
 jobs:
   restore:
+    name: restore (${{ matrix.target }})
+    strategy:
+      # One leg failing must not cancel the other.
+      fail-fast: false
+      matrix:
+        # The production leg joins once production is set up (HANDBOOK "Production setup").
+        target: ${{ fromJSON(vars.PRODUCTION_READY == 'true' && '["staging","production"]' || '["staging"]') }}
     runs-on: ubuntu-latest
     env:
       # Same as CI: GitHub's registry, since public.ecr.aws caps anonymous downloads.
@@ -27,6 +34,7 @@ jobs:
       - name: Fetch the latest backup
         env:
           BACKUPS_DEPLOY_KEY: ${{ secrets.BACKUPS_DEPLOY_KEY }}
+          TARGET: ${{ matrix.target }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
@@ -38,9 +46,9 @@ jobs:
           echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' >> ~/.ssh/known_hosts
           export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/backups_key -o IdentitiesOnly=yes"
           git clone --depth 1 "git@github.com:naum-4ik/keepup-backups.git" backups
-          latest=$(ls backups/staging/staging-*.tar.gz.age | sort | tail -1)
+          latest=$(ls "backups/$TARGET/$TARGET"-*.tar.gz.age | sort | tail -1)
           echo "Latest: $latest"
-          d=$(basename "$latest" | sed -E 's/^staging-([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\1/')
+          d=$(basename "$latest" | sed -E "s/^$TARGET-([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\\1/")
           cutoff=$(date -u -d '3 days ago' +%Y-%m-%d)
           if [[ "$d" < "$cutoff" ]]; then
             echo "::error::Newest backup ($d) is older than 3 days; the nightly job is broken"
