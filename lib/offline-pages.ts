@@ -50,3 +50,12 @@ export async function clearSavedPages(): Promise<void> {
     // no Cache Storage here: nothing was saved
   }
 }
+
+// Delete account: the person is gone, so is their name on this device's saved pages.
+export function forgetPagesOwner(): void {
+  try {
+    localStorage.removeItem(OWNER);
+  } catch {
+    // no storage (private mode): nothing was kept
+  }
+}
