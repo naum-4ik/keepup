@@ -72,3 +72,90 @@ end;
 $$;
 revoke execute on function public.export_my_data() from public, anon;
 grant execute on function public.export_my_data() to authenticated;
+
+-- Delete account. One transaction: hand over admin, delete groups left empty (children and group habits
+-- go with them), then delete the login; the on_auth_user_deleted trigger deletes the profile and every
+-- personal row cascades. "Others" are active members (left_at is null) other than the person.
+-- Concurrency: the groups are locked FOR UPDATE in id order before counting, so two last admins
+-- deleting at the same moment run one after the other and the second sees the first's handover.
+
+create function private.delete_account_plan(p_user uuid)
+returns table (group_id uuid, group_name text, action text, new_admin uuid)
+language sql
+stable
+set search_path = ''
+as $$
+  select g.id, g.name,
+         case when o.others = 0 then 'delete'
+              when m.role = 'admin' and o.other_admins = 0 then 'handover'
+              else 'leave' end,
+         case when o.others > 0 and m.role = 'admin' and o.other_admins = 0 then
+           (select x.user_id from public.group_members x
+             where x.group_id = g.id and x.user_id <> p_user and x.left_at is null
+             order by x.joined_at, x.user_id limit 1) end
+    from public.group_members m
+    join public.groups g on g.id = m.group_id
+    cross join lateral (
+      select count(*) filter (where x.user_id <> p_user) as others,
+             count(*) filter (where x.user_id <> p_user and x.role = 'admin') as other_admins
+        from public.group_members x where x.group_id = g.id and x.left_at is null) o
+   where m.user_id = p_user and m.left_at is null
+$$;
+
+create function private.delete_account_preview_impl(p_user uuid)
+returns jsonb
+language sql
+stable
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'groups_deleted', coalesce((select jsonb_agg(jsonb_build_object('name', p.group_name,
+        'children', coalesce((select jsonb_agg(c.display_name order by c.created_at) from public.profiles c
+                               where c.kind = 'child' and c.group_id = p.group_id), '[]')) order by p.group_name)
+      from private.delete_account_plan(p_user) p where p.action = 'delete'), '[]'),
+    'admin_handover', coalesce((select jsonb_agg(jsonb_build_object('group', p.group_name,
+        'new_admin', (select a.display_name from public.profiles a where a.id = p.new_admin)) order by p.group_name)
+      from private.delete_account_plan(p_user) p where p.action = 'handover'), '[]'))
+$$;
+
+create function private.delete_account_impl(p_user uuid, p_now timestamptz)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+declare
+  r record;
+begin
+  if not exists (select 1 from public.profiles where id = p_user and kind = 'adult') then
+    raise exception 'keepup:not_found' using errcode = 'P0002';
+  end if;
+  perform 1 from public.groups g
+    where g.id in (select m.group_id from public.group_members m where m.user_id = p_user and m.left_at is null)
+    order by g.id for update;
+  for r in select * from private.delete_account_plan(p_user) order by group_id loop
+    if r.action = 'delete' then
+      delete from public.groups where id = r.group_id;
+    elsif r.action = 'handover' then
+      update public.group_members set role = 'admin' where group_id = r.group_id and user_id = r.new_admin;
+    end if;
+  end loop;
+  delete from auth.users where id = p_user;
+end;
+$$;
+
+create function public.delete_account_preview()
+returns jsonb language plpgsql security definer set search_path = '' as $$
+begin
+  if auth.uid() is null then raise exception 'keepup:not_authenticated' using errcode = '42501'; end if;
+  return private.delete_account_preview_impl(auth.uid());
+end; $$;
+
+create function public.delete_my_account()
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if auth.uid() is null then raise exception 'keepup:not_authenticated' using errcode = '42501'; end if;
+  perform private.delete_account_impl(auth.uid(), now());
+end; $$;
+
+revoke execute on function public.delete_account_preview(), public.delete_my_account() from public, anon;
+grant execute on function public.delete_account_preview(), public.delete_my_account() to authenticated;
