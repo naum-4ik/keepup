@@ -4,18 +4,12 @@ import { logs, SeverityNumber } from "@opentelemetry/api-logs";
 import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-proto";
 import { BatchLogRecordProcessor, type LogRecordExporter, type LogRecordProcessor, type ReadableLogRecord } from "@opentelemetry/sdk-logs";
 import { OTLPHttpProtoTraceExporter } from "@vercel/otel";
+import { REDACTED, redactString } from "@/lib/redact";
 
-export const REDACTED = "[REDACTED]";
+export { REDACTED };
 
-// Keys whose whole value is a secret, and secrets that can hide inside any string: the sign-in
-// code, tokens and token hashes in URLs, JWTs, Grafana and Supabase secret keys. Emails and IDs pass (owner, 2026-10-07).
+// Keys whose whole value is a secret (the strings themselves are cleaned by lib/redact.ts).
 const SECRET_KEY = /authorization|cookie|password|secret|token|api[-_]?key/i;
-const SECRET_PARAM = /([?&](?:code|access_token|refresh_token|token_hash|token|apikey|password)=)[^&#\s]+/gi;
-const SECRET_VALUE = /eyJ[\w-]+\.[\w-]+\.[\w-]+|glc_[\w=+/-]+|sb_secret_[\w-]+/g;
-
-export function redactString(value: string) {
-  return value.replace(SECRET_PARAM, `$1${REDACTED}`).replace(SECRET_VALUE, REDACTED);
-}
 
 function redactValue(key: string, value: AttributeValue | undefined) {
   if (SECRET_KEY.test(key)) return REDACTED;
