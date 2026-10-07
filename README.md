@@ -108,7 +108,7 @@
 ### Your data and the demo
 
 - **Try the demo:** one tap on the first screen opens a lived-in account (Sam's month, a family with Alex and a kid, Nova); invites and push are off in the demo.
-- **Settings → Your data:** Export my data (a JSON file), Reset my data (type "reset"), and Delete account (type "delete"; it says first which groups get a new admin and which are deleted).
+- **Settings:** Export my data (a JSON file), Reset my data (type "reset"), and Delete account (type "delete"; it says first which groups get a new admin and which are deleted).
 - **Forgot password?** on the sign-in screen emails a reset link.
 - **Privacy:** a [privacy policy](docs/privacy-policy.md), also in the app at `/privacy`.
 
@@ -125,7 +125,7 @@
 **An XP ledger a late check-in can't fool.** XP is an append-only table with one unique key per grant, written by one function, so every grant is idempotent and an undo is a negative row. Period XP, streak milestones and badges hang off a trigger that fires when a period is settled and again when an offline check-in upgrades it from missed to done up to three days later. Milestones are keyed by the streak's first day, so a merged streak can earn its 14-day bonus on a later day, but never twice. Rest days are computed from the same results, so the upgrade hands back a used rest day by itself. Levels are synced once at the end of any path that touches many habits, in a fixed order, so finalization can't deadlock.
 
 
-**Delete account in one transaction.** Deleting a person touches their habits, their groups, the groups' children and the other members. Supabase's usual route, the admin API, runs after the database changes and needs the service-role key in the app, so a failure can leave a login with no profile or a group with no admin. `delete_my_account()` does all of it in one transaction: hand over admin to the longest-standing member, delete groups left empty (with their children), then delete the caller from `auth.users` and let cascades take the rest. Locks go in a fixed order (habits, then groups, by id) because feed and XP writes lock the other way round; two last admins deleting at once run one after the other. A read-only preview runs the same plan, so the dialog says exactly what will happen.
+**Delete account in one transaction.** Deleting a person touches their habits, their groups, the groups' children and the other members. Supabase's usual route, the admin API, runs after the database changes and needs the service-role key in the app, so a failure can leave a login with no profile or a group with no admin. `delete_my_account()` does all of it in one transaction: hand over admin to the longest-standing member, delete groups left empty (with their children), then delete the caller from `auth.users` and let cascades take the rest. Locks are taken in the order the feed and XP writes already use (habits, then groups, each by id), so they can't deadlock, and the groups are locked before anything is counted, so two last admins deleting at once run one after the other. A read-only preview runs the same plan, so the dialog says exactly what will happen.
 
 ## Architecture
 

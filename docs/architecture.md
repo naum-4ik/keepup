@@ -28,7 +28,7 @@ flowchart TB
         CI["CI: PR checks, pgTAP on merge, e2e after merge"]
         Deploy["Deploy migrations to staging"]
         Release["Release: migrations, then the app, to production (dormant until production exists)"]
-        Backup["Nightly encrypted backups (staging; production when it exists), monthly restore test"]
+        Backup["Nightly encrypted backups (staging, and production once it exists), monthly restore test"]
         Keep["Daily keep-awake ping"]
     end
     Vault[("Private backup repo (age-encrypted)")]
@@ -107,7 +107,8 @@ Configured by hand in the Supabase dashboard for the `keepup-staging` project (n
 
 - Site URL: `https://keepup-murex.vercel.app`
 - Redirect URLs: `https://keepup-murex.vercel.app/auth/callback`, `https://keepup-*-naum4ik-s-org.vercel.app/**`
-- Providers: email + password (email confirmation off until an SMTP sender is set up) and Google (the Google OAuth client is in Testing mode)
+- Providers: email + password and Google (the Google OAuth client is in Testing mode)
+- Emails (confirm address, reset password): Keepup's templates in `supabase/templates/`, sent through a Gmail SMTP sender set in the dashboard; their links land on `/auth/confirm` with a `token_hash`
 
 ## Why no load balancer
 
@@ -150,7 +151,7 @@ Keepup runs on free tiers. These are the limits that matter, from the providers'
 | Vercel Hobby | Non-commercial use only (asking for donations is allowed); 1M function invocations, 4 h active CPU, 100 GB data transfer a month; 100 deployments a day; 1 build at a time; runtime logs kept 1 hour | Small | Any payment, ads or paid feature means Vercel Pro |
 | GitHub Actions | Free for public repositories; scheduled workflows switch off after 60 days without a commit | CI, backups, restore test, keep-awake | `keepalive.yml` re-enables the schedules daily |
 | Google sign-in | The OAuth client is in Testing mode: only listed test users (up to 100) | The family | Before strangers join: publish the OAuth consent screen |
-| Email | No SMTP sender: Supabase's built-in mail only reaches the team, so email confirmation is off | — | Before strangers join: add an SMTP sender and turn confirmation on |
+| Email | Supabase's built-in mail only reaches the team, so sign-in emails go through a Gmail SMTP sender | Confirm and reset emails | Gmail's daily sending limit, if many people sign up at once |
 | Web Push | Free (Apple, Google and Mozilla push services) | One subscription per device | — |
 
 ## Scaling path
