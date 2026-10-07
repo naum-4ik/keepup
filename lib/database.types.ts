@@ -778,6 +778,9 @@ isOneToOne: false
 "export_child":
 { Args: { "p_child_id": string }; Returns: Json
                            },
+"export_my_data":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
 "family_recaps":
 { Args: Record<PropertyKey, never>; Returns: {
               "best_emoji": string,"best_period": Database["public"]['Enums']["habit_period"],"best_streak": number,"best_title": string,"check_ins": number,"group_id": string,"group_name": string,"week_start": string
