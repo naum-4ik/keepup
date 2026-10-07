@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { unstable_rethrow } from "next/navigation";
 import { startDemo } from "@/app/demo/actions";
+import { PrivacyConsent } from "@/components/privacy-consent";
 import { DEMO_FAILED, JUST_LOOKING, SETTING_UP, TRY_DEMO } from "@/lib/demo-copy";
 import { createClient } from "@/lib/supabase/client";
 import { runTryIt } from "@/lib/try-demo";
@@ -39,8 +40,8 @@ export function TryDemoButton() {
       <p className="text-sm text-muted-foreground">
         {JUST_LOOKING} <Submit />
       </p>
-      {/* Plain text until /privacy exists (M6), then a link. Same line as onboarding's: the seed onboards. */}
-      <p className="text-center text-xs text-muted-foreground">By continuing, you agree to the Privacy Policy</p>
+      {/* Same line as onboarding's: the seed onboards. */}
+      <PrivacyConsent />
     </form>
   );
 }

@@ -56,9 +56,12 @@ export default async function ProfilePage() {
         </ul>
       </nav>
       <SignOutButton />
-      <footer className="text-center text-xs text-muted-foreground">
+      <footer className="flex justify-center gap-4 text-xs text-muted-foreground">
         <Link href="/whats-new" className="font-mono underline-offset-4 hover:underline">
           {appVersion()}
+        </Link>
+        <Link href="/privacy" className="underline-offset-4 hover:underline">
+          Privacy Policy
         </Link>
       </footer>
     </section>

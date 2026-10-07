@@ -701,7 +701,7 @@ test("a guardian opens a child's habit from the child page and deletes it when i
   const manage = page.getByRole("region", { name: "Manage habit" });
   await expect(manage).toContainText("Edit details");
   await expect(manage).not.toContainText("Reminders");
-  await expect(manage).not.toContainText("Archive");
+  await expect(manage).toContainText("Archive"); // always offered (#168); Delete too while there are no check-ins
   await manage.getByText("Delete", { exact: true }).click();
   await manage.getByRole("button", { name: "Delete habit" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Delete", exact: true }).click();

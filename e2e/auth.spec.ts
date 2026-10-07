@@ -291,3 +291,26 @@ test("Profile is a list: Achievements, Settings, What's new and Groups, then Sig
   await list.getByRole("link", { name: "Settings" }).click();
   await expect(page).toHaveURL(/\/profile\/settings$/);
 });
+
+test("the privacy policy is public, linked once from sign-in and sign-up, and fits a phone", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const start of ["/login", "/signup"]) {
+    await page.goto(start);
+    const link = page.getByRole("link", { name: "Privacy Policy" });
+    await expect(link).toHaveCount(1);
+    await link.click();
+    await expect(page).toHaveURL(/\/privacy$/);
+    await expect(page.getByRole("heading", { name: "Privacy Policy", level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^9\. Children/ })).toBeVisible();
+  }
+  // Long prose on a phone: no sideways scrolling.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("onboarding links the privacy policy, and it opens before onboarding is done", async ({ page }) => {
+  await signUp(page, uniqueEmail());
+  await expect(page).toHaveURL(/\/onboarding/);
+  await page.getByRole("link", { name: "Privacy Policy" }).click();
+  await expect(page).toHaveURL(/\/privacy$/);
+  await expect(page.getByRole("heading", { name: "Privacy Policy", level: 1 })).toBeVisible();
+});
