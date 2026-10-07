@@ -6,9 +6,14 @@ test("signed-out visitors are sent to sign in", async ({ page }) => {
   await expect(page).toHaveURL(/\/login\?next=%2Ftoday$/);
 });
 
-test("the landing page: one Get started button, and a Sign in link", async ({ page }) => {
+test("the landing page: Try it, Get started, Sign in, the sections and the footer", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Keepup" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try it" })).toBeVisible();
+  for (const name of ["Your habits", "Together", "For kids", "Private by design"]) {
+    await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  }
+  await expect(page.getByRole("link", { name: "GitHub" })).toHaveAttribute("href", "https://github.com/naum-4ik/keepup");
   const start = page.getByRole("link", { name: "Get started" });
   const width = (await start.boundingBox())?.width ?? 0;
   expect(width).toBeGreaterThanOrEqual(340); // fills the column (max 384px minus 2 × 16px margins)
