@@ -8,6 +8,11 @@ const revalidatePath = vi.fn();
 const query = { select: () => query, eq: () => query, maybeSingle: () => ledger() };
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ rpc, auth: { getClaims }, from: () => query }) }));
 vi.mock("next/cache", () => ({ revalidatePath: (p: string) => revalidatePath(p) }));
+// after() runs its callback once the response is out; here, when the test says so.
+const afterTasks: (() => Promise<void>)[] = [];
+vi.mock("next/server", async (original) => ({ ...(await original<typeof import("next/server")>()), after: (task: () => Promise<void>) => afterTasks.push(task) }));
+const logEvent = vi.fn();
+vi.mock("@/lib/telemetry", async (original) => ({ userAttributes: (await original<typeof import("@/lib/telemetry")>()).userAttributes, tagUser: () => {}, logEvent: (...args: unknown[]) => logEvent(...args), flushLogs: async () => {} }));
 
 const { POST } = await import("@/app/api/check-ins/tap/route");
 
@@ -23,6 +28,8 @@ function post(body: unknown, origin = "https://keepup.test") {
 const row = (over: Record<string, unknown> = {}) => ({ id: "row1", status: "approved", client_id: C, created_at: new Date().toISOString(), ...over });
 
 beforeEach(() => {
+  afterTasks.length = 0;
+  logEvent.mockReset();
   rpc.mockReset();
   ledger.mockReset().mockResolvedValue({ data: { amount: 12 }, error: null });
   revalidatePath.mockReset();
@@ -69,5 +76,39 @@ describe("POST /api/check-ins/tap", () => {
     const failed = await post({ clientId: C, habitId: H });
     expect(failed.status).toBe(503);
     expect(await failed.json()).not.toHaveProperty("code");
+  });
+});
+
+describe("POST /api/check-ins/tap: the keepup.check_in event", () => {
+  const runAfter = () => Promise.all(afterTasks.map((task) => task()));
+
+  it("is sent after the response, with who, which habit (named) and the XP", async () => {
+    rpc.mockResolvedValue({ data: row(), error: null });
+    getClaims.mockResolvedValue({ data: { claims: { sub: "u1", email: "anna@example.com" } } });
+    ledger.mockResolvedValueOnce({ data: { amount: 12 }, error: null }).mockResolvedValue({ data: { title: "Brush teeth", category: "health" }, error: null });
+    await post({ clientId: C, habitId: H });
+    expect(logEvent).not.toHaveBeenCalled();
+    await runAfter();
+    expect(logEvent).toHaveBeenCalledWith(
+      "keepup.check_in",
+      expect.objectContaining({ "user.id": "u1", "user.email": "anna@example.com", "habit.id": H, "habit.title": "Brush teeth", "check_in.outcome": "saved", "check_in.xp": 12 }),
+      "INFO",
+    );
+  });
+
+  it("names the child on a child's tap, and says why a rule refused it", async () => {
+    rpc.mockResolvedValue({ data: null, error: { code: "P0001", message: "keepup:already_done" } });
+    ledger.mockResolvedValueOnce({ data: { title: "Brush teeth", category: "health" } }).mockResolvedValueOnce({ data: { display_name: "Mary" } });
+    await post({ clientId: C, habitId: H, subjectId: K, byChild: true });
+    await runAfter();
+    const [, fields] = logEvent.mock.calls[0];
+    expect(fields).toMatchObject({ "child.id": K, "child.nickname": "Mary", "check_in.by_child": true, "check_in.outcome": "refused" });
+  });
+
+  it("an unexpected database error is an ERROR event", async () => {
+    rpc.mockResolvedValue({ data: null, error: { message: "connection reset" } });
+    await post({ clientId: C, habitId: H });
+    await runAfter();
+    expect(logEvent).toHaveBeenCalledWith("keepup.check_in", expect.objectContaining({ "check_in.outcome": "failed", "check_in.reason": "connection reset" }), "ERROR");
   });
 });

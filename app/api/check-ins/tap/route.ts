@@ -1,13 +1,13 @@
 // app/api/check-ins/tap/route.ts
-import { trace } from "@opentelemetry/api";
+import { trace, type Attributes } from "@opentelemetry/api";
 import { revalidatePath } from "next/cache";
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { errorCode, habitErrorMessage, REFRESH_ON_ERROR } from "@/lib/habit-errors";
 import { parseTap, type OnlineTap } from "@/lib/offline-sync";
 import { parseJson, readBody } from "@/lib/request-body";
 import { isSameOrigin } from "@/lib/review-request";
 import { createClient } from "@/lib/supabase/server";
-import { tagUser } from "@/lib/telemetry";
+import { flushLogs, logEvent, tagUser, userAttributes } from "@/lib/telemetry";
 import { countsNow } from "@/lib/xp";
 
 // The pages that show a check-in on this habit (and the child's, for a tap for a child).
@@ -20,6 +20,21 @@ function refresh(tap: OnlineTap) {
     revalidatePath(`/kids/${tap.subjectId}`);
     revalidatePath(`/kids/${tap.subjectId}/play`);
   }
+}
+
+// The keepup.check_in event, sent after the response: the habit's and child's names are read then,
+// so the tap never waits for them.
+async function sendCheckInEvent(supabase: Awaited<ReturnType<typeof createClient>>, tap: OnlineTap, event: Attributes) {
+  const [habit, child] = await Promise.all([
+    supabase.from("habits").select("title, category").eq("id", tap.habitId).maybeSingle(),
+    tap.subjectId ? supabase.from("profiles").select("display_name").eq("id", tap.subjectId).maybeSingle() : null,
+  ]);
+  logEvent(
+    "keepup.check_in",
+    { ...event, "habit.title": habit.data?.title, "habit.category": habit.data?.category ?? undefined, "child.nickname": child?.data?.display_name },
+    event["check_in.outcome"] === "failed" ? "ERROR" : "INFO",
+  );
+  await flushLogs();
 }
 
 // A check-in tap tried online (lib/offline-client.ts submitTap; lib/offline-sync.ts tapSender reads
@@ -43,6 +58,14 @@ export async function POST(request: Request) {
   if (!claims?.claims?.sub) return NextResponse.json({ code: "not_authenticated" }, { status: 401 });
   tagUser(claims.claims);
   trace.getActiveSpan()?.setAttributes({ "habit.id": tap.habitId, ...(tap.subjectId && { "child.id": tap.subjectId }) });
+  // Filled in as the tap ends; after() sends it once the response is out.
+  const event: Attributes = {
+    ...userAttributes(claims.claims),
+    "habit.id": tap.habitId,
+    "child.id": tap.subjectId ?? undefined,
+    "check_in.by_child": tap.subjectId ? tap.byChild === true : undefined,
+  };
+  after(() => sendCheckInEvent(supabase, tap, event));
 
   const startedAt = Date.now();
   const { data, error } = tap.subjectId
@@ -50,6 +73,8 @@ export async function POST(request: Request) {
     : await supabase.rpc("check_in", { p_habit_id: tap.habitId, p_client_id: tap.clientId });
   if (error) {
     const code = errorCode(error);
+    event["check_in.outcome"] = code ? "refused" : "failed";
+    event["check_in.reason"] = code ?? error.message;
     if (code === "not_authenticated") return NextResponse.json({ code }, { status: 401 });
     if (code && REFRESH_ON_ERROR.has(code)) refresh(tap);
     if (!code) console.error("check-in tap", error.message);
@@ -60,6 +85,8 @@ export async function POST(request: Request) {
   refresh(tap);
   // XP floats only for my own counted row this request inserted, not a resend's or a merge's (lib/xp.ts).
   const row = data as { id: string; status: string; client_id: string | null; created_at: string } | null;
+  event["check_in.outcome"] = "saved";
+  event["check_in.status"] = row?.status;
   if (tap.subjectId || !row || !countsNow(row, tap, startedAt)) return NextResponse.json({ xp: 0 });
   // The amount the database granted (10, + the streak on the period's first, rewards_on_check_in), read
   // back from the ledger (RLS: own rows). Fails soft: "+XP" with no number.
@@ -71,5 +98,6 @@ export async function POST(request: Request) {
     .eq("source_id", row.id)
     .maybeSingle();
   if (readError) console.error("check-in XP read failed", readError.message);
+  event["check_in.xp"] = granted?.amount;
   return NextResponse.json({ xp: granted?.amount ?? null });
 }

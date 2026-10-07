@@ -1,5 +1,8 @@
 import { BatchSpanProcessor, type ReadableSpan, type SpanExporter, type SpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { trace, type Attributes, type AttributeValue } from "@opentelemetry/api";
+import { logs, SeverityNumber } from "@opentelemetry/api-logs";
+import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-proto";
+import { BatchLogRecordProcessor, type LogRecordExporter, type LogRecordProcessor, type ReadableLogRecord } from "@opentelemetry/sdk-logs";
 import { OTLPHttpProtoTraceExporter } from "@vercel/otel";
 
 export const REDACTED = "[REDACTED]";
@@ -77,4 +80,58 @@ export function userAttributes(claims: { sub: string; email?: string | null }): 
 
 export function tagUser(claims: { sub: string; email?: string | null }) {
   trace.getActiveSpan()?.setAttributes(userAttributes(claims));
+}
+
+// Logs get the same cleaning as spans: a copy with the secrets masked.
+function redactLog(record: ReadableLogRecord): ReadableLogRecord {
+  return Object.create(record, {
+    body: { value: typeof record.body === "string" ? redactString(record.body) : record.body },
+    attributes: { value: redactAttributes(record.attributes as Attributes) },
+  });
+}
+
+export class RedactingLogExporter implements LogRecordExporter {
+  private readonly inner: LogRecordExporter;
+  constructor(inner: LogRecordExporter) {
+    this.inner = inner;
+  }
+  export(records: ReadableLogRecord[], done: Parameters<LogRecordExporter["export"]>[1]) {
+    this.inner.export(records.map(redactLog), done);
+  }
+  shutdown() {
+    return this.inner.shutdown();
+  }
+  forceFlush() {
+    return this.inner.forceFlush();
+  }
+}
+
+// Kept so flushLogs can reach it: @vercel/otel flushes spans when a request ends, not logs.
+let logProcessor: LogRecordProcessor | undefined;
+
+// The same endpoint and headers as traces (the exporter reads the OTEL_EXPORTER_OTLP_* env itself).
+export function logRecordProcessors(env: Record<string, string | undefined> = process.env): LogRecordProcessor[] {
+  if (!env.OTEL_EXPORTER_OTLP_ENDPOINT) return [];
+  logProcessor = new BatchLogRecordProcessor({ exporter: new RedactingLogExporter(new OTLPLogExporter()) });
+  return [logProcessor];
+}
+
+type Level = "INFO" | "WARN" | "ERROR";
+
+// One wide event per action: who, what, for whom, and how it ended (empty fields left out). It carries
+// the active trace's id, so Grafana links the log line and its trace both ways.
+export function logEvent(name: string, fields: Attributes, level: Level = "INFO") {
+  const attributes = Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined && value !== null));
+  logs.getLogger("keepup").emit({
+    eventName: name,
+    severityNumber: SeverityNumber[level],
+    severityText: level,
+    body: name,
+    attributes: { "event.name": name, ...attributes },
+  });
+}
+
+// Call at the end of an after() callback: Vercel may freeze the function once the response is sent.
+export function flushLogs() {
+  return logProcessor?.forceFlush() ?? Promise.resolve();
 }

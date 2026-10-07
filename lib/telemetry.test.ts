@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { Attributes } from "@opentelemetry/api";
+import { context, ROOT_CONTEXT, trace, type ContextManager } from "@opentelemetry/api";
+import { logs } from "@opentelemetry/api-logs";
+import { InMemoryLogRecordExporter, LoggerProvider, SimpleLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import { BasicTracerProvider, InMemorySpanExporter, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
-import { parseHeaders, REDACTED, RedactingSpanExporter, spanProcessors, userAttributes } from "./telemetry";
+import { logEvent, logRecordProcessors, parseHeaders, REDACTED, RedactingLogExporter, RedactingSpanExporter, spanProcessors, userAttributes } from "./telemetry";
 
 const JWT = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2ln";
 
@@ -52,5 +55,46 @@ describe("telemetry: no secret leaves the app", () => {
   it("sends nothing without an endpoint, and one redacted path with one", () => {
     expect(spanProcessors({})).toEqual([]);
     expect(spanProcessors({ OTEL_EXPORTER_OTLP_ENDPOINT: "https://otlp.example/otlp" })).toHaveLength(1);
+    expect(logRecordProcessors({})).toEqual([]);
+    expect(logRecordProcessors({ OTEL_EXPORTER_OTLP_ENDPOINT: "https://otlp.example/otlp" })).toHaveLength(1);
+  });
+});
+
+describe("telemetry: events (logs)", () => {
+  const memory = new InMemoryLogRecordExporter();
+  logs.setGlobalLoggerProvider(new LoggerProvider({ processors: [new SimpleLogRecordProcessor({ exporter: new RedactingLogExporter(memory) })] }));
+
+  it("one event: its name, its fields (empty ones left out), its level, secrets masked", () => {
+    memory.reset();
+    logEvent("keepup.check_in", { "user.email": "anna@example.com", "habit.title": "Brush teeth", "child.nickname": undefined, "error.message": `bad ${JWT}` }, "ERROR");
+    const [record] = memory.getFinishedLogRecords();
+    expect(record.eventName).toBe("keepup.check_in");
+    expect(record.severityText).toBe("ERROR");
+    expect(record.attributes).toEqual({ "event.name": "keepup.check_in", "user.email": "anna@example.com", "habit.title": "Brush teeth", "error.message": `bad ${REDACTED}` });
+  });
+
+  it("carries the trace it happened in, so Grafana links the two", () => {
+    // The app's context manager is @vercel/otel's (AsyncLocalStorage); a plain stack does for one sync call.
+    let current = ROOT_CONTEXT;
+    const stack: ContextManager = {
+      active: () => current,
+      with: (ctx, fn, thisArg, ...args) => {
+        const previous = current;
+        current = ctx;
+        try {
+          return fn.call(thisArg, ...args);
+        } finally {
+          current = previous;
+        }
+      },
+      bind: (_ctx, target) => target,
+      enable: () => stack,
+      disable: () => stack,
+    };
+    context.setGlobalContextManager(stack);
+    memory.reset();
+    const span = new BasicTracerProvider().getTracer("test").startSpan("POST /api/check-ins/tap");
+    context.with(trace.setSpan(context.active(), span), () => logEvent("keepup.check_in", {}));
+    expect(memory.getFinishedLogRecords()[0].spanContext?.traceId).toBe(span.spanContext().traceId);
   });
 });
