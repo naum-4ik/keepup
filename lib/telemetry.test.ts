@@ -34,6 +34,11 @@ describe("telemetry: no secret leaves the app", () => {
     expect(span.spanContext().traceId).toMatch(/^[0-9a-f]{32}$/);
   });
 
+  it("masks the token hash in email confirm and reset links", () => {
+    const span = exportOne("GET /auth/confirm", { "http.target": "/auth/confirm?token_hash=pkce_hash-secret&type=recovery&next=/auth/new-password" });
+    expect(span.attributes["http.target"]).toBe(`/auth/confirm?token_hash=${REDACTED}&type=recovery&next=/auth/new-password`);
+  });
+
   it("keeps who and what (owner, 2026-10-07): user ID, email, habit", () => {
     const user = { "user.id": "6f1c0d3e-0000-4000-8000-000000000001", "user.email": "anna@example.com", "habit.id": "h-1" };
     expect(exportOne("POST /api/check-ins/tap", user).attributes).toMatchObject(user);

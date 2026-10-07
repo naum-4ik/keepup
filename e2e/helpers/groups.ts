@@ -20,7 +20,7 @@ export async function inviteLink(page: Page): Promise<string> {
 
 // Children can't be added from the UI until Task 10; add one straight into the local database with
 // the service role (local stack only).
-function localAdmin(): { url: string; key: string } {
+export function localAdmin(): { url: string; key: string } {
   const raw = execSync("npx supabase status -o json", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
   // The CLI may print notices before the JSON (see scripts/local-env.mjs).
   const status = JSON.parse(raw.slice(raw.indexOf("{")));

@@ -8,9 +8,9 @@ import { OTLPHttpProtoTraceExporter } from "@vercel/otel";
 export const REDACTED = "[REDACTED]";
 
 // Keys whose whole value is a secret, and secrets that can hide inside any string: the sign-in
-// code and tokens in URLs, JWTs, Grafana and Supabase secret keys. Emails and IDs pass (owner, 2026-10-07).
+// code, tokens and token hashes in URLs, JWTs, Grafana and Supabase secret keys. Emails and IDs pass (owner, 2026-10-07).
 const SECRET_KEY = /authorization|cookie|password|secret|token|api[-_]?key/i;
-const SECRET_PARAM = /([?&](?:code|access_token|refresh_token|token|apikey|password)=)[^&#\s]+/gi;
+const SECRET_PARAM = /([?&](?:code|access_token|refresh_token|token_hash|token|apikey|password)=)[^&#\s]+/gi;
 const SECRET_VALUE = /eyJ[\w-]+\.[\w-]+\.[\w-]+|glc_[\w=+/-]+|sb_secret_[\w-]+/g;
 
 export function redactString(value: string) {

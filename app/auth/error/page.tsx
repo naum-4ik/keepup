@@ -2,8 +2,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { AuthErrorReason } from "@/lib/auth-errors";
 
-function isAuthErrorReason(value: string | undefined): value is AuthErrorReason {
-  return value === "expired" || value === "denied" || value === "unknown";
+// "link": a reset or confirm email link (/auth/confirm, /auth/new-password) that didn't work.
+type Reason = AuthErrorReason | "link";
+
+function isReason(value: string | undefined): value is Reason {
+  return value === "expired" || value === "denied" || value === "unknown" || value === "link";
 }
 
 export default async function AuthErrorPage({
@@ -12,7 +15,21 @@ export default async function AuthErrorPage({
   searchParams: Promise<{ reason?: string }>;
 }) {
   const { reason: rawReason } = await searchParams;
-  const reason = isAuthErrorReason(rawReason) ? rawReason : null;
+  const reason = isReason(rawReason) ? rawReason : null;
+
+  if (reason === "link") {
+    return (
+      <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-4 px-4">
+        <h1 className="text-2xl font-bold">That link didn&apos;t work</h1>
+        <p className="text-sm text-muted-foreground">
+          Email links work once, for an hour. Sign in, or ask for a new reset link from the sign-in screen.
+        </p>
+        <Button asChild className="h-11">
+          <Link href="/login">Back to sign in</Link>
+        </Button>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-4 px-4">
