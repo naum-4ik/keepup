@@ -4,6 +4,8 @@ export type LoginState =
   | { status: "idle" }
   // Sign-up worked, but the address must be confirmed before signing in (Confirm email on).
   | { status: "confirm"; message: string }
+  // Forgot password: the same answer whether or not `email` has an account.
+  | { status: "reset_sent"; message: string; email: string }
   // `field`: the one field to outline (none = the pair, e.g. a wrong password). `accountExists`: sign-up
   // hit an existing account, so the form offers "Sign in instead".
   | {

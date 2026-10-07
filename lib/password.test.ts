@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { CONFIRM_EMAIL_SENT, PASSWORD_MIN, credentialsError, passwordAuthMessage } from "./password";
+import { BANNED_PATTERNS, BANNED_WORDS } from "./notification-copy";
+import { CONFIRM_EMAIL_SENT, PASSWORD_MIN, RESET_LINK_SENT, credentialsError, newPasswordError, passwordAuthMessage } from "./password";
 
 describe("credentialsError", () => {
   it("accepts a valid email and a long enough password", () => {
@@ -18,6 +19,23 @@ describe("credentialsError", () => {
 
   it("asks for a password on sign-in", () => {
     expect(credentialsError("ana@example.com", "", "signin")).toEqual({ field: "password", message: "Enter your password." });
+  });
+});
+
+describe("newPasswordError", () => {
+  it("asks for at least 8 characters, the same as sign-up", () => {
+    expect(newPasswordError("1234567")).toBe("Use at least 8 characters.");
+    expect(newPasswordError("😀".repeat(8))).toBeNull();
+  });
+});
+
+describe("RESET_LINK_SENT", () => {
+  it("never says whether the account exists, and stays calm", () => {
+    expect(RESET_LINK_SENT).toBe("If that email has an account, a reset link is on its way.");
+    for (const text of [RESET_LINK_SENT, passwordAuthMessage({ code: "same_password" })]) {
+      for (const word of BANNED_WORDS) expect(text.toLowerCase()).not.toContain(word);
+      for (const re of BANNED_PATTERNS) expect(text).not.toMatch(re);
+    }
   });
 });
 

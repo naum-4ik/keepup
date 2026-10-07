@@ -120,7 +120,7 @@ test("sign-in and sign-up link to each other, and the password can be shown", as
   await page.getByLabel("Email").fill("ana@example.com");
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("button", { name: "Forgot password?" }).click();
-  await expect(page.getByText("Sign in with Google using the same email, or ask Ilya to reset it.")).toBeVisible();
+  await expect(page.getByText("Or sign in with Google using the same email.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Email me a link" })).toHaveCount(0);
 });
 

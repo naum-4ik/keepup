@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { CONFIRM_EMAIL_SENT, credentialsError, passwordAuthMessage } from "@/lib/password";
+import { isValidEmail } from "@/lib/email";
+import { CONFIRM_EMAIL_SENT, RESET_LINK_SENT, credentialsError, newPasswordError, passwordAuthMessage } from "@/lib/password";
 import { safeNextPath } from "@/lib/paths";
 import { requestOrigin } from "@/lib/request-origin";
 import type { LoginState } from "./state";
@@ -46,4 +47,34 @@ export async function signInWithGoogle(formData: FormData) {
   });
   if (error || !data.url) redirect("/auth/error");
   redirect(data.url);
+}
+
+// Forgot password. The link goes to /auth/confirm, then to the new-password page. The answer is the
+// same whatever Supabase says (unknown address, too soon after the last email), so it never tells
+// whether an address has an account.
+export async function requestPasswordReset(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!isValidEmail(email)) return { status: "error", message: "Enter a valid email address.", field: "email", email, mode: "signin" };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${await requestOrigin()}/auth/confirm?next=/auth/new-password`,
+  });
+  if (error) console.warn("password reset email not sent", error.code ?? error.status);
+  return { status: "reset_sent", message: RESET_LINK_SENT, email };
+}
+
+// The new-password page, signed in by the reset link.
+export async function setNewPassword(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  const password = String(formData.get("password") ?? "");
+  const tooShort = newPasswordError(password);
+  if (tooShort) return { status: "error", message: tooShort, field: "password", email: "", mode: "signup" };
+
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims) redirect("/auth/error?reason=expired");
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { status: "error", message: passwordAuthMessage(error), field: "password", email: "", mode: "signup" };
+
+  redirect("/today");
 }

@@ -1,11 +1,11 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isValidEmail } from "@/lib/email";
-import { submitCredentials } from "./actions";
+import { requestPasswordReset, submitCredentials } from "./actions";
 import { PasswordInput } from "./password-input";
 import type { LoginState } from "./state";
 
@@ -15,6 +15,8 @@ const initialState: LoginState = { status: "idle" };
 // or not the person remembers how they signed up.
 export function LoginForm({ next }: { next: string }) {
   const [state, action, pending] = useActionState(submitCredentials, initialState);
+  const [reset, resetAction, resetPending] = useActionState(requestPasswordReset, initialState);
+  const resetFormId = useId();
   const [email, setEmail] = useState("");
   const [step, setStep] = useState<"email" | "password">("email");
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -70,70 +72,93 @@ export function LoginForm({ next }: { next: string }) {
   }
 
   return (
-    // noValidate: the server answers in the app's own words instead of the browser's bubbles.
-    <form action={action} noValidate className="flex flex-col gap-3">
-      <input type="hidden" name="next" value={next} />
-      <input type="hidden" name="mode" value="signin" />
+    <>
+      {/* noValidate: the server answers in the app's own words instead of the browser's bubbles. */}
+      <form action={action} noValidate className="flex flex-col gap-3">
+        <input type="hidden" name="next" value={next} />
+        <input type="hidden" name="mode" value="signin" />
 
-      <Label htmlFor="email" className="font-semibold">
-        Email
-      </Label>
-      <div className="flex items-center gap-2">
-        {/* Read-only but real, so password managers pair the saved password with this email. */}
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="username"
-          readOnly
-          value={email}
-          className="h-11 flex-1 rounded-xl bg-muted px-3 text-muted-foreground"
+        <Label htmlFor="email" className="font-semibold">
+          Email
+        </Label>
+        <div className="flex items-center gap-2">
+          {/* Read-only but real, so password managers pair the saved password with this email. */}
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="username"
+            readOnly
+            value={email}
+            className="h-11 flex-1 rounded-xl bg-muted px-3 text-muted-foreground"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setStep("email");
+              setShowForgot(false);
+              setDismissed(state);
+            }}
+            className="min-h-11 rounded-lg px-2 text-sm font-semibold text-primary hover:bg-accent"
+          >
+            Change
+          </button>
+        </div>
+
+        <Label htmlFor="password" className="font-semibold">
+          Password
+        </Label>
+        <PasswordInput
+          autoComplete="current-password"
+          autoFocus
+          invalid={Boolean(error)}
+          describedBy={error ? "login-error" : undefined}
         />
-        <button
-          type="button"
-          onClick={() => {
-            setStep("email");
-            setShowForgot(false);
-            setDismissed(state);
-          }}
-          className="min-h-11 rounded-lg px-2 text-sm font-semibold text-primary hover:bg-accent"
-        >
-          Change
-        </button>
-      </div>
+        <div className="-mt-2 flex flex-col">
+          <button
+            type="button"
+            aria-expanded={showForgot}
+            onClick={() => setShowForgot((s) => !s)}
+            className="min-h-11 self-start text-sm font-semibold text-primary hover:underline"
+          >
+            Forgot password?
+          </button>
+          {showForgot && (
+            // Forms can't nest, so "Send reset link" submits its own small form below by id; Enter in the
+            // password field still signs in.
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-muted-foreground">We&apos;ll email you a link to choose a new password.</p>
+              <Button type="submit" form={resetFormId} variant="outline" disabled={resetPending} className="h-11">
+                {resetPending ? "Sending…" : "Send reset link"}
+              </Button>
+              {reset.status === "reset_sent" && reset.email === email && (
+                <p role="status" className="text-sm">
+                  {reset.message}
+                </p>
+              )}
+              {reset.status === "error" && reset.email === email && (
+                <p role="alert" className="text-sm text-destructive">
+                  {reset.message}
+                </p>
+              )}
+              <p className="text-sm text-muted-foreground">Or sign in with Google using the same email.</p>
+            </div>
+          )}
+        </div>
 
-      <Label htmlFor="password" className="font-semibold">
-        Password
-      </Label>
-      <PasswordInput
-        autoComplete="current-password"
-        autoFocus
-        invalid={Boolean(error)}
-        describedBy={error ? "login-error" : undefined}
-      />
-      <div className="-mt-2 flex flex-col">
-        <button
-          type="button"
-          aria-expanded={showForgot}
-          onClick={() => setShowForgot((s) => !s)}
-          className="min-h-11 self-start text-sm font-semibold text-primary hover:underline"
-        >
-          Forgot password?
-        </button>
-        {showForgot && (
-          <p className="text-sm text-muted-foreground">Sign in with Google using the same email, or ask Ilya to reset it.</p>
+        {error && (
+          <p id="login-error" role="alert" className="text-sm text-destructive">
+            {error.message}
+          </p>
         )}
-      </div>
 
-      {error && (
-        <p id="login-error" role="alert" className="text-sm text-destructive">
-          {error.message}
-        </p>
-      )}
-
-      <Button type="submit" disabled={pending} className="h-11">
-        {pending ? "Signing in…" : "Sign in"}
-      </Button>
-    </form>
+        <Button type="submit" disabled={pending} className="h-11">
+          {pending ? "Signing in…" : "Sign in"}
+        </Button>
+      </form>
+      <form id={resetFormId} action={resetAction} hidden>
+        <input type="hidden" name="email" value={email} />
+      </form>
+    </>
   );
 }
