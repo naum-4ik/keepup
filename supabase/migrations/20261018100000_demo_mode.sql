@@ -212,7 +212,7 @@ begin
   -- 4. Rewards, curated: clear what setup produced, write a level-4 ledger (40 × 10 + 4 × 20 = 480), then
   -- award what the history earns, quietly. Periods: only done and rested ones can earn anything here (a
   -- missed or skipped one only judges Perfect week, which its week's done periods judge too; the seeded
-  -- missed group weeks have no check-ins), and skipping them halves the seed's time.
+  -- missed group weeks have no check-ins); skipping them saves ~75 badge calls.
   delete from public.notifications where user_id in (p_user, v_alex);
   delete from public.xp_events where user_id in (p_user, v_alex);
   delete from public.level_ups where user_id in (p_user, v_alex);
