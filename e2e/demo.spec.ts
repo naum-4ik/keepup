@@ -1,7 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { completeOnboarding, signUp, uniqueEmail } from "./helpers/auth";
 
-// The banner and its Sign in come in the next task (M6 PR 3, task 3.2), with their own test.
+const BANNER = "You're in the demo. Data resets after 24 hours.";
+const OFF = "That's off in the demo.";
+
+// One Try it per test: each spends one of the local anonymous sign-ins (30 an hour per IP).
 test("Try it: a full account in under 5 seconds, with a check-in to approve", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("By continuing, you agree to the Privacy Policy")).toBeVisible();
@@ -18,6 +21,36 @@ test("Try it: a full account in under 5 seconds, with a check-in to approve", as
   // exact: "Approve" is also a substring of "Not approved".
   await page.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(page.getByText("Nothing waiting for you.")).toBeVisible();
+
+  // The banner on every screen; what the demo can't do says so instead.
+  await page.goto("/today");
+  await expect(page.getByText(BANNER)).toBeVisible();
+  await page.goto("/profile");
+  await expect(page.getByText(BANNER)).toBeVisible();
+
+  await page.goto("/groups");
+  await page.getByRole("link", { name: /Family/ }).first().click();
+  await expect(page).toHaveURL(/\/groups\/[0-9a-f-]{36}/);
+  await expect(page.getByText(BANNER)).toBeVisible();
+  await expect(page.getByText(OFF)).toBeVisible();
+  await expect(page.getByRole("button", { name: /invite link/i })).toHaveCount(0);
+
+  await page.getByRole("link", { name: /Nova/ }).first().click();
+  await page.getByRole("link", { name: "Open Nova's view" }).click();
+  await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}\/play$/);
+  await expect(page.getByText(BANNER)).toBeVisible();
+
+  await page.goto("/profile/settings");
+  await expect(page.getByRole("region", { name: "Notifications" }).getByText(OFF)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Turn on reminders" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Delete account" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Export my data" })).toBeVisible();
+
+  // The banner's Sign in leaves the demo: the session is gone.
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL(/\/login/);
+  await page.goto("/today");
+  await expect(page).toHaveURL(/\/login/);
 });
 
 test("Try it on a stale landing tab keeps the real login", async ({ page, context }) => {

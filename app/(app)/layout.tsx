@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/app-shell/app-header";
 import { BottomNav } from "@/components/app-shell/bottom-nav";
+import { DemoBanner } from "@/components/demo/demo-banner";
 import { CelebrationMoment } from "@/components/celebrations/celebration-moment";
 import { LiveRefresh } from "@/components/habits/live-refresh";
 import { OfflineBanner } from "@/components/offline/offline-banner";
@@ -19,6 +20,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <OfflineQueueProvider userId={profile.id}>
       <div className="flex min-h-dvh flex-col">
         <AppHeader unread={unread}>
+          {profile.is_demo && <DemoBanner placement="header" />}
           <OfflineBanner placement="header" />
         </AppHeader>
         {/* wrap-anywhere (inherited): a long name with no spaces wraps instead of widening the page. */}
@@ -30,7 +32,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           level={level?.level ?? null}
           xpProgress={level ? levelFraction(level.xp) : null}
         />
-        <PushRefresh />
+        {/* A demo login has no push devices (the database refuses them): no re-save on app open. */}
+        {!profile.is_demo && <PushRefresh />}
         {/* Level-ups and new badges, once each, when a page opens (Settings → Celebrations). */}
         <CelebrationMoment />
         {/* New Inbox rows (approvals asked, check-ins, nudges) refresh whatever page is open, so the

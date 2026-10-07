@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { runTryIt } from "./try-demo";
+import { runLeaveDemo, runTryIt } from "./try-demo";
 
 const REDIRECT = Object.assign(new Error("NEXT_REDIRECT"), { digest: "NEXT_REDIRECT;push;/today;307;" });
 
@@ -47,5 +47,41 @@ describe("runTryIt", () => {
     const d = deps({ hasSession: vi.fn(async () => true), start: vi.fn(async () => { throw new TypeError("Failed to fetch"); }) });
     expect(await runTryIt(d)).toBe("failed");
     expect(d.signOut).not.toHaveBeenCalled();
+  });
+});
+
+describe("runLeaveDemo", () => {
+  const TO_LOGIN = Object.assign(new Error("NEXT_REDIRECT"), { digest: "NEXT_REDIRECT;push;/login;307;" });
+  function leaveDeps(over: Partial<Parameters<typeof runLeaveDemo>[0]> = {}) {
+    const calls: string[] = [];
+    return {
+      calls,
+      deps: {
+        clearPhone: vi.fn(async () => void calls.push("clear")),
+        leave: vi.fn(async () => {
+          calls.push("leave");
+          throw TO_LOGIN;
+        }),
+        rethrow: vi.fn((e: unknown) => { if (e === TO_LOGIN) throw e; }),
+        ...over,
+      },
+    };
+  }
+
+  it("clears the phone first, then signs out; the redirect to /login goes through", async () => {
+    const { calls, deps } = leaveDeps();
+    await expect(runLeaveDemo(deps)).rejects.toBe(TO_LOGIN);
+    expect(calls).toEqual(["clear", "leave"]);
+  });
+
+  it("still signs out when clearing the phone breaks", async () => {
+    const { deps } = leaveDeps({ clearPhone: vi.fn(async () => { throw new Error("no storage"); }) });
+    await expect(runLeaveDemo(deps)).rejects.toBe(TO_LOGIN);
+    expect(deps.leave).toHaveBeenCalledOnce();
+  });
+
+  it("the sign-out call itself breaks: says so", async () => {
+    const { deps } = leaveDeps({ leave: vi.fn(async () => { throw new TypeError("Failed to fetch"); }) });
+    expect(await runLeaveDemo(deps)).toBe("failed");
   });
 });

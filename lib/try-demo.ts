@@ -26,3 +26,27 @@ export async function runTryIt(steps: {
     return "failed";
   }
 }
+
+// The demo banner's "Sign in" (components/demo/leave-demo-button.tsx). The phone is cleared the way
+// Delete account clears it (the demo login is deleted within 24 hours), then the session ends and
+// leaveDemo redirects to /login; that redirect is a rejection `rethrow` passes on. Queued check-ins
+// aren't sent first: demo taps are thrown away with the demo. Returns "failed" if the sign-out broke.
+export async function runLeaveDemo(steps: {
+  clearPhone: () => Promise<void>;
+  leave: () => Promise<void>;
+  rethrow: (e: unknown) => void;
+}): Promise<"failed" | null> {
+  try {
+    await steps.clearPhone();
+  } catch (e) {
+    console.error("demo: clearing the phone", e);
+  }
+  try {
+    await steps.leave();
+    return null;
+  } catch (e) {
+    steps.rethrow(e);
+    console.error("demo: leaving", e);
+    return "failed";
+  }
+}

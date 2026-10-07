@@ -7,6 +7,7 @@ import { forgetPushSubscription, pauseAll, setDelivery, setReminderHour } from "
 import { currentEndpoint, TurnOnReminders } from "@/components/notifications/turn-on-reminders";
 import { InfoHint } from "@/components/info-hint";
 import { Button } from "@/components/ui/button";
+import { DEMO_OFF } from "@/lib/demo-copy";
 import { GENERIC_ERROR } from "@/lib/habit-errors";
 import {
   APPROVALS_OFF_NOTE, DELIVERIES, IPHONE_SOUND_HINT, NOTIFICATION_CATEGORIES, PAUSE_CHOICES, reminderHourHint, reminderStatus,
@@ -28,7 +29,8 @@ function pausedUntil(until: string, timeZone: string): string {
   return new Intl.DateTimeFormat("en-GB", { timeZone, weekday: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(until));
 }
 
-export function NotificationSettingsCard({ settings }: { settings: NotificationSettings }) {
+// isDemo: a demo login can't save a push device, so it never sees the browser's permission prompt.
+export function NotificationSettingsCard({ settings, isDemo = false }: { settings: NotificationSettings; isDemo?: boolean }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [here, setHere] = useState<string | null>(null);
@@ -84,6 +86,8 @@ export function NotificationSettingsCard({ settings }: { settings: NotificationS
               arrivesAt: justOn ? hourLabel(settings.reminderHour) : null,
             })}
           </p>
+        ) : isDemo ? (
+          <p className="text-sm text-muted-foreground">{DEMO_OFF}</p>
         ) : (
           <TurnOnReminders
             hour={settings.reminderHour}

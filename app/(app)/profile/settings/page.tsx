@@ -41,10 +41,10 @@ export default async function SettingsPage() {
           submitLabel="Save"
         />
       </div>
-      <NotificationSettingsCard settings={notifications} />
+      <NotificationSettingsCard settings={notifications} isDemo={profile.is_demo} />
       <CelebrationsSetting saved={celebrations} />
       <ResetMyData privateHabitIds={privateHabitIds} />
-      <MyData />
+      <MyData isDemo={profile.is_demo} />
     </section>
   );
 }

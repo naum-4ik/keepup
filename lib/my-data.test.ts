@@ -31,6 +31,7 @@ describe("runDelete", () => {
         flush: async () => void calls.push("flush"),
         clearPhone: async () => void calls.push("clear"),
         remove: async () => (calls.push("delete"), result),
+        rethrow: () => undefined,
       },
     };
   }
@@ -51,5 +52,26 @@ describe("runDelete", () => {
     };
     expect(await runDelete(deps)).toBeNull();
     expect(calls).toEqual(["flush", "clear", "delete"]);
+  });
+});
+
+describe("runDelete: the action's redirect", () => {
+  const TO_LANDING = Object.assign(new Error("NEXT_REDIRECT"), { digest: "NEXT_REDIRECT;push;/?deleted=1;307;" });
+  const base = {
+    flush: async () => undefined,
+    clearPhone: async () => undefined,
+    rethrow: (e: unknown) => { if (e === TO_LANDING) throw e; },
+  };
+  it("a successful delete redirects: passed on, never DELETE_FAILED", async () => {
+    await expect(runDelete({ ...base, remove: async () => { throw TO_LANDING; } })).rejects.toBe(TO_LANDING);
+  });
+  it("the delete call itself breaks (network): DELETE_FAILED", async () => {
+    expect(await runDelete({ ...base, remove: async () => { throw new TypeError("Failed to fetch"); } })).toBe(DELETE_FAILED);
+  });
+  it("clearing the phone breaks: DELETE_FAILED, and nothing is deleted", async () => {
+    let removed = false;
+    const clearPhone = async () => { throw new Error("no storage"); };
+    expect(await runDelete({ ...base, clearPhone, remove: async () => void (removed = true) })).toBe(DELETE_FAILED);
+    expect(removed).toBe(false);
   });
 });
