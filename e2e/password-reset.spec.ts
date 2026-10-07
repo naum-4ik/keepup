@@ -17,11 +17,9 @@ async function signUpOnboardAndSignOut(page: Page, email: string): Promise<void>
 async function askForResetLink(page: Page, email: string): Promise<void> {
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("button", { name: "Forgot password?" }).click();
+  await expect(page.getByRole("status").first()).toHaveText(SENT);
   await expect(page.getByText("Or sign in with Google using the same email.")).toBeVisible();
-  await page.getByRole("button", { name: "Send reset link" }).click();
-  await expect(page.getByRole("status")).toHaveText(SENT);
 }
 
 async function chooseNewPassword(page: Page): Promise<void> {
@@ -53,6 +51,25 @@ test("forgot password: the emailed link sets a new one, and only the new one wor
   await expect(page.locator("#login-error")).toHaveText("That email and password don't match. Try again.");
   await signIn(page, email, NEW_PASSWORD);
   await expect(page).toHaveURL(/\/today$/);
+});
+
+test("forgot password: from the password step it also sends at once", async ({ page }) => {
+  const email = uniqueEmail();
+  await signUpOnboardAndSignOut(page, email);
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(email);
+  await page.getByRole("button", { name: "Continue", exact: true }).click();
+  await page.getByRole("button", { name: "Forgot password?" }).click();
+  await expect(page.getByRole("status").first()).toHaveText(SENT);
+  await expect.poll(() => mailCount(email)).toBe(1);
+});
+
+test("forgot password: with no email typed it asks for one and sends nothing", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Forgot password?" }).click();
+  await expect(page.getByText("Type your email above, then tap Forgot password? again.")).toBeVisible();
+  await expect(page.getByLabel("Email")).toBeFocused();
+  await expect(page.getByText(SENT)).toHaveCount(0);
 });
 
 test("forgot password: an unknown email gets the same answer, and no email", async ({ page }) => {
