@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useId, useRef, useState } from "react";
 import { InfoHint } from "@/components/info-hint";
+import { PrivacyConsent } from "@/components/privacy-consent";
 import { SaveButton } from "@/components/save-button";
 import { TimezonePicker } from "@/components/timezone-picker";
 import { Input } from "@/components/ui/input";
@@ -186,8 +187,7 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
 
       <div className="flex flex-col gap-2">
         <SaveButton state={state} pending={pending} label="Continue" />
-        {/* Plain text until /privacy exists (M6), then a link. */}
-        <p className="text-center text-xs text-muted-foreground">By continuing, you agree to the Privacy Policy</p>
+        <PrivacyConsent />
       </div>
     </form>
   );

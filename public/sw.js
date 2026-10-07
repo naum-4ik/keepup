@@ -11,6 +11,8 @@ const ASSETS = "keepup-assets";
 const MAX_ASSETS = 300;
 const PAGES = "keepup-pages"; // the last Today and kid view, on this device only; cleared at sign-out
 const OFFLINE_URL = "/offline";
+// Public pages kept in the shell too, so they open offline: the privacy policy (linked from sign-in).
+const SHELL_PAGES = ["/privacy"];
 const OFFLINE_PAGES = [/^\/today$/, /^\/kids\/[0-9a-f-]{36}\/play$/];
 
 // The offline page is saved up front, but a failure (installed while offline) must not hold the
@@ -27,6 +29,7 @@ self.addEventListener("install", (event) => {
           .then((assets) => assets && c.put(MANIFEST + OFFLINE_URL, manifestFor(assets))),
       )
       .catch((e) => console.error("offline precache", e))
+      .then(saveShellPages) // after the offline page, and never fatal: a failure here can't cost it
       .then(() => self.skipWaiting()),
   );
 });
@@ -176,11 +179,15 @@ async function networkFirstPage(event, req, url) {
       } else if (keep && !res.redirected) {
         event.waitUntil(track(savePage(url.pathname)));
       }
-      event.waitUntil(saveOfflinePage());
+      event.waitUntil(saveOfflinePage().then(saveShellPages));
     }
     return res;
   } catch {
-    const saved = keep ? await (await caches.open(PAGES)).match(url.pathname) : undefined;
+    const saved = keep
+      ? await (await caches.open(PAGES)).match(url.pathname)
+      : SHELL_PAGES.includes(url.pathname)
+        ? await (await caches.open(SHELL)).match(url.pathname)
+        : undefined;
     return saved || (await (await caches.open(SHELL)).match(OFFLINE_URL)) || Response.error();
   }
 }
@@ -234,15 +241,18 @@ self.addEventListener("message", (event) => {
 });
 
 // Sign-out clears every cache (lib/push-support.ts signOutCleanup); put the offline page back.
-async function saveOfflinePage() {
+const saveOfflinePage = () => saveShellPage(OFFLINE_URL);
+const saveShellPages = () => Promise.all(SHELL_PAGES.map(saveShellPage));
+
+async function saveShellPage(path) {
   try {
     const cache = await caches.open(SHELL);
-    if (await cache.match(OFFLINE_URL)) return;
-    const res = await fetch(OFFLINE_URL);
-    if (!res.ok) return;
-    // Its scripts first, as for any saved page (the offline page has its own).
-    await cache.put(MANIFEST + OFFLINE_URL, manifestFor(await saveAssetsOf(await res.clone().text())));
-    await cache.put(OFFLINE_URL, res);
+    if (await cache.match(path)) return;
+    const res = await fetch(path);
+    if (!res.ok || res.redirected) return;
+    // Its scripts first, as for any saved page.
+    await cache.put(MANIFEST + path, manifestFor(await saveAssetsOf(await res.clone().text())));
+    await cache.put(path, res);
   } catch {
     // offline again, or the page failed: next time
   }

@@ -406,6 +406,29 @@ describe("sw.js offline shell", () => {
     expect((await sw.request("/today")) as Res).toMatchObject({ body: "offline page" });
   });
 
+  it("the privacy policy is saved at install and readable offline", async () => {
+    const net = network();
+    net.pages["/privacy"] = res("privacy policy");
+    const sw = worker([], undefined, net.fetchImpl);
+    await sw.lifecycle("install");
+    net.setOnline(false);
+    expect((await sw.request("/privacy")) as Res).toMatchObject({ body: "privacy policy" });
+  });
+
+  it("a failed privacy page save never costs the offline page, and comes back after sign-out", async () => {
+    const net = network();
+    net.pages["/privacy"] = res("error", { ok: false });
+    const sw = worker([], undefined, net.fetchImpl);
+    await sw.lifecycle("install");
+    expect((await sw.caches.api.match("/offline"))?.body).toBe("offline page");
+    expect(await sw.caches.api.match("/privacy")).toBeUndefined();
+    net.pages["/privacy"] = res("privacy policy");
+    sw.caches.clear(); // sign-out
+    await sw.request("/progress");
+    net.setOnline(false);
+    expect((await sw.request("/privacy")) as Res).toMatchObject({ body: "privacy policy" });
+  });
+
   it("offline with nothing saved at all: a network error, not a hang", async () => {
     const net = network();
     const sw = worker([], undefined, net.fetchImpl);

@@ -28,6 +28,10 @@ test("Try it: a full account in under 5 seconds, with a check-in to approve", as
   await expect(page.getByText(BANNER)).toBeVisible();
   await page.goto("/profile");
   await expect(page.getByText(BANNER)).toBeVisible();
+  // The policy opens in the demo too (the consent line under Try the demo points at it).
+  await page.getByRole("link", { name: "Privacy Policy" }).click();
+  await expect(page).toHaveURL(/\/privacy$/);
+  await expect(page.getByRole("heading", { name: "Privacy Policy", level: 1 })).toBeVisible();
 
   await page.goto("/groups");
   await page.getByRole("link", { name: /Family/ }).first().click();

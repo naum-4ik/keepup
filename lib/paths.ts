@@ -3,7 +3,7 @@
 const PUBLIC_EXACT = new Set(["/", "/manifest.webmanifest", "/sw.js", "/offline"]);
 // /api routes check the session themselves and answer 401 JSON (a redirect to the login page would
 // look like success to a fetch from the service worker).
-const PUBLIC_PREFIXES = ["/login", "/signup", "/auth", "/whats-new", "/invite", "/api"];
+const PUBLIC_PREFIXES = ["/login", "/signup", "/auth", "/whats-new", "/privacy", "/invite", "/api"];
 
 export function isPublicPath(pathname: string): boolean {
   if (PUBLIC_EXACT.has(pathname)) return true;
