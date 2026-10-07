@@ -17,7 +17,7 @@ We process only the data the app needs to work.
 **Account** (from you, or from Google if you sign in with Google)
 
 - Your email address and a unique account identifier.
-- Your password, if you sign in with email and password. It is stored only as a hash by our sign-in provider (Supabase Auth); we never see it.
+- Your password, if you sign in with email and password. Our sign-in provider (Supabase Auth) stores it only as a one-way hash, never in plain text.
 - If you sign in with Google: the profile details Google shares (your name, email address and a link to your Google profile picture) are kept with your login. Keepup uses only the name, to suggest a display name when you start.
 
 **Profile and settings** (from you)
@@ -61,6 +61,7 @@ We process only the data the app needs to work.
 **Technical data** (automatically, by our hosting providers)
 
 - IP address, browser and device information, timestamps and error details in server logs, and the session cookies needed to keep you signed in.
+- A sign-in history kept by our sign-in provider (Supabase Auth): sign-ups, sign-ins, sign-outs and password changes, with your account ID, email address and the time.
 
 We do **not** collect photos you take, precise location, contacts, health records from other apps, payment data, or advertising identifiers. We use no analytics or advertising services, and we don't track you on other sites.
 
@@ -110,8 +111,9 @@ Where data is transferred outside the EU/EEA (for example to the United States),
 - **Usage and error traces (Grafana Labs):** 14 days.
 - **Encrypted backups:** 30 days on a rolling basis; deleted data disappears from backups within 30 days.
 - **Server logs held by our providers:** according to the provider's retention, typically days to a few weeks.
+- **Sign-in history (Supabase Auth):** kept in the database and its backups. It is not yet removed automatically when you delete your account; write to us and we will delete yours.
 
-When you delete your account, your personal data is deleted from the live database immediately, and from backups within 30 days. Usage and error traces already sent expire after 14 days. Group habits you created stay with the group, without your name; your own check-ins on them are deleted. A group in which you are the only member is deleted, together with its children's profiles. If you were the last admin of a group with other members, admin rights pass to the longest-standing member.
+When you delete your account, your personal data is deleted from the live database immediately (except the sign-in history above), and from backups within 30 days. Usage and error traces already sent expire after 14 days. Group habits you created stay with the group, without your name; your own check-ins on them are deleted. A group in which you are the only member is deleted, together with its children's profiles. If you were the last admin of a group with other members, admin rights pass to the longest-standing member.
 
 ## 7. Your rights and controls
 

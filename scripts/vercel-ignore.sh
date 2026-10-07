@@ -34,6 +34,7 @@ while IFS= read -r f; do
   case "$f" in
     CHANGELOG.md | */CHANGELOG.md) build "$f is app-relevant" ;;
     supabase/functions/_shared/*) build "$f is shared with the app" ;;
+    docs/privacy-policy.md) build "$f is the /privacy page" ;;
     supabase/* | .github/* | docs/* | *.md | scripts/backup-* | e2e/*) ;;
     *) build "$f is app-relevant" ;;
   esac
