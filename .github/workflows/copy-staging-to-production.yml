@@ -9,8 +9,17 @@ name: Copy staging to production
 # again), sessions and refresh tokens (everyone signs in fresh), the sign-in audit log. Production
 # keeps its own Vault secrets, cron jobs, storage and Supabase-managed schemas. Demo rows come
 # along and production's hourly demo cleanup deletes them, as on staging.
-# Run: Actions -> Copy staging to production -> Run workflow (develop) -> type the confirm phrase.
-# Leave "dry run" ticked first: it does everything and rolls back. Delete this file after the copy.
+# Logs are public (public repo): every psql here runs with VERBOSITY terse and prints counts only,
+# never row contents.
+# Owner procedure:
+#   1. Actions -> Copy staging to production -> Run workflow -> branch develop -> type the phrase
+#      "copy staging to production" -> keep "Dry run" ticked. It does everything, then rolls back.
+#   2. Read the dry run's log: the counts per table, and the "truncate cascades to table" notices,
+#      where only auth.* tables are expected (printed without schema: identities, sessions,
+#      refresh_tokens, one_time_tokens, scim_users, mfa_*, oauth_*, webauthn_*). Anything else: stop.
+#   3. Freeze staging: tell the family to stop using the staging app (later check-ins stay behind).
+#   4. Run again with "Dry run" unticked (only an explicit false commits).
+#   5. Delete this workflow and scripts/copy-staging-to-production/ right after, in a PR.
 
 on:
   workflow_dispatch:
@@ -97,8 +106,9 @@ jobs:
       - name: Check the dump and count staging's rows
         run: scripts/copy-staging-to-production/prepare.sh dump
       # The session pooler (IPv4, port 5432): runners have no IPv6, which the direct db.<ref> host
-      # needs, and the transaction pooler can't keep session settings. Host and user come from the
-      # same Management API endpoint the Supabase CLI uses; the password only ever sits in env.
+      # needs, and the transaction pooler can't keep session settings. The host comes from the same
+      # Management API endpoint the Supabase CLI uses; the login is the pooler's fixed form
+      # postgres.<ref>, built from production's ref. The password only ever sits in env.
       - name: Find production's database address
         env:
           PRODUCTION_REF: ${{ secrets.PRODUCTION_PROJECT_REF }}
@@ -109,14 +119,13 @@ jobs:
             "https://api.supabase.com/v1/projects/$PRODUCTION_REF/config/database/pooler" \
             | jq -c '[.[] | select(.database_type == "PRIMARY" and (.db_host | endswith(".pooler.supabase.com")))][0]')
           host=$(jq -r '.db_host // empty' <<<"$pooler")
-          user=$(jq -r '.db_user // empty' <<<"$pooler")
-          db=$(jq -r '.db_name // empty' <<<"$pooler")
-          # The guard that keeps the wipe off staging: the login names production's ref, not staging's.
-          if [ "$user" != "postgres.$PRODUCTION_REF" ] || [[ "$user" == *"$STAGING_REF"* ]]; then
-            echo "::error::The pooler login isn't production's; refusing to continue."
+          user="postgres.$PRODUCTION_REF"
+          # The guard that keeps the wipe off staging: the login names production's ref, never staging's.
+          if [ -z "$PRODUCTION_REF" ] || [[ "$user" == *"$STAGING_REF"* ]]; then
+            echo "::error::The pooler login would not be production's; refusing to continue."
             exit 1
           fi
-          if [[ "$host" != *.pooler.supabase.com ]] || [ -z "$db" ]; then
+          if [[ "$host" != *.pooler.supabase.com ]]; then
             echo "::error::Unexpected pooler address from the Management API."
             exit 1
           fi
@@ -124,7 +133,7 @@ jobs:
             echo "PGHOST=$host"
             echo "PGPORT=5432"
             echo "PGUSER=$user"
-            echo "PGDATABASE=$db"
+            echo "PGDATABASE=postgres"
             echo "PGSSLMODE=require"
           } >>"$GITHUB_ENV"
       # One psql session, one transaction: expected.sql opens it, checks-and-wipe.sql checks the
@@ -136,8 +145,11 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
           set -euo pipefail
-          if [ "$DRY_RUN" = "true" ]; then finish=rollback; else finish=commit; fi
-          psql -X -q -v ON_ERROR_STOP=1 -o /dev/null \
+          # Fails safe: only an explicit "false" commits; anything else (true, empty, odd) rolls back.
+          if [ "$DRY_RUN" = "false" ]; then finish=commit; else finish=rollback; fi
+          # VERBOSITY terse: a failed COPY would otherwise print the offending row (emails, password
+          # hashes) as CONTEXT/DETAIL in the public log.
+          psql -X -q -v ON_ERROR_STOP=1 -v VERBOSITY=terse -o /dev/null \
             -f dump/expected.sql \
             -f scripts/copy-staging-to-production/checks-and-wipe.sql \
             -f dump/data.sql \
@@ -149,20 +161,21 @@ jobs:
             echo "::notice::Committed: production now holds staging's data."
           fi
       - name: Production after the copy
-        if: ${{ !inputs.dry_run }}
+        # Same rule as the load: only an explicit false committed.
+        if: inputs.dry_run == false
         env:
           PGPASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
         run: |
           set -euo pipefail
           # For the log only: the counts were already checked before the commit, and the cron jobs
           # may have added rows since (period results, reminders in the Inbox).
-          psql -X -v ON_ERROR_STOP=1 -c "select 'profiles' t, count(*) from public.profiles
+          psql -X -v ON_ERROR_STOP=1 -v VERBOSITY=terse -c "select 'profiles' t, count(*) from public.profiles
             union all select 'habits', count(*) from public.habits
             union all select 'check_ins', count(*) from public.check_ins
             union all select 'groups', count(*) from public.groups
             union all select 'auth.users', count(*) from auth.users
             union all select 'auth.identities', count(*) from auth.identities"
-          psql -X -v ON_ERROR_STOP=1 -f scripts/backup-assert.sql
+          psql -X -v ON_ERROR_STOP=1 -v VERBOSITY=terse -f scripts/backup-assert.sql
       - name: Remove the dump
         if: always()
         run: rm -rf dump

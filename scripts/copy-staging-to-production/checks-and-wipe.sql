@@ -2,6 +2,8 @@
 -- Checks the two schemas match, then empties production's public tables and logins. Nothing commits
 -- until verify.sql has compared every count; any error here rolls everything back.
 \set ON_ERROR_STOP on
+-- No DETAIL/CONTEXT lines: they can quote whole rows, and the Actions log is public.
+\set VERBOSITY terse
 -- No triggers while wiping and loading: no feed rows, XP, pushes or profile creation.
 set session_replication_role = replica;
 -- The 15-minute cron jobs may hold locks briefly; give up rather than hang.

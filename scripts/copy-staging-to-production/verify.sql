@@ -3,6 +3,8 @@
 -- raises and nothing is committed. Equal counts also prove no trigger fired during the load (a feed
 -- row, XP event or new profile would add rows). The workflow commits (or rolls back) after this.
 \set ON_ERROR_STOP on
+-- No DETAIL/CONTEXT lines: they can quote whole rows, and the Actions log is public.
+\set VERBOSITY terse
 set client_min_messages = notice;
 
 do $$
