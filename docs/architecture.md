@@ -19,7 +19,7 @@ flowchart TB
         Auth["Auth: Google + email and password"]
         PG[("Postgres: RLS on every table, RPCs, triggers")]
         RT["Realtime"]
-        Cron["pg_cron: periods, approvals, reminders, feed retention"]
+        Cron["pg_cron: periods, approvals, reminders, recaps, feed retention, demo cleanup"]
         Net["pg_net"]
         Push["Edge Function: send-push"]
     end
@@ -27,10 +27,12 @@ flowchart TB
     subgraph GitHub["GitHub Actions"]
         CI["CI: PR checks, pgTAP on merge, e2e after merge"]
         Deploy["Deploy migrations to staging"]
-        Backup["Nightly encrypted backup, monthly restore test"]
+        Release["Release: migrations, then the app, to production (dormant until production exists)"]
+        Backup["Nightly encrypted backups (staging, and production once it exists), monthly restore test"]
         Keep["Daily keep-awake ping"]
     end
     Vault[("Private backup repo (age-encrypted)")]
+    Grafana["Grafana Cloud: traces and events (OpenTelemetry, redacted)"]
 
     UI -->|HTTPS| Proxy --> Fn -->|PostgREST, RPC| PG
     Fn --> Auth
@@ -39,6 +41,8 @@ flowchart TB
     Cron --> PG
     PG -->|feed row with push = true| Net --> Push --> PushSvc --> SW
     CI --> Deploy --> PG
+    Release -.-> ProdDB[("Production Supabase project: same migrations")]
+    Fn -->|OTLP| Grafana
     Backup -->|pg_dump| PG
     Backup --> Vault
     Keep --> PG
@@ -93,7 +97,7 @@ Triggers write the feed, so every path that changes the data (RPC, review, pause
 | Local | `supabase start` (Docker) | local Postgres | Dev loop, no network dependency |
 | PR preview | PR opened/updated | `keepup-staging` (eu-central-1) | UI-only: the preview app points at the staging database, but a PR's own migrations aren't pushed there. Schema changes are verified by CI (pgTAP against a fresh local database, on the merge to `develop`, or before it on a `full-ci` PR) and only reach staging once that run is green |
 | `develop` | push, after CI passes | `keepup-staging` (eu-central-1) | `deploy-staging-db.yml` runs on a green `CI` run on `develop` (or manually) and pushes migrations |
-| `main` | push | production (M6) | Disabled in `vercel.json` until M6 ships the production pipeline |
+| `main` | push (the release PR) | production | `release-please.yml` → `deploy-production`: database migrations and `send-push` first, then the app to Vercel (git auto-deploy for `main` stays off in `vercel.json`). Dormant until the repo variable `PRODUCTION_READY` is `true` |
 
 Because a PR preview never runs its own migrations against staging, and staging only ever moves forward from merged, CI-checked migrations, schema changes should be written expand-then-contract: add the new column/constraint/table in one migration (additive, safe to deploy under old and new code), ship the code that uses it, then remove what it replaced in a later migration once nothing depends on the old shape.
 
@@ -101,9 +105,10 @@ Because a PR preview never runs its own migrations against staging, and staging 
 
 Configured by hand in the Supabase dashboard for the `keepup-staging` project (not managed by migrations):
 
-- Site URL: `https://keepup-murex.vercel.app`
-- Redirect URLs: `https://keepup-murex.vercel.app/auth/callback`, `https://keepup-*-naum4ik-s-org.vercel.app/**`
-- Providers: email + password (email confirmation off until an SMTP sender is set up) and Google (the Google OAuth client is in Testing mode)
+- Site URL: `https://keepup-stage.vercel.app`
+- Redirect URLs: `https://keepup-stage.vercel.app/auth/callback`, `https://keepup-*-naum4ik-s-org.vercel.app/**`
+- Providers: email + password and Google (the Google OAuth client is in Testing mode)
+- Emails (confirm address, reset password): Keepup's templates in `supabase/templates/`, sent through a Gmail SMTP sender set in the dashboard; their links land on `/auth/confirm` with a `token_hash`
 
 ## Why no load balancer
 
@@ -125,8 +130,9 @@ Vercel's serverless functions are stateless and scale horizontally by request �
 | CI gates | Every PR: lint, types, unit and Edge Function tests (~1 min, required) and one sanity e2e test (~3 min, not required). Every merge: pgTAP, gating the staging deploy, and the full Playwright suite after it. `full-ci` PRs: everything before the merge (decision 0024) | Live |
 | Data region | EU (Frankfurt) for Postgres and Auth | Live |
 | Kids' data minimization | Current schema stores no photos or birthdates; kid profiles keep a nickname, emoji and colour only | Live |
-| Encrypted nightly backups | Staging schema, data and logins dumped nightly, encrypted with age, kept 30 days in a private repo; a monthly job restores the latest into a throwaway database and checks it | Live (M3) |
-| GDPR export/delete | — | Planned, M6 |
+| Encrypted nightly backups | Schema, data and logins dumped nightly, encrypted with age, kept 30 days in a private repo; a monthly job restores the latest into a throwaway database and checks it. Staging since M3; production (`backup-production.yml`, a production leg in the restore test) switches on with production | Live (staging) |
+| GDPR export/delete | Settings → Your data: Export my data (one JSON file from `export_my_data()`) and Delete account (`delete_my_account()`, one transaction, decision 0025); both covered by pgTAP | Live (M6) |
+| Telemetry redaction | Passwords, tokens, cookies and keys are masked in spans and events before export to Grafana Cloud; a unit test fails if one gets through ([observability](observability/README.md)) | Live (M6) |
 
 ## Free-tier limits
 
@@ -145,7 +151,7 @@ Keepup runs on free tiers. These are the limits that matter, from the providers'
 | Vercel Hobby | Non-commercial use only (asking for donations is allowed); 1M function invocations, 4 h active CPU, 100 GB data transfer a month; 100 deployments a day; 1 build at a time; runtime logs kept 1 hour | Small | Any payment, ads or paid feature means Vercel Pro |
 | GitHub Actions | Free for public repositories; scheduled workflows switch off after 60 days without a commit | CI, backups, restore test, keep-awake | `keepalive.yml` re-enables the schedules daily |
 | Google sign-in | The OAuth client is in Testing mode: only listed test users (up to 100) | The family | Before strangers join: publish the OAuth consent screen |
-| Email | No SMTP sender: Supabase's built-in mail only reaches the team, so email confirmation is off | — | Before strangers join: add an SMTP sender and turn confirmation on |
+| Email | Supabase's built-in mail only reaches the team, so sign-in emails go through a Gmail SMTP sender | Confirm and reset emails | Gmail's daily sending limit, if many people sign up at once |
 | Web Push | Free (Apple, Google and Mozilla push services) | One subscription per device | — |
 
 ## Scaling path
