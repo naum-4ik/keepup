@@ -358,6 +358,9 @@ test("approval: check-ins wait, each approves the other in the Inbox, both see E
   await guest.getByRole("link", { name: /Inbox/ }).click();
   await guest.getByRole("tab", { name: "Activity" }).click();
   await expect(guest.getByText("Everyone did it: Gym ✓")).toBeVisible();
+  // The decided request reads its outcome, no longer "Approve?".
+  await expect(guest.getByText(/ did Gym: approved$/)).toBeVisible();
+  await expect(guest.getByText(/ did Gym\. Approve\?$/)).toHaveCount(0);
 });
 
 test("nudge a member with a preset, and they see it in their Inbox", async ({ page, browser }) => {
