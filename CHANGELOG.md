@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.0.0](https://github.com/naum-4ik/keepup/compare/v0.6.1...v1.0.0) (2026-10-08)
+
+
+### Features
+
+* **db:** demo mode — a seeded demo account, kept apart, deleted after 24 hours ([#159](https://github.com/naum-4ik/keepup/issues/159)) ([9ab600d](https://github.com/naum-4ik/keepup/commit/9ab600d098cf486b18bfe91e6a3d876074da7515))
+* export my data and delete account ([#156](https://github.com/naum-4ik/keepup/issues/156)) ([8a7ffc7](https://github.com/naum-4ik/keepup/commit/8a7ffc7f96d6b8a0ac5e8120acc2a65121fcc86c))
+* **obs:** check-in events in Grafana (Loki), linked to their traces ([#161](https://github.com/naum-4ik/keepup/issues/161)) ([c5b3c00](https://github.com/naum-4ik/keepup/commit/c5b3c00fcb0907defab66f473665442d8fe61f71))
+* **obs:** every server error is an ERROR event in Grafana, and its trace turns red ([#165](https://github.com/naum-4ik/keepup/issues/165)) ([30e3f45](https://github.com/naum-4ik/keepup/commit/30e3f45524db98d8c734919fba21215581e7ace4))
+* **obs:** product events for every action in the catalogue ([#167](https://github.com/naum-4ik/keepup/issues/167)) ([cbb19b7](https://github.com/naum-4ik/keepup/commit/cbb19b7ccf717222e7d3dff63e1b4ae3686decbb))
+* **obs:** server traces to Grafana Cloud, with user and habit, secrets redacted ([#157](https://github.com/naum-4ik/keepup/issues/157)) ([5d169a6](https://github.com/naum-4ik/keepup/commit/5d169a64bea05fc67280527d57304d40da20bfde))
+* **obs:** the browser reports to Grafana Faro: screens, JS errors, Web Vitals ([#171](https://github.com/naum-4ik/keepup/issues/171)) ([8b4faa0](https://github.com/naum-4ik/keepup/commit/8b4faa0daad4264b1e42d3f36c33244f779eaf00))
+* one-screen landing: Get started, Sign in, and a Try the demo link ([#162](https://github.com/naum-4ik/keepup/issues/162)) ([9868d04](https://github.com/naum-4ik/keepup/commit/9868d0499dc848588116aff7d20433d8e18ce1b3))
+* privacy policy page ([#169](https://github.com/naum-4ik/keepup/issues/169)) ([5734beb](https://github.com/naum-4ik/keepup/commit/5734bebb9d39d94fe8e5851873dbb597a960f2d5))
+* reset a forgotten password by email, and email confirmation ready ([#163](https://github.com/naum-4ik/keepup/issues/163)) ([755a47a](https://github.com/naum-4ik/keepup/commit/755a47ae4582da43b2df03e9b54aa945ecce6a1c))
+* try the demo, and the demo banner ([#160](https://github.com/naum-4ik/keepup/issues/160)) ([1dd8227](https://github.com/naum-4ik/keepup/commit/1dd822749fa7a539e2ad4bf671a7ef1177f04232))
+
+
+### Bug Fixes
+
+* a session for a deleted account signs out instead of erroring ([#180](https://github.com/naum-4ik/keepup/issues/180)) ([b3a1ff2](https://github.com/naum-4ik/keepup/commit/b3a1ff275beb086c90f17b7d178b903332c3b976))
+* a sign-in that failed at Google doesn't blame the link ([#179](https://github.com/naum-4ik/keepup/issues/179)) ([65c45ed](https://github.com/naum-4ik/keepup/commit/65c45ed697522967dc2d8b3602ca081ff9a62e38))
+* archive any habit, not only ones with check-ins ([#168](https://github.com/naum-4ik/keepup/issues/168)) ([a05a632](https://github.com/naum-4ik/keepup/commit/a05a632e2b3936e86b704fa294219a37164fe5fa))
+* delete account and demo cleanup also remove the sign-in history ([#170](https://github.com/naum-4ik/keepup/issues/170)) ([7e84ece](https://github.com/naum-4ik/keepup/commit/7e84ece23be85ff6d8eb8e1a3fbd6b8dd8c6cedb))
+* Forgot password? sends the reset email at once ([#166](https://github.com/naum-4ik/keepup/issues/166)) ([2162207](https://github.com/naum-4ik/keepup/commit/21622079ab8616a6184cc15ea78f85ed5c509571))
+* **obs:** span names by kind of call, not ids (span metrics cardinality) ([#177](https://github.com/naum-4ik/keepup/issues/177)) ([40b22eb](https://github.com/naum-4ik/keepup/commit/40b22eb5f603f8316d13964169622728d0b841d7))
+* the garden picture scrolls under the tab bar, not over it ([#154](https://github.com/naum-4ik/keepup/issues/154)) ([56287d6](https://github.com/naum-4ik/keepup/commit/56287d6e6f4a33c307c656434502f67c53161515))
+
 ## [0.6.1](https://github.com/naum-4ik/keepup/compare/v0.6.0...v0.6.1) (2026-10-07)
 
 
