@@ -4,7 +4,7 @@ import { context, ROOT_CONTEXT, trace, type ContextManager } from "@opentelemetr
 import { logs } from "@opentelemetry/api-logs";
 import { InMemoryLogRecordExporter, LoggerProvider, SimpleLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import { BasicTracerProvider, InMemorySpanExporter, SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
-import { logEvent, logRecordProcessors, parseHeaders, REDACTED, RedactingLogExporter, RedactingSpanExporter, spanProcessors, userAttributes } from "./telemetry";
+import { logEvent, logRecordProcessors, parseHeaders, REDACTED, RedactingLogExporter, RedactingSpanExporter, spanName, spanProcessors, userAttributes } from "./telemetry";
 
 const JWT = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2ln";
 
@@ -50,6 +50,14 @@ describe("telemetry: no secret leaves the app", () => {
     expect(userAttributes({ sub, email: null })).toEqual({ "user.id": sub });
     expect(userAttributes({ sub })).toEqual({ "user.id": sub });
     expect(userAttributes({ sub, email: "anna@example.com" })).toEqual({ "user.id": sub, "user.email": "anna@example.com" });
+  });
+
+  it("names a span by its kind of call, not its ids (one metrics series per name)", () => {
+    expect(spanName("fetch GET https://x.supabase.co/rest/v1/check_ins?select=id&habit_id=eq.3d138ebe-2ba0-4749-9357-f09312045c6f")).toBe("fetch GET /rest/v1/check_ins");
+    expect(spanName("fetch POST https://x.supabase.co/rest/v1/rpc/check_in")).toBe("fetch POST /rest/v1/rpc/check_in");
+    expect(spanName("GET /habits/3d138ebe-2ba0-4749-9357-f09312045c6f")).toBe("GET /habits/[id]");
+    expect(spanName("RSC GET /today")).toBe("RSC GET /today");
+    expect(exportOne("fetch GET https://x.supabase.co/rest/v1/profiles?id=eq.1", {}).name).toBe("fetch GET /rest/v1/profiles");
   });
 
   it("reads the OTel headers format", () => {
