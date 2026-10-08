@@ -1,3 +1,4 @@
+import { deviceTimeZone, todayIn } from "@/lib/dates";
 import { isOneEmoji } from "@/lib/habit-schema";
 
 export const CHILD_NAME_MAX = 40;
@@ -28,8 +29,8 @@ export function parseGoal(values: { title: string; emoji: string; target: string
 }
 
 // keepup-{nickname}-{date}.json, in the viewer's local date; unsafe file-name characters become "-".
-export function exportFileName(name: string, now = new Date()): string {
+// Dated by the person's own day (the browser's time zone), like Export my data.
+export function exportFileName(name: string, now = new Date(), timeZone = deviceTimeZone()): string {
   const safe = name.trim().replace(/[^\p{L}\p{N}_-]+/gu, "-").replace(/^-+|-+$/g, "") || "child";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `keepup-${safe}-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.json`;
+  return `keepup-${safe}-${todayIn(timeZone, now)}.json`;
 }

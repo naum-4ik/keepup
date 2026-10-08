@@ -3,6 +3,8 @@
 export const JUST_LOOKING = "Just looking?";
 export const TRY_DEMO = "Try the demo";
 export const SETTING_UP = "Setting up…";
+// Before the page is ready, Try the demo can't start anything yet.
+export const LOADING = "Loading…";
 export const DEMO_BANNER = "You're in the demo. Data resets after 24 hours.";
 export const DEMO_SIGN_IN = "Sign in";
 export const DEMO_SIGN_IN_TAIL = "to start your own.";

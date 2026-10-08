@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,8 @@ import { PasswordInput } from "./password-input";
 import type { LoginState } from "./state";
 
 const initialState: LoginState = { status: "idle" };
+const NEED_EMAIL = "Type your email above, then tap Forgot password? again.";
+const FORGOT_STATUS_ID = "forgot-status";
 
 // Email first, then the password: one question at a time, and the email step works the same whether
 // or not the person remembers how they signed up.
@@ -26,8 +28,15 @@ export function LoginForm({ next }: { next: string }) {
   const [dismissed, setDismissed] = useState<LoginState | null>(null);
   const error = step === "password" && state.status === "error" && state !== dismissed ? state : null;
 
+  // The email field takes focus once the hint is there, so a screen reader reads the hint with it.
+  useEffect(() => {
+    if (needEmail) emailRef.current?.focus();
+  }, [needEmail]);
+
   // Forgot password? sends the link at once to the email typed above; with none, it asks for one.
+  // While sending, the button stays focusable (aria-disabled, not disabled) and a second tap does nothing.
   function forgotPassword() {
+    if (resetPending) return;
     const trimmed = email.trim();
     if (!isValidEmail(trimmed)) {
       setNeedEmail(true);
@@ -40,29 +49,22 @@ export function LoginForm({ next }: { next: string }) {
     startReset(() => resetAction(data));
   }
 
+  const sent = !needEmail && reset.status === "reset_sent" && reset.email === email.trim();
   const forgot = (
     <div className="flex flex-col">
       <button
         type="button"
-        disabled={resetPending}
+        aria-disabled={resetPending}
         onClick={forgotPassword}
-        className="min-h-11 self-start text-sm font-semibold text-primary hover:underline disabled:opacity-60"
+        className="min-h-11 self-start text-sm font-semibold text-primary hover:underline aria-disabled:opacity-60"
       >
         {resetPending ? "Sending…" : "Forgot password?"}
       </button>
-      {needEmail && (
-        <p role="status" className="text-sm text-muted-foreground">
-          Type your email above, then tap Forgot password? again.
-        </p>
-      )}
-      {!needEmail && reset.status === "reset_sent" && reset.email === email.trim() && (
-        <>
-          <p role="status" className="text-sm">
-            {reset.message}
-          </p>
-          <p className="text-sm text-muted-foreground">Or sign in with Google using the same email.</p>
-        </>
-      )}
+      {/* One live region, always in the page, so the hint and the answer are announced when they appear. */}
+      <p id={FORGOT_STATUS_ID} role="status" className={needEmail ? "text-sm text-muted-foreground" : "text-sm"}>
+        {needEmail ? NEED_EMAIL : sent ? reset.message : null}
+      </p>
+      {sent && <p className="text-sm text-muted-foreground">Or sign in with Google using the same email.</p>}
     </div>
   );
 
@@ -102,7 +104,7 @@ export function LoginForm({ next }: { next: string }) {
             setNeedEmail(false);
           }}
           aria-invalid={Boolean(emailError)}
-          aria-describedby={emailError ? "login-error" : undefined}
+          aria-describedby={[emailError && "login-error", needEmail && FORGOT_STATUS_ID].filter(Boolean).join(" ") || undefined}
         />
         {emailError && (
           <p id="login-error" role="alert" className="text-sm text-destructive">
