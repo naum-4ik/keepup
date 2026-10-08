@@ -34,7 +34,9 @@ export function MovedNotice() {
   useEffect(() => {
     const arrived = new URLSearchParams(window.location.search).get(MOVED_PARAM) === "1";
     const stripped = withoutMoved(window.location.href);
-    if (stripped !== null) window.history.replaceState(null, "", stripped);
+    // After Next's router has patched history (next tick), and keeping its state: a null state makes
+    // the router ignore Back to this entry, so the page would stay stuck on the next screen.
+    if (stripped !== null) setTimeout(() => window.history.replaceState(window.history.state, "", stripped), 0);
     const saved = read();
     if (saved === "dismissed") return;
     if (arrived) write("show");

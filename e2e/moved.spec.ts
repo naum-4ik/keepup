@@ -24,6 +24,17 @@ test("arriving with ?moved=1: a notice on every screen this session, until dismi
   await expect(page.getByText(NOTICE)).toHaveCount(0);
 });
 
+test("Back from How to install returns to the landing page, without moved=1", async ({ page }) => {
+  await page.goto("/?moved=1");
+  await expect(page).toHaveURL(/localhost:3000\/$/);
+  await page.getByRole("link", { name: "How?" }).click();
+  await expect(page.getByRole("heading", { name: "Install Keepup", level: 1 })).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "Keepup", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Install Keepup", level: 1 })).toHaveCount(0);
+  await expect(page).toHaveURL(/localhost:3000\/$/);
+});
+
 test("no notice without ?moved=1", async ({ page }) => {
   await page.goto("/login");
   await expect(page.getByRole("heading").first()).toBeVisible();

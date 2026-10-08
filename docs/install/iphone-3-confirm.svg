@@ -5,7 +5,6 @@
 <rect x="1" y="1" width="238" height="478" rx="20" fill="#FFF8F0" stroke="#EFE3D6" stroke-width="2"/>
 <circle cx="28" cy="28" r="15" fill="#B84F33"/><text x="28" y="34" font-size="17" text-anchor="middle" font-weight="700" fill="#FFFFFF">3</text>
 <rect x="34" y="52" width="172" height="352" rx="26" fill="#3D2C22"/><rect x="40" y="64" width="160" height="328" rx="18" fill="#FFFFFF"/>
-<rect x="40" y="64" width="160" height="328" rx="18" fill="#FFF8F0"/>
 <text x="54" y="104" font-size="13" fill="#7A6556">Cancel</text>
 <text x="176" y="104" font-size="15" text-anchor="middle" font-weight="700" fill="#B84F33">Add</text><circle cx="176" cy="99" r="19" fill="none" stroke="#B84F33" stroke-width="3"/>
 <rect x="52" y="128" width="136" height="64" rx="12" fill="#FFFFFF" stroke="#E6D6C6"/>

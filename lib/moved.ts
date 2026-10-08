@@ -1,6 +1,6 @@
 // Keepup moved to a new address (2026-10). Installed apps can't follow an origin change, so phones
 // with the old icon must install again. proxy.ts forwards the old host here with ?moved=1, and
-// components/moved-notice.tsx tells people how. Pure: no next/server, so the banner can import it too.
+// components/moved/moved-notice.tsx tells people how. Pure: no next/server, so the banner can import it too.
 export const OLD_HOSTS = ["keepup-murex.vercel.app"] as const;
 export const NEW_ORIGIN = "https://keepuphabits.vercel.app";
 export const MOVED_PARAM = "moved";
