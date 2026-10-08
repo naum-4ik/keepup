@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="480" viewBox="0 0 240 480" role="img" aria-label="Computer: in Chrome or Edge, click the install icon at the right of the address bar, then Install">
+<title>Computer: in Chrome or Edge, click the install icon at the right of the address bar, then Install</title>
+<defs><symbol id="k" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#FDE3D3" stroke="#F6D2BE" stroke-width="1.5"/><path d="M20 51 L44 51 M31 51 C33 44 31 38 33 29" fill="none" stroke="#B84F33" stroke-width="5" stroke-linecap="round"/><path d="M31 38 C22 38 16 32 14 23 C23 22 30 28 31 38 Z M33 31 C33 21 39 14 50 13 C51 23 44 30 33 31 Z" fill="#B84F33"/></symbol></defs>
+<g font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif" fill="#3D2C22">
+<rect x="1" y="1" width="238" height="478" rx="20" fill="#FFF8F0" stroke="#EFE3D6" stroke-width="2"/>
+<circle cx="28" cy="28" r="15" fill="#B84F33"/><text x="28" y="34" font-size="17" text-anchor="middle" font-weight="700" fill="#FFFFFF">1</text>
+<rect x="30" y="60" width="180" height="120" rx="10" fill="#3D2C22"/><rect x="36" y="66" width="168" height="104" rx="5" fill="#FFFFFF"/>
+<rect x="36" y="66" width="168" height="18" rx="5" fill="#F3EADF"/><rect x="44" y="70" width="128" height="10" rx="5" fill="#FFFFFF"/>
+<circle cx="164" cy="75" r="9" fill="none" stroke="#B84F33" stroke-width="2"/>
+<use href="#k" x="108" y="100" width="24" height="24"/><rect x="92" y="132" width="56" height="6" rx="3" fill="#E6D6C6"/>
+<path d="M104 180 l-6 22 h44 l-6 -22 Z" fill="#3D2C22"/><rect x="88" y="200" width="64" height="6" rx="3" fill="#3D2C22"/>
+<path d="M164 84 L210 236 M164 84 L26 236" stroke="#B84F33" stroke-width="1.5" stroke-dasharray="4 4" fill="none"/>
+<rect x="18" y="236" width="204" height="150" rx="14" fill="#FFFFFF" stroke="#B84F33" stroke-width="2"/>
+<rect x="30" y="252" width="180" height="36" rx="18" fill="#F3EADF"/>
+<text x="46" y="275" font-size="13" fill="#7A6556">keepuphabits…</text>
+<g fill="none" stroke="#3D2C22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="174" y="261" width="20" height="14" rx="2"/><path d="M180 279 h8 M184 264 v7 M181 268 l3 3 l3 -3"/></g>
+<circle cx="184" cy="270" r="16" fill="none" stroke="#B84F33" stroke-width="3"/>
+<rect x="30" y="302" width="180" height="70" rx="10" fill="#FFF8F0" stroke="#E6D6C6"/>
+<use href="#k" x="40" y="312" width="24" height="24"/><text x="72" y="329" font-size="13" font-weight="700">Install Keepup?</text>
+<rect x="138" y="342" width="62" height="22" rx="11" fill="#B84F33"/><text x="169" y="357" font-size="12" text-anchor="middle" font-weight="700" fill="#FFFFFF">Install</text>
+<text x="120" y="432" font-size="22" text-anchor="middle" font-weight="700">Click Install</text>
+<text x="120" y="456" font-size="17" text-anchor="middle" fill="#7A6556">in Chrome or Edge</text>
+</g>
+</svg>

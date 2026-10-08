@@ -46,6 +46,14 @@ test("how to install is public and fits a phone", async ({ page }) => {
     await expect(page.getByRole("heading", { name, level: 2 })).toBeVisible();
   }
   await expect(page.getByText(/Turn on reminders/).first()).toBeVisible();
+  // The drawings (docs/install): 4 iPhone, 3 Android, 1 computer, each described and loaded.
+  const pictures = page.locator("main img");
+  await expect(pictures).toHaveCount(8);
+  for (const img of await pictures.all()) {
+    await img.scrollIntoViewIfNeeded();
+    await expect(img).toHaveAttribute("alt", /\S/);
+    await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
+  }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
