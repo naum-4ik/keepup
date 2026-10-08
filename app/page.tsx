@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { TryDemoButton } from "@/components/demo/try-demo-button";
-import { DEMO_FAILED } from "@/lib/demo-copy";
 import { createClient } from "@/lib/supabase/server";
 import { authErrorReason } from "@/lib/auth-errors";
 import { DELETED_NOTE } from "@/lib/my-data";
@@ -34,7 +33,6 @@ export default async function Home({
       </div>
       <div className="flex flex-col gap-3">
         {params.deleted === "1" && <p role="status" className="text-sm text-muted-foreground">{DELETED_NOTE}</p>}
-        {params.demo === "failed" && <p role="alert" className="text-sm text-destructive">{DEMO_FAILED}</p>}
         <Button asChild size="lg" className="h-12 w-full">
           <Link href="/signup">Get started</Link>
         </Button>

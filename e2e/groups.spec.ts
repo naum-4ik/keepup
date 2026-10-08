@@ -115,17 +115,23 @@ test("the member menu closes on Escape and on a tap outside", async ({ page, bro
   const guest = await (await browser.newContext()).newPage();
   await joinByLink(guest, url, "Dan");
   await page.reload();
-  const summary = page.getByLabel("Options for Dan");
+  // A real button for assistive tech (a flex <summary> loses its role in some engines), with its state.
+  const summary = page.getByRole("button", { name: /Options for Dan/ });
   const makeAdmin = page.getByRole("button", { name: "Make admin" });
+  await expect(summary).toHaveAttribute("aria-expanded", "false");
   await summary.click();
   await expect(makeAdmin).toBeVisible();
+  await expect(summary).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("Escape");
   await expect(makeAdmin).toBeHidden();
+  await expect(summary).toHaveAttribute("aria-expanded", "false");
   await expect(summary).toBeFocused();
   await summary.click();
   await expect(makeAdmin).toBeVisible();
+  await expect(summary).toHaveAttribute("aria-expanded", "true");
   await page.getByRole("heading", { name: "Family", exact: true }).click();
   await expect(makeAdmin).toBeHidden();
+  await expect(summary).toHaveAttribute("aria-expanded", "false");
 });
 
 test("an invited person joins from the link and lands on the group's habits", async ({ page, browser }) => {
@@ -358,6 +364,9 @@ test("approval: check-ins wait, each approves the other in the Inbox, both see E
   await guest.getByRole("link", { name: /Inbox/ }).click();
   await guest.getByRole("tab", { name: "Activity" }).click();
   await expect(guest.getByText("Everyone did it: Gym ✓")).toBeVisible();
+  // The decided request reads its outcome, no longer "Approve?".
+  await expect(guest.getByText(/ did Gym: approved$/)).toBeVisible();
+  await expect(guest.getByText(/ did Gym\. Approve\?$/)).toHaveCount(0);
 });
 
 test("nudge a member with a preset, and they see it in their Inbox", async ({ page, browser }) => {

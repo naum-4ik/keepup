@@ -16,6 +16,10 @@ describe("isPublicPath", () => {
     expect(isPublicPath("/manifest.webmanifest")).toBe(true);
   });
 
+  it("serves robots.txt to signed-out crawlers", () => {
+    expect(isPublicPath("/robots.txt")).toBe(true);
+  });
+
   it("treats invite landings as public", () => {
     expect(isPublicPath("/invite/abc")).toBe(true);
   });

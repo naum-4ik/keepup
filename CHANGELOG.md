@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.2.0](https://github.com/naum-4ik/keepup/compare/v1.1.1...v1.2.0) (2026-10-08)
+
+
+### Features
+
+* **obs:** product dashboard, infra limits, production deploy markers ([ae97c3f](https://github.com/naum-4ik/keepup/commit/ae97c3f0b6bbaf9bafc166cfc5d507237ee3d0dc))
+* **obs:** product dashboard, infra limits, production deploy markers ([ddeac53](https://github.com/naum-4ik/keepup/commit/ddeac532b72ebbe60ad2f0833a233b2968984dba))
+* **obs:** the infra dashboard as code, and no false week_overview errors ([f9e635f](https://github.com/naum-4ik/keepup/commit/f9e635f989030c068aa55d654b4fd225696b56da))
+* **obs:** the infra dashboard as code, and no false week_overview errors ([6f6bf48](https://github.com/naum-4ik/keepup/commit/6f6bf48c8a7a337d810a0b9269e58995cfa9841c))
+
+
+### Bug Fixes
+
+* a child with a blank name gets a clean invalid_name error ([463754f](https://github.com/naum-4ik/keepup/commit/463754ff18a310685b53d680b7bc9d385bb6d3ce))
+* a decided approval reads its outcome in the Inbox and counts as read ([0cd78f8](https://github.com/naum-4ik/keepup/commit/0cd78f8c5fe74fc9ddfadcbdc1dff6e8569ff625))
+* **a11y:** the member options control is a button with aria-expanded ([14846b9](https://github.com/naum-4ik/keepup/commit/14846b91702a9b6250ca660f8948a1b21bb2593b))
+* **db:** Export my data lists the habits of the person's groups ([9f6b35b](https://github.com/naum-4ik/keepup/commit/9f6b35b6a553a6605d78c758fa3afe49f39c14f8))
+* demo Recaps show the seeded weeks, and a public robots.txt ([c096800](https://github.com/naum-4ik/keepup/commit/c096800ebcea5aaeac8b1ea4a56512edd5252143))
+* demo recaps show the seeded weeks; demo seed dated at p_now ([fbc0c2d](https://github.com/naum-4ik/keepup/commit/fbc0c2d88b02ae6970538ad1d94edd613b9be0d8))
+* findings from the production test — export, name suggestion, decided approvals, member menu ([9a70d8e](https://github.com/naum-4ik/keepup/commit/9a70d8ec24963efd24cb498dfd22b01420cee70d))
+* kid cards — a big empty circle and readable count dots ([0f84e74](https://github.com/naum-4ik/keepup/commit/0f84e7477fc654daf3fc2f5c6a1f738d63ad9500))
+* kid cards — a big empty circle and readable count dots ([8f66fd2](https://github.com/naum-4ik/keepup/commit/8f66fd2aabc6060ad8f0196146f0211aa721d008))
+* robots.txt is public and keeps crawlers to the public pages ([8a1fd46](https://github.com/naum-4ik/keepup/commit/8a1fd46f3cc0f0c463cba3493a96abcb7a553132))
+* smaller rough edges in Settings, sign-in and the demo ([337c298](https://github.com/naum-4ik/keepup/commit/337c2989b6ee79b9c89ac4728a5cd97fee9b9292))
+* smaller rough edges in Settings, sign-in and the demo ([c161f03](https://github.com/naum-4ik/keepup/commit/c161f031d4e47b0f70caf93df25583da3edd8e25))
+* the onboarding name suggestion drops an email's +tag ([4a7d47e](https://github.com/naum-4ik/keepup/commit/4a7d47ec2dbc383777e95d32ff580d3cbd2f155f))
+
 ## [1.1.1](https://github.com/naum-4ik/keepup/compare/v1.1.0...v1.1.1) (2026-10-08)
 
 

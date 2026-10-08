@@ -18,4 +18,8 @@ describe("kid schema", () => {
     expect(exportFileName("Mary", new Date(2026, 8, 30))).toBe("keepup-Mary-2026-09-30.json");
     expect(exportFileName("Anna Lou/1", new Date(2026, 0, 2))).toBe("keepup-Anna-Lou-1-2026-01-02.json");
   });
+  it("dates the kid export by the person's own date, not UTC's", () => {
+    expect(exportFileName("Mary", new Date("2026-10-07T23:30:00Z"), "Europe/Rome")).toBe("keepup-Mary-2026-10-08.json");
+    expect(exportFileName("Mary", new Date("2026-10-08T03:00:00Z"), "America/Los_Angeles")).toBe("keepup-Mary-2026-10-07.json");
+  });
 });

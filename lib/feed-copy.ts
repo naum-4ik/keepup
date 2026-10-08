@@ -38,6 +38,7 @@ export const NUDGE_KINDS: readonly { kind: NudgeKind; emoji: string; label: stri
   { kind: "gentle_reminder", emoji: "⏰", label: "Gentle reminder" },
 ];
 
+const asOutcome = (o: unknown): copy.ApprovalOutcome | null => (o === "approved" || o === "rejected" || o === "expired" ? o : null);
 const asPeriod = (p: unknown, fallback: PeriodUnit): PeriodUnit => (p === "day" || p === "week" || p === "month" ? p : fallback);
 const UNIT: Record<string, [string, string]> = { day: ["day", "days"], week: ["week", "weeks"], month: ["month", "months"] };
 const unit = (n: number, period: unknown) => (UNIT[String(period)] ?? UNIT.day)[n === 1 ? 0 : 1];
@@ -53,10 +54,13 @@ export function feedCopy(n: FeedItem): { title: string; body: string; href: stri
   const habitHref = n.habit_id ? `/habits/${n.habit_id}` : null;
   const groupHref = n.group_id ? `/groups/${n.group_id}` : null;
   const kidHref = n.subject_id ? `/kids/${n.subject_id}` : null;
+  const outcome = asOutcome(n.payload.outcome);
 
   switch (n.kind) {
     case "group_check_in": return { ...copy.groupCheckIn(group, [who], habit)!, href: habitHref };
-    case "approval_needed": return { ...copy.approvalNeeded(group, [{ author: who, habit }])!, href: "/inbox" };
+    case "approval_needed":
+      if (outcome) return { ...copy.approvalDecided(group, who, habit, outcome), href: habitHref };
+      return { ...copy.approvalNeeded(group, [{ author: who, habit }])!, href: "/inbox" };
     case "check_in_approved": return { title: habit, body: `${who} approved your check-in.`, href: habitHref };
     case "check_in_rejected": return { ...copy.checkInNotApproved(habit, who, asPeriod(n.payload.period, "day")), href: habitHref };
     case "everyone_done": return { ...copy.everyoneDidIt(group, habit), href: habitHref };
@@ -108,7 +112,9 @@ export function feedCopy(n: FeedItem): { title: string; body: string; href: stri
     }
     // A habit's own reminder has no group: the line names only the habit.
     case "habit_reminder": return { ...copy.habitReminder(habit), href: habitHref };
-    case "approval_expiring": return { ...copy.approvalExpiring(group, who, habit), href: "/inbox" };
+    case "approval_expiring":
+      if (outcome) return { ...copy.approvalDecided(group, who, habit, outcome), href: habitHref };
+      return { ...copy.approvalExpiring(group, who, habit), href: "/inbox" };
     // Offline sync notes (ideas/offline.md §4). A private habit's streak note has no group: the habit is the title.
     case "streak_back": return { ...copy.groupStreakBack(n.group_name ?? habit, habit), href: habitHref };
     case "already_logged": return { ...copy.alreadyLogged(kid, n.actor_name, habit), href: kidHref ?? habitHref };

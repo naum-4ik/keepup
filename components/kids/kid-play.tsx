@@ -597,21 +597,33 @@ export function KidPlay({
                 <span className="flex min-w-0 flex-1 flex-col gap-1.5">
                   <span className="text-lg font-semibold leading-tight">{h.title}</span>
                   {h.target > 1 && (
-                    <span aria-hidden className="flex flex-wrap gap-1.5">
+                    // One dot per tap the day needs (24px): filled ones in the done green, empty ones a
+                    // ring of it, so both read in light and dark (≥ 3:1 on the card).
+                    <span aria-hidden className="flex flex-wrap gap-2">
                       {Array.from({ length: h.target }, (_, i) => (
-                        <span key={i} className={cn("size-5 rounded-full", i < h.done ? (done ? "bg-done-foreground" : "bg-done") : done ? "bg-done-foreground/40" : "bg-muted ring-1 ring-border")} />
+                        <span
+                          key={i}
+                          data-dot={i < h.done ? "filled" : "empty"}
+                          className={cn(
+                            "size-6 rounded-full border-2 transition-colors motion-reduce:transition-none",
+                            i < h.done ? (done ? "border-done-foreground bg-done-foreground" : "border-done bg-done") : done ? "border-done-foreground" : "border-done",
+                          )}
+                        />
                       ))}
                     </span>
                   )}
                 </span>
+                {/* Where the ✓ goes: a big empty circle says "tap here"; done, the same circle fills
+                    with the ✓. Both the same size, so the title never re-wraps when a card turns done. */}
                 {done ? (
                   <>
-                    <Check aria-hidden className="size-12 shrink-0" strokeWidth={3} />
+                    <span aria-hidden data-mark="done" className="flex size-16 shrink-0 items-center justify-center rounded-full bg-done-foreground text-done">
+                      <Check className="size-10" strokeWidth={3} />
+                    </span>
                     <span className="sr-only">, done</span>
                   </>
                 ) : (
-                  // Where the ✓ will go: an empty circle says "tap here".
-                  <span aria-hidden className="size-12 shrink-0 rounded-full border-2 border-primary/50 bg-background" />
+                  <span aria-hidden data-mark="open" className="size-16 shrink-0 rounded-full border-4 border-done bg-background" />
                 )}
               </button>
             </li>

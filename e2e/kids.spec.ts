@@ -594,6 +594,45 @@ test("the kid view: a 2×-a-day habit's first tap shows its new thing big in the
   await expect(page.locator('[data-item="0"]')).toBeVisible();
 });
 
+test("the kid view: an undone card shows a big empty circle, and a 2×-a-day habit readable dots", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await expect(page).toHaveURL(/\/play$/);
+  const teeth = page.getByRole("button", { name: "Brush teeth" });
+  // The place to tap: a big empty circle, sized for a small finger.
+  const circle = teeth.locator('[data-mark="open"]');
+  await expect(circle).toBeVisible();
+  const c = (await circle.boundingBox())!;
+  expect(c.width).toBeGreaterThanOrEqual(56);
+  expect(c.height).toBeGreaterThanOrEqual(56);
+  // 2× a day: two empty dots, each at least 20px.
+  await expect(teeth.locator('[data-dot="empty"]')).toHaveCount(2);
+  for (const dot of await teeth.locator("[data-dot]").all()) {
+    const box = (await dot.boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(20);
+    expect(box.height).toBeGreaterThanOrEqual(20);
+  }
+  // The first tap fills one dot; the card stays open, its circle still empty.
+  await teeth.click();
+  await expect(teeth.locator('[data-dot="filled"]')).toHaveCount(1);
+  await expect(teeth.locator('[data-dot="empty"]')).toHaveCount(1);
+  await expect(teeth.locator('[data-mark="open"]')).toBeVisible();
+  await page.waitForTimeout(2100); // past the double-tap guard
+  await teeth.click();
+  // Done: both dots filled, and the same circle holds the ✓.
+  const done = page.getByRole("button", { name: "Brush teeth , done" });
+  await expect(done.locator('[data-dot="filled"]')).toHaveCount(2);
+  await expect(done.locator('[data-mark="done"]')).toBeVisible();
+  // Same laid-out size as the empty circle. offsetWidth ignores transforms, so the done card's short
+  // bounce (a scale animation, still running when measured) can't skew it the way boundingBox does.
+  const openWidth = Math.round(c.width);
+  const doneWidth = await done.locator('[data-mark="done"]').evaluate((el) => (el as HTMLElement).offsetWidth);
+  expect(doneWidth).toBe(openWidth);
+});
+
 test("the kid view: a new-picture tap shows its new thing first, then the new picture, never both at once", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await signUpAndOnboard(page);

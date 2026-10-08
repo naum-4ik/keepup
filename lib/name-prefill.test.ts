@@ -13,6 +13,13 @@ describe("suggestDisplayName", () => {
     expect(suggestDisplayName({ email: "..ana..@example.com" })).toBe("Ana");
   });
 
+  it("drops an email's +tag (plus-addressing)", () => {
+    expect(suggestDisplayName({ email: "naumchas00+keepup-qa-202610081103-1@gmail.com" })).toBe("Naumchas00");
+    expect(suggestDisplayName({ email: "ana.maria+news@example.com" })).toBe("Ana Maria");
+    expect(suggestDisplayName({ email: "ana+@example.com" })).toBe("Ana");
+    expect(suggestDisplayName({ email: "+tag@example.com" })).toBe("");
+  });
+
   it("returns empty when there's nothing usable", () => {
     expect(suggestDisplayName({})).toBe("");
     expect(suggestDisplayName({ fullName: 42, email: "@example.com" })).toBe("");

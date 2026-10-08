@@ -18,6 +18,15 @@ export function releaseLabel(r: Release, appVersion: string): string {
 
 export const RELEASES: Release[] = [
   {
+    version: "1.2.0",
+    notes: [
+      "In the kid view, a big empty circle shows where to tap, and the dots for twice-a-day habits are easier to see.",
+      "Once you approve or decline a check-in, its Inbox line shows what you decided and stops counting as new.",
+      "Export my data now includes the family habits you take part in.",
+      "Forgot password? and Delete account are smoother, and the demo shows its recaps.",
+    ],
+  },
+  {
     version: "1.1.1",
     notes: ["A Keepup link shared in a chat or on LinkedIn now shows Keepup's own address in its preview."],
   },

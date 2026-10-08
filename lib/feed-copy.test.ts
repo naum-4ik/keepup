@@ -13,6 +13,13 @@ describe("feedCopy", () => {
     expect(feedCopy(item({}))).toMatchObject({ title: "Family", body: "Anna checked in: Read 20 min" });
     expect(feedCopy(item({ kind: "everyone_done", habit_title: "Family dinner" })).body).toBe("Everyone did it: Family dinner ✓");
     expect(feedCopy(item({ kind: "approval_needed", habit_title: "Gym" })).body).toBe("Anna did Gym. Approve?");
+    // Once decided (the database stamps the outcome and marks the row read), the row reads the outcome.
+    expect(feedCopy(item({ kind: "approval_needed", habit_title: "Gym", payload: { outcome: "approved" } }))).toEqual({
+      title: "Family", body: "Anna did Gym: approved", href: "/habits/h" });
+    expect(feedCopy(item({ kind: "approval_needed", habit_title: "Gym", payload: { outcome: "rejected" } })).body).toBe("Anna did Gym: not approved");
+    expect(feedCopy(item({ kind: "approval_needed", habit_title: "Gym", payload: { outcome: "expired" } })).body).toBe("Anna did Gym: not reviewed in time");
+    expect(feedCopy(item({ kind: "approval_expiring", habit_title: "Gym", payload: { outcome: "approved" } })).body).toBe("Anna did Gym: approved");
+    expect(feedCopy(item({ kind: "approval_needed", habit_title: "Gym", payload: { outcome: "pending" } })).body).toBe("Anna did Gym. Approve?");
     expect(feedCopy(item({ kind: "check_in_rejected", habit_title: "Gym", actor_name: "Dan" }))).toMatchObject({
       title: "Gym", body: "Dan didn't approve your check-in. You can check in again today." });
     expect(feedCopy(item({ kind: "check_in_rejected", habit_title: "Gym", actor_name: "Dan", payload: { period: "week" } })).body)

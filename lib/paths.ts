@@ -1,6 +1,6 @@
 // The manifest is fetched without cookies, so it must never redirect to /login. /offline is what the
-// service worker saves at install, signed in or not.
-const PUBLIC_EXACT = new Set(["/", "/manifest.webmanifest", "/sw.js", "/offline"]);
+// service worker saves at install, signed in or not. Crawlers read /robots.txt signed out.
+const PUBLIC_EXACT = new Set(["/", "/manifest.webmanifest", "/sw.js", "/offline", "/robots.txt"]);
 // /api routes check the session themselves and answer 401 JSON (a redirect to the login page would
 // look like success to a fetch from the service worker).
 const PUBLIC_PREFIXES = ["/login", "/signup", "/auth", "/whats-new", "/privacy", "/install", "/invite", "/api"];

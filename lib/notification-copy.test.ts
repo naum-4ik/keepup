@@ -17,6 +17,9 @@ const samples: Copy[] = [
   copy.approvalNeeded("Family", [{ author: "Anna", habit: "Gym" }])!,
   copy.approvalNeeded("Family", [{ author: "Anna", habit: "Gym" }, { author: "Dan", habit: "Read" }, { author: "Dan", habit: "Run" }])!,
   copy.approvalExpiring("Family", "Anna", "Gym"),
+  copy.approvalDecided("Family", "Anna", "Gym", "approved"),
+  copy.approvalDecided("Family", "Anna", "Gym", "rejected"),
+  copy.approvalDecided("Family", "Anna", "Gym", "expired"),
   copy.checkInNotApproved("Gym", "Dan", "day"),
   copy.nudge("thinking_of_you", "Anna", "Family dinner"),
   copy.nudge("you_got_this", "Anna", "Run"),
@@ -112,6 +115,9 @@ describe("edge cases", () => {
     expect(copy.habitReminder("Vitamins")).toEqual({ title: "Vitamins", body: "Time for Vitamins." });
     expect(copy.everyoneDidIt("Family", "Family dinner")).toEqual({ title: "Family", body: "Everyone did it: Family dinner ✓" });
     expect(copy.approvalExpiring("Family", "Anna", "Gym")).toEqual({ title: "Family", body: "Anna's Gym check-in needs a yes within 2 hours" });
+    expect(copy.approvalDecided("Family", "Anna", "Gym", "approved")).toEqual({ title: "Family", body: "Anna did Gym: approved" });
+    expect(copy.approvalDecided("Family", "Anna", "Gym", "rejected")).toEqual({ title: "Family", body: "Anna did Gym: not approved" });
+    expect(copy.approvalDecided("Family", "Anna", "Gym", "expired")).toEqual({ title: "Family", body: "Anna did Gym: not reviewed in time" });
     expect(copy.groupCheckIn("Family", ["Anna", "Dan", "Grandma"], "Read")?.body).toBe("Anna, Dan and Grandma checked in: Read");
     expect(copy.groupCheckIn("Family", ["Anna", "Dan", "Grandma", "Mary"], "Read")?.body).toBe("Anna, Dan and 2 others checked in: Read");
   });

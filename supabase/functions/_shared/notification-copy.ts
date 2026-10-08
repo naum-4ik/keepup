@@ -57,6 +57,14 @@ export const approvalExpiring = (group: string, author: string, habit: string): 
   body: `${author}'s ${habit} check-in needs a yes within 2 hours`,
 });
 
+// A decided "Approve?" row in the Inbox (the database stamps the outcome when the check-in leaves pending).
+export type ApprovalOutcome = "approved" | "rejected" | "expired";
+const OUTCOME: Record<ApprovalOutcome, string> = { approved: "approved", rejected: "not approved", expired: "not reviewed in time" };
+export const approvalDecided = (group: string, author: string, habit: string, outcome: ApprovalOutcome): Copy => ({
+  title: group,
+  body: `${author} did ${habit}: ${OUTCOME[outcome]}`,
+});
+
 export const checkInNotApproved = (habit: string, reviewer: string, period: PeriodUnit): Copy => ({
   title: habit,
   body: `${reviewer} didn't approve your check-in. You can check in again ${THIS[period]}.`,

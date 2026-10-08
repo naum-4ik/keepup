@@ -3,6 +3,11 @@ export function todayIn(timeZone: string, now: Date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 }
 
+// This device's time zone (in the browser, the person's own).
+export function deviceTimeZone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
 export function addDays(localDate: string, days: number): string {
   const [y, m, d] = localDate.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);

@@ -1,9 +1,12 @@
 // Settings → Your data: Export my data and Delete account (M6). Copy lives here, next to its helpers.
+import { deviceTimeZone, todayIn } from "@/lib/dates";
+
 export const DELETE_WORD = "delete";
 export const DELETE_TITLE = "Delete your account?";
 export const DELETE_BODY =
   "Your account, habits, check-ins, XP, badges and Inbox are deleted right away. This can't be undone.";
 export const EXPORT_HINT = "A file with everything Keepup keeps about you.";
+export const PREVIEW_RETRY = "Try again";
 export const EXPORT_FIRST = "Export your data first if you want a copy.";
 // A failed delete after the phone was cleared: a reload brings back the check-in queue and push.
 export const DELETE_FAILED = "Couldn't delete your account. Reload Keepup and try again.";
@@ -19,8 +22,9 @@ export function isDeleteWord(typed: string): boolean {
   return typed.trim().toLowerCase() === DELETE_WORD;
 }
 
-export function myDataFileName(today: Date): string {
-  return `keepup-my-data-${today.toISOString().slice(0, 10)}.json`;
+// The person's own date (the browser's time zone), not UTC's: a late-evening export isn't dated tomorrow.
+export function myDataFileName(now: Date, timeZone = deviceTimeZone()): string {
+  return `keepup-my-data-${todayIn(timeZone, now)}.json`;
 }
 
 function names(list: string[]): string {
