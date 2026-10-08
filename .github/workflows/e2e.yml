@@ -6,7 +6,10 @@ name: E2E after merge
 on:
   push:
     branches: [develop]
-    paths-ignore: ["**/*.md", "docs/**"]
+    # Docs-only merges skip it, except the docs the app is built from: the /privacy page
+    # (docs/privacy-policy.md) and the /install pictures (docs/install/). paths-ignore can't
+    # express exceptions, so this is paths with negations; later patterns win.
+    paths: ["**", "!**/*.md", "!docs/**", "docs/privacy-policy.md", "docs/install/**"]
   workflow_dispatch:
 
 concurrency:
