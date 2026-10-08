@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/naum-4ik/keepup/compare/v1.0.0...v1.1.0) (2026-10-08)
+
+
+### Features
+
+* tell people Keepup moved, how to install it, and a README for v1.0.0 ([#185](https://github.com/naum-4ik/keepup/issues/185)) ([862ea6e](https://github.com/naum-4ik/keepup/commit/862ea6ed3cd93ec1dccc9d8cedea25f884c80d14))
+
 ## [1.0.0](https://github.com/naum-4ik/keepup/compare/v0.6.1...v1.0.0) (2026-10-08)
 
 
