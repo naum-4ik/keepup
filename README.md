@@ -146,7 +146,7 @@ Built with Claude Code as a pair programmer. I wrote the spec, made the product 
 | M3 | Groups and family: shared habits, approvals, kid profiles with a star garden, emoji avatars, backups | ✅ v0.4.0 |
 | M4 | Installable app (PWA), push reminders, offline check-ins | ✅ v0.5.0 |
 | M5 | XP, levels, badges, rest days, weekly recaps | ✅ v0.6.0 (v0.6.1 fixes) |
-| M6 | Landing page, "Try the demo", privacy page, data export and account delete, production → **v1.0.0** | 🚧 In progress |
+| M6 | Landing page, "Try the demo", privacy page, data export and account delete, production → **v1.0.0** | ✅ v1.0.0 |
 
 ## Run locally
 
