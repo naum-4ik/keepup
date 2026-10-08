@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(22);
 
 select tests.create_user('00000000-0000-0000-0000-0000000003a1', 'exp-anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000003b1', 'exp-ben@example.com', '{"full_name":"Ben"}');
@@ -22,6 +22,12 @@ values ('00000000-0000-0000-0000-0000000003a1', '00000000-0000-0000-0000-0000000
 -- A group habit both take part in: each one's check-in is theirs alone.
 insert into t select 'dinner', (private.create_group_habit_impl('00000000-0000-0000-0000-0000000003a1', (select v from t where k='fam'),
   'Family dinner', '🍽️', 'people', 1, 'day', null, false, '{}', now())).id;
+-- A second group habit nobody has checked in to yet, and one in a group Ben isn't in.
+insert into t select 'walk', (private.create_group_habit_impl('00000000-0000-0000-0000-0000000003a1', (select v from t where k='fam'),
+  'Family walk', '🚶', 'people', 1, 'week', null, false, '{}', now())).id;
+insert into t select 'club', (private.create_group_impl('00000000-0000-0000-0000-0000000003a1', 'Book club', 'friends')).id;
+select private.create_group_habit_impl('00000000-0000-0000-0000-0000000003a1', (select v from t where k='club'),
+  'Club reading', '📖', 'learning', 1, 'week', null, false, '{}', now());
 insert into t select 'anna_ci', (private.check_in_impl((select v from t where k='dinner'), '00000000-0000-0000-0000-0000000003a1', now())).id;
 insert into t select 'ben_ci', (private.check_in_impl((select v from t where k='dinner'), '00000000-0000-0000-0000-0000000003b1', now())).id;
 insert into public.push_subscriptions (user_id, endpoint, p256dh, auth, user_agent)
@@ -65,6 +71,17 @@ select set_eq($$select jsonb_object_keys(j->'profile') from out_anna$$,
   array['avatar_color', 'avatar_emoji', 'celebrations', 'created_at', 'data_reset_at', 'display_name', 'id', 'is_demo',
         'muted_until', 'onboarded_at', 'purpose', 'reminder_hour', 'terms_accepted_at', 'timezone', 'week_start'],
   'the profile export''s keys are exactly these');
+-- Adults always take part in their groups' habits (decision 0012), checked in or not.
+select set_eq($$select g->>'title' from out_ben, jsonb_array_elements(j->'group_habits') g$$,
+  array['Family dinner', 'Family walk'], 'a member''s export lists their group''s habits, not other groups''');
+select set_eq($$select g->>'title' from out_anna, jsonb_array_elements(j->'group_habits') g$$,
+  array['Family dinner', 'Family walk', 'Club reading'], 'an admin''s export lists the habits of each of their groups');
+select is((select g from out_ben, jsonb_array_elements(j->'group_habits') g where g->>'title' = 'Family walk'),
+  jsonb_build_object('id', (select v from t where k='walk'), 'group', 'Family', 'title', 'Family walk', 'emoji', '🚶',
+                     'period', 'week', 'target_count', 1, 'starts_on', (select starts_on from public.habits where id = (select v from t where k='walk'))),
+  'a group habit is exported with the same fields as before');
+select is((select jsonb_array_length(j->'group_habits') from out_cara), 0, 'a member who left gets no group habits');
+select ok((select j::text from out_ben) not like '%Anna reads%', 'still no other adult''s private habit');
 select throws_ok($$select private.export_my_data_impl('00000000-0000-0000-0000-00000000dead')$$, 'P0002', 'keepup:not_found', 'unknown user');
 
 select * from finish();
