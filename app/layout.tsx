@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { MovedNotice } from "@/components/moved/moved-notice";
 import { Faro } from "@/components/observability/faro";
 import { ServiceWorker } from "@/components/pwa/service-worker";
 import "./globals.css";
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${nunito.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <MovedNotice />
         {children}
         <ServiceWorker version={process.env.APP_COMMIT_SHA || "dev"} />
         <Faro />
