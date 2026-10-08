@@ -11,8 +11,9 @@ const ASSETS = "keepup-assets";
 const MAX_ASSETS = 300;
 const PAGES = "keepup-pages"; // the last Today and kid view, on this device only; cleared at sign-out
 const OFFLINE_URL = "/offline";
-// Public pages kept in the shell too, so they open offline: the privacy policy (linked from sign-in).
-const SHELL_PAGES = ["/privacy"];
+// Public pages kept in the shell too, so they open offline: the privacy policy (linked from sign-in)
+// and how to install (linked from Profile and the "moved" notice).
+const SHELL_PAGES = ["/privacy", "/install"];
 const OFFLINE_PAGES = [/^\/today$/, /^\/kids\/[0-9a-f-]{36}\/play$/];
 
 // The offline page is saved up front, but a failure (installed while offline) must not hold the

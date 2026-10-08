@@ -16,7 +16,7 @@ export default async function Home({
   const params = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
-  if (data?.claims) redirect("/today");
+  if (data?.claims) redirect(params.moved === "1" ? "/today?moved=1" : "/today");
 
   const reason = authErrorReason(params);
   if (reason) redirect(`/auth/error?reason=${reason}`);

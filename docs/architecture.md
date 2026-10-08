@@ -27,8 +27,8 @@ flowchart TB
     subgraph GitHub["GitHub Actions"]
         CI["CI: PR checks, pgTAP on merge, e2e after merge"]
         Deploy["Deploy migrations to staging"]
-        Release["Release: migrations, then the app, to production (dormant until production exists)"]
-        Backup["Nightly encrypted backups (staging, and production once it exists), monthly restore test"]
+        Release["Release: migrations, then the push function, then the app, to production"]
+        Backup["Nightly encrypted backups (staging and production), monthly restore test"]
         Keep["Daily keep-awake ping"]
     end
     Vault[("Private backup repo (age-encrypted)")]
@@ -97,7 +97,7 @@ Triggers write the feed, so every path that changes the data (RPC, review, pause
 | Local | `supabase start` (Docker) | local Postgres | Dev loop, no network dependency |
 | PR preview | PR opened/updated | `keepup-staging` (eu-central-1) | UI-only: the preview app points at the staging database, but a PR's own migrations aren't pushed there. Schema changes are verified by CI (pgTAP against a fresh local database, on the merge to `develop`, or before it on a `full-ci` PR) and only reach staging once that run is green |
 | `develop` | push, after CI passes | `keepup-staging` (eu-central-1) | `deploy-staging-db.yml` runs on a green `CI` run on `develop` (or manually) and pushes migrations |
-| `main` | push (the release PR) | production | `release-please.yml` → `deploy-production`: database migrations and `send-push` first, then the app to Vercel (git auto-deploy for `main` stays off in `vercel.json`). Dormant until the repo variable `PRODUCTION_READY` is `true` |
+| `main` | push (the release PR) | production | `release-please.yml` → `deploy-production`: database migrations and `send-push` first, then the app to the `keepup-prod` Vercel project (https://keepuphabits.vercel.app); a failed step stops the rest. Git auto-deploy for `main` stays off in `vercel.json`. Gated by the repo variable `PRODUCTION_READY` (on since v1.0.0) |
 
 Because a PR preview never runs its own migrations against staging, and staging only ever moves forward from merged, CI-checked migrations, schema changes should be written expand-then-contract: add the new column/constraint/table in one migration (additive, safe to deploy under old and new code), ship the code that uses it, then remove what it replaced in a later migration once nothing depends on the old shape.
 
@@ -130,7 +130,7 @@ Vercel's serverless functions are stateless and scale horizontally by request �
 | CI gates | Every PR: lint, types, unit and Edge Function tests (~1 min, required) and one sanity e2e test (~3 min, not required). Every merge: pgTAP, gating the staging deploy, and the full Playwright suite after it. `full-ci` PRs: everything before the merge (decision 0024) | Live |
 | Data region | EU (Frankfurt) for Postgres and Auth | Live |
 | Kids' data minimization | Current schema stores no photos or birthdates; kid profiles keep a nickname, emoji and colour only | Live |
-| Encrypted nightly backups | Schema, data and logins dumped nightly, encrypted with age, kept 30 days in a private repo; a monthly job restores the latest into a throwaway database and checks it. Staging since M3; production (`backup-production.yml`, a production leg in the restore test) switches on with production | Live (staging) |
+| Encrypted nightly backups | Schema, data and logins dumped nightly, encrypted with age, kept 30 days in a private repo; a monthly job restores the latest into a throwaway database and checks it. Staging since M3, production (`backup-production.yml`, and a production leg in the restore test) since v1.0.0 | Live |
 | GDPR export/delete | Settings → Your data: Export my data (one JSON file from `export_my_data()`) and Delete account (`delete_my_account()`, one transaction, decision 0025); both covered by pgTAP | Live (M6) |
 | Telemetry redaction | Passwords, tokens, cookies and keys are masked in spans and events before export to Grafana Cloud; a unit test fails if one gets through ([observability](observability/README.md)) | Live (M6) |
 

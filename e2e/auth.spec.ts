@@ -296,6 +296,7 @@ test("Profile is a list: Achievements, Settings, What's new and Groups, then Sig
   const list = page.getByRole("navigation", { name: "Account" });
   await expect(list.getByRole("link")).toHaveText(["Achievements", "Settings", "What's new", "Groups"]);
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "How to install" })).toHaveAttribute("href", "/install");
   await list.getByRole("link", { name: "Settings" }).click();
   await expect(page).toHaveURL(/\/profile\/settings$/);
 });
