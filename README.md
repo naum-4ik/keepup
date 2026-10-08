@@ -16,6 +16,16 @@
   <img src="docs/screenshots/kid-view.png" width="220" alt="The kid view: a garden scene above big habit buttons, open habits first and a done one at the bottom">
 </p>
 
+## How to install
+
+Keepup is a web app you add to your Home Screen: it opens full screen and can send reminders. Step by step: **[keepuphabits.vercel.app/install](https://keepuphabits.vercel.app/install)**.
+
+- **iPhone / iPad:** open Keepup in Safari → Share → **Add to Home Screen** → open the new icon and sign in.
+- **Android:** open Keepup in Chrome → ⋮ → **Install app** (or Add to Home screen).
+- **Computer:** in Chrome or Edge, click the install icon at the right of the address bar.
+
+Then turn reminders on: Profile → Settings → **Turn on reminders**. Reminders belong to one install, so turn them on again after reinstalling. Installed Keepup from the old address (keepup-murex.vercel.app)? Install it again from the new one, then delete the old icon.
+
 ## What it does
 
 - **Your habits:** 48 ready-made templates or your own, one-tap check-ins, and streaks that are fair to pauses, time zones and your week start.
