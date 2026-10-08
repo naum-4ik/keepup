@@ -11,6 +11,7 @@ const MESSAGES: Record<string, string> = {
   children_would_be_deleted: "The children's profiles and history would be deleted. Export or move them first.",
   use_leave: "Use Leave group to remove yourself.",
   guardian_required: "Please confirm you're this child's parent or guardian.",
+  invalid_name: "Enter a nickname.",
   same_group: "They're already in that group.",
   goal_exists: "There's already a goal. Finish or cancel it first.",
   goal_not_found: "That goal isn't available.",
