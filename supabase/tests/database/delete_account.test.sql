@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(28);
 
 -- Anna: admin of Family (Ben joined first, Cara later), sole member of Solo (with child Leo),
 -- co-admin of Club (Dan is admin too), and in Book with Eve who has left.
@@ -26,6 +26,12 @@ update public.group_members set role = 'admin' where user_id = '00000000-0000-00
 select pg_temp.join('00000000-0000-0000-0000-0000000004e1', 'book');
 update public.group_members set left_at = now() where user_id = '00000000-0000-0000-0000-0000000004e1';
 insert into t select 'leo', private.create_child_impl('00000000-0000-0000-0000-0000000004a1', (select v from t where k='solo'), 'Leo', '🦁', 'peach', true);
+-- A Family habit Anna created, with approval: Ben's check-in, approved by Anna, and her own.
+insert into t select 'dinner', (private.create_group_habit_impl('00000000-0000-0000-0000-0000000004a1', (select v from t where k='fam'),
+  'Family dinner', '🍽️', 'people', 1, 'day', null, true, '{}', now())).id;
+insert into t select 'ben_ci', (private.check_in_impl((select v from t where k='dinner'), '00000000-0000-0000-0000-0000000004b1', now())).id;
+select private.review_check_in_impl((select v from t where k='ben_ci'), '00000000-0000-0000-0000-0000000004a1', true, now());
+insert into t select 'anna_ci', (private.check_in_impl((select v from t where k='dinner'), '00000000-0000-0000-0000-0000000004a1', now())).id;
 insert into public.habits (owner_id, created_by, title, emoji, category, target_count, period, starts_on)
 values ('00000000-0000-0000-0000-0000000004a1', '00000000-0000-0000-0000-0000000004a1', 'Anna reads', '📚', 'learning', 1, 'day', current_date);
 
@@ -38,6 +44,15 @@ insert into auth.audit_log_entries (instance_id, id, payload, created_at) values
   ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), '{"action":"login","actor_id":"00000000-0000-0000-0000-0000000004b1","actor_username":"del-ben@example.com","traits":{"provider":"email"}}', now());
 
 select ok(not has_function_privilege('anon', 'public.delete_my_account()', 'execute'), 'anon cannot delete');
+select ok(not has_function_privilege('anon', 'public.delete_account_preview()', 'execute'), 'anon cannot preview');
+-- Signed in as nobody (the authenticated role without a user): both RPCs refuse.
+set local role authenticated;
+select throws_ok($$select public.delete_account_preview()$$, '42501', 'keepup:not_authenticated', 'preview needs a user');
+select throws_ok($$select public.delete_my_account()$$, '42501', 'keepup:not_authenticated', 'delete needs a user');
+reset role;
+select throws_ok($$select private.delete_account_impl('00000000-0000-0000-0000-00000000dead', now())$$, 'P0002', 'keepup:not_found', 'unknown user');
+select throws_ok($$select private.delete_account_impl((select v from t where k='leo'), now())$$, 'P0002', 'keepup:not_found', 'a child is not an account');
+select is((select status::text from public.check_ins where id = (select v from t where k='ben_ci')), 'approved', 'setup: Anna approved Ben''s check-in');
 
 create temp table preview (j jsonb) on commit drop;
 grant all on preview to authenticated;
@@ -64,6 +79,16 @@ select is((select count(*)::int from public.groups where id = (select v from t w
 select is((select count(*)::int from public.profiles where id = (select v from t where k='leo')), 0, 'its child deleted with it');
 select is((select count(*)::int from public.groups where id = (select v from t where k='book')), 0, 'group with only a left member deleted');
 select is((select count(*)::int from public.groups where id = (select v from t where k='fam')), 1, 'Family stays');
+
+-- The group's history stays: Ben's check-in and the habit Anna created; only her own check-in goes.
+select is((select count(*)::int from public.check_ins where id = (select v from t where k='ben_ci') and status = 'approved' and reviewed_by is null),
+          1, 'Ben''s check-in stays approved, its reviewer gone');
+select is((select count(*)::int from public.check_ins where id = (select v from t where k='anna_ci')), 0, 'her own check-in in the group habit goes');
+select is((select count(*)::int from public.habits where id = (select v from t where k='dinner') and created_by is null and archived_at is null),
+          1, 'the group habit stays, created_by null');
+select is((select payload->>'role' from public.notifications
+            where user_id = '00000000-0000-0000-0000-0000000004b1' and kind = 'role_changed' and group_id = (select v from t where k='fam')),
+          'admin', 'Ben''s Inbox says he is admin now');
 
 select is((select count(*)::int from auth.audit_log_entries
              where payload::text like '%00000000-0000-0000-0000-0000000004a1%' or payload::text ilike '%del-anna@example.com%'),
