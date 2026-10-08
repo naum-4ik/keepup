@@ -4,6 +4,7 @@ import { MovedNotice } from "@/components/moved/moved-notice";
 import { Faro } from "@/components/observability/faro";
 import { ServiceWorker } from "@/components/pwa/service-worker";
 import "./globals.css";
+import { siteUrl as siteUrlFor } from "@/lib/site-url";
 
 // Self-hosted (no build-time fetch from Google). Nunito: one variable file (v3.602, the version Google
 // serves), subset to Google's latin + latin-ext ranges, so names like Łukasz or Gülşen stay in one font.
@@ -22,10 +23,11 @@ const geistMono = localFont({
 });
 
 // Shared links (LinkedIn, WhatsApp, Slack…) show a card: this title and text, and app/opengraph-image.png.
-// The card needs absolute URLs; on Vercel the project's production address, locally localhost.
-const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
-  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  : "http://localhost:3000";
+// The card needs absolute URLs (lib/site-url.ts: production keepuphabits, else Vercel's address).
+const siteUrl = siteUrlFor({
+  deployEnv: process.env.NEXT_PUBLIC_DEPLOY_ENV,
+  vercelProductionUrl: process.env.VERCEL_PROJECT_PRODUCTION_URL,
+});
 const shareText = "A habit tracker for one person or a whole family, kids included.";
 
 export const metadata: Metadata = {

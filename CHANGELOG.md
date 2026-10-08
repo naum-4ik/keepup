@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.1](https://github.com/naum-4ik/keepup/compare/v1.1.0...v1.1.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* share cards point to keepuphabits, not the old address ([68b448d](https://github.com/naum-4ik/keepup/commit/68b448dde810d4dc870daed24d0b8009fa89fb4c))
+* share cards point to keepuphabits, not the old address; README for v1.1 ([b19583f](https://github.com/naum-4ik/keepup/commit/b19583f9520c693ad14ae90a4eff61ebbe429246))
+
 ## [1.1.0](https://github.com/naum-4ik/keepup/compare/v1.0.0...v1.1.0) (2026-10-08)
 
 

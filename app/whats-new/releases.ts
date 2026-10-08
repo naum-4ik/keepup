@@ -18,6 +18,10 @@ export function releaseLabel(r: Release, appVersion: string): string {
 
 export const RELEASES: Release[] = [
   {
+    version: "1.1.1",
+    notes: ["A Keepup link shared in a chat or on LinkedIn now shows Keepup's own address in its preview."],
+  },
+  {
     version: "1.1.0",
     notes: [
       "Keepup has its own address: keepuphabits.vercel.app. Opening the old one brings you here, with a note on how to add Keepup to your Home Screen again.",
