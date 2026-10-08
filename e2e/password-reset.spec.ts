@@ -82,8 +82,12 @@ test("forgot password: while sending, the button keeps focus and a second tap se
   // Hold the reset request (a server action posted to /login) until the second tap.
   let release!: () => void;
   const held = new Promise<void>((r) => (release = r));
+  let sends = 0; // counted here: the mail count alone can't tell (Supabase drops a second mail within seconds)
   await page.route("**/login", async (route) => {
-    if (route.request().method() === "POST" && route.request().headers()["next-action"]) await held;
+    if (route.request().method() === "POST" && route.request().headers()["next-action"]) {
+      sends++;
+      await held;
+    }
     await route.fallback();
   });
   const forgot = page.getByRole("button", { name: /Forgot password\?|Sending…/ });
@@ -97,6 +101,7 @@ test("forgot password: while sending, the button keeps focus and a second tap se
   await expect(page.getByRole("status").first()).toHaveText(SENT);
   await expect(forgot).toBeFocused();
   await page.waitForTimeout(1500);
+  expect(sends).toBe(1);
   expect(await mailCount(email)).toBe(1);
 });
 
