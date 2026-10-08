@@ -15,6 +15,10 @@ describe("habitErrorMessage", () => {
     expect(habitErrorMessage({ message: "keepup:invite_invalid" })).toMatch(/expired/);
   });
 
+  it("asks for a child's nickname", () => {
+    expect(habitErrorMessage({ message: "keepup:invalid_name", code: "22023" })).toBe("Enter a nickname.");
+  });
+
   it("says what's off in the demo", () => {
     expect(habitErrorMessage({ message: "keepup:demo" })).toBe("That's off in the demo.");
   });

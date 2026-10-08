@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(33);
+select plan(37);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -19,6 +19,13 @@ select throws_ok($$select private.create_child_impl('00000000-0000-0000-0000-000
   'P0001', 'keepup:not_admin', 'only an admin adds a child');
 select throws_ok($$select private.create_child_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'fam'), 'Mary', '🐼', 'peach', false)$$,
   'P0001', 'keepup:guardian_required', 'the parent-or-guardian line must be confirmed');
+select throws_ok($$select private.create_child_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'fam'), null, '🐼', 'peach', true)$$,
+  '22023', 'keepup:invalid_name', 'a child needs a name');
+select throws_ok($$select private.create_child_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'fam'), '', '🐼', 'peach', true)$$,
+  '22023', 'keepup:invalid_name', 'an empty name is refused cleanly');
+select throws_ok($$select private.create_child_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'fam'), E' \t' || chr(160), '🐼', 'peach', true)$$,
+  '22023', 'keepup:invalid_name', 'a blank name is refused cleanly');
+select is((select count(*)::int from public.profiles where kind = 'child' and group_id = (select v from t where k = 'fam')), 0, 'no child was added');
 insert into t select 'mary', private.create_child_impl('00000000-0000-0000-0000-0000000000a1', (select v from t where k = 'fam'), 'Mary', '🐼', 'peach', true);
 select results_eq($$select kind, group_id, display_name, avatar_emoji from public.profiles where id = (select v from t where k = 'mary')$$,
   $$select 'child'::text, (select v from t where k = 'fam'), 'Mary'::text, '🐼'::text$$, 'a child is a profile with a group and no login');
