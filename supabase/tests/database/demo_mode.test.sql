@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(97);
+select plan(112);
 
 select tests.create_anonymous_user('00000000-0000-0000-0000-0000000005a1');
 select tests.create_user('00000000-0000-0000-0000-0000000005f1', 'demo-real@example.com', '{"full_name":"Real"}');
@@ -126,6 +126,18 @@ reset role;
 select is((select amount from public.xp_events where user_id = :sam and reason = 'check_in' order by created_at desc limit 1), 22, 'day-13 check-in earns 10 + 12');
 select is((select count(*) from public.user_achievements where user_id = :sam), (select n from ach_before), 'no surprise badge');
 select is(private.level_for((select sum(amount) from public.xp_events where user_id = :sam)), 4, 'still level 4');
+-- Progress → Recaps: the seeded 30 days give weekly recaps (the account itself is minutes old).
+select tests.authenticate_as('00000000-0000-0000-0000-0000000005c1');
+select ok((select count(*) from public.recaps('week')) >= 4 and (select count(*) from public.recaps('week') r where (r->>'done')::int > 0) >= 1,
+          'Recaps: the seeded weeks (4+) with a win');
+reset role;
+-- The seeded history is old, the visitor is not: cleanup keeps using the real sign-up time.
+select private.cleanup_demo(now());
+select is((select count(*)::int from public.profiles where id = :sam), 1, 'a freshly seeded demo survives cleanup');
+update public.profiles set created_at = now() - interval '25 hours' where id = :sam;
+update auth.users set created_at = now() - interval '25 hours' where id = :sam;
+select private.cleanup_demo(now());
+select is((select count(*)::int from public.profiles where id = :sam), 0, 'a seeded demo older than 24h is removed');
 
 
 -- Date-proof: the same seed at fixed future moments in Europe/Berlin (a Monday and a Sunday, just after
@@ -160,6 +172,12 @@ begin
   return next is((v_rewards->'goal'->>'target')::int || ' ' || coalesce(v_rewards->'goal'->>'reached_at', 'open'), '20 open', p_label || ': treat goal of 20, not reached');
   return next is((select count(*)::int from public.check_ins c where c.user_id = v_nova and c.created_at >= p_now), 0,
                  p_label || ': no star at or after the seed moment');
+  return next is((v_rewards->'goal'->>'stars')::int, 0, p_label || ': treat goal at 0 of 20');
+  return next is((select c.created_at from public.check_ins c join public.habits h on h.id = c.habit_id
+                   where h.group_id = v_group and c.status = 'pending'), p_now, p_label || ': the waiting check-in is from the seed moment');
+  return next ok((select count(*) from private.recaps_impl(p_user, 'week', 8, p_now)) >= 4
+                 and (select count(*) from private.recaps_impl(p_user, 'week', 8, p_now) r where (r->>'done')::int > 0) >= 1,
+                 p_label || ': the seeded weeks (4+) in Recaps, with a win');
   v_before := (select count(*) from public.period_results where habit_id in (select id from run_seeded));
   perform private.finalize_periods(p_now);
   return next is((select count(*) from public.period_results where habit_id in (select id from run_seeded)), v_before,
