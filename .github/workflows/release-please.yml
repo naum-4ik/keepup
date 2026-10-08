@@ -129,6 +129,7 @@ jobs:
       # scripts/vercel-ignore.sh builds whenever it can't diff. GITHUB_SHA gives the app its
       # version suffix (next.config.ts). The CLI isn't a dependency, so it's pinned here.
       - name: Deploy the app to Vercel (keepup-prod)
+        id: vercel
         if: ${{ !inputs.db_only }}
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -147,3 +148,17 @@ jobs:
           # supabase link wrote the project ref and version files here; they don't belong in the upload.
           rm -rf supabase/.temp
           npx --yes vercel@62.7.0 deploy --prod --yes --token "$VERCEL_TOKEN" --build-env GITHUB_SHA="$GITHUB_SHA"
+      # The deploy marker on the Grafana dashboards (scripts/change-event.sh, as change-events.yml does for
+      # staging, whose deploys Vercel reports itself). It runs after a failed deploy too, and a refused
+      # event never fails the release.
+      - name: Tell Grafana production was deployed
+        if: ${{ always() && !inputs.db_only && steps.vercel.outcome != 'skipped' }}
+        continue-on-error: true
+        env:
+          OTLP_ENDPOINT: ${{ vars.GRAFANA_OTLP_ENDPOINT }}
+          OTLP_INSTANCE_ID: ${{ vars.GRAFANA_INSTANCE_ID }}
+          OTLP_TOKEN: ${{ secrets.GRAFANA_OTLP_TOKEN }}
+          STATE: ${{ steps.vercel.outcome }}
+        run: |
+          scripts/change-event.sh keepup.deployed deploy.env=production deploy.target=keepup-prod \
+            deploy.state="$STATE" deploy.url=https://keepuphabits.vercel.app git.sha="$GITHUB_SHA" actor="$GITHUB_ACTOR"

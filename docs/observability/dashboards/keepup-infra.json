@@ -75,6 +75,19 @@
         "tagKeys": "deploy_target"
       },
       {
+        "name": "Deploys (production)",
+        "datasource": {
+          "type": "loki",
+          "uid": "${DS_LOKI}"
+        },
+        "enable": true,
+        "iconColor": "red",
+        "expr": "{service_name=\"keepup-ci\"} | event_name=\"keepup.deployed\" | deploy_env=\"production\"",
+        "titleFormat": "Production deploy ({{deploy_state}})",
+        "textFormat": "{{git_sha}}",
+        "tagKeys": "deploy_env"
+      },
+      {
         "name": "Merges",
         "datasource": {
           "type": "loki",
@@ -364,7 +377,8 @@
               }
             ]
           },
-          "noValue": "0"
+          "noValue": "0",
+          "displayName": "${__field.labels.deployment_environment_name}"
         },
         "overrides": []
       }
@@ -887,6 +901,298 @@
       }
     },
     {
+      "id": 24,
+      "type": "row",
+      "title": "Limits (used vs maximum)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "panels": []
+    },
+    {
+      "id": 25,
+      "type": "gauge",
+      "title": "Database size / 500 MB",
+      "description": "Supabase free plan: 500 MB per project.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 0,
+        "y": 29
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROM}"
+          },
+          "expr": "label_replace(max by (job) (pg_database_size_mb{job=~\".*supabase_$env\"}), \"env\", \"$1\", \"job\", \".*supabase_(.*)\")",
+          "legendFormat": "{{env}}",
+          "range": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdMarkers": true,
+        "showThresholdLabels": false,
+        "minVizHeight": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decmbytes",
+          "min": 0,
+          "max": 500,
+          "decimals": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 26,
+      "type": "gauge",
+      "title": "Connections / 60",
+      "description": "Free plan (Nano compute): max_connections = 60 direct connections (not exported as a metric, so fixed here).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 6,
+        "y": 29
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROM}"
+          },
+          "expr": "label_replace(sum by (job) (pg_stat_database_num_backends{job=~\".*supabase_$env\"}), \"env\", \"$1\", \"job\", \".*supabase_(.*)\")",
+          "legendFormat": "{{env}}",
+          "range": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdMarkers": true,
+        "showThresholdLabels": false,
+        "minVizHeight": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "max": 60,
+          "decimals": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 27,
+      "type": "gauge",
+      "title": "Data disk",
+      "description": "The /data disk, where Postgres keeps the database.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 12,
+        "y": 29
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROM}"
+          },
+          "expr": "label_replace(100 * max by (job) (1 - node_filesystem_avail_bytes{mountpoint=\"/data\", job=~\".*supabase_$env\"} / node_filesystem_size_bytes{mountpoint=\"/data\", job=~\".*supabase_$env\"}), \"env\", \"$1\", \"job\", \".*supabase_(.*)\")",
+          "legendFormat": "{{env}}",
+          "range": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdMarkers": true,
+        "showThresholdLabels": false,
+        "minVizHeight": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "decimals": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 28,
+      "type": "gauge",
+      "title": "Memory",
+      "description": "RAM on the database machine (Postgres caches on purpose).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 18,
+        "y": 29
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROM}"
+          },
+          "expr": "label_replace(100 * (1 - sum by (job) (node_memory_MemAvailable_bytes{job=~\".*supabase_$env\"}) / sum by (job) (node_memory_MemTotal_bytes{job=~\".*supabase_$env\"})), \"env\", \"$1\", \"job\", \".*supabase_(.*)\")",
+          "legendFormat": "{{env}}",
+          "range": true
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdMarkers": true,
+        "showThresholdLabels": false,
+        "minVizHeight": 75
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "decimals": 0,
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 85
+              },
+              {
+                "color": "red",
+                "value": 95
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 29,
+      "type": "text",
+      "title": "Monthly quotas (not in the metrics feed)",
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "Bandwidth, monthly active users, Edge Function calls: **Supabase \u2192 Organization \u2192 Usage** ([staging and production](https://supabase.com/dashboard/org/_/usage)) \u00b7 Function invocations: **Vercel \u2192 Usage** \u00b7 Series, logs and traces vs the free tier (10k series, 50 GB logs, 50 GB traces a month): **Grafana \u2192 Cost Management \u2192 Usage**."
+      }
+    },
+    {
       "id": 6,
       "type": "row",
       "title": "Per page",
@@ -895,7 +1201,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 39
       },
       "panels": []
     },
@@ -912,7 +1218,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 29
+        "y": 40
       },
       "targets": [
         {
@@ -968,7 +1274,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 37
+        "y": 48
       },
       "targets": [
         {
@@ -1024,7 +1330,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 45
+        "y": 56
       },
       "targets": [
         {
@@ -1076,7 +1382,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 53
+        "y": 64
       },
       "panels": []
     },
@@ -1093,7 +1399,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 54
+        "y": 65
       },
       "targets": [
         {
@@ -1157,7 +1463,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 62
+        "y": 73
       },
       "targets": [
         {
@@ -1209,7 +1515,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 70
+        "y": 81
       },
       "panels": []
     },
@@ -1226,7 +1532,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 71
+        "y": 82
       },
       "targets": [
         {
