@@ -627,7 +627,8 @@ test("the kid view: an undone card shows a big empty circle, and a 2×-a-day hab
   await expect(done.locator('[data-dot="filled"]')).toHaveCount(2);
   await expect(done.locator('[data-mark="done"]')).toBeVisible();
   const d = (await done.locator('[data-mark="done"]').boundingBox())!;
-  expect(Math.round(d.width)).toBe(Math.round(c.width));
+  // Same size give or take the done card's short bounce (it can still be scaling when measured).
+  expect(Math.abs(d.width - c.width)).toBeLessThanOrEqual(2);
 });
 
 test("the kid view: a new-picture tap shows its new thing first, then the new picture, never both at once", async ({ page }) => {
