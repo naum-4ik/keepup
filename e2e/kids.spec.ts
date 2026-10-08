@@ -626,9 +626,11 @@ test("the kid view: an undone card shows a big empty circle, and a 2×-a-day hab
   const done = page.getByRole("button", { name: "Brush teeth , done" });
   await expect(done.locator('[data-dot="filled"]')).toHaveCount(2);
   await expect(done.locator('[data-mark="done"]')).toBeVisible();
-  const d = (await done.locator('[data-mark="done"]').boundingBox())!;
-  // Same size give or take the done card's short bounce (it can still be scaling when measured).
-  expect(Math.abs(d.width - c.width)).toBeLessThanOrEqual(2);
+  // Same laid-out size as the empty circle. offsetWidth ignores transforms, so the done card's short
+  // bounce (a scale animation, still running when measured) can't skew it the way boundingBox does.
+  const openWidth = Math.round(c.width);
+  const doneWidth = await done.locator('[data-mark="done"]').evaluate((el) => (el as HTMLElement).offsetWidth);
+  expect(doneWidth).toBe(openWidth);
 });
 
 test("the kid view: a new-picture tap shows its new thing first, then the new picture, never both at once", async ({ page }) => {

@@ -26,6 +26,8 @@ export function MemberRow({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  // Mirrors the menu's `open` for aria-expanded: the toggle event fires however it opens or closes.
+  const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDetailsElement>(null);
   // A <details> menu doesn't close by itself: Escape (focus back on its button) or a tap outside does.
   // The listeners stay attached and read the menu's own `open`, rather than waiting for the toggle
@@ -71,8 +73,11 @@ export function MemberRow({
           </span>
         )}
         {canManage && (
-          <details ref={menuRef} className="relative">
+          <details ref={menuRef} className="relative" onToggle={(e) => setMenuOpen(e.currentTarget.open)}>
+            {/* role and aria-expanded spelled out: a flex <summary> loses its button role in some engines. */}
             <summary
+              role="button"
+              aria-expanded={menuOpen}
               aria-label={`Options for ${member.name}`}
               className="flex size-11 list-none items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground [&::-webkit-details-marker]:hidden"
             >
