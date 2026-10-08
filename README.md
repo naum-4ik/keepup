@@ -130,6 +130,8 @@ Diagrams, security layers, free-tier limits and the scaling path: [docs/architec
 
 **Delete account in one transaction.** `delete_my_account()` hands over admin to the longest-standing member, deletes groups left empty (with their children), then deletes the caller from `auth.users` and lets cascades take the rest, with no service-role key in the app. Locks are taken in the same order the feed and XP writes use, so they can't deadlock, and a read-only preview runs the same plan, so the dialog says exactly what will happen ([decision 0025](docs/decisions/0025-delete-account-is-one-database-transaction.md)).
 
+**Password reset on any device.** Reset links carry a `token_hash` checked on the server, so they work on any device, not only in the browser that asked.
+
 **A demo that is a database seed.** "Try the demo" signs in anonymously and seeds 30 days of a lived-in account in one transaction; demo and real accounts can't mix (database guards), and an hourly job deletes demos after 24 hours ([decision 0026](docs/decisions/0026-the-demo-is-a-database-seed.md)).
 
 **Tests at every layer:** 1257 pgTAP tests in 51 files, 1668 Vitest and 200 Playwright tests (phone viewport), plus the Edge Function tests under Deno in CI. Counts from [`scripts/count-tests.mjs`](scripts/count-tests.mjs).
@@ -143,7 +145,7 @@ Diagrams, security layers, free-tier limits and the scaling path: [docs/architec
 | PR previews | a Vercel preview link per PR | The app only, on staging data |
 
 - **Flow:** `feature/*` → PR → `develop` (staging) → release PR → `main` (production). `main` is the default branch; release-please writes the versions and the changelog.
-- **CI:** every PR that changes code runs lint, types, unit and Edge Function tests in about a minute; each merge runs pgTAP (it gates the staging database deploy) and the full Playwright suite after it ([decision 0024](docs/decisions/0024-pr-checks-in-a-minute.md)).
+- **CI:** every PR that changes code runs lint, types, unit and Edge Function tests in about a minute; each merge to `develop` runs pgTAP (it gates the staging database deploy) and the full Playwright suite after it ([decision 0024](docs/decisions/0024-pr-checks-in-a-minute.md)).
 - **Backups:** staging and production are dumped nightly (schema, data and logins), encrypted with `age`, and a monthly job restores the latest into a throwaway database and checks it.
 
 ## Observability
