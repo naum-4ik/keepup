@@ -63,6 +63,9 @@ export default async function ProfilePage() {
         <Link href="/privacy" className="underline-offset-4 hover:underline">
           Privacy Policy
         </Link>
+        <Link href="/install" className="underline-offset-4 hover:underline">
+          How to install
+        </Link>
       </footer>
     </section>
   );

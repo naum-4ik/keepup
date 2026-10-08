@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { MOVED_PARAM } from "@/lib/moved";
 import { isPublicPath } from "@/lib/paths";
 import type { Database } from "@/lib/database.types";
 
@@ -37,6 +38,8 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = `?next=${encodeURIComponent(pathname + search)}`;
+    // Arrived from the old address (lib/moved.ts): keep the notice on the login screen too.
+    if (request.nextUrl.searchParams.get(MOVED_PARAM) === "1") url.searchParams.set(MOVED_PARAM, "1");
     const redirectResponse = NextResponse.redirect(url);
     // Carry over any cookies Supabase cleared/refreshed on supabaseResponse -- otherwise a
     // signed-out visitor's stale/expired cookies would survive the redirect unchanged.

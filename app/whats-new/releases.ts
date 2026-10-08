@@ -18,7 +18,15 @@ export function releaseLabel(r: Release, appVersion: string): string {
 
 export const RELEASES: Release[] = [
   {
+    version: "1.1.0",
+    notes: [
+      "Keepup has its own address: keepuphabits.vercel.app. Opening the old one brings you here, with a note on how to add Keepup to your Home Screen again.",
+      "New: How to install, with step-by-step pictures for iPhone, Android and computer. Find it under Profile, at the bottom.",
+    ],
+  },
+  {
     version: "1.0.0",
+    date: "2026-10-08",
     notes: [
       "Keepup has its own address: keepuphabits.vercel.app. Curious friends can try the demo without signing up; it's cleared after 24 hours.",
       "Settings → Export my data saves a copy of your data, and Delete account removes your account and your data.",

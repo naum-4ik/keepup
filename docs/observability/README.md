@@ -21,13 +21,14 @@ flowchart LR
 
 ## What is sent
 - **Traces** for every request, server action, render and Supabase call (`@vercel/otel` traces `fetch`, which supabase-js uses). Each trace carries `user.id` and `user.email` (from the session's JWT claims, no extra query); check-in taps add `habit.id` and `child.id`.
-- **Events** (OpenTelemetry logs): one wide event per meaningful action, with the trace it happened in. Today: `keepup.check_in` with who, which habit (title, category), for which child, the outcome (`saved`, `refused` with the rule's code, `failed` with the error) and the XP. The habit and child names are read **after the response** (`after()`), so a tap never waits for its telemetry.
-- **Labels:** `service.name=keepup`, `deployment.environment.name` = `staging`, `preview` or `local` (`OTEL_RESOURCE_ATTRIBUTES`; Vercel's own "production" is staging until v1).
+- **Events** (OpenTelemetry logs): one wide event per meaningful action, with the trace it happened in: `track()` in `lib/log.ts` (`keepup.habit_created`, `keepup.invite_accepted`, `keepup.account_deleted` …), and `keepup.error` (level ERROR, the trace turns red) for every unexpected server failure. The richest is `keepup.check_in`, with who, which habit (title, category), for which child, the outcome (`saved`, `refused` with the rule's code, `failed` with the error) and the XP. The habit and child names are read **after the response** (`after()`), so a tap never waits for its telemetry.
+- **Labels:** `service.name=keepup`, `deployment.environment.name` = `production` (Vercel project `keepup-prod`, keepuphabits.vercel.app), `staging` (`keepup-stage`), `preview` or `local` (`OTEL_RESOURCE_ATTRIBUTES`).
+- **Browser** (Grafana Faro, `components/observability/faro.tsx`): page errors, console errors and warnings, Web Vitals, views and request traces that continue on the server. On only where `NEXT_PUBLIC_FARO_URL` is set; it loads after the page is up and is cleaned by `lib/redact.ts` before sending.
 
-Events, not clicks: a click says what was pressed; an event says what happened and whether it worked. Browser telemetry (page views, JS errors, Web Vitals) comes later through Grafana Faro.
+Events, not clicks: a click says what was pressed; an event says what happened and whether it worked.
 
 ## What is never sent
-Secrets: the sign-in `code`, `token` / `access_token` / `refresh_token` parameters, `authorization` / `cookie` / `apikey` values, JWTs, Grafana (`glc_`) and Supabase (`sb_secret_`) keys. `lib/telemetry.ts` masks them in span names, attributes, events and log records **before export**, and `lib/telemetry.test.ts` fails if any of them gets through. CI runs it on every PR.
+Secrets: the sign-in `code`, `token` / `access_token` / `refresh_token` parameters, `authorization` / `cookie` / `apikey` values, JWTs, Grafana (`glc_`) and Supabase (`sb_secret_`) keys. `lib/telemetry.ts` masks them in span names, attributes, events and log records **before export** (the browser uses the same rules from `lib/redact.ts`), and `lib/telemetry.test.ts` and `lib/redact.test.ts` fail if any of them gets through. CI runs it on every PR.
 
 ## Design notes (and the traps behind them)
 - **One explicit export path, never `"auto"`.** With `OTEL_EXPORTER_OTLP_ENDPOINT` set, `@vercel/otel` adds its own exporter even when you pass a custom one, so every span went out twice: once redacted, once not. Found by counting requests on a local OTLP server, not by reading the config.
@@ -47,7 +48,7 @@ Lessons: `@vercel/otel` 2.1.3 reports 401 and 404 as success, so an app can't no
 ## Queries
 TraceQL (Tempo):
 ```
-{ resource.deployment.environment.name = "staging" && span.user.email = "anna@example.com" }
+{ resource.deployment.environment.name = "production" && span.user.email = "anna@example.com" }
 { resource.service.name = "keepup" && name =~ ".*check-ins/tap.*" }
 ```
 LogQL (Loki; attribute dots become underscores):
@@ -62,5 +63,7 @@ From a trace to the database: `user.id` is `auth.users.id` and `profiles.id`; `h
 |---|---|
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | `https://otlp-gateway-<region>.grafana.net/otlp` (no trailing slash, no `/v1/traces`) |
 | `OTEL_EXPORTER_OTLP_HEADERS` | `Authorization=Basic%20<base64(instanceId:token)>`, Sensitive |
-| `OTEL_RESOURCE_ATTRIBUTES` | `deployment.environment.name=staging` (Production), `=preview` (Preview) |
+| `OTEL_RESOURCE_ATTRIBUTES` | `deployment.environment.name=production` (`keepup-prod`), `=staging` (`keepup-stage` Production), `=preview` (Preview) |
+| `NEXT_PUBLIC_FARO_URL` | the Faro collector URL; unset = no browser reporting |
+| `NEXT_PUBLIC_DEPLOY_ENV` | the browser's environment label, same values as above |
 | `OTEL_LOG_LEVEL` | `warn`; `debug` to see export results |

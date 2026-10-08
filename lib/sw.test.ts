@@ -415,6 +415,15 @@ describe("sw.js offline shell", () => {
     expect((await sw.request("/privacy")) as Res).toMatchObject({ body: "privacy policy" });
   });
 
+  it("how to install is saved at install and readable offline", async () => {
+    const net = network();
+    net.pages["/install"] = res("how to install");
+    const sw = worker([], undefined, net.fetchImpl);
+    await sw.lifecycle("install");
+    net.setOnline(false);
+    expect((await sw.request("/install")) as Res).toMatchObject({ body: "how to install" });
+  });
+
   it("a failed privacy page save never costs the offline page, and comes back after sign-out", async () => {
     const net = network();
     net.pages["/privacy"] = res("error", { ok: false });
