@@ -47,7 +47,7 @@ Click the install icon at the right of the address bar, then **Install**.
   <img src="docs/install/computer-install.svg" width="160" alt="The install icon at the right of the address bar, and Install Keepup with an Install button">
 </p>
 
-Then turn reminders on: Profile → Settings → **Turn on reminders**. Reminders belong to one install, so after reinstalling, turn them on again in Settings. Installed Keepup from the old address (keepup-murex.vercel.app)? Install it again from the new one, then delete the old icon.
+Then turn reminders on: Profile → Settings → **Turn on reminders**. Reminders belong to one install, so after reinstalling, turn them on again in Settings. Installed Keepup from the old address (keepup-murex.vercel.app)? Opening it brings you here with a short note; install again from the new address, then delete the old icon. The steps are also in the app: Profile, at the bottom.
 
 ## What it does
 
@@ -140,17 +140,17 @@ Diagrams, security layers, free-tier limits and the scaling path: [docs/architec
 
 | Environment | Address | Deploys |
 |---|---|---|
-| Production | [keepuphabits.vercel.app](https://keepuphabits.vercel.app) | Vercel project `keepup-prod`, Supabase production. Only on a release (merge to `main`): database migrations, then the push function, then the app. A failed step stops the rest |
+| Production | [keepuphabits.vercel.app](https://keepuphabits.vercel.app) | Vercel project `keepup-prod`, Supabase production. Only on a release (merge to `main`): database migrations, then the push function, then the app. A failed step stops the rest. A docs-only merge to `main` doesn't redeploy |
 | Staging | [keepup-stage.vercel.app](https://keepup-stage.vercel.app) | Vercel project `keepup-stage`, Supabase staging. Every merge to `develop`; migrations go out after CI's database tests pass |
 | PR previews | a Vercel preview link per PR | The app only, on staging data |
 
-- **Flow:** `feature/*` → PR → `develop` (staging) → release PR → `main` (production). `main` is the default branch; release-please writes the versions and the changelog.
+- **Flow:** `feature/*` → PR (squash) → `develop` (staging) → release PR → `main` (production), merged with a merge commit only (a `main` ruleset), so both branches share one history. `main` is the default branch; release-please writes the versions and the changelog. README-only fixes may go straight to `main`.
 - **CI:** every PR that changes code runs lint, types, unit and Edge Function tests in about a minute; each merge to `develop` runs pgTAP (it gates the staging database deploy) and the full Playwright suite after it ([decision 0024](docs/decisions/0024-pr-checks-in-a-minute.md)).
 - **Backups:** staging and production are dumped nightly (schema, data and logins), encrypted with `age`, and a monthly job restores the latest into a throwaway database and checks it.
 
 ## Observability
 
-The server sends OpenTelemetry traces and events (one wide event per action, linked to its trace) straight to Grafana Cloud's free tier, with no collector; when switched on, the browser sends its errors and speed measurements through Grafana Faro. Passwords, tokens and keys are masked before export, and a unit test fails if one gets through. What is sent, the queries, and a real incident with its lessons: [docs/observability](docs/observability/README.md).
+The server sends OpenTelemetry traces and events (one wide event per action, linked to its trace) straight to Grafana Cloud's free tier, with no collector; the browser sends its errors and speed measurements through Grafana Faro (on in staging and production; off wherever `NEXT_PUBLIC_FARO_URL` is unset). Passwords, tokens and keys are masked before export, and a unit test fails if one gets through. What is sent, the queries, and a real incident with its lessons: [docs/observability](docs/observability/README.md).
 
 ## Run locally
 
@@ -178,6 +178,7 @@ README screenshots: `npm run readme:screenshots` (local stack; seeds a demo mont
 | M4 | Installable app (PWA), push reminders, offline check-ins | ✅ v0.5.0 |
 | M5 | XP, levels, badges, rest days, weekly recaps | ✅ v0.6.0 |
 | M6 | Landing page, "Try the demo", privacy policy, data export and account delete, production | ✅ v1.0.0 |
+| v1.1 | Its own address (keepuphabits.vercel.app), a "Keepup moved" note on the old one, an in-app How to install guide | ✅ v1.1.0 |
 
 Next: ideas for after v1.
 
