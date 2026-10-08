@@ -22,10 +22,19 @@ export function redactAttributes(attributes: Attributes): Attributes {
   return Object.fromEntries(Object.entries(attributes).map(([key, value]) => [key, redactValue(key, value)]));
 }
 
+// One name per kind of call: "fetch GET https://x.supabase.co/rest/v1/check_ins?habit_id=eq.<id>" becomes
+// "fetch GET /rest/v1/check_ins". Span metrics make one series per span name, so names with ids grew a
+// series per habit and per person (978 in two days). The full URL stays in the span's attributes.
+export function spanName(name: string) {
+  return name
+    .replace(/^(fetch [A-Z]+ )https?:\/\/[^/\s]+([^?#\s]*)\S*$/, "$1$2")
+    .replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?=\/|$)/gi, "/[id]");
+}
+
 // A copy that reads like the span (same prototype, so spanContext() and the rest still work).
 function redactSpan(span: ReadableSpan): ReadableSpan {
   return Object.create(span, {
-    name: { value: redactString(span.name) },
+    name: { value: redactString(spanName(span.name)) },
     attributes: { value: redactAttributes(span.attributes) },
     events: { value: span.events.map((event) => ({ ...event, attributes: event.attributes && redactAttributes(event.attributes) })) },
   });
