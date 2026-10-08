@@ -51,7 +51,14 @@ Lessons: `@vercel/otel` 2.1.3 reports 401 and 404 as success, so an app can't no
 - **Database server:** CPU (busy ÷ total), memory, the `/data` disk, database size against the free tier's 500 MB, connections and cache hit, from Supabase's metrics endpoint (Grafana's Supabase integration, scrape jobs `supabase_staging` and `supabase_production`).
 - **Per page** and **database calls:** rate, errors and p95 per route or PostgREST call, from Grafana's span metrics (`traces_spanmetrics_*`). Span names are short on purpose (`fetch GET /rest/v1/check_ins`): one series per name.
 - **Latest errors:** `keepup.error` lines, each linked to its trace.
-- **Markers:** deploys and releases from `keepup-ci` events (merges are off by default).
+- **Markers:** staging and production deploys and releases from `keepup-ci` events (merges are off by default).
+
+[`dashboards/keepup-product.json`](dashboards/keepup-product.json): production by default (staging is mostly tests).
+- **People:** active people, visits, sign-ins and sign-ups (by method), demo visits, check-ins; activity per person.
+- **Growth and engagement:** daily active people, the new-user funnel, check-ins per active person, undo rate, cheers and nudges per person, reminders on, own vs a child's check-ins, private vs group habits, browser errors by screen.
+- **Devices** and **Screens** (Faro): browsers, systems, phone or computer, who uses what, most viewed screens.
+- **Habits**, **Features and friction**, **Live feed**: top habits, categories, the habit lifecycle, feature use, refusals by rule, the latest actions as readable lines.
+Infra also has **Limits**: database size against 500 MB, connections against 60 (the free plan's Nano compute), the data disk and memory, plus links to the monthly quotas the metrics feed doesn't carry.
 
 ## Queries
 TraceQL (Tempo):

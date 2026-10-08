@@ -47,7 +47,9 @@ jobs:
           URL: ${{ github.event.deployment_status.environment_url }}
           SHA: ${{ github.event.deployment.sha }}
         run: |
-          scripts/change-event.sh keepup.deployed deploy.target="$TARGET" deploy.state="$STATE" \
+          # keepup-stage's "Production" is staging; production itself reports from release-please.yml.
+          case "$TARGET" in Production) env=staging ;; Preview) env=preview ;; *) env="$TARGET" ;; esac
+          scripts/change-event.sh keepup.deployed deploy.env="$env" deploy.target="$TARGET" deploy.state="$STATE" \
             deploy.url="${URL:-none}" git.sha="$SHA"
 
       - name: A release
