@@ -1,0 +1,58 @@
+name: Keep staging and production awake
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query staging
+        run: |
+          # Anonymous reads are refused by RLS (401/403), but the request still reaches Postgres,
+          # which counts as activity. Fail only on no connection or a server error.
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            "${{ secrets.STAGING_SUPABASE_URL }}/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: ${{ secrets.STAGING_PUBLISHABLE_KEY }}")
+          echo "HTTP $code"
+          [ "$code" != "000" ] && [ "$code" -lt 500 ]
+
+  # Its own job: the PRODUCTION_* secrets live in the production environment, and only a job that
+  # names the environment can read them. Dormant until production is set up.
+  ping-production:
+    if: vars.PRODUCTION_READY == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Query production
+        run: |
+          # Same check as staging: a 401/403 from RLS still counts as database activity.
+          code=$(curl -sS -o /dev/null -w '%{http_code}' \
+            "${{ secrets.PRODUCTION_SUPABASE_URL }}/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: ${{ secrets.PRODUCTION_PUBLISHABLE_KEY }}")
+          echo "HTTP $code"
+          [ "$code" != "000" ] && [ "$code" -lt 500 ]
+
+  # GitHub switches off scheduled workflows after 60 days without a commit to the default branch.
+  # Turning them on again every day keeps the nightly backup, the monthly restore test and this ping
+  # running through quiet spells (enabling an enabled workflow changes nothing). If GitHub ever
+  # switched off this file itself it couldn't run to fix that; its daily run keeps it active.
+  enable-schedules:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Re-enable the scheduled workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          for wf in keepalive.yml backup-staging.yml backup-production.yml backup-restore-test.yml; do
+            gh api -X PUT "repos/$REPO/actions/workflows/$wf/enable"
+            echo "enabled $wf"
+          done

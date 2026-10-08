@@ -1,0 +1,86 @@
+name: Backup restore test
+
+on:
+  schedule:
+    - cron: "41 4 3 * *" # 04:41 UTC on the 3rd of each month
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  restore:
+    name: restore (${{ matrix.target }})
+    strategy:
+      # One leg failing must not cancel the other.
+      fail-fast: false
+      matrix:
+        # The production leg joins once production is set up (HANDBOOK "Production setup").
+        target: ${{ fromJSON(vars.PRODUCTION_READY == 'true' && '["staging","production"]' || '["staging"]') }}
+    runs-on: ubuntu-latest
+    env:
+      # Same as CI: GitHub's registry, since public.ecr.aws caps anonymous downloads.
+      SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Install age and psql
+        run: sudo apt-get update && sudo apt-get install -y age postgresql-client
+      - name: Fetch the latest backup
+        env:
+          BACKUPS_DEPLOY_KEY: ${{ secrets.BACKUPS_DEPLOY_KEY }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          umask 077
+          printf '%s\n' "$BACKUPS_DEPLOY_KEY" > ~/.ssh/backups_key
+          trap 'rm -f ~/.ssh/backups_key' EXIT
+          chmod 600 ~/.ssh/backups_key
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' >> ~/.ssh/known_hosts
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/backups_key -o IdentitiesOnly=yes"
+          git clone --depth 1 "git@github.com:naum-4ik/keepup-backups.git" backups
+          latest=$(ls "backups/$TARGET/$TARGET"-*.tar.gz.age | sort | tail -1)
+          echo "Latest: $latest"
+          d=$(basename "$latest" | sed -E "s/^$TARGET-([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\\1/")
+          cutoff=$(date -u -d '3 days ago' +%Y-%m-%d)
+          if [[ "$d" < "$cutoff" ]]; then
+            echo "::error::Newest backup ($d) is older than 3 days; the nightly job is broken"
+            exit 1
+          fi
+          echo "LATEST=$latest" >> "$GITHUB_ENV"
+      - name: Decrypt with the CI key
+        env:
+          AGE_CI_IDENTITY: ${{ secrets.AGE_CI_IDENTITY }}
+        run: |
+          set -euo pipefail
+          # The key is readable by this user only, and removed however the step ends.
+          (umask 077 && printf '%s\n' "$AGE_CI_IDENTITY" > ci.key)
+          trap 'rm -f ci.key' EXIT
+          mkdir -p dump
+          age -d -i ci.key "$LATEST" | tar -xzf - -C dump
+          # Logins are in the backup (not loaded here: the local stack's auth schema differs by version).
+          test -s dump/auth.sql || { echo "::error::The backup has no logins (auth.sql missing or empty)"; exit 1; }
+          # Roles are applied below with a warning only (the local stack already has Supabase's), but a
+          # backup without them can't be restored to a fresh project.
+          test -s dump/roles.sql || { echo "::error::The backup has no roles (roles.sql missing or empty)"; exit 1; }
+      - name: Start a throwaway Supabase database
+        run: npx supabase db start
+      - name: Restore and assert
+        env:
+          PGURL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+        run: |
+          set -euo pipefail
+          psql "$PGURL" -v ON_ERROR_STOP=1 -q -f dump/roles.sql \
+            || echo "::warning::roles.sql did not apply cleanly (expected on the local stack)"   # local stack already has the Supabase roles
+          psql "$PGURL" -v ON_ERROR_STOP=1 -q \
+            -c 'drop schema if exists public cascade; drop schema if exists private cascade; create schema public;'
+          psql "$PGURL" -v ON_ERROR_STOP=1 -q -f dump/schema.sql
+          psql "$PGURL" -v ON_ERROR_STOP=1 -q -c 'set session_replication_role = replica' -f dump/data.sql
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f scripts/backup-assert.sql

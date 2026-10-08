@@ -1,0 +1,57 @@
+name: Change events
+
+# Merges, deploys and releases as events in Grafana (Loki, service.name=keepup-ci), so a dashboard can
+# mark them on its charts: "did the errors start after this deploy?" (docs/observability). Nothing waits
+# on this workflow; a red run means Grafana refused the event (an expired token, a wrong endpoint).
+on:
+  push:
+    branches: [develop, main]
+  deployment_status:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    # Vercel reports each deploy as pending, then success or failure: only the finished ones count.
+    if: github.event_name != 'deployment_status' || contains(fromJSON('["success","failure","error"]'), github.event.deployment_status.state)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      OTLP_ENDPOINT: ${{ vars.GRAFANA_OTLP_ENDPOINT }}
+      OTLP_INSTANCE_ID: ${{ vars.GRAFANA_INSTANCE_ID }}
+      OTLP_TOKEN: ${{ secrets.GRAFANA_OTLP_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/change-event.sh
+          sparse-checkout-cone-mode: false
+
+      - name: A merge
+        if: github.event_name == 'push'
+        env:
+          TITLE: ${{ github.event.head_commit.message }}
+        run: |
+          title="${TITLE%%$'\n'*}"
+          pr=$(grep -oE '\(#[0-9]+\)$' <<<"$title" | tr -d '(#)' || true)
+          scripts/change-event.sh keepup.merged git.ref="$GITHUB_REF_NAME" git.sha="$GITHUB_SHA" \
+            change.title="$title" pr.number="${pr:-none}" actor="$GITHUB_ACTOR"
+
+      - name: A deploy
+        if: github.event_name == 'deployment_status'
+        env:
+          TARGET: ${{ github.event.deployment.environment }}
+          STATE: ${{ github.event.deployment_status.state }}
+          URL: ${{ github.event.deployment_status.environment_url }}
+          SHA: ${{ github.event.deployment.sha }}
+        run: |
+          scripts/change-event.sh keepup.deployed deploy.target="$TARGET" deploy.state="$STATE" \
+            deploy.url="${URL:-none}" git.sha="$SHA"
+
+      - name: A release
+        if: github.event_name == 'release'
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
+        run: scripts/change-event.sh keepup.released release.version="$VERSION" git.sha="$GITHUB_SHA"

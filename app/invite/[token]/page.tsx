@@ -1,0 +1,116 @@
+import Image from "next/image";
+import Link from "next/link";
+import { Avatar } from "@/components/avatar";
+import { DemoBanner } from "@/components/demo/demo-banner";
+import { GoogleIcon } from "@/components/google-icon";
+import { Button } from "@/components/ui/button";
+import { GROUP_KIND_EMOJI, isGroupKind } from "@/lib/group-schema";
+import { createClient } from "@/lib/supabase/server";
+import { signInWithGoogle } from "@/app/login/actions";
+import { acceptInvite } from "./actions";
+import { JoinButton } from "./join-button";
+import { logError } from "@/lib/log";
+
+// Outside (app) so it works signed out: the anonymous client may call invite_preview only.
+export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const supabase = await createClient();
+  const [{ data: claims }, { data: rows, error }] = await Promise.all([
+    supabase.auth.getClaims(),
+    supabase.rpc("invite_preview", { p_token: token }),
+  ]);
+  if (error) logError("invite_preview failed", error.message);
+  const preview = rows?.[0];
+
+  if (!preview) {
+    return (
+      <InviteCard>
+        <h1 className="text-2xl font-bold">This invite link doesn&apos;t work anymore</h1>
+        <p className="text-sm text-muted-foreground">Ask the person who sent it for a new one.</p>
+        <Button asChild variant="outline" className="h-12 w-full rounded-xl text-base">
+          <Link href="/">Go to Keepup</Link>
+        </Button>
+      </InviteCard>
+    );
+  }
+
+  const group = preview.group_name;
+  const emoji = isGroupKind(preview.group_kind) ? GROUP_KIND_EMOJI[preview.group_kind] : GROUP_KIND_EMOJI.other;
+  const n = preview.member_count;
+  const next = `/invite/${token}`;
+  const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
+  // Already in the group (an admin opening their own link, a member tapping it again): Open, not Join.
+  // invite_membership answers for the caller only; the anonymous preview never returns the group id.
+  const memberOf = claims?.claims ? await currentGroupOf(supabase, token) : null;
+
+  return (
+    // The group's own avatar (its emoji, or the kind's when none is set). Decoration: the heading
+    // already names the group.
+    <InviteCard
+      top={
+        <span aria-hidden className="mx-auto flex">
+          <Avatar name={group} emoji={preview.avatar_emoji || emoji} color={preview.avatar_color} size="lg" />
+        </span>
+      }
+    >
+      <h1 className="text-2xl font-bold">
+        {preview.inviter_name} invited you to {group}
+      </h1>
+      <p className="text-sm text-muted-foreground">
+        {n === 1 ? `1 person is already in ${group}.` : `${n} people are already in ${group}.`}
+      </p>
+      {memberOf ? (
+        <Button asChild className="h-12 w-full rounded-xl text-base">
+          <Link href={`/groups/${memberOf}`}>Open {group}</Link>
+        </Button>
+      ) : claims?.claims?.is_anonymous ? (
+        // A demo login can't join a real group (keepup:demo): sign in first, then back here.
+        <DemoBanner placement="top" next={next} />
+      ) : claims?.claims ? (
+        <JoinButton action={acceptInvite.bind(null, token)} groupName={group} />
+      ) : (
+        <div className="flex flex-col gap-2">
+          {googleEnabled ? (
+            <>
+              <form action={signInWithGoogle}>
+                <input type="hidden" name="next" value={next} />
+                <Button type="submit" className="h-12 w-full gap-3 rounded-xl text-base">
+                  <span className="flex size-6 items-center justify-center rounded-full bg-card">
+                    <GoogleIcon className="size-4" />
+                  </span>
+                  Join with Google
+                </Button>
+              </form>
+              <Button asChild variant="ghost" className="h-11 text-base text-primary">
+                <Link href={`/login?next=${encodeURIComponent(next)}`}>Use email instead</Link>
+              </Button>
+            </>
+          ) : (
+            // Google is off (local stacks): email is the only way in, so it's the main button.
+            <Button asChild className="h-12 w-full rounded-xl text-base">
+              <Link href={`/login?next=${encodeURIComponent(next)}`}>Continue with email</Link>
+            </Button>
+          )}
+        </div>
+      )}
+    </InviteCard>
+  );
+}
+
+async function currentGroupOf(supabase: Awaited<ReturnType<typeof createClient>>, token: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc("invite_membership", { p_token: token });
+  if (error) logError("invite_membership failed", error.message);
+  return data ?? null;
+}
+
+// `top`: what crowns the card (the group's avatar); the app icon when there's no group to show.
+function InviteCard({ top, children }: { top?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-4 py-10">
+      <div className="flex flex-col gap-5 rounded-2xl bg-card p-6 text-center shadow-soft">
+        {top ?? <Image src="/icons/icon-192.png" alt="" width={56} height={56} className="mx-auto rounded-2xl" priority />}
+        {children}
+      </div>
+    </main>
+  );
+}

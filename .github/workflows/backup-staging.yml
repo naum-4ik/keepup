@@ -1,0 +1,103 @@
+name: Backup staging
+
+on:
+  schedule:
+    - cron: "17 2 * * *" # 02:17 UTC nightly
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Shared with the production backup: both force-push one orphan commit to keepup-backups, so two runs
+# at once could drop each other's new dump. One at a time, across both workflows.
+concurrency:
+  group: keepup-backups-push
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    env:
+      # Same as CI and the restore test: GitHub's registry, since public.ecr.aws caps anonymous
+      # downloads (db dump runs pg_dump in a container).
+      SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Install age
+        run: sudo apt-get update && sudo apt-get install -y age
+      - name: Link staging
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+        run: npx supabase link --project-ref "${{ secrets.STAGING_PROJECT_REF }}"
+      - name: Dump staging (roles, schema, data, logins)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mkdir -p dump
+          npx supabase db dump --linked --role-only -f dump/roles.sql
+          npx supabase db dump --linked -f dump/schema.sql
+          npx supabase db dump --linked --data-only --use-copy --schema public -f dump/data.sql
+          # Logins (auth.users, identities): without them a restore has profiles nobody can sign in to.
+          npx supabase db dump --linked --data-only --use-copy --schema auth -f dump/auth.sql
+          # Every part must be there and non-empty, roles too: a restore without them can't recreate grants.
+          for f in roles schema data auth; do
+            test -s "dump/$f.sql" || { echo "::error::dump/$f.sql is missing or empty"; exit 1; }
+          done
+      - name: Encrypt
+        env:
+          AGE_RECIPIENTS: ${{ secrets.AGE_RECIPIENTS }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$AGE_RECIPIENTS" > recipients.txt
+          stamp=$(date -u +%Y-%m-%dT%H%MZ)
+          tar -czf - -C dump . | age -R recipients.txt -o "staging-$stamp.tar.gz.age"
+          echo "FILE=staging-$stamp.tar.gz.age" >> "$GITHUB_ENV"
+          rm -rf dump recipients.txt
+      - name: Commit to keepup-backups and prune to 30 days
+        env:
+          BACKUPS_DEPLOY_KEY: ${{ secrets.BACKUPS_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          umask 077
+          printf '%s\n' "$BACKUPS_DEPLOY_KEY" > ~/.ssh/backups_key
+          trap 'rm -f ~/.ssh/backups_key' EXIT
+          chmod 600 ~/.ssh/backups_key
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' >> ~/.ssh/known_hosts
+          export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/backups_key -o IdentitiesOnly=yes"
+          url="git@github.com:naum-4ik/keepup-backups.git"
+          # ls-remote failing aborts the job (set -e). Only an empty listing (no main yet, i.e. the
+          # first run) may start a fresh repo; any other clone failure must fail, never wipe history.
+          heads=$(git ls-remote --heads "$url" main)
+          if [ -n "$heads" ]; then
+            git clone -q --depth 1 --branch main "$url" backups
+          else
+            git init -q -b main backups
+            git -C backups remote add origin "$url"
+          fi
+          mkdir -p backups/staging
+          mv "$FILE" backups/staging/
+          cd backups
+          # Keep 30 days: file names carry the UTC date.
+          cutoff=$(date -u -d '30 days ago' +%Y-%m-%d)
+          for f in staging/staging-*.tar.gz.age; do
+            d=$(basename "$f" | sed -E 's/^staging-([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\1/')
+            if [[ "$d" < "$cutoff" ]]; then rm -f "$f"; fi
+          done
+          # History is rewritten on purpose: every run publishes a single orphan commit, so dumps
+          # pruned from the tree are also gone from git history (the 30-day window is real).
+          git checkout -q --orphan snapshot
+          git add -A
+          git -c user.name="keepup-backup" -c user.email="73892942+naum-4ik@users.noreply.github.com" \
+            commit -qm "staging backups up to $(date -u +%Y-%m-%d)"
+          git push -q --force origin snapshot:main

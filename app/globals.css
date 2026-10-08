@@ -1,0 +1,363 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
+@theme inline {
+  --color-background: var(--background);
+  /* Status, streak and category colours (docs/design.md). */
+  --color-done: var(--done);
+  --color-done-soft: var(--done-soft);
+  --color-done-foreground: var(--done-foreground);
+  --color-pending: var(--pending);
+  --color-pending-soft: var(--pending-soft);
+  --color-frozen: var(--frozen);
+  --color-frozen-soft: var(--frozen-soft);
+  --color-flame: var(--flame);
+  --color-flame-soft: var(--flame-soft);
+  --color-cat-health: var(--cat-health);
+  --color-cat-health-soft: var(--cat-health-soft);
+  --color-cat-fitness: var(--cat-fitness);
+  --color-cat-fitness-soft: var(--cat-fitness-soft);
+  --color-cat-mind: var(--cat-mind);
+  --color-cat-mind-soft: var(--cat-mind-soft);
+  --color-cat-learning: var(--cat-learning);
+  --color-cat-learning-soft: var(--cat-learning-soft);
+  --color-cat-people: var(--cat-people);
+  --color-cat-people-soft: var(--cat-people-soft);
+  --color-cat-home: var(--cat-home);
+  --color-cat-home-soft: var(--cat-home-soft);
+  --color-cat-work-money: var(--cat-work-money);
+  --color-cat-work-money-soft: var(--cat-work-money-soft);
+  --color-cat-break-habit: var(--cat-break-habit);
+  --color-cat-break-habit-soft: var(--cat-break-habit-soft);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-nunito);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-nunito);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: 1rem;
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --shadow-soft: 0 1px 2px rgb(61 44 34 / 0.06), 0 4px 12px rgb(61 44 34 / 0.05);
+  --animate-checkin: checkin 220ms ease-out;
+  --animate-xp-float: xp-float 900ms ease-out forwards;
+  --animate-star: star-bounce 250ms ease-out;
+  --animate-hold-ring: hold-ring 1500ms linear forwards;
+  --animate-confetti: keepup-confetti 900ms ease-out forwards;
+  --animate-item-pop: item-pop 450ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-wiggle: wiggle 450ms ease-in-out;
+  --animate-dance: dance 500ms ease-in-out 4;
+  --animate-hero-zoom: hero-zoom 2000ms ease-in-out forwards;
+  --animate-card-bounce: card-bounce 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --animate-reveal-in: reveal-in 1500ms ease-out both;
+  --animate-reveal-spark: reveal-spark 800ms ease-out both;
+  --animate-spot-flash: spot-flash 600ms ease-out forwards;
+  --animate-item-fade: item-fade 450ms ease-out both;
+  --animate-idle-sway: idle-sway 4s ease-in-out infinite;
+  --animate-idle-bob: idle-bob 4s ease-in-out infinite;
+  --animate-idle-drift: idle-drift 16s linear forwards;
+  --animate-idle-sparkle: idle-sparkle 1800ms ease-in-out forwards;
+}
+
+/* Kids: a star bounces on a check-in (1 → 1.3 → 1). */
+@keyframes star-bounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* Hold to exit: the ring's stroke fills over 1.5s. */
+@keyframes hold-ring {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes checkin {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* "+N XP" rises and fades above the check-in button (ideas/achievements-and-rewards.md §1). */
+@keyframes xp-float {
+  0% { transform: translateY(0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-14px); opacity: 0; }
+}
+
+/* "Everyone did it": a small confetti burst, each piece flying up and out to its own --dx/--dy. */
+@keyframes keepup-confetti {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--dx, 0px), var(--dy, -80px)) rotate(var(--rot, 180deg)); opacity: 0; }
+}
+
+/* Kid view (ideas/kid-view-next.md §4): a new item springs up, a tap makes things wiggle, and when the
+   day is done everything dances. */
+@keyframes item-pop {
+  0% { transform: scale(0); opacity: 0; }
+  70% { transform: scale(1.25); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-14deg) scale(1.1); }
+  75% { transform: rotate(14deg) scale(1.1); }
+}
+
+@keyframes dance {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-18%) rotate(8deg); }
+}
+
+/* A new stage picture: it zooms in big over the screen, stays a moment, then shrinks into its place
+   in the picture (--to-x / --to-y from the middle of the screen, --to-scale its size there). */
+@keyframes hero-zoom {
+  0% { transform: scale(0.2); opacity: 0; }
+  18% { transform: scale(1.15); opacity: 1; }
+  28% { transform: scale(1); }
+  72% { transform: scale(1); opacity: 1; }
+  100% { transform: translate(var(--to-x, 0px), var(--to-y, 0px)) scale(var(--to-scale, 0.4)); opacity: 1; }
+}
+
+/* The big reveal (ideas/kid-view-next.md, decided 2026-10-05, 2026-10-06): every tap that earns a star
+   bounces the card; the new scene item springs in huge in the middle, sparkles and wiggles once, then shrinks and
+   flies to its spot (KidPlay steers that flight frame by frame), where the spot flashes. With Reduce Motion it only fades in at its spot (item-fade is a fade, so it stays on). */
+@keyframes card-bounce {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+@keyframes reveal-in {
+  0% { transform: scale(0.15) rotate(0deg); opacity: 0; }
+  15% { transform: scale(1.12) rotate(0deg); opacity: 1; }
+  23% { transform: scale(0.95) rotate(0deg); }
+  30% { transform: scale(1) rotate(0deg); }
+  41% { transform: scale(1.05) rotate(-9deg); }
+  52% { transform: scale(1.05) rotate(9deg); }
+  62% { transform: scale(1) rotate(-3deg); }
+  70%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes reveal-spark {
+  0% { transform: translate(0, 0) scale(0.3); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(var(--dx, 0px), var(--dy, -80px)) scale(1); opacity: 0; }
+}
+
+@keyframes spot-flash {
+  0% { transform: scale(0.4); opacity: 0.95; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+@keyframes item-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Kid view idle motion (ideas/kid-view-next.md, 2026-10-04): when nothing happens the scene moves by
+   itself, calmly: at most 3px / 3deg, slow cycles, a cloud drifting across, a sparkle fading in and out. */
+@keyframes idle-sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+@keyframes idle-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Across the whole picture, right to left (the drifter's box is the picture's width). */
+@keyframes idle-drift {
+  0% { transform: translate(100%, 0); opacity: 0; }
+  8% { opacity: 0.9; }
+  50% { transform: translate(40%, -3px); }
+  92% { opacity: 0.9; }
+  100% { transform: translate(-20%, 0); opacity: 0; }
+}
+
+@keyframes idle-sparkle {
+  0% { transform: scale(0.4); opacity: 0; }
+  50% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.6); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-checkin, .animate-xp-float, .animate-star, .animate-confetti, .animate-item-pop, .animate-wiggle, .animate-dance, .animate-hero-zoom,
+  .animate-card-bounce, .animate-reveal-in, .animate-reveal-spark, .animate-spot-flash,
+  .animate-idle-sway, .animate-idle-bob, .animate-idle-drift, .animate-idle-sparkle { animation: none; }
+}
+
+:root {
+  color-scheme: light;
+  --background: #FFF8F0;
+  --foreground: #3D2C22;
+  --card: #FFFFFF;
+  --card-foreground: #3D2C22;
+  --popover: #FFFFFF;
+  --popover-foreground: #3D2C22;
+  --primary: #B84F33;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F6E3D8;
+  --secondary-foreground: #3D2C22;
+  --muted: #F3EADF;
+  --muted-foreground: #7A6556;
+  --accent: #FDE3D3;
+  --accent-foreground: #3D2C22;
+  --destructive: #C0392B;
+  --border: #EFE3D6;
+  --input: #E6D6C6;
+  --ring: #B84F33;
+  /* Status: text-safe on white, cream and the soft tints (≥ 4.5:1). */
+  --done: #3D7549;
+  --done-soft: #E5F2E6;
+  --done-foreground: #FFFFFF;
+  --pending: #8A5E0C;
+  --pending-soft: #FBF3D9;
+  --frozen: #3B6E99;
+  --frozen-soft: #E3F1FA;
+  /* Streak 🔥 icon and count only, never body text. */
+  --flame: #E8804F;
+  --flame-soft: #FDE6D8;
+  /* Categories: a pastel chip and a deeper icon colour. */
+  --cat-health: #3B82B8;
+  --cat-health-soft: #E3F1FA;
+  --cat-fitness: #4F8A5B;
+  --cat-fitness-soft: #E5F2E6;
+  --cat-mind: #7B61B0;
+  --cat-mind-soft: #EEE8F8;
+  --cat-learning: #B08A1E;
+  --cat-learning-soft: #FBF3D9;
+  --cat-people: #C2505F;
+  --cat-people-soft: #FBE6E8;
+  --cat-home: #3A8C7E;
+  --cat-home-soft: #E0F3EF;
+  --cat-work-money: #8A6B45;
+  --cat-work-money-soft: #F1EADF;
+  --cat-break-habit: #8A7F76;
+  --cat-break-habit-soft: #F0ECE8;
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --background: #1F1915;
+    --foreground: #F5EDE4;
+    --card: #2A221C;
+    --card-foreground: #F5EDE4;
+    --popover: #2A221C;
+    --popover-foreground: #F5EDE4;
+    --primary: #F0A07F;
+    --primary-foreground: #2A221C;
+    --secondary: #3A2F27;
+    --secondary-foreground: #F5EDE4;
+    --muted: #33291F;
+    --muted-foreground: #B8A596;
+    --accent: #4A3226;
+    --accent-foreground: #F5EDE4;
+    --destructive: #E06C5E;
+    --border: #3A2F27;
+    --input: #4A3D33;
+    --ring: #F0A07F;
+    /* Lighter inks; soft tints are 20–22% of the colour mixed into the warm card, never cold navy. */
+    --done: #7FBF8C;
+    --done-soft: #32392A;
+    --done-foreground: #1F1915;
+    --pending: #E0B84A;
+    --pending-soft: #4F3E1B;
+    --frozen: #8FB8DC;
+    --frozen-soft: #353A3E;
+    --flame: #F0A07F;
+    --flame-soft: #543727;
+    --cat-health: #7FB0DA;
+    --cat-health-soft: #2D353B;
+    --cat-fitness: #7FBF8C;
+    --cat-fitness-soft: #313729;
+    --cat-mind: #A992D6;
+    --cat-mind-soft: #3A2F3A;
+    --cat-learning: #D9B54A;
+    --cat-learning-soft: #45371C;
+    --cat-people: #E0848F;
+    --cat-people-soft: #482B29;
+    --cat-home: #6FC0B0;
+    --cat-home-soft: #2D3730;
+    --cat-work-money: #C4A07A;
+    --cat-work-money-soft: #3D3124;
+    --cat-break-habit: #B5AAA0;
+    --cat-break-habit-soft: #3D352E;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+  /* Tailwind 4 no longer gives buttons a pointer cursor; every tappable thing should show one. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary {
+    cursor: pointer;
+  }
+  /* One visible keyboard focus style for custom buttons, links and summaries. */
+  button:focus-visible,
+  a:focus-visible,
+  summary:focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+}
