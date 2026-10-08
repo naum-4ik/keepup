@@ -33,12 +33,14 @@ describe("privacy policy", () => {
   });
 
   it("tells what the browser reports and what every action records (components/observability/faro.tsx, lib/log.ts track)", () => {
-    expect(policy).toMatch(/In your browser, on every Keepup page/);
+    // Faro runs only where NEXT_PUBLIC_FARO_URL is set (components/observability/faro.tsx), so the policy says "when switched on".
+    expect(policy).toMatch(/In your browser, when error and speed reporting is switched on/);
     expect(policy).toMatch(/errors in the page/);
     expect(policy).toMatch(/page speed measurements \(Web Vitals/);
     expect(policy).toMatch(/Grafana Labs also receives your IP address/);
     expect(policy).toMatch(/session storage \(not a cookie\)/); // Faro's session ID
     expect(policy).toMatch(/On our servers, for each action/);
+    expect(policy).toMatch(/how you signed in \(password or Google\)/); // auth.method on signed_in / signed_up
     expect(policy).not.toMatch(/no analytics or advertising services/i);
   });
 
