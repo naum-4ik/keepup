@@ -58,6 +58,29 @@ test("Try it: a full account in under 5 seconds, with a check-in to approve", as
   await expect(page).toHaveURL(/\/login/);
 });
 
+test("Try the demo waits until the page is ready", async ({ browser }) => {
+  // No scripts: what the page shows before it is ready.
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto("/");
+  const button = page.getByRole("button", { name: "Loading…" });
+  await expect(button).toBeDisabled();
+  await expect(button).toHaveAttribute("aria-disabled", "true");
+  await context.close();
+});
+
+test("a failed demo: trying again clears ?demo=failed from the address", async ({ page }) => {
+  // Filtered: Next's route announcer is an alert too.
+  const failed = page.getByRole("alert").filter({ hasText: "The demo didn't start. Try again in a moment." });
+  await page.goto("/?demo=failed");
+  await expect(failed).toHaveCount(1);
+  // This retry fails too, before any sign-in reaches Supabase (no anonymous sign-in spent).
+  await page.route("**/auth/v1/signup", (route) => route.abort());
+  await page.getByRole("button", { name: "Try the demo" }).click();
+  await expect(page).not.toHaveURL(/demo=failed/);
+  await expect(failed).toHaveCount(1);
+});
+
 test("Try it on a stale landing tab keeps the real login", async ({ page, context }) => {
   const stale = await context.newPage();
   await stale.goto("/");

@@ -7,7 +7,12 @@ describe("my data", () => {
     expect(isDeleteWord("del")).toBe(false);
   });
   it("names the export by date", () => {
-    expect(myDataFileName(new Date("2026-10-07T12:00:00Z"))).toBe("keepup-my-data-2026-10-07.json");
+    expect(myDataFileName(new Date("2026-10-07T12:00:00Z"), "UTC")).toBe("keepup-my-data-2026-10-07.json");
+  });
+  it("names the export by the person's own date, not UTC's", () => {
+    // 23:30 UTC is already the next morning in Rome, and still the evening before in Los Angeles.
+    expect(myDataFileName(new Date("2026-10-07T23:30:00Z"), "Europe/Rome")).toBe("keepup-my-data-2026-10-08.json");
+    expect(myDataFileName(new Date("2026-10-08T03:00:00Z"), "America/Los_Angeles")).toBe("keepup-my-data-2026-10-07.json");
   });
   it("explains what goes and who takes over", () => {
     expect(

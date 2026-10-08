@@ -69,7 +69,40 @@ test("forgot password: with no email typed it asks for one and sends nothing", a
   await page.getByRole("button", { name: "Forgot password?" }).click();
   await expect(page.getByText("Type your email above, then tap Forgot password? again.")).toBeVisible();
   await expect(page.getByLabel("Email")).toBeFocused();
+  // The hint belongs to the email field: a screen reader reads it there.
+  await expect(page.getByLabel("Email")).toHaveAccessibleDescription("Type your email above, then tap Forgot password? again.");
   await expect(page.getByText(SENT)).toHaveCount(0);
+});
+
+test("forgot password: while sending, the button keeps focus and a second tap sends nothing more", async ({ page }) => {
+  const email = uniqueEmail();
+  await signUpOnboardAndSignOut(page, email);
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(email);
+  // Hold the reset request (a server action posted to /login) until the second tap.
+  let release!: () => void;
+  const held = new Promise<void>((r) => (release = r));
+  let sends = 0; // counted here: the mail count alone can't tell (Supabase drops a second mail within seconds)
+  await page.route("**/login", async (route) => {
+    if (route.request().method() === "POST" && route.request().headers()["next-action"]) {
+      sends++;
+      await held;
+    }
+    await route.fallback();
+  });
+  const forgot = page.getByRole("button", { name: /Forgot password\?|Sending…/ });
+  await forgot.focus();
+  await page.keyboard.press("Enter");
+  await expect(forgot).toHaveText("Sending…");
+  await expect(forgot).toHaveAttribute("aria-disabled", "true");
+  await expect(forgot).toBeFocused();
+  await page.keyboard.press("Enter"); // guarded: no second request
+  release();
+  await expect(page.getByRole("status").first()).toHaveText(SENT);
+  await expect(forgot).toBeFocused();
+  await page.waitForTimeout(1500);
+  expect(sends).toBe(1);
+  expect(await mailCount(email)).toBe(1);
 });
 
 test("forgot password: an unknown email gets the same answer, and no email", async ({ page }) => {
