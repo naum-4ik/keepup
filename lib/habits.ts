@@ -35,10 +35,10 @@ export async function getHabitSummaries(): Promise<AdultHabitSummary[]> {
 export async function getWeekOverview(): Promise<WeekOverview | null> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("week_overview");
-  if (error || !data) {
-    logError("week_overview failed", error?.message ?? "no data");
-    return null;
-  }
+  // No data without an error is an account with nothing to show yet, not a failure (it raised 17 false
+  // ERROR events in a day on a new production account).
+  if (error) logError("week_overview failed", error.message);
+  if (error || !data) return null;
   return withTodayPending(data as unknown as WeekOverview);
 }
 
