@@ -1,0 +1,168 @@
+name: Copy staging to production
+
+# One-off, before v1.0.0 is shared (owner decision 2026-10-08): production gets the family's real data
+# from staging, every public table plus the logins (auth.users, auth.identities), so people sign in
+# to production with the same accounts. Data only: both projects run the same migrations (checked).
+# Staging is only read (supabase db dump). Production is wiped and loaded in ONE transaction that
+# commits only if every table's row count equals staging's (scripts/copy-staging-to-production/).
+# Left out on purpose: push devices (staging's address and VAPID keys: people turn reminders on
+# again), sessions and refresh tokens (everyone signs in fresh), the sign-in audit log. Production
+# keeps its own Vault secrets, cron jobs, storage and Supabase-managed schemas. Demo rows come
+# along and production's hourly demo cleanup deletes them, as on staging.
+# Run: Actions -> Copy staging to production -> Run workflow (develop) -> type the confirm phrase.
+# Leave "dry run" ticked first: it does everything and rolls back. Delete this file after the copy.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "copy staging to production" to replace ALL production data with staging''s'
+        type: string
+        required: true
+      dry_run:
+        description: "Dry run: copy and check, then roll back (production unchanged)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  copy:
+    # Dormant until production is set up (HANDBOOK "Production setup").
+    if: vars.PRODUCTION_READY == 'true'
+    runs-on: ubuntu-latest
+    # The PRODUCTION_* secrets live in this environment.
+    environment: production
+    # Never at the same time as a production deploy (release-please.yml uses the same group).
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+    env:
+      # Same as the backups: GitHub's registry, since public.ecr.aws caps anonymous downloads
+      # (db dump runs pg_dump in a container).
+      SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    timeout-minutes: 20
+    steps:
+      # The phrase goes through env, never inline: it's free text typed into a form.
+      - name: Check the confirm phrase, the branch and the two projects
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+          REF: ${{ github.ref_name }}
+          STAGING_REF: ${{ secrets.STAGING_PROJECT_REF }}
+          PRODUCTION_REF: ${{ secrets.PRODUCTION_PROJECT_REF }}
+        run: |
+          set -euo pipefail
+          if [ "$CONFIRM" != "copy staging to production" ]; then
+            echo "::error::The confirm phrase doesn't match. Type exactly: copy staging to production"
+            exit 1
+          fi
+          case "$REF" in
+            develop | main) ;;
+            *) echo "::error::Run this from develop or main only (this run is on $REF)."; exit 1 ;;
+          esac
+          if [ -z "$STAGING_REF" ] || [ -z "$PRODUCTION_REF" ] || [ "$STAGING_REF" = "$PRODUCTION_REF" ]; then
+            echo "::error::STAGING_PROJECT_REF and PRODUCTION_PROJECT_REF must both be set and differ."
+            exit 1
+          fi
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Install psql
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Link staging (read only from here on)
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+        run: scripts/retry.sh npx supabase link --project-ref "${{ secrets.STAGING_PROJECT_REF }}"
+      - name: Dump staging's data (public, logins, migration list)
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mkdir -p dump
+          # One pg_dump, one snapshot: public and the logins can't drift apart (a sign-up or the demo
+          # cleanup between two dumps would leave a profile without its login, or the reverse).
+          # Logins without anything tied to a sign-in on staging's address: sessions and refresh
+          # tokens (and the MFA claims on them), one-time and flow tokens, the audit log. Push devices
+          # stay behind (staging's address and VAPID keys).
+          npx supabase db dump --linked --data-only --use-copy --schema public,auth \
+            -x public.push_subscriptions,auth.sessions,auth.refresh_tokens,auth.mfa_amr_claims,auth.mfa_challenges,auth.one_time_tokens,auth.flow_state,auth.audit_log_entries,auth.saml_relay_states,auth.webauthn_challenges,auth.oauth_authorizations,auth.oauth_client_states \
+            -f dump/data.sql
+          # Which migrations staging has: production must have exactly the same.
+          npx supabase db dump --linked --data-only --use-copy --schema supabase_migrations -f dump/migrations.sql
+      - name: Check the dump and count staging's rows
+        run: scripts/copy-staging-to-production/prepare.sh dump
+      # The session pooler (IPv4, port 5432): runners have no IPv6, which the direct db.<ref> host
+      # needs, and the transaction pooler can't keep session settings. Host and user come from the
+      # same Management API endpoint the Supabase CLI uses; the password only ever sits in env.
+      - name: Find production's database address
+        env:
+          PRODUCTION_REF: ${{ secrets.PRODUCTION_PROJECT_REF }}
+          STAGING_REF: ${{ secrets.STAGING_PROJECT_REF }}
+        run: |
+          set -euo pipefail
+          pooler=$(curl -sSf -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$PRODUCTION_REF/config/database/pooler" \
+            | jq -c '[.[] | select(.database_type == "PRIMARY" and (.db_host | endswith(".pooler.supabase.com")))][0]')
+          host=$(jq -r '.db_host // empty' <<<"$pooler")
+          user=$(jq -r '.db_user // empty' <<<"$pooler")
+          db=$(jq -r '.db_name // empty' <<<"$pooler")
+          # The guard that keeps the wipe off staging: the login names production's ref, not staging's.
+          if [ "$user" != "postgres.$PRODUCTION_REF" ] || [[ "$user" == *"$STAGING_REF"* ]]; then
+            echo "::error::The pooler login isn't production's; refusing to continue."
+            exit 1
+          fi
+          if [[ "$host" != *.pooler.supabase.com ]] || [ -z "$db" ]; then
+            echo "::error::Unexpected pooler address from the Management API."
+            exit 1
+          fi
+          {
+            echo "PGHOST=$host"
+            echo "PGPORT=5432"
+            echo "PGUSER=$user"
+            echo "PGDATABASE=$db"
+            echo "PGSSLMODE=require"
+          } >>"$GITHUB_ENV"
+      # One psql session, one transaction: expected.sql opens it, checks-and-wipe.sql checks the
+      # migrations and table list and empties production, the dump loads with triggers off,
+      # verify.sql compares every count. Any error stops psql and nothing is committed.
+      - name: Replace production's data (one transaction)
+        env:
+          PGPASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          if [ "$DRY_RUN" = "true" ]; then finish=rollback; else finish=commit; fi
+          psql -X -q -v ON_ERROR_STOP=1 -o /dev/null \
+            -f dump/expected.sql \
+            -f scripts/copy-staging-to-production/checks-and-wipe.sql \
+            -f dump/data.sql \
+            -f scripts/copy-staging-to-production/verify.sql \
+            -c "$finish"
+          if [ "$finish" = rollback ]; then
+            echo "::notice::Dry run: every check passed and the transaction was rolled back. Production is unchanged."
+          else
+            echo "::notice::Committed: production now holds staging's data."
+          fi
+      - name: Production after the copy
+        if: ${{ !inputs.dry_run }}
+        env:
+          PGPASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # For the log only: the counts were already checked before the commit, and the cron jobs
+          # may have added rows since (period results, reminders in the Inbox).
+          psql -X -v ON_ERROR_STOP=1 -c "select 'profiles' t, count(*) from public.profiles
+            union all select 'habits', count(*) from public.habits
+            union all select 'check_ins', count(*) from public.check_ins
+            union all select 'groups', count(*) from public.groups
+            union all select 'auth.users', count(*) from auth.users
+            union all select 'auth.identities', count(*) from auth.identities"
+          psql -X -v ON_ERROR_STOP=1 -f scripts/backup-assert.sql
+      - name: Remove the dump
+        if: always()
+        run: rm -rf dump
