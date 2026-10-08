@@ -44,7 +44,13 @@ export default async function AuthErrorPage({
           Sign-in was cancelled or not allowed. Try again.
         </p>
       )}
-      {reason !== "denied" && (
+      {/* "unknown": the provider or our auth service failed (e.g. Google's code exchange), not the link. */}
+      {reason === "unknown" && (
+        <p className="text-sm text-muted-foreground">
+          Something went wrong while signing you in. Try again in a moment.
+        </p>
+      )}
+      {(reason === null || reason === "expired") && (
         <p className="text-sm text-muted-foreground">
           Links expire after an hour and must be opened in the same browser you requested them from.
         </p>

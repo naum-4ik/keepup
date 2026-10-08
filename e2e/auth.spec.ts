@@ -232,6 +232,13 @@ test("a broken sign-in link shows a helpful error", async ({ page }) => {
   await expect(page.getByText("same browser")).toBeVisible();
 });
 
+test("a sign-in that failed on the provider's side doesn't blame links", async ({ page }) => {
+  await page.goto("/auth/error?reason=unknown");
+  await expect(page.getByRole("heading", { name: "Sign-in didn't work" })).toBeVisible();
+  await expect(page.getByText("Something went wrong while signing you in")).toBeVisible();
+  await expect(page.getByText("Links expire")).toHaveCount(0);
+});
+
 test("Google sign-in denied or disallowed shows a helpful error", async ({ page }) => {
   await page.goto("/auth/error?reason=denied");
   await expect(page.getByText("cancelled")).toBeVisible();
