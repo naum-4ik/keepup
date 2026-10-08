@@ -39,12 +39,45 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+  # A push to main that only changes docs (README, docs/) needn't redeploy production: same rule as
+  # ci.yml's docs-only skip, including its exceptions for what the app is built from (docs/privacy-policy.md,
+  # docs/install/). Manual runs always deploy.
+  prod-changes:
+    if: github.event_name == 'push' && github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          files=$(git diff --name-only "$BEFORE" "$AFTER")
+          echo "$files"
+          # Built into the app: the /privacy page (docs/privacy-policy.md) and the /install pictures (docs/install/).
+          if [ -n "$files" ] && ! echo "$files" | grep -qE '^(docs/privacy-policy\.md|docs/install/)' && ! echo "$files" | grep -vqE '(\.md$|^docs/)'; then
+            echo "code=false" >> "$GITHUB_OUTPUT"; echo "::notice::Docs-only push to main: production is not redeployed."
+          else
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          fi
+
   # Database first: migrations, then the Edge Function, then the app that needs them. A failed step
   # stops the rest, so the app is never newer than its database.
   deploy-production:
+    needs: prod-changes
     if: >-
-      vars.PRODUCTION_READY == 'true' && (
-        (github.event_name == 'push' && github.ref_name == 'main') ||
+      always() && vars.PRODUCTION_READY == 'true' && (
+        (github.event_name == 'push' && github.ref_name == 'main' && needs.prod-changes.outputs.code == 'true') ||
         github.event_name == 'workflow_dispatch'
       )
     runs-on: ubuntu-latest
