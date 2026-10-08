@@ -4,8 +4,7 @@
 
 **Habits, together.** A warm, mobile-first habit tracker for one person, a family, and kids without a login.
 
-<!-- switch to https://keepuphabits.vercel.app at v1.0.0 -->
-**[Open Keepup](https://keepup-stage.vercel.app)** · **[Try the demo, no sign-up](https://keepup-stage.vercel.app)** (tap **Try the demo** on the first screen; the demo account and its data are deleted after 24 hours)
+**[Open Keepup](https://keepuphabits.vercel.app)** · **[Try the demo, no sign-up](https://keepuphabits.vercel.app)** (tap **Try the demo** on the first screen; the demo account and its data are deleted after 24 hours)
 
 [![CI](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml) ![Tests: 3081](https://img.shields.io/badge/tests-3081-brightgreen) [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
