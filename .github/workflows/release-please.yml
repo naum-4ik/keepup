@@ -89,13 +89,13 @@ jobs:
       - run: scripts/retry.sh npx supabase db push
       # send-push reads its secrets from Supabase (VAPID keys, webhook secret), never from the repo.
       - run: scripts/retry.sh npx supabase functions deploy send-push --project-ref "${{ secrets.PRODUCTION_PROJECT_REF }}"
-      # The keepuphabits Vercel project (not the staging one: its Production environment is
+      # The keepup-prod Vercel project (serves keepuphabits.vercel.app) (not the staging one: its Production environment is
       # staging). Built on Vercel like the git deploys, so system variables such as
       # VERCEL_PROJECT_PRODUCTION_URL (share-card links) and the Sensitive env values are there.
       # vercel.json's ignoreCommand can't skip it: the upload has no .git, and
       # scripts/vercel-ignore.sh builds whenever it can't diff. GITHUB_SHA gives the app its
       # version suffix (next.config.ts). The CLI isn't a dependency, so it's pinned here.
-      - name: Deploy the app to Vercel (keepuphabits)
+      - name: Deploy the app to Vercel (keepup-prod)
         if: ${{ !inputs.db_only }}
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -104,11 +104,11 @@ jobs:
         run: |
           set -euo pipefail
           # --prod on the wrong project would overwrite staging (or anything else): ask Vercel which
-          # project VERCEL_PROJECT_ID is, and deploy only if it's keepuphabits in this team.
+          # project VERCEL_PROJECT_ID is, and deploy only if it's keepup-prod in this team.
           name=$(curl -sSf -H "Authorization: Bearer $VERCEL_TOKEN" \
             "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID?teamId=$VERCEL_ORG_ID" | jq -r '.name')
-          if [ "$name" != "keepuphabits" ]; then
-            echo "::error::VERCEL_PROJECT_ID is project '$name', not keepuphabits. Refusing to deploy to production."
+          if [ "$name" != "keepup-prod" ]; then
+            echo "::error::VERCEL_PROJECT_ID is project '$name', not keepup-prod. Refusing to deploy to production."
             exit 1
           fi
           # supabase link wrote the project ref and version files here; they don't belong in the upload.
