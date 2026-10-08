@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Effective date:** 7 October 2026
+**Effective date:** 8 October 2026
 
 This policy explains what personal data Keepup ("the app", "we") processes, why, for how long, who we share it with, and the rights you have. It applies to the Keepup web app at its published address and to any installed version of it.
 
@@ -52,18 +52,19 @@ We process only the data the app needs to work.
 
 - An anonymous demo login with sample data and anything you add to it. It has no email address, and it is deleted after 24 hours (section 6).
 
-**Usage and error traces** (automatically, when you use the app)
+**Usage, events and error reports** (automatically, when you use the app)
 
-- For each request to our servers: your account ID and email address, the page or action, the addresses of the requests the app makes to the database (which contain the IDs of habits, children and groups), timings, error messages, your browser's user-agent string and the page you came from.
-- For each check-in: the habit's ID, title and category; the child's ID and nickname if it was for a child; whether it counted, was refused (and why) or failed; and the points it earned.
-- Passwords, sign-in codes, session tokens, cookies and keys are removed before anything is sent. These traces go to Grafana Labs (section 5) and are kept for 14 days.
+- **On our servers, for each request:** your account ID and email address, the page or action, the addresses of the requests the app makes to the database (which contain the IDs of habits, children and groups), timings, error messages, your browser's user-agent string and the page you came from.
+- **On our servers, for each action** (for example: creating, editing, archiving, finishing or deleting a habit; checking in or undoing a check-in; adding a child, a child's habit or a treat goal; setting a reminder; creating, joining or leaving a group; cheering, nudging or approving; exporting or resetting your data; deleting your account; signing out; starting the demo): an event with your account ID and email address and the details of that action. Depending on the action, the details are: a habit's ID, title, category and schedule; a child's ID and nickname; a group's ID and kind (never its name); a check-in's ID; the account ID of the person you nudged and the kind of nudge; whether you approved or declined; the reminder time; the number of stars in a treat goal; for a check-in, its status, whether the child tapped it and the points it earned; and whether the action worked, was refused (and why) or failed (with the error message).
+- **In your browser, on every Keepup page** (also before you sign in): the screens you open; the full address of each page (which can contain the IDs of habits, children and groups); errors in the page and the error, warning and info messages in the page's console, with their technical details; page speed measurements (Web Vitals, which name the part of the page involved, such as the button in the slowest tap) and the address and timing of each request the page makes; your browser's name and version, user-agent string, operating system, language, whether it's a phone, and the window size; and a random session ID (section 10). Once you are signed in, also your account ID, your email address (a demo login has none) and whether it is a demo login. Your browser sends these reports straight to Grafana Labs, so Grafana Labs also receives your IP address, as any website you connect to does.
+- We don't record what you type or a log of your taps and clicks. Passwords, sign-in codes, session tokens, invite-link tokens, cookies and keys are removed before anything is sent, on our servers and in your browser. All of this goes to Grafana Labs (section 5) and is kept for 14 days.
 
 **Technical data** (automatically, by our hosting providers)
 
 - IP address, browser and device information, timestamps and error details in server logs, and the session cookies needed to keep you signed in.
 - A sign-in history kept by our sign-in provider (Supabase Auth): sign-ups, sign-ins, sign-outs and password changes, with your account ID, email address and the time. It is deleted when you delete your account.
 
-We do **not** collect photos you take, precise location, contacts, health records from other apps, payment data, or advertising identifiers. We use no analytics or advertising services, and we don't track you on other sites.
+We do **not** collect photos you take, precise location, contacts, health records from other apps, payment data, or advertising identifiers. We use no advertising services, and no analytics services other than the usage reports to Grafana Labs described above. We don't track you on other sites.
 
 ## 3. Why we process it (purposes and legal bases)
 
@@ -71,7 +72,7 @@ We do **not** collect photos you take, precise location, contacts, health record
 - **Children's profiles.** Data: the child's profile data. Provided by, and processed on the instruction of, the parent or guardian as part of the service; see section 9.
 - **Push notifications and reminders.** Data: push device data and notification settings. Legal basis: consent (Art. 6(1)(a)). You turn notifications on, and can turn them off at any time.
 - **Sign-in emails** (confirming your address, resetting your password). Data: your email address. Legal basis: performance of a contract (Art. 6(1)(b)).
-- **Security, abuse prevention, keeping the service working, finding and fixing errors.** Data: technical data, usage and error traces. Legal basis: legitimate interests (Art. 6(1)(f)) in a secure, working service.
+- **Security, abuse prevention, keeping the service working, finding and fixing errors, and learning which screens and features are used and where people get stuck, to improve the app.** Data: technical data; usage, events and error reports. Legal basis: legitimate interests (Art. 6(1)(f)) in a secure, working service that gets better.
 - **Backups for disaster recovery.** Data: all app data, encrypted. Legal basis: legitimate interests (Art. 6(1)(f)) in not losing your data.
 - **Answering your requests.** Data: your messages and the data needed to act on them. Legal basis: legal obligation (Art. 6(1)(c)) and legitimate interests.
 
@@ -83,7 +84,7 @@ We do not sell personal data, do not use it for advertising, and do not make aut
 - **Group data** (group habits, check-ins on them, approvals, cheers, nudges, your display name and avatar) is visible to the members of that group.
 - **Children's profiles** are visible to the adult members of the group the child belongs to.
 - Access is enforced in the database itself (row-level security), not only by the app's screens.
-- The operator (section 1) can see the usage and error traces described in section 2, to keep Keepup working and fix problems.
+- The operator (section 1) can see the usage, events and error reports described in section 2, to keep Keepup working, fix problems and improve it.
 
 ## 5. Service providers (processors) and international transfers
 
@@ -92,7 +93,7 @@ We use these providers to run Keepup. They process data only on our behalf, unde
 - **Supabase:** database, sign-in, real-time updates, scheduled jobs. Where: EU (Frankfurt, Germany).
 - **Supabase Edge Functions:** sending push notifications. Where: Supabase's edge network, which may run outside the EU.
 - **Vercel:** hosting the web app and serving pages. Where: EU (Frankfurt) for the app's server functions; its global network may route and cache requests worldwide.
-- **Grafana Labs (Grafana Cloud):** receiving and storing the usage and error traces described in section 2: your account ID and email address, habit titles, children's nicknames and IDs, and what you did in the app, with passwords and keys removed. Kept for 14 days. Where: EU (Germany).
+- **Grafana Labs (Grafana Cloud):** receiving and storing the usage, events and error reports described in section 2. From our servers: your account ID and email address, habit titles, children's nicknames and IDs, and what you did in the app. From your browser: the screens you open, page errors, speed measurements, browser and device details, your IP address and, once you are signed in, your account ID and email address. Passwords and keys are removed. Kept for 14 days. Where: EU (Germany).
 - **Google:** "Sign in with Google" (only if you choose it), and sending our sign-in emails (address confirmation and password reset) through Gmail. Where: global.
 - **GitHub:** running the nightly backup job, and storing the **encrypted** database backups in a private repository. Where: United States.
 - **Browser push services** (for example Apple, Google, Mozilla): delivering push notifications to your device; the message content is encrypted end to end. Where: global.
@@ -108,12 +109,12 @@ Where data is transferred outside the EU/EEA (for example to the United States),
 - **Push devices:** until you remove the device in Settings or sign out on it, until the push service tells us the device is gone, or until you delete your account.
 - **Group invite links:** they work for 7 days or until revoked. The invite record stays with the group until the group is deleted.
 - **Demo logins ("Try the demo"):** deleted automatically, with everything in them, after 24 hours.
-- **Usage and error traces (Grafana Labs):** 14 days.
+- **Usage, events and error reports (Grafana Labs):** 14 days.
 - **Encrypted backups:** 30 days on a rolling basis; deleted data disappears from backups within 30 days.
 - **Server logs held by our providers:** according to the provider's retention, typically days to a few weeks.
 - **Sign-in history (Supabase Auth):** until you delete your account.
 
-When you delete your account, your personal data is deleted from the live database immediately, your sign-in history included, and from backups within 30 days. Usage and error traces already sent expire after 14 days. Group habits you created stay with the group, without your name; your own check-ins on them are deleted. A group in which you are the only member is deleted, together with its children's profiles. If you were the last admin of a group with other members, admin rights pass to the longest-standing member.
+When you delete your account, your personal data is deleted from the live database immediately, your sign-in history included, and from backups within 30 days. Usage, events and error reports already sent expire after 14 days. Group habits you created stay with the group, without your name; your own check-ins on them are deleted. A group in which you are the only member is deleted, together with its children's profiles. If you were the last admin of a group with other members, admin rights pass to the longest-standing member.
 
 ## 7. Your rights and controls
 
@@ -142,7 +143,7 @@ To exercise a right that the app doesn't cover directly, write to naumchas00@gma
 - Encryption in transit (HTTPS) everywhere.
 - Access rules enforced in the database (row-level security), with automated tests.
 - Only the minimum keys in the browser; administrative keys never leave the server.
-- Passwords, sign-in codes, session tokens and keys are removed from usage and error traces before they leave our servers, with an automated test.
+- Passwords, sign-in codes, session tokens, invite-link tokens and keys are removed from usage, events and error reports before they leave our servers or your browser, with automated tests.
 - Encrypted backups.
 
 No system is perfectly secure. If a personal data breach is likely to put you at risk, we will inform you and the competent authority as the law requires.
@@ -152,7 +153,7 @@ No system is perfectly secure. If a personal data breach is likely to put you at
 - **Own accounts:** Keepup accounts are for adults aged **18 or older**.
 - **Anyone under 18** can appear in Keepup only as a **child profile** added by a parent or legal guardian who is an admin of a group. By adding a child, the parent or guardian confirms that they have parental responsibility and agrees to the processing described here for that child.
 - **What a child profile contains:** a **nickname and an avatar emoji** (never a photo, full name, birth date or contact details), plus the child's habits, check-ins, stars, garden and treat goals.
-- **Who sees it:** only the adult members of the child's group. Children don't have their own login, can't message anyone, and can't be found by other users. Like other app data, a child's data is processed by our service providers (section 5); the usage and error traces include the child's nickname for each check-in made for the child.
+- **Who sees it:** only the adult members of the child's group. Children don't have their own login, can't message anyone, and can't be found by other users. Like other app data, a child's data is processed by our service providers (section 5); the usage reports include the child's nickname when the child is added (with the habits added at the same time) and for each check-in made for the child, and the kid view's screens are reported like any other, with the child's ID in the page address.
 - **Control:** any adult member of the child's group can view, export or correct the child's profile at any time from the child's page; a group admin can reset or delete it; anyone can also ask us by contacting us.
 - **Accidental accounts:** if we learn that an account belongs to someone under 18, we will delete it or, with a parent's agreement, turn it into a child profile.
 
@@ -163,11 +164,14 @@ No system is perfectly secure. If a personal data breach is likely to put you at
 - **Offline check-ins:** a check-in you make without a connection is kept on your device (in the browser's IndexedDB) until it reaches our servers, then removed from the device.
 - **Saved pages:** the app's offline page, this policy, the app's scripts, and your last Today page and kid view are kept in the browser's cache so they open without a connection.
 - When you sign out, waiting check-ins are sent first (if some can't be sent, you are asked before they are dropped), then the saved pages and waiting check-ins are removed from the device. Saved pages are also removed when a different person signs in on the same device.
+- **Error and speed reports:** a random session ID, kept in the browser's session storage (not a cookie) so that the reports from one visit can be grouped together. It is removed when you close the tab.
 - We use no analytics, advertising or tracking cookies, so no consent banner is needed for them.
 
 ## 11. Changes to this policy
 
 If we change this policy in a meaningful way, we will say so in the app's What's new before the change takes effect. The effective date at the top always shows the current version.
+
+- **8 October 2026:** added the events the app records for each action and the error and speed reports your browser sends (section 2), and what Grafana Labs receives from both (section 5).
 
 ## 12. Additional information for users in Israel
 

@@ -26,10 +26,20 @@ describe("privacy policy", () => {
     expect(policy).toContain("62 days"); // recap_runs purge
     expect(policy).toContain("24 hours"); // demo cleanup
     expect(policy).toContain("30 days"); // encrypted backups
-    expect(policy).toContain("14 days"); // Grafana Cloud traces and events
+    expect(policy).toContain("14 days"); // Grafana Cloud: traces, events and browser reports
     expect(policy).toMatch(/no analytics/i);
     expect(policy).toContain("**Sign-in history (Supabase Auth):** until you delete your account"); // delete_account_impl purges auth.audit_log_entries
     expect(policy).not.toContain("except the sign-in history");
+  });
+
+  it("tells what the browser reports and what every action records (components/observability/faro.tsx, lib/log.ts track)", () => {
+    expect(policy).toMatch(/In your browser, on every Keepup page/);
+    expect(policy).toMatch(/errors in the page/);
+    expect(policy).toMatch(/page speed measurements \(Web Vitals/);
+    expect(policy).toMatch(/Grafana Labs also receives your IP address/);
+    expect(policy).toMatch(/session storage \(not a cookie\)/); // Faro's session ID
+    expect(policy).toMatch(/On our servers, for each action/);
+    expect(policy).not.toMatch(/no analytics or advertising services/i);
   });
 
   it("names every service provider", () => {
