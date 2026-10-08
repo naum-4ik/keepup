@@ -105,8 +105,8 @@ Because a PR preview never runs its own migrations against staging, and staging 
 
 Configured by hand in the Supabase dashboard for the `keepup-staging` project (not managed by migrations):
 
-- Site URL: `https://keepup-murex.vercel.app`
-- Redirect URLs: `https://keepup-murex.vercel.app/auth/callback`, `https://keepup-*-naum4ik-s-org.vercel.app/**`
+- Site URL: `https://keepup-stage.vercel.app`
+- Redirect URLs: `https://keepup-stage.vercel.app/auth/callback`, `https://keepup-*-naum4ik-s-org.vercel.app/**`
 - Providers: email + password and Google (the Google OAuth client is in Testing mode)
 - Emails (confirm address, reset password): Keepup's templates in `supabase/templates/`, sent through a Gmail SMTP sender set in the dashboard; their links land on `/auth/confirm` with a `token_hash`
 
