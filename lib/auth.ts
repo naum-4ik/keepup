@@ -35,6 +35,10 @@ export const getProfile = cache(async () => {
   if (error?.message.includes("avatar_")) {
     ({ data, error } = await supabase.from("profiles").select(BASE).eq("id", userId).single<Profile>());
   }
+  // PostgREST's "no rows" for .single(): the session outlived its account (wiped, or deleted on another
+  // device). Cookies can't change while rendering, so a route handler signs the stale session out.
+  // Any other error is a real outage and keeps throwing.
+  if (error?.code === "PGRST116") redirect("/auth/account-gone");
   if (error || !data) throw new Error(`Profile missing for ${userId}: ${error?.message ?? "no row"}`);
   return { supabase, userId, who, profile: data };
 });

@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { expect, test } from "@playwright/test";
 import { TEST_PASSWORD, chooseTimezone, completeOnboarding, signIn, signUp, signUpAndOnboard, uniqueEmail } from "./helpers/auth";
 
@@ -320,4 +321,39 @@ test("onboarding links the privacy policy, and it opens before onboarding is don
   await page.getByRole("link", { name: "Privacy Policy" }).click();
   await expect(page).toHaveURL(/\/privacy$/);
   await expect(page.getByRole("heading", { name: "Privacy Policy", level: 1 })).toBeVisible();
+});
+
+function deleteAuthUser(email: string): void {
+  const lower = email.toLowerCase();
+  if (!/^[a-z0-9.+-]+@example\.com$/.test(lower)) throw new Error(`Not a test account: ${email}`);
+  execSync(`docker exec -i supabase_db_keepup psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q`, {
+    input: `delete from auth.users where email = '${lower}';`,
+    stdio: ["pipe", "ignore", "inherit"],
+  });
+}
+
+test("a session for a deleted account signs out to /login instead of erroring", async ({ page }) => {
+  const email = uniqueEmail();
+  await signUp(page, email);
+  await completeOnboarding(page);
+
+  deleteAuthUser(email); // the browser still holds a valid JWT
+
+  await page.goto("/today");
+  await expect(page).toHaveURL(/\/login/);
+  await expect(page.getByText("Something went wrong")).toHaveCount(0);
+
+  // Signed out for real: a later visit still goes to /login, and the same email can sign up again.
+  await page.goto("/today");
+  await expect(page).toHaveURL(/\/login/);
+  await signUp(page, email);
+  await completeOnboarding(page);
+});
+
+test("/auth/account-gone keeps a signed-in user with a profile signed in", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await page.goto("/auth/account-gone");
+  await expect(page).toHaveURL(/\/today$/);
+  await page.goto("/profile");
+  await expect(page).toHaveURL(/\/profile$/);
 });
