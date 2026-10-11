@@ -6,6 +6,7 @@ import { isValidEmail } from "@/lib/email";
 import { CONFIRM_EMAIL_SENT, RESET_LINK_SENT, RESET_LINK_STALE, credentialsError, isFreshRecovery, newPasswordError, passwordAuthMessage } from "@/lib/password";
 import { safeNextPath } from "@/lib/paths";
 import { requestOrigin } from "@/lib/request-origin";
+import { whereFrom } from "@/lib/geo";
 import { track } from "@/lib/log";
 import { userAttributes } from "@/lib/telemetry";
 import type { LoginState } from "./state";
@@ -37,7 +38,7 @@ export async function submitCredentials(_prev: LoginState, formData: FormData): 
     return { status: "error", message: passwordAuthMessage({}), email, mode };
   }
 
-  track(mode === "signup" ? "signed_up" : "signed_in", userAttributes({ sub: data.session.user.id, email: data.session.user.email }), { "auth.method": "password" });
+  track(mode === "signup" ? "signed_up" : "signed_in", userAttributes({ sub: data.session.user.id, email: data.session.user.email }), { "auth.method": "password", ...(await whereFrom()) });
   redirect(safeNextPath(String(formData.get("next") ?? "")));
 }
 

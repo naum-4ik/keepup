@@ -16,7 +16,7 @@
   "timezone": "browser",
   "schemaVersion": 39,
   "time": {
-    "from": "now-7d",
+    "from": "now-2d",
     "to": "now"
   },
   "refresh": "5m",
@@ -82,6 +82,196 @@
   },
   "panels": [
     {
+      "id": 39,
+      "type": "row",
+      "title": "What happened (pick the time range, e.g. the weekend)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
+      "id": 40,
+      "type": "logs",
+      "title": "New arrivals: sign-ups and demo visits",
+      "description": "Someone new: a sign-up or a demo start, with where it came from (from Vercel: IP, city, country). Recorded from 11 October 2026.",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "{service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=~\"keepup.(signed_up|demo_started)\" | label_format person=`{{ if .user_email }}{{ .user_email }}{{ else }}demo \u00b7 {{ trunc 8 .user_id }}{{ end }}` | line_format \"{{ if eq .event_name \\\"keepup.demo_started\\\" }}tried the demo{{ else }}signed up ({{ .auth_method }}){{ end }} \u00b7 {{.person}} \u00b7 {{ if .geo_locality_name }}{{ .geo_locality_name }}, {{ end }}{{ .geo_country_iso_code }} \u00b7 IP {{ .client_address }}\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      }
+    },
+    {
+      "id": 41,
+      "type": "logs",
+      "title": "Sign-ins, with location",
+      "description": "Each sign-in and where it came from.",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "{service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=\"keepup.signed_in\" | label_format person=`{{ if .user_email }}{{ .user_email }}{{ else }}demo \u00b7 {{ trunc 8 .user_id }}{{ end }}` | line_format \"{{.person}} \u00b7 {{.auth_method}} \u00b7 {{ if .geo_locality_name }}{{ .geo_locality_name }}, {{ end }}{{ .geo_country_iso_code }} \u00b7 IP {{ .client_address }}\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      }
+    },
+    {
+      "id": 28,
+      "type": "logs",
+      "title": "Every action (timeline)",
+      "description": "Every product event in the time range, newest first: pick the range (e.g. last weekend) to see what happened and when.",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "{service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=~\"keepup[.].*\" | event_name!=\"keepup.error\" | label_format person=`{{ if .user_email }}{{ .user_email }}{{ else }}demo \u00b7 {{ trunc 8 .user_id }}{{ end }}` | line_format \"{{.deployment_environment_name}} \u00b7 {{.person}} \u00b7 {{.event_name}} {{.habit_title}} {{.child_nickname}} {{.check_in_outcome}}\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      }
+    },
+    {
+      "id": 42,
+      "type": "logs",
+      "title": "Browser visits, also before signing in",
+      "description": "Every browser session (Faro), signed in or not: someone who opened the site but never signed up shows here as 'not signed in'.",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "{service_name=\"Keepup\", kind=\"event\", deployment_environment_name=~\"$env\"} |= \"event_name=session_start\" | logfmt | label_format who=`{{ if .user_email }}{{ .user_email }}{{ else if .user_id }}demo \u00b7 {{ trunc 8 .user_id }}{{ else }}not signed in{{ end }}` | line_format \"{{.who}} \u00b7 opened {{.page_url}} \u00b7 {{.browser_name}} on {{.os_name}}{{ if eq .browser_mobile \\\"true\\\" }} (phone){{ end }}\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true
+      }
+    },
+    {
+      "id": 43,
+      "type": "table",
+      "title": "Arrivals by country",
+      "description": "Sign-ups, demo starts and sign-ins in the range, by country and event.",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "sum by (geo_country_iso_code, event_name) (count_over_time({service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=~\"keepup.(signed_up|demo_started|signed_in)\" | geo_country_iso_code!=\"\" [$__range]))",
+          "instant": true,
+          "range": false,
+          "queryType": "instant",
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "geo_country_iso_code": "Country",
+              "event_name": "Event",
+              "Value #A": "Count"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
       "id": 1,
       "type": "row",
       "title": "People",
@@ -90,7 +280,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 34
       },
       "panels": []
     },
@@ -107,7 +297,7 @@
         "h": 4,
         "w": 4,
         "x": 0,
-        "y": 1
+        "y": 35
       },
       "targets": [
         {
@@ -165,7 +355,7 @@
         "h": 4,
         "w": 4,
         "x": 4,
-        "y": 1
+        "y": 35
       },
       "targets": [
         {
@@ -223,7 +413,7 @@
         "h": 4,
         "w": 4,
         "x": 8,
-        "y": 1
+        "y": 35
       },
       "targets": [
         {
@@ -281,7 +471,7 @@
         "h": 4,
         "w": 4,
         "x": 12,
-        "y": 1
+        "y": 35
       },
       "targets": [
         {
@@ -339,7 +529,7 @@
         "h": 4,
         "w": 4,
         "x": 16,
-        "y": 1
+        "y": 35
       },
       "targets": [
         {
@@ -397,7 +587,7 @@
         "h": 4,
         "w": 4,
         "x": 20,
-        "y": 1
+        "y": 35
       },
       "targets": [
         {
@@ -446,7 +636,7 @@
       "id": 8,
       "type": "table",
       "title": "Who: activity per person",
-      "description": "Product actions per person in the range (a demo login has no email and isn't listed).",
+      "description": "Product actions per person in the range. Demo visitors have no email: 'demo \u00b7 ' and the start of their user id.",
       "datasource": {
         "type": "loki",
         "uid": "${DS_LOKI}"
@@ -455,7 +645,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 5
+        "y": 39
       },
       "targets": [
         {
@@ -464,7 +654,7 @@
             "type": "loki",
             "uid": "${DS_LOKI}"
           },
-          "expr": "sum by (user_email, deployment_environment_name) (count_over_time({service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=~\"keepup[.].*\" | event_name!=\"keepup.error\" | user_email!=\"\" [$__range]))",
+          "expr": "sum by (person, deployment_environment_name) (count_over_time({service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=~\"keepup[.].*\" | event_name!=\"keepup.error\" | user_id!=\"\" | label_format person=`{{ if .user_email }}{{ .user_email }}{{ else }}demo \u00b7 {{ trunc 8 .user_id }}{{ end }}` [$__range]))",
           "legendFormat": "",
           "instant": true,
           "range": false,
@@ -480,7 +670,7 @@
               "Time": true
             },
             "renameByName": {
-              "user_email": "Person",
+              "person": "Person",
               "deployment_environment_name": "Environment",
               "Value #A": "Count"
             }
@@ -516,7 +706,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 5
+        "y": 39
       },
       "targets": [
         {
@@ -565,7 +755,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 13
+        "y": 47
       },
       "panels": []
     },
@@ -582,7 +772,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 14
+        "y": 48
       },
       "targets": [
         {
@@ -641,7 +831,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 14
+        "y": 48
       },
       "targets": [
         {
@@ -700,7 +890,7 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 14
+        "y": 48
       },
       "targets": [
         {
@@ -759,7 +949,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 14
+        "y": 48
       },
       "targets": [
         {
@@ -818,7 +1008,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 18
+        "y": 52
       },
       "interval": "1h",
       "targets": [
@@ -871,7 +1061,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 18
+        "y": 52
       },
       "targets": [
         {
@@ -958,7 +1148,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 26
+        "y": 60
       },
       "targets": [
         {
@@ -1033,7 +1223,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 26
+        "y": 60
       },
       "targets": [
         {
@@ -1086,7 +1276,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 26
+        "y": 60
       },
       "targets": [
         {
@@ -1136,7 +1326,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 34
+        "y": 68
       },
       "panels": []
     },
@@ -1153,7 +1343,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 35
+        "y": 69
       },
       "targets": [
         {
@@ -1206,7 +1396,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 35
+        "y": 69
       },
       "targets": [
         {
@@ -1259,7 +1449,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 35
+        "y": 69
       },
       "targets": [
         {
@@ -1312,7 +1502,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 43
+        "y": 77
       },
       "targets": [
         {
@@ -1321,7 +1511,7 @@
             "type": "loki",
             "uid": "${DS_LOKI}"
           },
-          "expr": "sum by (user_email, browser_name, os_name, browser_mobile) (count_over_time({service_name=\"Keepup\", kind=\"event\", deployment_environment_name=~\"$env\"} |= \"event_name=view_changed\" | logfmt | event_name=\"view_changed\" | user_email!=\"\" [$__range]))",
+          "expr": "sum by (person, browser_name, os_name, browser_mobile) (count_over_time({service_name=\"Keepup\", kind=\"event\", deployment_environment_name=~\"$env\"} |= \"event_name=view_changed\" | logfmt | event_name=\"view_changed\" | user_id!=\"\" | label_format person=`{{ if .user_email }}{{ .user_email }}{{ else }}demo \u00b7 {{ trunc 8 .user_id }}{{ end }}` [$__range]))",
           "legendFormat": "",
           "instant": true,
           "range": false,
@@ -1337,7 +1527,7 @@
               "Time": true
             },
             "renameByName": {
-              "user_email": "Person",
+              "person": "Person",
               "browser_name": "Browser",
               "os_name": "OS",
               "browser_mobile": "Mobile",
@@ -1371,7 +1561,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 50
+        "y": 84
       },
       "panels": []
     },
@@ -1388,7 +1578,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 51
+        "y": 85
       },
       "targets": [
         {
@@ -1442,7 +1632,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 51
+        "y": 85
       },
       "targets": [
         {
@@ -1492,7 +1682,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 61
+        "y": 95
       },
       "panels": []
     },
@@ -1509,7 +1699,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 62
+        "y": 96
       },
       "targets": [
         {
@@ -1563,7 +1753,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 62
+        "y": 96
       },
       "targets": [
         {
@@ -1616,7 +1806,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 62
+        "y": 96
       },
       "targets": [
         {
@@ -1669,7 +1859,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 70
+        "y": 104
       },
       "targets": [
         {
@@ -1723,7 +1913,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 70
+        "y": 104
       },
       "targets": [
         {
@@ -1773,7 +1963,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 78
+        "y": 112
       },
       "panels": []
     },
@@ -1790,7 +1980,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 79
+        "y": 113
       },
       "targets": [
         {
@@ -1844,7 +2034,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 79
+        "y": 113
       },
       "targets": [
         {
@@ -1883,51 +2073,6 @@
           }
         },
         "overrides": []
-      }
-    },
-    {
-      "id": 27,
-      "type": "row",
-      "title": "Live feed",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 89
-      },
-      "panels": []
-    },
-    {
-      "id": 28,
-      "type": "logs",
-      "title": "Latest actions",
-      "description": "Every product event, newest first.",
-      "datasource": {
-        "type": "loki",
-        "uid": "${DS_LOKI}"
-      },
-      "gridPos": {
-        "h": 12,
-        "w": 24,
-        "x": 0,
-        "y": 90
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "loki",
-            "uid": "${DS_LOKI}"
-          },
-          "expr": "{service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=~\"keepup[.].*\" | event_name!=\"keepup.error\" | line_format \"{{.deployment_environment_name}} \u00b7 {{or .user_email .user_id}} \u00b7 {{.event_name}} {{.habit_title}} {{.child_nickname}} {{.check_in_outcome}}\""
-        }
-      ],
-      "options": {
-        "showTime": true,
-        "wrapLogMessage": true,
-        "sortOrder": "Descending",
-        "enableLogDetails": true
       }
     }
   ]
