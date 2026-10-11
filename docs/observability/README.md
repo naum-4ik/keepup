@@ -54,6 +54,7 @@ Lessons: `@vercel/otel` 2.1.3 reports 401 and 404 as success, so an app can't no
 - **Markers:** staging and production deploys and releases from `keepup-ci` events (merges are off by default).
 
 [`dashboards/keepup-product.json`](dashboards/keepup-product.json): production by default (staging is mostly tests).
+- **What happened** (top; default the last 2 days, so a Monday look covers the weekend): new arrivals (sign-ups and demo starts) and sign-ins with IP, city and country (`lib/geo.ts`, from Vercel's `x-vercel-ip-*` and `x-real-ip` headers), every action as a timeline, browser visits also before sign-in, arrivals by country. Demo visitors show as `demo · ` and the start of their user id.
 - **People:** active people, visits, sign-ins and sign-ups (by method), demo visits, check-ins; activity per person.
 - **Growth and engagement:** daily active people, the new-user funnel, check-ins per active person, undo rate, cheers and nudges per person, reminders on, own vs a child's check-ins, private vs group habits, browser errors by screen.
 - **Devices** and **Screens** (Faro): browsers, systems, phone or computer, who uses what, most viewed screens.
