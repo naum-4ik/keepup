@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.1](https://github.com/naum-4ik/keepup/compare/v1.3.0...v1.3.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* **observability:** heartbeat tile; error rate and p95 read "No traffic" instead of a green zero when blind ([#214](https://github.com/naum-4ik/keepup/issues/214))
+* **observability:** name the environment on the Server errors tile ([#215](https://github.com/naum-4ik/keepup/issues/215))
+
+
+### Documentation
+
+* **observability:** postmortem 001 and the alerts ([#213](https://github.com/naum-4ik/keepup/issues/213), [#217](https://github.com/naum-4ik/keepup/issues/217)), dashboard screenshots ([#218](https://github.com/naum-4ik/keepup/issues/218)), how to change a production variable ([#219](https://github.com/naum-4ik/keepup/issues/219))
+
 ## [1.3.0](https://github.com/naum-4ik/keepup/compare/v1.2.0...v1.3.0) (2026-10-12)
 
 
