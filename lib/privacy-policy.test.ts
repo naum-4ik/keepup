@@ -27,6 +27,7 @@ describe("privacy policy", () => {
     expect(policy).toContain("24 hours"); // demo cleanup
     expect(policy).toContain("30 days"); // encrypted backups
     expect(policy).toContain("14 days"); // Grafana Cloud: traces, events and browser reports
+    expect(policy).toContain("**Email alerts about a sign-up or demo start:** in our mailbox (Gmail) for up to 90 days"); // Grafana alert "Someone new arrived" (docs/observability/README.md)
     expect(policy).toMatch(/no analytics/i);
     expect(policy).toContain("**Sign-in history (Supabase Auth):** until you delete your account"); // delete_account_impl purges auth.audit_log_entries
     expect(policy).not.toContain("except the sign-in history");

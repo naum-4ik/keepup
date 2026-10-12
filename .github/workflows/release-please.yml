@@ -87,9 +87,6 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
-    env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
     steps:
       # Manual runs: db_only from develop (setup, before v1) or main; a full deploy from main only.
       - name: A manual run must come from develop or main
@@ -116,12 +113,26 @@ jobs:
       # Each Supabase call is tried up to 3 times, 10 s apart (scripts/retry.sh), as in the staging
       # deploy: link only writes local config, db push applies only the migrations not yet applied
       # (each in its own transaction), and a function deploy replaces the function.
+      # The Supabase token (it controls every project on the account) and the DB password go only to
+      # the steps that call Supabase, never to npm ci, where any package's install script could read them.
       - run: scripts/retry.sh npx supabase link --project-ref "${{ secrets.PRODUCTION_PROJECT_REF }}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
       # Lists the migrations about to be applied, in the log, before anything changes.
       - run: scripts/retry.sh npx supabase db push --dry-run
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
       - run: scripts/retry.sh npx supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
       # send-push reads its secrets from Supabase (VAPID keys, webhook secret), never from the repo.
       - run: scripts/retry.sh npx supabase functions deploy send-push --project-ref "${{ secrets.PRODUCTION_PROJECT_REF }}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
       # The keepup-prod Vercel project (serves keepuphabits.vercel.app) (not the staging one: its Production environment is
       # staging). Built on Vercel like the git deploys, so system variables such as
       # VERCEL_PROJECT_PRODUCTION_URL (share-card links) and the Sensitive env values are there.
@@ -147,7 +158,7 @@ jobs:
           fi
           # supabase link wrote the project ref and version files here; they don't belong in the upload.
           rm -rf supabase/.temp
-          npx --yes vercel@62.7.0 deploy --prod --yes --token "$VERCEL_TOKEN" --build-env GITHUB_SHA="$GITHUB_SHA"
+          npx --yes vercel@62.7.0 deploy --prod --yes --build-env GITHUB_SHA="$GITHUB_SHA"
       # The deploy marker on the Grafana dashboards (scripts/change-event.sh, as change-events.yml does for
       # staging, whose deploys Vercel reports itself). It runs after a failed deploy too, and a refused
       # event never fails the release.
