@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.3.1](https://github.com/naum-4ik/keepup/compare/v1.3.0...v1.3.1) (2026-10-12)
+
+
+### Features
+
+* **observability:** heartbeat tile, no green zero when blind ([9cf665c](https://github.com/naum-4ik/keepup/commit/9cf665c744558c90d34210ad0311a60b0016de12))
+* **observability:** heartbeat tile, no green zero when blind ([b4866b0](https://github.com/naum-4ik/keepup/commit/b4866b0a32f67f4cca784f9bef1b6e41823668ec))
+
+
+### Bug Fixes
+
+* **observability:** name the environment on the Server errors tile ([389ab50](https://github.com/naum-4ik/keepup/commit/389ab50b3bd1a401a2045fe66bb51306796934ff))
+* **observability:** name the environment on the Server errors tile ([3c308c2](https://github.com/naum-4ik/keepup/commit/3c308c2ea823ec96625b241ffc0bdadef13d9a8e))
+
+
+### Documentation
+
+* **observability:** how to change a production variable ([#219](https://github.com/naum-4ik/keepup/issues/219)) ([fa22f93](https://github.com/naum-4ik/keepup/commit/fa22f9385d9acb6fd8d478f66694c6415437a39d))
+
 ## [1.3.0](https://github.com/naum-4ik/keepup/compare/v1.2.0...v1.3.0) (2026-10-12)
 
 
