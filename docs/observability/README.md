@@ -57,12 +57,16 @@ Grafana-managed rules in the `Keepup` folder, emailed to the owner:
 The uptime check is also the heartbeat: it keeps production traffic above zero, so "silent" means broken, not idle.
 
 ## Dashboards
+![Keepup · Infra: RED per environment, the production heartbeat, and both Supabase databases side by side](screenshots/infra.png)
+
 [`dashboards/keepup-infra.json`](dashboards/keepup-infra.json) (Grafana → Dashboards → Import; pick the Prometheus and Loki data sources). Staging and production side by side, no filter needed (an Environment dropdown narrows it):
 - **Now (RED):** requests per minute, error rate, p95 response time and server errors, one value per environment, and a production **Heartbeat** (spans in the last 30 minutes, red `SILENT` at 0). Error rate and p95 show "No traffic" instead of a green 0 when nothing arrives ([postmortem 001](postmortems/001-production-telemetry-silent.md)).
 - **Database server:** CPU (busy ÷ total), memory, the `/data` disk, database size against the free tier's 500 MB, connections and cache hit, from Supabase's metrics endpoint (Grafana's Supabase integration, scrape jobs `supabase_staging` and `supabase_production`).
 - **Per page** and **database calls:** rate, errors and p95 per route or PostgREST call, from Grafana's span metrics (`traces_spanmetrics_*`). Span names are short on purpose (`fetch GET /rest/v1/check_ins`): one series per name.
 - **Latest errors:** `keepup.error` lines, each linked to its trace.
 - **Markers:** staging and production deploys and releases from `keepup-ci` events (merges are off by default).
+
+![Keepup · Product: growth and engagement, devices (counts only; the tables with names, emails and IPs are left out)](screenshots/product.png)
 
 [`dashboards/keepup-product.json`](dashboards/keepup-product.json): production by default (staging is mostly tests).
 - **What happened** (top; default the last 2 days, so a Monday look covers the weekend): new arrivals (sign-ups and demo starts) and sign-ins with IP, city and country (`lib/geo.ts`, from Vercel's `x-vercel-ip-*` and `x-real-ip` headers), every action as a timeline, browser visits also before sign-in, arrivals by country. Demo visitors show as `demo · ` and the start of their user id.
