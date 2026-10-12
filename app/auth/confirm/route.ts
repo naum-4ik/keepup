@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { authErrorReason } from "@/lib/auth-errors";
 import { safeNextPath } from "@/lib/paths";
 
-const OTP_TYPES = new Set<EmailOtpType>(["signup", "recovery", "email"]);
+const OTP_TYPES = new Set<EmailOtpType>(["signup", "recovery", "email", "email_change", "invite"]);
 
 function isOtpType(value: string | null): value is EmailOtpType {
   return value !== null && OTP_TYPES.has(value);

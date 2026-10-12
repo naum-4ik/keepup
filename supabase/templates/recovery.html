@@ -1,5 +1,40 @@
-<h2>Reset your Keepup password</h2>
-<p>Someone (we hope you) asked to reset the password for this email.</p>
-<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth/new-password">Choose a new password</a></p>
-<p>The link works for an hour. If you didn't ask, ignore this email: your password stays the same.</p>
-<p>Keepup</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>Choose a new password</title>
+<style>
+  @media (prefers-color-scheme: dark) {
+    .bg { background-color: #1F1915 !important; }
+    .card { background-color: #33291F !important; }
+    .fg { color: #F5EDE4 !important; }
+    .muted { color: #B8A596 !important; }
+    .accent { color: #F0A07F !important; }
+    .btn { background-color: #F0A07F !important; }
+    .btn a { color: #2A221C !important; }
+    .code { background-color: #1F1915 !important; color: #F5EDE4 !important; }
+  }
+</style>
+</head>
+<body class="bg" style="margin:0;padding:0;background-color:#FFF8F0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="bg" style="background-color:#FFF8F0;">
+<tr><td align="center" style="padding:32px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;">
+<tr><td class="fg" style="padding:0 8px 20px 8px;font-family:Nunito,'Segoe UI',Helvetica,Arial,sans-serif;font-size:28px;font-weight:800;color:#3D2C22;">Keep<span class="accent" style="color:#B84F33;">up</span></td></tr>
+<tr><td class="card" style="background-color:#F3EADF;border-radius:16px;padding:28px 24px;font-family:Nunito,'Segoe UI',Helvetica,Arial,sans-serif;">
+<h1 class="fg" style="margin:0 0 12px 0;font-size:22px;line-height:28px;font-weight:700;color:#3D2C22;">Choose a new password</h1>
+<p class="fg" style="margin:0 0 12px 0;font-size:16px;line-height:24px;color:#3D2C22;">Someone (we hope you) asked to reset the password for this email.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 16px 0;"><tr><td class="btn" bgcolor="#B84F33" style="background-color:#B84F33;border-radius:12px;"><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth/new-password" style="display:inline-block;padding:14px 24px;font-family:Nunito,'Segoe UI',Helvetica,Arial,sans-serif;font-size:16px;font-weight:700;color:#FFFFFF;text-decoration:none;">Choose a new password</a></td></tr></table>
+<p class="muted" style="margin:0 0 4px 0;font-size:13px;line-height:20px;color:#7A6556;">Button not working? Copy this link into your browser:</p>
+<p class="muted" style="margin:0 0 16px 0;font-size:13px;line-height:20px;color:#7A6556;word-break:break-all;">{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth/new-password</p>
+<p class="muted" style="margin:0;font-size:14px;line-height:20px;color:#7A6556;">The link works for an hour. If you ignore this email, your password stays the same. If this wasn't you, you can ignore this email.</p>
+</td></tr>
+<tr><td class="muted" style="padding:20px 8px 0 8px;font-family:Nunito,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;color:#7A6556;">Keepup · Habits, together.<br><a class="accent" href="{{ .SiteURL }}" style="color:#B84F33;text-decoration:underline;">{{ .SiteURL }}</a></td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>
