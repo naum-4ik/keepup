@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.3.0](https://github.com/naum-4ik/keepup/compare/v1.2.0...v1.3.0) (2026-10-12)
+
+
+### Features
+
+* **obs:** What's new names the privacy change; screens show who opened them ([388ea5e](https://github.com/naum-4ik/keepup/commit/388ea5e0e4f5b482202416f401846dc4fa720054))
+* **obs:** What's new names the privacy change; screens show who opened them ([02b8765](https://github.com/naum-4ik/keepup/commit/02b8765ec654ba59d34e5844517d85cc8494cf70))
+* **obs:** where new people come from, and what happened over the weekend ([87bbc5e](https://github.com/naum-4ik/keepup/commit/87bbc5e9a958bd22b2164db070009035b1365e3a))
+* **obs:** where new people come from, and what happened over the weekend ([abe0cf2](https://github.com/naum-4ik/keepup/commit/abe0cf21afceb184632012d71a73ba76faacbe67))
+* Try the demo on the sign-in and sign-up screens too ([2b6175d](https://github.com/naum-4ik/keepup/commit/2b6175d3222e0eeaf02ceac8667e91cfd0efcd4b))
+* Try the demo on the sign-in and sign-up screens too ([dfe1672](https://github.com/naum-4ik/keepup/commit/dfe1672d3838d9735c1d3763f316bed010a1058c))
+
+
+### Bug Fixes
+
+* **obs:** a failed count-only request logs its HTTP status; What's new names Try the demo on sign-in ([97bf69f](https://github.com/naum-4ik/keepup/commit/97bf69feece0a9a2dcdddf89171dbb191496f06b))
+* **obs:** a failed count-only request logs its HTTP status; What's new names Try the demo on sign-in ([73e573b](https://github.com/naum-4ik/keepup/commit/73e573bf96c01d6f62856d08614c6985c96d689e))
+* **obs:** no false error when a session outlives its profile (celebrations mode) ([15de1e1](https://github.com/naum-4ik/keepup/commit/15de1e1e7d41988fd6baad07723bde673284029f))
+
 ## [1.2.0](https://github.com/naum-4ik/keepup/compare/v1.1.1...v1.2.0) (2026-10-08)
 
 
