@@ -150,7 +150,7 @@ Diagrams, security layers, free-tier limits and the scaling path: [docs/architec
 
 ## Observability
 
-The server sends OpenTelemetry traces and events (one wide event per action, linked to its trace) straight to Grafana Cloud's free tier, with no collector; the browser sends its errors and speed measurements through Grafana Faro (on in staging and production; off wherever `NEXT_PUBLIC_FARO_URL` is unset). Passwords, tokens and keys are masked before export, and a unit test fails if one gets through. What is sent, the queries, and a real incident with its lessons: [docs/observability](docs/observability/README.md).
+The server sends OpenTelemetry traces and events (one wide event per action, linked to its trace) straight to Grafana Cloud's free tier, with no collector; the browser sends its errors and speed measurements through Grafana Faro (on in staging and production; off wherever `NEXT_PUBLIC_FARO_URL` is unset). Passwords, tokens and keys are masked before export, and a unit test fails if one gets through. Alerts email on new arrivals, production errors and silent telemetry, and an uptime check with an SLO watches from outside. What is sent, the queries, the alerts, a real incident and a staged one ([postmortem 001](docs/observability/postmortems/001-production-telemetry-silent.md)): [docs/observability](docs/observability/README.md).
 
 ## Run locally
 
