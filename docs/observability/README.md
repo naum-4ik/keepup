@@ -98,3 +98,5 @@ From a trace to the database: `user.id` is `auth.users.id` and `profiles.id`; `h
 | `NEXT_PUBLIC_FARO_URL` | the Faro collector URL; unset = no browser reporting |
 | `NEXT_PUBLIC_DEPLOY_ENV` | the browser's environment label, same values as above |
 | `OTEL_LOG_LEVEL` | `warn`; `debug` to see export results |
+
+Changing a production variable: redeploy through the Release workflow, so the change leaves a `keepup.deployed` marker on the dashboards. A redeploy from the Vercel dashboard leaves none; then add one by hand: `scripts/change-event.sh keepup.deployed deploy.env=production deploy.state=success` ([postmortem 001](postmortems/001-production-telemetry-silent.md), action 2).
