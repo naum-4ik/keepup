@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { GoogleIcon } from "@/components/google-icon";
+import { TryDemoButton } from "@/components/demo/try-demo-button";
 import { PrivacyConsent } from "@/components/privacy-consent";
 import { Button } from "@/components/ui/button";
 import { signInWithGoogle } from "./actions";
@@ -15,7 +16,7 @@ type Props = {
 };
 
 // The sign-in and sign-up screens share this card: title, the email form, then Google, then the
-// link to the other screen. The consent line sits under the card, once per screen.
+// link to the other screen, then Try the demo. The consent line sits under the card, once per screen.
 export function AuthCard({ title, subtitle, next, googleEnabled, footer, children }: Props) {
   return (
     <main className="mx-auto flex w-full min-h-dvh max-w-sm flex-col justify-center px-4 py-10">
@@ -51,6 +52,9 @@ export function AuthCard({ title, subtitle, next, googleEnabled, footer, childre
             {footer.linkLabel}
           </Link>
         </p>
+        <div className="text-center">
+          <TryDemoButton consent={false} />
+        </div>
       </div>
       <div className="mt-4">
         <PrivacyConsent />
