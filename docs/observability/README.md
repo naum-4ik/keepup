@@ -43,15 +43,30 @@ After the tracing PR merged, staging sent nothing, while local dev worked.
 3. `OTEL_LOG_LEVEL=debug` + redeploy: `@vercel/otel/otlp: onSuccess 404 Not Found`. A routing error, **reported as success**.
 4. The endpoint variable was re-entered as `https://otlp-gateway-prod-eu-west-2.grafana.net/otlp`, redeployed: `200 OK`, traces arrived.
 
-Lessons: `@vercel/otel` 2.1.3 reports 401 and 404 as success, so an app can't notice its telemetry is gone. An alert on **"no traces from staging for 30 minutes"** watches the pipeline from the other end. Environment variable edits only reach a deployment built after them.
+Lessons: `@vercel/otel` 2.1.3 reports 401 and 404 as success, so an app can't notice its telemetry is gone. An alert on **"no traces from production for 30 minutes"** now watches the pipeline from the other end; a staged repeat of this failure was caught in 32 minutes ([postmortem 001](postmortems/001-production-telemetry-silent.md)). Environment variable edits only reach a deployment built after them.
+
+## Alerts
+Grafana-managed rules in the `Keepup` folder, emailed to the owner:
+| Rule | Fires when | Query |
+|---|---|---|
+| Someone new arrived | a sign-up or a demo start on production; one email each, with email or demo id, IP, city and country | Loki: `keepup.signed_up`, `keepup.demo_started` |
+| Production errors | more than 2 server errors in 15 minutes (a count, not a rate: at low traffic one error is 50%) | `sum(increase(traces_spanmetrics_calls_total{service="keepup", deployment_environment="production", status_code="STATUS_CODE_ERROR"}[15m])) > 2` |
+| Production telemetry silent | fewer than 1 span in 30 minutes, or no data | `sum(increase(traces_spanmetrics_calls_total{service="keepup", deployment_environment="production"}[30m])) < 1` |
+| Uptime check `keepup-prod-api` + SLO | `GET /api/celebrations` stops answering 401 (2 failures in 15 minutes, from Frankfurt every 5 minutes); SLO 99.5% reachability over 28 days with burn-rate alerts | Synthetic Monitoring |
+
+The uptime check is also the heartbeat: it keeps production traffic above zero, so "silent" means broken, not idle.
 
 ## Dashboards
+![Keepup · Infra: RED per environment, the production heartbeat, and both Supabase databases side by side](screenshots/infra.png)
+
 [`dashboards/keepup-infra.json`](dashboards/keepup-infra.json) (Grafana → Dashboards → Import; pick the Prometheus and Loki data sources). Staging and production side by side, no filter needed (an Environment dropdown narrows it):
-- **Now (RED):** requests per minute, error rate, p95 response time and server errors, one value per environment.
+- **Now (RED):** requests per minute, error rate, p95 response time and server errors, one value per environment, and a production **Heartbeat** (spans in the last 30 minutes, red `SILENT` at 0). Error rate and p95 show "No traffic" instead of a green 0 when nothing arrives ([postmortem 001](postmortems/001-production-telemetry-silent.md)).
 - **Database server:** CPU (busy ÷ total), memory, the `/data` disk, database size against the free tier's 500 MB, connections and cache hit, from Supabase's metrics endpoint (Grafana's Supabase integration, scrape jobs `supabase_staging` and `supabase_production`).
 - **Per page** and **database calls:** rate, errors and p95 per route or PostgREST call, from Grafana's span metrics (`traces_spanmetrics_*`). Span names are short on purpose (`fetch GET /rest/v1/check_ins`): one series per name.
 - **Latest errors:** `keepup.error` lines, each linked to its trace.
 - **Markers:** staging and production deploys and releases from `keepup-ci` events (merges are off by default).
+
+![Keepup · Product: growth and engagement, devices (counts only; the tables with names, emails and IPs are left out)](screenshots/product.png)
 
 [`dashboards/keepup-product.json`](dashboards/keepup-product.json): production by default (staging is mostly tests).
 - **What happened** (top; default the last 2 days, so a Monday look covers the weekend): new arrivals (sign-ups and demo starts) and sign-ins with IP, city and country (`lib/geo.ts`, from Vercel's `x-vercel-ip-*` and `x-real-ip` headers), every action as a timeline, browser visits also before sign-in, arrivals by country. Demo visitors show as `demo · ` and the start of their user id.
@@ -83,3 +98,5 @@ From a trace to the database: `user.id` is `auth.users.id` and `profiles.id`; `h
 | `NEXT_PUBLIC_FARO_URL` | the Faro collector URL; unset = no browser reporting |
 | `NEXT_PUBLIC_DEPLOY_ENV` | the browser's environment label, same values as above |
 | `OTEL_LOG_LEVEL` | `warn`; `debug` to see export results |
+
+Changing a production variable: redeploy through the Release workflow, so the change leaves a `keepup.deployed` marker on the dashboards. A redeploy from the Vercel dashboard leaves none; then add one by hand: `scripts/change-event.sh keepup.deployed deploy.env=production deploy.state=success` ([postmortem 001](postmortems/001-production-telemetry-silent.md), action 2).
