@@ -43,7 +43,7 @@ The last trace came 6 minutes after the redeploy. The cause of that tail wasn't 
 | # | Action | Why |
 |---|---|---|
 | 1 | Show the RED tiles as "No data" instead of a green 0 when no spans arrive. **Done:** "No traffic" on error rate and p95, and a Heartbeat tile | A blind dashboard shouldn't look healthy |
-| 2 | Change production's variables only with a deploy through the Release workflow, or add a marker by hand (`scripts/change-event.sh keepup.deployed …`) | Every change should be visible on the dashboard |
+| 2 | Change production's variables only with a deploy through the Release workflow, or add a marker by hand (`scripts/change-event.sh keepup.deployed …`). **Done:** written in [Configuration](../README.md#configuration-vercel) | Every change should be visible on the dashboard |
 | 3 | Keep the 30-minute window | Shorter detects sooner but fires on quiet nights; 32 minutes is acceptable for a family app |
 
 ## Lessons
