@@ -18,9 +18,6 @@ jobs:
   migrate:
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
-    env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -34,10 +31,22 @@ jobs:
       # sometimes fails once (#139's deploy). Safe to repeat: link only writes local config, db push
       # applies only the migrations not yet on the target (each in its own transaction), and a
       # function deploy replaces the function.
+      # The Supabase token (it controls every project on the account) and the DB password go only to
+      # the steps that call Supabase, never to npm ci, where any package's install script could read them.
       - run: scripts/retry.sh npx supabase link --project-ref "${{ secrets.STAGING_PROJECT_REF }}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
       # db push is idempotent (it only applies migrations not yet on the target), so running it
       # on every green CI run on develop -- not just ones that touched supabase/migrations -- is
       # safe and keeps this simple.
       - run: scripts/retry.sh npx supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
       # send-push reads its secrets from Supabase (VAPID keys, webhook secret), never from the repo.
       - run: scripts/retry.sh npx supabase functions deploy send-push --project-ref "${{ secrets.STAGING_PROJECT_REF }}"
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+

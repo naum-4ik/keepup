@@ -18,6 +18,13 @@ export function releaseLabel(r: Release, appVersion: string): string {
 
 export const RELEASES: Release[] = [
   {
+    version: "1.3.2",
+    notes: [
+      "Privacy: when someone signs up or starts the demo, we get an email alert with their email address (or demo ID), IP address and the country and city it points to, kept for up to 90 days. The privacy policy says so.",
+      "Invite links are now always hidden from our error and speed reports.",
+    ],
+  },
+  {
     version: "1.3.0",
     notes: [
       "Just looking? Try the demo is now also on the sign-in and sign-up screens.",
