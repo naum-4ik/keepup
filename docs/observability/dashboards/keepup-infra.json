@@ -140,7 +140,7 @@
       },
       "gridPos": {
         "h": 5,
-        "w": 6,
+        "w": 5,
         "x": 0,
         "y": 1
       },
@@ -191,15 +191,15 @@
       "id": 3,
       "type": "stat",
       "title": "Error rate",
-      "description": "Share of requests whose trace is marked failed (logError sets it).",
+      "description": "Share of requests whose trace is marked failed (logError sets it). \"No traffic\" when nothing arrived: no requests, or telemetry is down (see Heartbeat).",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROM}"
       },
       "gridPos": {
         "h": 5,
-        "w": 6,
-        "x": 6,
+        "w": 5,
+        "x": 5,
         "y": 1
       },
       "targets": [
@@ -248,7 +248,20 @@
               }
             ]
           },
-          "decimals": 1
+          "decimals": 1,
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "null+nan",
+                "result": {
+                  "text": "No traffic",
+                  "color": "text"
+                }
+              }
+            }
+          ],
+          "noValue": "No traffic"
         },
         "overrides": []
       }
@@ -257,15 +270,15 @@
       "id": 4,
       "type": "stat",
       "title": "p95 response time",
-      "description": "95% of requests are faster than this. With little traffic most requests are cold starts; targets come with the SLOs.",
+      "description": "95% of requests are faster than this. With little traffic most requests are cold starts; targets come with the SLOs. \"No traffic\" when nothing arrived: no requests, or telemetry is down (see Heartbeat).",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROM}"
       },
       "gridPos": {
         "h": 5,
-        "w": 6,
-        "x": 12,
+        "w": 5,
+        "x": 10,
         "y": 1
       },
       "targets": [
@@ -314,7 +327,20 @@
               }
             ]
           },
-          "decimals": 2
+          "decimals": 2,
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "null+nan",
+                "result": {
+                  "text": "No traffic",
+                  "color": "text"
+                }
+              }
+            }
+          ],
+          "noValue": "No traffic"
         },
         "overrides": []
       }
@@ -323,15 +349,15 @@
       "id": 5,
       "type": "stat",
       "title": "Server errors (in range)",
-      "description": "keepup.error events in the selected time range (Loki, one instant count; a rolling count summed over the range counted each error ~150 times).",
+      "description": "keepup.error events in the selected time range (Loki, one instant count; a rolling count summed over the range counted each error ~150 times). 0 also when telemetry is down: check Heartbeat.",
       "datasource": {
         "type": "loki",
         "uid": "${DS_LOKI}"
       },
       "gridPos": {
         "h": 5,
-        "w": 6,
-        "x": 18,
+        "w": 5,
+        "x": 15,
         "y": 1
       },
       "targets": [
@@ -379,6 +405,82 @@
           },
           "noValue": "0",
           "displayName": "${__field.labels.deployment_environment_name}"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 30,
+      "type": "stat",
+      "title": "Heartbeat (production)",
+      "description": "Production spans in the last 30 minutes. The uptime check alone keeps this above 0; 0 means production telemetry is down (the Production telemetry silent alert, postmortem 001).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROM}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 20,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROM}"
+          },
+          "expr": "sum(increase(traces_spanmetrics_calls_total{service=\"keepup\", deployment_environment=\"production\"}[30m])) or vector(0)",
+          "instant": true,
+          "range": false,
+          "legendFormat": "spans, 30 min"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "orientation": "horizontal"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "range",
+              "options": {
+                "from": null,
+                "to": 0.999,
+                "result": {
+                  "text": "SILENT",
+                  "color": "red"
+                }
+              }
+            }
+          ]
         },
         "overrides": []
       }
