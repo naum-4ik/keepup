@@ -349,7 +349,7 @@
       "id": 5,
       "type": "stat",
       "title": "Server errors (in range)",
-      "description": "keepup.error events in the selected time range (Loki, one instant count; a rolling count summed over the range counted each error ~150 times). 0 also when telemetry is down: check Heartbeat.",
+      "description": "keepup.error events in the selected time range (Loki; each point counts the whole range, the tile shows the last one; summing the points counted each error ~150 times). 0 also when telemetry is down: check Heartbeat.",
       "datasource": {
         "type": "loki",
         "uid": "${DS_LOKI}"
@@ -368,10 +368,10 @@
             "uid": "${DS_LOKI}"
           },
           "expr": "sum by (deployment_environment_name) (count_over_time({service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=\"keepup.error\" [$__range]))",
-          "instant": true,
-          "range": false,
+          "instant": false,
+          "range": true,
           "legendFormat": "{{deployment_environment_name}}",
-          "queryType": "instant"
+          "queryType": "range"
         }
       ],
       "options": {
