@@ -20,7 +20,8 @@ To test the alerts, production's OTLP endpoint was changed to a wrong path (`…
 | 14:21 to 14:53 | Infra dashboard: requests fall to 0; error rate and server errors stay at a green 0 |
 | 14:53 | Email: **Production telemetry silent** (detection) |
 | 14:58 | Fix started: variable restored, redeployed |
-| 15:01 | Traces arrive again (recovery); the rule returns to Normal a few minutes later |
+| 15:01 | Traces arrive again (recovery) |
+| 15:07 | Email: **[RESOLVED] Production telemetry silent** |
 
 **Time to detect:** 32 min from the last trace. **Time to recover:** 3 min from the start of the fix. **Blind for:** 40 min.
 
@@ -30,22 +31,20 @@ To test the alerts, production's OTLP endpoint was changed to a wrong path (`…
 The last trace came 6 minutes after the redeploy. The cause of that tail wasn't investigated (most likely tabs opened before the redeploy still talked to the old deployment).
 
 ## What went well
-- The alert fired with no false start: Normal → Pending → Firing, then back to Normal on its own.
+- The alert fired with no false start: Normal → Pending → Firing, then back to Normal on its own, with a resolved email 6 minutes after recovery.
 - The failure was found from outside the app, which is the only place it can be seen.
 - Separate pipelines (push for traces, pull for database metrics, a separate browser collector) meant the database tiles kept working during the outage.
 
 ## What went badly
 - **The dashboard looked healthy while blind.** "Error rate 0.0%" and "Server errors 0" are green when no data arrives, the same as when nothing fails. Only requests per minute dropping to 0 showed the problem.
 - **The change left no marker.** A redeploy from the Vercel dashboard bypasses CI, so no `keepup.deployed` event and no line on the dashboard; the cause had to be known, not seen.
-- **No recovery email.** The `Owner email` contact point has resolved messages off (set so arrival alerts send one email each), so the all-clear for this alert was silent too.
 
 ## Action items
 | # | Action | Why |
 |---|---|---|
 | 1 | Show the RED tiles as "No data" instead of a green 0 when no spans arrive. **Done:** "No traffic" on error rate and p95, and a Heartbeat tile | A blind dashboard shouldn't look healthy |
 | 2 | Change production's variables only with a deploy through the Release workflow, or add a marker by hand (`scripts/change-event.sh keepup.deployed …`) | Every change should be visible on the dashboard |
-| 3 | A separate contact point for health alerts, with resolved messages on | Know when it's over without opening Grafana |
-| 4 | Keep the 30-minute window | Shorter detects sooner but fires on quiet nights; 32 minutes is acceptable for a family app |
+| 3 | Keep the 30-minute window | Shorter detects sooner but fires on quiet nights; 32 minutes is acceptable for a family app |
 
 ## Lessons
 - An app can't report the loss of its own telemetry; watch the pipeline from the receiving end, with a heartbeat (the uptime check) so silence has one meaning.
