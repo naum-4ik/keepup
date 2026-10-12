@@ -108,7 +108,7 @@ Configured by hand in the Supabase dashboard for the `keepup-staging` project (n
 - Site URL: `https://keepup-stage.vercel.app`
 - Redirect URLs: `https://keepup-stage.vercel.app/auth/callback`, `https://keepup-*-naum4ik-s-org.vercel.app/**`
 - Providers: email + password and Google (the Google OAuth client is in Testing mode)
-- Emails (confirm address, reset password): Keepup's templates in `supabase/templates/`, sent through a Gmail SMTP sender set in the dashboard; their links land on `/auth/confirm` with a `token_hash`
+- Emails (every auth message: confirm, reset, email change, magic link, invite, code): Keepup's templates in `supabase/templates/`, sent through a Gmail SMTP sender set in the dashboard; their links land on `/auth/confirm` with a `token_hash`
 
 ## Why no load balancer
 
