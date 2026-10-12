@@ -43,7 +43,18 @@ After the tracing PR merged, staging sent nothing, while local dev worked.
 3. `OTEL_LOG_LEVEL=debug` + redeploy: `@vercel/otel/otlp: onSuccess 404 Not Found`. A routing error, **reported as success**.
 4. The endpoint variable was re-entered as `https://otlp-gateway-prod-eu-west-2.grafana.net/otlp`, redeployed: `200 OK`, traces arrived.
 
-Lessons: `@vercel/otel` 2.1.3 reports 401 and 404 as success, so an app can't notice its telemetry is gone. An alert on **"no traces from staging for 30 minutes"** watches the pipeline from the other end. Environment variable edits only reach a deployment built after them.
+Lessons: `@vercel/otel` 2.1.3 reports 401 and 404 as success, so an app can't notice its telemetry is gone. An alert on **"no traces from production for 30 minutes"** now watches the pipeline from the other end; a staged repeat of this failure was caught in 32 minutes ([postmortem 001](postmortems/001-production-telemetry-silent.md)). Environment variable edits only reach a deployment built after them.
+
+## Alerts
+Grafana-managed rules in the `Keepup` folder, emailed to the owner:
+| Rule | Fires when | Query |
+|---|---|---|
+| Someone new arrived | a sign-up or a demo start on production; one email each, with email or demo id, IP, city and country | Loki: `keepup.signed_up`, `keepup.demo_started` |
+| Production errors | more than 2 server errors in 15 minutes (a count, not a rate: at low traffic one error is 50%) | `sum(increase(traces_spanmetrics_calls_total{service="keepup", deployment_environment="production", status_code="STATUS_CODE_ERROR"}[15m])) > 2` |
+| Production telemetry silent | fewer than 1 span in 30 minutes, or no data | `sum(increase(traces_spanmetrics_calls_total{service="keepup", deployment_environment="production"}[30m])) < 1` |
+| Uptime check `keepup-prod-api` + SLO | `GET /api/celebrations` stops answering 401 (2 failures in 15 minutes, from Frankfurt every 5 minutes); SLO 99.5% reachability over 28 days with burn-rate alerts | Synthetic Monitoring |
+
+The uptime check is also the heartbeat: it keeps production traffic above zero, so "silent" means broken, not idle.
 
 ## Dashboards
 [`dashboards/keepup-infra.json`](dashboards/keepup-infra.json) (Grafana → Dashboards → Import; pick the Prometheus and Loki data sources). Staging and production side by side, no filter needed (an Environment dropdown narrows it):
