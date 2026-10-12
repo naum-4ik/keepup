@@ -58,7 +58,7 @@ The uptime check is also the heartbeat: it keeps production traffic above zero, 
 
 ## Dashboards
 [`dashboards/keepup-infra.json`](dashboards/keepup-infra.json) (Grafana → Dashboards → Import; pick the Prometheus and Loki data sources). Staging and production side by side, no filter needed (an Environment dropdown narrows it):
-- **Now (RED):** requests per minute, error rate, p95 response time and server errors, one value per environment.
+- **Now (RED):** requests per minute, error rate, p95 response time and server errors, one value per environment, and a production **Heartbeat** (spans in the last 30 minutes, red `SILENT` at 0). Error rate and p95 show "No traffic" instead of a green 0 when nothing arrives ([postmortem 001](postmortems/001-production-telemetry-silent.md)).
 - **Database server:** CPU (busy ÷ total), memory, the `/data` disk, database size against the free tier's 500 MB, connections and cache hit, from Supabase's metrics endpoint (Grafana's Supabase integration, scrape jobs `supabase_staging` and `supabase_production`).
 - **Per page** and **database calls:** rate, errors and p95 per route or PostgREST call, from Grafana's span metrics (`traces_spanmetrics_*`). Span names are short on purpose (`fetch GET /rest/v1/check_ins`): one series per name.
 - **Latest errors:** `keepup.error` lines, each linked to its trace.
