@@ -23,10 +23,15 @@ describe("auth email templates", () => {
 
     const html = existsSync(path) ? readFileSync(path, "utf8") : "";
 
-    it("carries the Keepup signature and the ignore line", () => {
+    it("carries the Keepup signature", () => {
       expect(html).toContain("Keepup · Habits, together.");
       expect(html).toContain("{{ .SiteURL }}");
-      expect(html).toContain("If this wasn't you, you can ignore this email.");
+    });
+
+    it("has a hidden preheader, exactly one ignore sentence and the footer reason", () => {
+      expect(html).toMatch(/<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;[^"]*">[^<&]{10,}/);
+      expect(html.match(/\bignore\b/gi)).toHaveLength(1);
+      expect(html).toContain("You're getting this because this address is used on Keepup.");
     });
 
     it(name === "reauthentication" ? "shows the code, with no link" : "links with a token hash to /auth/confirm", () => {
