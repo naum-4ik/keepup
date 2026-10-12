@@ -45,9 +45,9 @@ export async function getDismissedCards(): Promise<Set<string> | null> {
 // Gentle cards wait for the first check-in. On an error, assume not yet (no card).
 export async function hasCheckedIn(): Promise<boolean> {
   const { supabase, userId } = await requireUser();
-  const { count, error } = await supabase.from("check_ins").select("id", { head: true, count: "exact" }).eq("user_id", userId);
+  const { count, error, status } = await supabase.from("check_ins").select("id", { head: true, count: "exact" }).eq("user_id", userId);
   if (error) {
-    logError("check-in count failed", error.message);
+    logError("check-in count failed", error.message || `HTTP ${status}`); // a HEAD request: no body, no message
     return false;
   }
   return (count ?? 0) > 0;

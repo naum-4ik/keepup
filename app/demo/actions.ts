@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { whereFrom } from "@/lib/geo";
 import { track } from "@/lib/log";
 import { safeNextPath, withNext } from "@/lib/paths";
 import { createClient } from "@/lib/supabase/server";
@@ -22,7 +23,7 @@ export async function startDemo(formData: FormData): Promise<void> {
     await supabase.auth.signOut({ scope: "local" });
     redirect("/?demo=failed");
   }
-  track("demo_started", userAttributes(data.claims));
+  track("demo_started", userAttributes(data.claims), await whereFrom());
   redirect("/today");
 }
 

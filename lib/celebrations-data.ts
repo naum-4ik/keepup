@@ -5,7 +5,9 @@ import { logError } from "@/lib/log";
 
 export async function getCelebrationMode(): Promise<CelebrationMode> {
   const { supabase, userId } = await requireUser();
-  const { data, error } = await supabase.from("profiles").select("celebrations").eq("id", userId).single();
+  // maybeSingle: a session can outlive its profile (a demo cleared after 24 hours, a deleted account), and
+  // that is no error: the default mode will do (.single() logged "Cannot coerce the result to a single JSON object").
+  const { data, error } = await supabase.from("profiles").select("celebrations").eq("id", userId).maybeSingle();
   if (error) logError("celebrations mode failed", error.message);
   return isCelebrationMode(data?.celebrations) ? data.celebrations : "full";
 }

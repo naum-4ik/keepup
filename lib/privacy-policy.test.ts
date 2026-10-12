@@ -41,6 +41,7 @@ describe("privacy policy", () => {
     expect(policy).toMatch(/session storage \(not a cookie\)/); // Faro's session ID
     expect(policy).toMatch(/On our servers, for each action/);
     expect(policy).toMatch(/how you signed in \(password or Google\)/); // auth.method on signed_in / signed_up
+    expect(policy).toMatch(/also records your IP address and the country, region and city/); // lib/geo.ts on signed_up, signed_in, demo_started
     expect(policy).not.toMatch(/no analytics or advertising services/i);
   });
 

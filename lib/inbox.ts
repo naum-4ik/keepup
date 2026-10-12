@@ -33,13 +33,14 @@ export async function getPendingApprovals(): Promise<PendingApproval[]> {
 // RLS: a user reads only their own notifications.
 export async function getUnreadCount(): Promise<number> {
   const { supabase } = await requireUser();
-  const { count, error } = await supabase
+  const { count, error, status } = await supabase
     .from("notifications")
     .select("id", { count: "exact", head: true })
     .is("read_at", null)
     .in("kind", [...FEED_KINDS]);
   if (error) {
-    logError("unread count failed", error.message);
+    // A count-only (HEAD) request has no body, so a failure has no message: the status says what happened.
+    logError("unread count failed", error.message || `HTTP ${status}`);
     return 0;
   }
   return count ?? 0;
