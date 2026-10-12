@@ -20,6 +20,7 @@ export const RELEASES: Release[] = [
   {
     version: "1.3.0",
     notes: [
+      "Just looking? Try the demo is now also on the sign-in and sign-up screens.",
       "Privacy: when you sign up, sign in or start the demo, Keepup now also records your IP address and the country and city it points to, to see where new people come from. The privacy policy says so.",
     ],
   },
