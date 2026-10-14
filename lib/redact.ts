@@ -5,7 +5,8 @@
 export const REDACTED = "[REDACTED]";
 
 const SECRET_PARAM = /([?&](?:code|access_token|refresh_token|token_hash|token|apikey|password)=)[^&#\s"]+/gi;
-const INVITE_TOKEN = /(\/invite\/)[^/?#\s"]+/g;
+// Also URL-encoded, once (/login?next=%2Finvite%2F…) or twice (an OAuth redirect_to carrying next).
+const INVITE_TOKEN = /((?:\/|%2F|%252F)invite(?:\/|%2F|%252F))[^/?#&%\s"]+/gi;
 const SECRET_VALUE = /eyJ[\w-]+\.[\w-]+\.[\w-]+|glc_[\w=+/-]+|sb_secret_[\w-]+/g;
 
 export function redactString(value: string) {

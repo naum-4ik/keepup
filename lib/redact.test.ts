@@ -9,6 +9,13 @@ describe("redact: secrets in any string, server or browser", () => {
     expect(redactString("/auth/confirm?token_hash=abc&type=recovery")).toBe(`/auth/confirm?token_hash=${REDACTED}&type=recovery`);
   });
 
+  it("masks an invite token carried URL-encoded in next=, once or twice", () => {
+    expect(redactString("https://keepup.app/login?next=%2Finvite%2FAbC123tok")).toBe(`https://keepup.app/login?next=%2Finvite%2F${REDACTED}`);
+    expect(redactString("/auth/callback?code=c0de&next=%2Finvite%2FAbC123tok&x=1")).toBe(`/auth/callback?code=${REDACTED}&next=%2Finvite%2F${REDACTED}&x=1`);
+    expect(redactString("/signup?next=%2finvite%2fAbC123tok%3Ffrom%3Dshare")).toBe(`/signup?next=%2finvite%2f${REDACTED}%3Ffrom%3Dshare`);
+    expect(redactString("redirect_to=%252Finvite%252FAbC123tok")).toBe(`redirect_to=%252Finvite%252F${REDACTED}`);
+  });
+
   it("cleans every string in a browser telemetry item, however deep", () => {
     const item = { meta: { page: { url: "https://keepup.app/auth/callback?code=pkce-secret" }, user: { email: "anna@example.com" } }, payload: { values: [1, "token=t0k"] } };
     expect(redactDeep(item)).toEqual({
