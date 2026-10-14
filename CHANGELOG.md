@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.0](https://github.com/naum-4ik/keepup/compare/v1.3.1...v1.4.0) (2026-10-14)
+
+
+### Features
+
+* clearer, calmer auth emails ([#225](https://github.com/naum-4ik/keepup/issues/225)) ([bb44ce5](https://github.com/naum-4ik/keepup/commit/bb44ce5466a9e4e33bc47c59389298f185a4fc2b))
+* Keepup-branded emails for every auth message ([#224](https://github.com/naum-4ik/keepup/issues/224)) ([133e734](https://github.com/naum-4ik/keepup/commit/133e734b8ec049ac6d607fbd92db5563d0e202bc))
+
+
+### Bug Fixes
+
+* deploy secrets only where Supabase is called; policy covers sign-up alert emails ([#223](https://github.com/naum-4ik/keepup/issues/223)) ([b74680a](https://github.com/naum-4ik/keepup/commit/b74680a75a6cfddf6abf1512af3fc1336a875876))
+* mask invite tokens carried URL-encoded in next= (traces and Faro) ([#221](https://github.com/naum-4ik/keepup/issues/221)) ([8b2b091](https://github.com/naum-4ik/keepup/commit/8b2b091924f38285694d5543424125ce64efe3b1))
+
 ## [1.3.1](https://github.com/naum-4ik/keepup/compare/v1.3.0...v1.3.1) (2026-10-12)
 
 
