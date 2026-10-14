@@ -18,14 +18,16 @@ export function releaseLabel(r: Release, appVersion: string): string {
 
 export const RELEASES: Release[] = [
   {
-    version: "1.3.2",
+    version: "1.4.0",
     notes: [
+      "Keepup emails (confirm your address, reset your password, change your email) now look like Keepup, say which account they are about, and tell you what to do if you didn't ask for them.",
       "Privacy: when someone signs up or starts the demo, we get an email alert with their email address (or demo ID), IP address and the country and city it points to, kept for up to 90 days. The privacy policy says so.",
       "Invite links are now always hidden from our error and speed reports.",
     ],
   },
   {
     version: "1.3.0",
+    date: "2026-10-12",
     notes: [
       "Just looking? Try the demo is now also on the sign-in and sign-up screens.",
       "Privacy: when you sign up, sign in or start the demo, Keepup now also records your IP address and the country and city it points to, to see where new people come from. The privacy policy says so.",
@@ -33,6 +35,7 @@ export const RELEASES: Release[] = [
   },
   {
     version: "1.2.0",
+    date: "2026-10-08",
     notes: [
       "In the kid view, a big empty circle shows where to tap, and the dots for twice-a-day habits are easier to see.",
       "Once you approve or decline a check-in, its Inbox line shows what you decided and stops counting as new.",
@@ -42,10 +45,12 @@ export const RELEASES: Release[] = [
   },
   {
     version: "1.1.1",
+    date: "2026-10-08",
     notes: ["A Keepup link shared in a chat or on LinkedIn now shows Keepup's own address in its preview."],
   },
   {
     version: "1.1.0",
+    date: "2026-10-08",
     notes: [
       "Keepup has its own address: keepuphabits.vercel.app. Opening the old one brings you here, with a note on how to add Keepup to your Home Screen again.",
       "New: How to install, with step-by-step pictures for iPhone, Android and computer. Find it under Profile, at the bottom.",
