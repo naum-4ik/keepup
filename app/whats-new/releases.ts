@@ -19,6 +19,7 @@ export function releaseLabel(r: Release, appVersion: string): string {
 export const RELEASES: Release[] = [
   {
     version: "1.4.0",
+    date: "2026-10-14",
     notes: [
       "Keepup emails (confirm your address, reset your password, change your email) now look like Keepup, say which account they are about, and tell you what to do if you didn't ask for them.",
       "Privacy: when someone signs up or starts the demo, we get an email alert with their email address (or demo ID), IP address and the country and city it points to, kept for up to 90 days. The privacy policy says so.",
