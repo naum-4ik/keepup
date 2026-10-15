@@ -68,7 +68,7 @@ select is((select j->'groups'->0->>'role' from out_cara) || ' ' || (select j->'g
 select is((select jsonb_array_length(j->'children') from out_cara), 0, 'a left admin''s export has no children');
 -- Pinned on purpose: a new profiles column fails here until it's consciously added to (or kept out of) the export.
 select set_eq($$select jsonb_object_keys(j->'profile') from out_anna$$,
-  array['avatar_color', 'avatar_emoji', 'celebrations', 'created_at', 'data_reset_at', 'display_name', 'id', 'is_demo',
+  array['avatar_color', 'avatar_emoji', 'celebrations', 'created_at', 'data_reset_at', 'display_name', 'gender', 'id', 'is_demo', 'locale',
         'muted_until', 'onboarded_at', 'purpose', 'reminder_hour', 'terms_accepted_at', 'timezone', 'week_start'],
   'the profile export''s keys are exactly these');
 -- Adults always take part in their groups' habits (decision 0012), checked in or not.
