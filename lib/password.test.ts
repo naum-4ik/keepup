@@ -1,38 +1,43 @@
 import { describe, expect, it } from "vitest";
 import { BANNED_PATTERNS, BANNED_WORDS } from "./notification-copy";
-import { CONFIRM_EMAIL_SENT, PASSWORD_MIN, RESET_LINK_SENT, RESET_LINK_STALE, credentialsError, isFreshRecovery, newPasswordError, passwordAuthMessage } from "./password";
+import { tEn } from "@/lib/i18n/test-t";
+import { PASSWORD_MIN, credentialsError, isFreshRecovery, newPasswordError, passwordAuthMessage } from "./password";
+
+const RESET_LINK_SENT = tEn("auth.resetLinkSent");
+const RESET_LINK_STALE = tEn("auth.resetLinkStale");
+const CONFIRM_EMAIL_SENT = tEn("auth.confirmEmailSent");
 
 describe("credentialsError", () => {
   it("accepts a valid email and a long enough password", () => {
-    expect(credentialsError("ana@example.com", "x".repeat(PASSWORD_MIN), "signup")).toBeNull();
-    expect(credentialsError("ana@example.com", "short", "signin")).toBeNull(); // sign-in checks only that it's there
+    expect(credentialsError(tEn, "ana@example.com", "x".repeat(PASSWORD_MIN), "signup")).toBeNull();
+    expect(credentialsError(tEn, "ana@example.com", "short", "signin")).toBeNull(); // sign-in checks only that it's there
   });
 
   it("asks for a valid email first", () => {
-    expect(credentialsError("ana@", "whatever-long", "signin")).toEqual({ field: "email", message: "Enter a valid email address." });
+    expect(credentialsError(tEn, "ana@", "whatever-long", "signin")).toEqual({ field: "email", message: "Enter a valid email address." });
   });
 
   it("asks for at least 8 characters on sign-up, counting characters not bytes", () => {
-    expect(credentialsError("ana@example.com", "1234567", "signup")).toEqual({ field: "password", message: "Use at least 8 characters." });
-    expect(credentialsError("ana@example.com", "😀".repeat(8), "signup")).toBeNull();
+    expect(credentialsError(tEn, "ana@example.com", "1234567", "signup")).toEqual({ field: "password", message: "Use at least 8 characters." });
+    expect(credentialsError(tEn, "ana@example.com", "😀".repeat(8), "signup")).toBeNull();
   });
 
   it("asks for a password on sign-in", () => {
-    expect(credentialsError("ana@example.com", "", "signin")).toEqual({ field: "password", message: "Enter your password." });
+    expect(credentialsError(tEn, "ana@example.com", "", "signin")).toEqual({ field: "password", message: "Enter your password." });
   });
 });
 
 describe("newPasswordError", () => {
   it("asks for at least 8 characters, the same as sign-up", () => {
-    expect(newPasswordError("1234567")).toBe("Use at least 8 characters.");
-    expect(newPasswordError("😀".repeat(8))).toBeNull();
+    expect(newPasswordError(tEn, "1234567")).toBe("Use at least 8 characters.");
+    expect(newPasswordError(tEn, "😀".repeat(8))).toBeNull();
   });
 });
 
 describe("RESET_LINK_SENT", () => {
   it("never says whether the account exists, and stays calm", () => {
     expect(RESET_LINK_SENT).toBe("If that email has an account, a reset link is on its way.");
-    for (const text of [RESET_LINK_SENT, RESET_LINK_STALE, passwordAuthMessage({ code: "same_password" })]) {
+    for (const text of [RESET_LINK_SENT, RESET_LINK_STALE, passwordAuthMessage(tEn, { code: "same_password" })]) {
       for (const word of BANNED_WORDS) expect(text.toLowerCase()).not.toContain(word);
       for (const re of BANNED_PATTERNS) expect(text).not.toMatch(re);
     }
@@ -55,12 +60,12 @@ describe("passwordAuthMessage", () => {
     ["email_address_invalid", "Enter a valid email address."],
     ["email_not_confirmed", "Confirm your email first: open the link we sent you, then sign in."],
   ])("maps %s", (code, message) => {
-    expect(passwordAuthMessage({ code })).toBe(message);
+    expect(passwordAuthMessage(tEn, { code })).toBe(message);
   });
 
   it("falls back to a generic message", () => {
-    expect(passwordAuthMessage({ code: "unexpected_failure" })).toBe("Something went wrong. Try again.");
-    expect(passwordAuthMessage({})).toBe("Something went wrong. Try again.");
+    expect(passwordAuthMessage(tEn, { code: "unexpected_failure" })).toBe("Something went wrong. Try again.");
+    expect(passwordAuthMessage(tEn, {})).toBe("Something went wrong. Try again.");
   });
 });
 

@@ -358,5 +358,18 @@
     "defaultFamily": "Family",
     "defaultFriends": "Friends",
     "childrenDeletion": "{n, plural, =0 {The children's profiles and history will be deleted.} one {{names}'s profile and history will be deleted.} other {{names}'s profiles and history will be deleted.}}"
+  },
+  "auth": {
+    "emailInvalid": "Enter a valid email address.",
+    "passwordRequired": "Enter your password.",
+    "passwordMin": "Use at least {min} characters.",
+    "resetLinkStale": "This reset link has expired. Ask for a new one from the sign-in screen.",
+    "confirmEmailSent": "Almost done: open the link we emailed you to confirm your address, then sign in.",
+    "resetLinkSent": "If that email has an account, a reset link is on its way.",
+    "emailNotConfirmed": "Confirm your email first: open the link we sent you, then sign in.",
+    "invalidCredentials": "That email and password don't match. Try again.",
+    "accountExists": "That email already has an account.",
+    "samePassword": "That's the password you have now. Choose a new one.",
+    "rateLimited": "Too many tries. Wait a minute and try again."
   }
 }
