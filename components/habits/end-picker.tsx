@@ -15,7 +15,7 @@ type Choice = "none" | number | "date";
 // "Pick a date": the start picker already has a button with that name). Posts
 // `endsOn` (the last day that counts) or "" for no end.
 export function EndPicker({ period, startsOn, name = "endsOn" }: { period: HabitPeriod; startsOn: string; name?: string }) {
-  const { locale } = useT();
+  const { t, locale } = useT();
   const [choice, setChoice] = useState<Choice>("none");
   const [date, setDate] = useState("");
   const endsOn = choice === "none" ? "" : choice === "date" ? date : endsOnFor(startsOn, period, choice);
@@ -29,7 +29,7 @@ export function EndPicker({ period, startsOn, name = "endsOn" }: { period: Habit
         </button>
         {END_PRESETS[period].map((n) => (
           <button key={n} type="button" aria-pressed={choice === n} onClick={() => setChoice(n)} className={dateChipClass}>
-            {presetLabel(n, period)}
+            {presetLabel(t, n, period)}
           </button>
         ))}
         <button type="button" aria-pressed={choice === "date"} onClick={() => setChoice("date")} className={dateChipClass}>

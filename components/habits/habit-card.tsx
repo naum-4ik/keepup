@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 import type { Locale, T } from "@/supabase/functions/_shared/i18n";
 
 type Kid = { id: string; name: string };
+// "Day 12 of 30"; `almost` turns it primary-coloured.
+export type EndLine = { text: string; almost: boolean };
 
 function progressOf(t: T, locale: Locale, habit: HabitSummary) {
   return describeProgress(t, locale, {
@@ -37,7 +39,7 @@ export function kidProgressText(t: T, locale: Locale, habit: HabitSummary): stri
 // `kid`: the row is the child's (Today's kid section): big emoji, no link to the adult habit page,
 // and the check-in is for her. Group copy ("Everyone did it") stays on the group card.
 // `endLine`: "Day 12 of 30" for a habit with an end (ideas/habit-end-date.md).
-export async function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; kid?: Kid; endLine?: string }) {
+export async function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; kid?: Kid; endLine?: EndLine }) {
   const { t, locale } = await getT();
   if (kid) return <KidHabitCard t={t} locale={locale} habit={habit} kid={kid} />;
   const progress = progressOf(t, locale, habit);
@@ -72,8 +74,8 @@ export async function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; 
               {everyone ? "Everyone did it ✓" : progress.text}
             </span>
             {endLine && (
-              <span className={cn("text-xs font-semibold", endLine.startsWith("Almost") ? "text-primary" : "text-muted-foreground")}>
-                {endLine}
+              <span className={cn("text-xs font-semibold", endLine.almost ? "text-primary" : "text-muted-foreground")}>
+                {endLine.text}
               </span>
             )}
             {showBar && (

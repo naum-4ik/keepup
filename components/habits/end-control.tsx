@@ -22,7 +22,7 @@ export function EndControl({
   endsOn: string | null;
   today: string;
 }) {
-  const { locale } = useT();
+  const { t, locale } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const run = (call: () => Promise<ActionResult>) =>
@@ -30,7 +30,7 @@ export function EndControl({
       const r = await call();
       setError(r.ok ? null : r.message);
     });
-  const options = endOptions(startsOn, endsOn, today, period);
+  const options = endOptions(t, startsOn, endsOn, today, period);
   const chip =
     "flex h-11 items-center rounded-full border border-border bg-card px-3.5 text-sm font-semibold hover:bg-muted disabled:opacity-50";
 

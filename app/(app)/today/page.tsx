@@ -5,7 +5,7 @@ import { EveryoneDidIt, type CardMember } from "@/components/celebrations/everyo
 import { EmptyState } from "@/components/empty-state";
 import { FirstCheckinTip } from "@/components/first-checkin-tip";
 import { SproutIcon } from "@/components/sprout-icon";
-import { HabitCard } from "@/components/habits/habit-card";
+import { HabitCard, type EndLine } from "@/components/habits/habit-card";
 import { LiveRefresh } from "@/components/habits/live-refresh";
 import { KidSection } from "@/components/kids/kid-section";
 import { NeedsConnection } from "@/components/offline/needs-connection";
@@ -18,7 +18,8 @@ import { getProfile } from "@/lib/auth";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
 import { getFinishSummary, getGroupTimezones, getHabitEnds, getHabitSummaries, getRecentTapRows, getWeekOverview, type HabitSummary } from "@/lib/habits";
-import { ANOTHER_GO, celebrates, finishLine } from "@/lib/habit-finish";
+import { celebrates, finishLine } from "@/lib/habit-finish";
+import { getT } from "@/lib/i18n/server";
 import { FinishCard } from "@/components/today/finish-card";
 import { endLabel, endProgress, hasEnded, withoutEnded } from "@/lib/habit-end";
 import { todayIn } from "@/lib/dates";
@@ -35,6 +36,7 @@ import { hasWeekData } from "@/lib/week-overview";
 
 export default async function TodayPage({ searchParams }: { searchParams: Promise<{ joined?: string; reset?: string }> }) {
   const { joined, reset } = await searchParams;
+  const { t } = await getT();
   const childrenP = getMyChildren();
   const [summaries, overview, groups, approvals, children, { profile }, celebrations, dismissed, checkedIn, tapRows] = await Promise.all([
     getHabitSummaries(),
@@ -113,11 +115,11 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const date = new Intl.DateTimeFormat("en-GB", { timeZone: profile.timezone, weekday: "long", day: "numeric", month: "long" }).format(now);
   const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: profile.timezone }).format(now);
   // "Day 12 of 30" for habits with an end.
-  const endLines = new Map<string, string>();
+  const endLines = new Map<string, EndLine>();
   for (const h of habits) {
     const endsOn = ends.get(h.habit_id);
     const p = endsOn ? endProgress(h.starts_on, endsOn, todayOf(h.group_id), h.period) : null;
-    if (p) endLines.set(h.habit_id, endLabel(p, h.period));
+    if (p) endLines.set(h.habit_id, { text: endLabel(t, p, h.period), almost: p.almost });
   }
 
   // "Everyone did it" (ideas/achievements-and-rewards.md §7), then at most one gentle card. No other
@@ -217,7 +219,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
             title={h.title}
             emoji={h.emoji}
             category={h.category}
-            line={summary && celebrates(summary) ? finishLine(summary, h.period, Boolean(h.group_id)) : ANOTHER_GO}
+            line={summary && celebrates(summary) ? finishLine(t, summary, h.period, Boolean(h.group_id)) : t("habitFinish.anotherGo")}
             celebrate={Boolean(summary && celebrates(summary))}
             canDecide={!h.group_id || h.my_role === "admin"}
           />
@@ -287,7 +289,7 @@ function TodayLists({
   habits: HabitSummary[];
   tipFor?: string;
   sectionDone?: boolean;
-  endLines?: Map<string, string>;
+  endLines?: Map<string, EndLine>;
 }) {
   const { todo, done, later } = groupForToday(habits);
   return (
@@ -312,7 +314,7 @@ function HabitList({
   title?: string;
   habits: HabitSummary[];
   tipFor?: string;
-  endLines?: Map<string, string>;
+  endLines?: Map<string, EndLine>;
 }) {
   if (habits.length === 0) return null;
   const list = (

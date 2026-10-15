@@ -1,9 +1,9 @@
 import type { HabitPeriod } from "@/lib/habit-schema";
+import type { T } from "@/supabase/functions/_shared/i18n";
 
 // ideas/habit-end-date.md: the End chips, in the habit's own unit (a week to try something, then the longer runs).
 export const END_PRESETS: Record<HabitPeriod, readonly number[]> = { day: [7, 30, 60, 90], week: [4, 8, 12], month: [3, 6, 12] };
-const UNIT: Record<HabitPeriod, [string, string]> = { day: ["day", "days"], week: ["week", "weeks"], month: ["month", "months"] };
-export const presetLabel = (n: number, period: HabitPeriod) => `${n} ${UNIT[period][n === 1 ? 0 : 1]}`;
+export const presetLabel = (t: T, n: number, period: HabitPeriod): string => t(`units.${period}`, { n });
 
 const toDate = (d: string) => new Date(`${d}T00:00:00Z`);
 const toStr = (d: Date) => d.toISOString().slice(0, 10);
@@ -49,10 +49,9 @@ export function endProgress(
   return { n, total, almost };
 }
 
-export function endLabel(p: { n: number; total: number; almost: boolean }, period: HabitPeriod): string {
-  const unit = UNIT[period][0];
-  const text = `${unit[0].toUpperCase()}${unit.slice(1)} ${p.n} of ${p.total}`;
-  return p.almost ? `Almost there · ${text}` : text;
+export function endLabel(t: T, p: { n: number; total: number; almost: boolean }, period: HabitPeriod): string {
+  const text = t(`habitEnd.progress.${period}`, { n: p.n, total: p.total });
+  return p.almost ? t("habitEnd.almostThere", { text }) : text;
 }
 
 // Extend by n more periods after the current end (the habit page's "+30 days").
@@ -64,6 +63,7 @@ export function extendEnd(endsOn: string, period: HabitPeriod, n: number): strin
 // lengths that end today or later. After the end, none: the rule refuses changes then
 // (keepup:end_passed), and Keep going or Finish decide instead.
 export function endOptions(
+  t: T,
   startsOn: string,
   endsOn: string | null,
   today: string,
@@ -73,7 +73,7 @@ export function endOptions(
   return END_PRESETS[period]
     .map((n) => ({ n, date: endsOn ? extendEnd(endsOn, period, n) : endsOnFor(startsOn, period, n) }))
     .filter((o) => o.date >= today)
-    .map((o) => ({ ...o, label: endsOn ? `+${presetLabel(o.n, period)}` : presetLabel(o.n, period) }));
+    .map((o) => ({ ...o, label: endsOn ? t("habitEnd.extend", { span: presetLabel(t, o.n, period) }) : presetLabel(t, o.n, period) }));
 }
 
 // A habit has ended once today, in its own calendar, is after its last day: no more check-ins.

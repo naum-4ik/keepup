@@ -280,7 +280,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                 title="Ends"
                 hint={
                   endNow
-                    ? endLabel(endNow, h.period)
+                    ? endLabel(t, endNow, h.period)
                     : hasEnded(endsOn, today)
                       ? "Reached its end. Keep going or finish"
                       : endsOn

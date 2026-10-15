@@ -232,5 +232,19 @@
     "quietMonth": "A quiet month.",
     "nothingDue": "Nothing was due.",
     "streak": "{title} 🔥 {span}"
+  },
+  "habitEnd": {
+    "progress": {
+      "day": "Day {n} of {total}",
+      "week": "Week {n} of {total}",
+      "month": "Month {n} of {total}"
+    },
+    "almostThere": "Almost there · {text}",
+    "extend": "+{span}"
+  },
+  "habitFinish": {
+    "did": "{together, select, yes {Together you did {done} of {span}} other {You did {done} of {span}}}",
+    "withBest": "{main} · best streak {n} 🔥",
+    "anotherGo": "Want to give it another go?"
   }
 }
