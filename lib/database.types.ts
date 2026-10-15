@@ -937,7 +937,7 @@ isOneToOne: false
                            },
 "my_children":
 { Args: Record<PropertyKey, never>; Returns: {
-              "avatar_color": string,"avatar_emoji": string,"child_id": string,"created_at": string,"group_id": string,"group_name": string,"kid_theme": string,"name": string
+              "avatar_color": string,"avatar_emoji": string,"child_id": string,"created_at": string,"gender": string,"group_id": string,"group_name": string,"kid_theme": string,"name": string
             }[]
                            },
 "my_groups":

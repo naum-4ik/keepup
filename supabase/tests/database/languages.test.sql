@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(11);
+select plan(14);
 
 select tests.create_user('00000000-0000-0000-0000-0000000004a1', 'lang-anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000004b1', 'lang-ben@example.com', '{"full_name":"Ben"}');
@@ -33,6 +33,14 @@ select throws_like($$select public.set_child_gender((select v from t where k='ki
 reset role;
 
 select ok(((private.export_child_impl('00000000-0000-0000-0000-0000000004a1', (select v from t where k='kid'))) -> 'profile') ? 'gender', 'child export contains gender');
+
+-- my_children shows the kid's gender to a guardian (null until set).
+select is((select gender from private.my_children_impl('00000000-0000-0000-0000-0000000004a1') where child_id = (select v from t where k='kid')), null, 'my_children: gender null until set');
+update public.profiles set gender = 'boy' where id = (select v from t where k='kid');
+select is((select gender from private.my_children_impl('00000000-0000-0000-0000-0000000004a1') where child_id = (select v from t where k='kid')), 'boy', 'my_children: gender returned');
+select tests.authenticate_as('00000000-0000-0000-0000-0000000004a1');
+select is((select gender from public.my_children() where child_id = (select v from t where k='kid')), 'boy', 'my_children(): authenticated guardian reads gender');
+reset role;
 
 -- The push job carries the recipient's language.
 insert into public.notifications (user_id, kind, push) values ('00000000-0000-0000-0000-0000000004a1', 'nudge', true);
