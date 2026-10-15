@@ -1127,7 +1127,8 @@
   "celebrations": {
     "label": "Celebration",
     "dismissHint": "Tap or press Esc",
-    "everyoneDidIt": "Everyone did it! {habits}"
+    "everyoneDidIt": "Everyone did it!",
+    "everyoneDidItHabit": "<bdi>{habit}</bdi> ✓"
   },
   "avatars": {
     "hint": "Pick an animal or a friendly thing. No photos, ever.",

@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { markSeen } from "@/app/(app)/today/actions";
 import { Avatar } from "@/components/avatar";
 import { Confetti } from "@/components/celebrations/confetti";
 import { takeBurstTurn } from "@/lib/burst-turns";
-import { isolate } from "@/supabase/functions/_shared/i18n";
 
 export type CardMember = { id: string; name: string; avatar_emoji: string | null; avatar_color: string | null };
 
@@ -75,7 +74,13 @@ export function EveryoneDidIt(props: Props) {
       {/* Keyed by the rows: a new card (new ids while a kept one shows) bursts again. */}
       {shown && <Confetti key={key} />}
       <p className="min-w-0 flex-1 font-bold">
-        {t("everyoneDidIt", { habits: habits.map((h) => `${isolate(h)} ✓`).join(" · ") })}
+        {t("everyoneDidIt")}{" "}
+        {habits.map((h, i) => (
+          <Fragment key={i}>
+            {i > 0 && " · "}
+            {t.rich("everyoneDidItHabit", { habit: h, bdi: (c) => <bdi>{c}</bdi> })}
+          </Fragment>
+        ))}
       </p>
       <AvatarRow members={members} />
     </div>

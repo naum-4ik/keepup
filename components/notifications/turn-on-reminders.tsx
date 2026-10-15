@@ -33,8 +33,8 @@ export function TurnOnReminders({ hour, label, onDone }: { hour: number; label?:
   const [chosen, setChosen] = useState(hour);
   const [message, setMessage] = useState<string | null>(null);
   const [done, setDone] = useState(false);
-  const { t: tr } = useT();
-  const t = useTranslations("notifications.turnOn");
+  const { t } = useT();
+  const tx = useTranslations("notifications.turnOn");
   const [pending, startTransition] = useTransition();
 
   function allow() {
@@ -61,7 +61,7 @@ export function TurnOnReminders({ hour, label, onDone }: { hour: number; label?:
         onDone?.();
       } catch (e) {
         console.error("push subscribe failed", e);
-        setMessage(t("failed"));
+        setMessage(tx("failed"));
       }
     });
   }
@@ -72,34 +72,34 @@ export function TurnOnReminders({ hour, label, onDone }: { hour: number; label?:
     <>
       <Button type="button" className="h-11" onClick={() => { setDone(false); setMessage(null); setSupport(pushSupport(readPushEnv())); setOpen(true); }}>
         <BellRing aria-hidden />
-        {label ?? t("label")}
+        {label ?? tx("label")}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
-          <DialogTitle>{support === "needs-install" ? t("addToHomeScreen") : t("title")}</DialogTitle>
+          <DialogTitle>{support === "needs-install" ? tx("addToHomeScreen") : tx("title")}</DialogTitle>
           {done ? (
-            <DialogDescription>{tr("notificationSettings.status.onWithHour", { time: hourLabel(chosen) })}</DialogDescription>
+            <DialogDescription>{t("notificationSettings.status.onWithHour", { time: hourLabel(chosen) })}</DialogDescription>
           ) : support === "needs-install" ? (
             <>
-              <DialogDescription>{pushSupportText(tr, "needs-install")}</DialogDescription>
+              <DialogDescription>{pushSupportText(t, "needs-install")}</DialogDescription>
               <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm">
-                <li>{t("stepShare")}</li>
-                <li>{t("stepAdd")}</li>
-                <li>{t("stepOpen")}</li>
+                <li>{tx("stepShare")}</li>
+                <li>{tx("stepAdd")}</li>
+                <li>{tx("stepOpen")}</li>
               </ol>
             </>
           ) : support && support !== "ready" ? (
-            <DialogDescription>{pushSupportText(tr, support)}</DialogDescription>
+            <DialogDescription>{pushSupportText(t, support)}</DialogDescription>
           ) : (
             <>
-              <DialogDescription>{t("intro")}</DialogDescription>
+              <DialogDescription>{tx("intro")}</DialogDescription>
               <label className="flex flex-col gap-1.5 text-sm font-semibold">
-                {t("summaryAt")}
+                {tx("summaryAt")}
                 <select value={chosen} onChange={(e) => setChosen(Number(e.target.value))} className="h-11 rounded-xl border border-input bg-transparent px-3 text-base font-normal">
                   {HOURS.map((h) => <option key={h} value={h}>{hourLabel(h)}</option>)}
                 </select>
               </label>
-              <Button type="button" className="h-11" disabled={pending} onClick={allow}>{t("allow")}</Button>
+              <Button type="button" className="h-11" disabled={pending} onClick={allow}>{tx("allow")}</Button>
             </>
           )}
           {message && <p role="alert" className="text-sm text-destructive">{message}</p>}
