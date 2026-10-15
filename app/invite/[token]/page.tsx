@@ -5,6 +5,8 @@ import { DemoBanner } from "@/components/demo/demo-banner";
 import { GoogleIcon } from "@/components/google-icon";
 import { Button } from "@/components/ui/button";
 import { GROUP_KIND_EMOJI, isGroupKind } from "@/lib/group-schema";
+import { getT } from "@/lib/i18n/server";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 import { createClient } from "@/lib/supabase/server";
 import { signInWithGoogle } from "@/app/login/actions";
 import { acceptInvite } from "./actions";
@@ -14,6 +16,7 @@ import { logError } from "@/lib/log";
 // Outside (app) so it works signed out: the anonymous client may call invite_preview only.
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
+  const { t, rich } = await getT();
   const supabase = await createClient();
   const [{ data: claims }, { data: rows, error }] = await Promise.all([
     supabase.auth.getClaims(),
@@ -25,10 +28,10 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   if (!preview) {
     return (
       <InviteCard>
-        <h1 className="text-2xl font-bold">This invite link doesn&apos;t work anymore</h1>
-        <p className="text-sm text-muted-foreground">Ask the person who sent it for a new one.</p>
+        <h1 className="text-2xl font-bold">{t("invite.invalidTitle")}</h1>
+        <p className="text-sm text-muted-foreground">{t("invite.invalidBody")}</p>
         <Button asChild variant="outline" className="h-12 w-full rounded-xl text-base">
-          <Link href="/">Go to Keepup</Link>
+          <Link href="/">{t("invite.goToKeepup")}</Link>
         </Button>
       </InviteCard>
     );
@@ -54,20 +57,20 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
       }
     >
       <h1 className="text-2xl font-bold">
-        {preview.inviter_name} invited you to {group}
+        {rich("invite.invitedYou", { inviter: preview.inviter_name, group })}
       </h1>
       <p className="text-sm text-muted-foreground">
-        {n === 1 ? `1 person is already in ${group}.` : `${n} people are already in ${group}.`}
+        {rich("invite.members", { n, group })}
       </p>
       {memberOf ? (
         <Button asChild className="h-12 w-full rounded-xl text-base">
-          <Link href={`/groups/${memberOf}`}>Open {group}</Link>
+          <Link href={`/groups/${memberOf}`}>{t("invite.open", { group: isolate(group) })}</Link>
         </Button>
       ) : claims?.claims?.is_anonymous ? (
         // A demo login can't join a real group (keepup:demo): sign in first, then back here.
         <DemoBanner placement="top" next={next} />
       ) : claims?.claims ? (
-        <JoinButton action={acceptInvite.bind(null, token)} groupName={group} />
+        <JoinButton action={acceptInvite.bind(null, token)} label={t("invite.join", { group: isolate(group) })} pendingLabel={t("invite.joining")} />
       ) : (
         <div className="flex flex-col gap-2">
           {googleEnabled ? (
@@ -78,17 +81,17 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
                   <span className="flex size-6 items-center justify-center rounded-full bg-card">
                     <GoogleIcon className="size-4" />
                   </span>
-                  Join with Google
+                  {t("invite.joinGoogle")}
                 </Button>
               </form>
               <Button asChild variant="ghost" className="h-11 text-base text-primary">
-                <Link href={`/login?next=${encodeURIComponent(next)}`}>Use email instead</Link>
+                <Link href={`/login?next=${encodeURIComponent(next)}`}>{t("invite.useEmail")}</Link>
               </Button>
             </>
           ) : (
             // Google is off (local stacks): email is the only way in, so it's the main button.
             <Button asChild className="h-12 w-full rounded-xl text-base">
-              <Link href={`/login?next=${encodeURIComponent(next)}`}>Continue with email</Link>
+              <Link href={`/login?next=${encodeURIComponent(next)}`}>{t("invite.continueEmail")}</Link>
             </Button>
           )}
         </div>

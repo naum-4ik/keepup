@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useId, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { InfoHint } from "@/components/info-hint";
 import { PrivacyConsent } from "@/components/privacy-consent";
 import { SaveButton } from "@/components/save-button";
@@ -11,6 +11,7 @@ import { errorTexts } from "@/lib/field-error";
 import { useT } from "@/lib/i18n/client";
 import { purposeForGroupKind, type GroupKind } from "@/lib/group-schema";
 import type { OnboardingFormState, OnboardingFormValues, Purpose } from "@/lib/profile-schema";
+import { weekdayLabels } from "@/lib/weekdays";
 import { cityOf, pickTimezone } from "@/lib/timezones";
 import { cn } from "@/lib/utils";
 
@@ -23,10 +24,10 @@ type Props = {
 };
 
 // The emoji are the owner-chosen content of this one choice, not UI icons.
-const PURPOSE_CHIPS: { value: Purpose; emoji: string; label: string }[] = [
-  { value: "me", emoji: "🙋", label: "Me" },
-  { value: "family", emoji: "👨‍👩‍👧", label: "My family" },
-  { value: "friends", emoji: "👯", label: "Friends" },
+const PURPOSE_CHIPS: { value: Purpose; emoji: string }[] = [
+  { value: "me", emoji: "🙋" },
+  { value: "family", emoji: "👨‍👩‍👧" },
+  { value: "friends", emoji: "👯" },
 ];
 
 const selectClass = "h-11 w-full rounded-xl border border-input bg-transparent px-3 text-base";
@@ -43,7 +44,8 @@ function detectWeekStart(): "0" | "1" | null {
 }
 
 export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) {
-  const { t } = useT();
+  const { t, rich, locale } = useT();
+  const weekdays = weekdayLabels(locale, "long");
   const [state, formAction, pending] = useActionState(action, initialState);
   const [timezone, setTimezone] = useState(defaults.timezone);
   const [weekStart, setWeekStart] = useState(defaults.weekStart);
@@ -76,7 +78,7 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
     <form action={formAction} className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="displayName" className="font-semibold">
-          Display name
+          {t("profile.form.displayName")}
         </Label>
         <Input
           id="displayName"
@@ -99,7 +101,7 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
         <p className={cn("flex min-h-11 flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground", !detected && "invisible")}>
           <span>{cityOf(timezone)}</span>
           <span aria-hidden>·</span>
-          <span>weeks start {weekStart === "0" ? "Sunday" : "Monday"}</span>
+          <span>{t("onboarding.weeksStart", { day: weekStart === "0" ? weekdays[0] : weekdays[1] })}</span>
           <span aria-hidden>·</span>
           <button
             type="button"
@@ -108,7 +110,7 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
             onClick={() => setExpanded(true)}
             className="-mx-2 min-h-11 rounded-lg px-2 font-semibold text-primary hover:bg-accent"
           >
-            Change
+            {t("common.change")}
           </button>
         </p>
       )}
@@ -120,9 +122,9 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
         <div className="flex flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-1">
             <Label htmlFor="weekStart" className="font-semibold">
-              Week starts on
+              {t("profile.form.weekStart")}
             </Label>
-            <InfoHint text="Weekly habits reset on this day." />
+            <InfoHint text={t("profile.form.weekStartHint")} />
           </div>
           <select
             id="weekStart"
@@ -134,8 +136,8 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
             aria-invalid={Boolean(errors.weekStart)}
             aria-describedby={errors.weekStart ? "weekStart-error" : undefined}
           >
-            <option value="1">Monday</option>
-            <option value="0">Sunday</option>
+            <option value="1">{weekdays[1]}</option>
+            <option value="0">{weekdays[0]}</option>
           </select>
           {errors.weekStart && (
             <p id="weekStart-error" className="text-sm text-destructive">
@@ -153,7 +155,7 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
       ) : (
         <div className="flex flex-col gap-2">
           <p id="purpose-label" className="text-sm font-semibold">
-            Keepup is for… <span className="font-normal text-muted-foreground">(optional)</span>
+            {rich("onboarding.purposeLabel", { muted: (c: ReactNode) => <span className="font-normal text-muted-foreground">{c}</span> })}
           </p>
           <input type="hidden" name="purpose" value={purpose} />
           <div role="group" aria-labelledby="purpose-label" className="flex flex-wrap gap-2">
@@ -173,7 +175,7 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
                   )}
                 >
                   <span aria-hidden>{chip.emoji}</span>
-                  {chip.label}
+                  {t(`onboarding.purpose.${chip.value}`)}
                 </button>
               );
             })}
@@ -189,7 +191,7 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
       )}
 
       <div className="flex flex-col gap-2">
-        <SaveButton state={state} pending={pending} label="Continue" />
+        <SaveButton state={state} pending={pending} label={t("common.continue")} />
         <PrivacyConsent />
       </div>
     </form>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { AuthErrorReason } from "@/lib/auth-errors";
+import { getT } from "@/lib/i18n/server";
 
 // "link": a reset or confirm email link (/auth/confirm, /auth/new-password) that didn't work.
 type Reason = AuthErrorReason | "link";
@@ -14,18 +15,19 @@ export default async function AuthErrorPage({
 }: {
   searchParams: Promise<{ reason?: string }>;
 }) {
+  const { t } = await getT();
   const { reason: rawReason } = await searchParams;
   const reason = isReason(rawReason) ? rawReason : null;
 
   if (reason === "link") {
     return (
       <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-4 px-4">
-        <h1 className="text-2xl font-bold">That link didn&apos;t work</h1>
+        <h1 className="text-2xl font-bold">{t("auth.error.linkTitle")}</h1>
         <p className="text-sm text-muted-foreground">
-          Email links work once, for an hour. Sign in, or ask for a new reset link from the sign-in screen.
+          {t("auth.error.linkBody")}
         </p>
         <Button asChild className="h-11">
-          <Link href="/login">Back to sign in</Link>
+          <Link href="/login">{t("auth.error.back")}</Link>
         </Button>
       </main>
     );
@@ -33,30 +35,30 @@ export default async function AuthErrorPage({
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-4 px-4">
-      <h1 className="text-2xl font-bold">Sign-in didn&apos;t work</h1>
+      <h1 className="text-2xl font-bold">{t("auth.error.title")}</h1>
       {reason === "expired" && (
         <p className="text-sm text-muted-foreground">
-          This link was already used or has expired. Sign in again.
+          {t("auth.error.expired")}
         </p>
       )}
       {reason === "denied" && (
         <p className="text-sm text-muted-foreground">
-          Sign-in was cancelled or not allowed. Try again.
+          {t("auth.error.denied")}
         </p>
       )}
       {/* "unknown": the provider or our auth service failed (e.g. Google's code exchange), not the link. */}
       {reason === "unknown" && (
         <p className="text-sm text-muted-foreground">
-          Something went wrong while signing you in. Try again in a moment.
+          {t("auth.error.unknown")}
         </p>
       )}
       {(reason === null || reason === "expired") && (
         <p className="text-sm text-muted-foreground">
-          Links expire after an hour and must be opened in the same browser you requested them from.
+          {t("auth.error.expiry")}
         </p>
       )}
       <Button asChild className="h-11">
-        <Link href="/login">Back to sign in</Link>
+        <Link href="/login">{t("auth.error.back")}</Link>
       </Button>
     </main>
   );

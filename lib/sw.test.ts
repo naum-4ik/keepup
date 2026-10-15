@@ -514,6 +514,29 @@ describe("sw.js offline shell", () => {
     expect(port.postMessage).toHaveBeenCalledWith("cleared");
   });
 
+  it("a language change also drops the saved /install (it is in the old language) and keeps the other shell pages", async () => {
+    const sw = worker([]);
+    const shell = await sw.caches.api.open("keepup-shell-test");
+    for (const p of ["/offline", "/privacy", "/install", "/__keepup-assets__/install", "/__keepup-assets__/privacy"]) await shell.put(p, res(p));
+    await (await sw.caches.api.open("keepup-pages")).put("/today", res("today"));
+    await sw.message({ type: "keepup:clear-pages" });
+    expect(sw.caches.store.get("keepup-pages")).toBeUndefined();
+    expect(await shell.match("/install")).toBeUndefined();
+    expect(await shell.match("/__keepup-assets__/install")).toBeUndefined();
+    for (const p of ["/offline", "/privacy", "/__keepup-assets__/privacy"]) expect((await shell.match(p))?.body).toBe(p);
+  });
+
+  it("after a language change, the next online page load saves /install again (in the new language)", async () => {
+    const net = network();
+    const sw = worker([], undefined, net.fetchImpl);
+    const shell = await sw.caches.api.open("keepup-shell-test");
+    await shell.put("/install", res("install, old language"));
+    await sw.message({ type: "keepup:clear-pages" });
+    net.pages["/install"] = res("install, new language");
+    await sw.request("/progress");
+    expect((await shell.match("/install"))?.body).toBe("install, new language");
+  });
+
   it("a language change: waits for a save in flight, then drops the saved pages and keeps the rest", async () => {
     const net = network();
     let release!: () => void;
@@ -530,6 +553,30 @@ describe("sw.js offline shell", () => {
     await Promise.all([saving, clearing]);
     expect(sw.caches.store.get("keepup-pages")).toBeUndefined();
     expect(sw.caches.store.has("keepup-shell-test")).toBe(true);
+  });
+
+  it("a language change: waits for a shell save in flight, so /install is not cached again afterwards", async () => {
+    const net = network();
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    let reached!: () => void;
+    const started = new Promise<void>((r) => (reached = r));
+    const slow = vi.fn(async (r: string | { url: string }) => {
+      if (new URL(typeof r === "string" ? r : r.url, ORIGIN).pathname === "/offline") {
+        reached();
+        await gate;
+      }
+      return net.fetchImpl(r);
+    });
+    const sw = worker([], undefined, slow);
+    const shell = await sw.caches.api.open("keepup-shell-test");
+    const loading = sw.request("/today");
+    await started;
+    const clearing = sw.message({ type: "keepup:clear-pages" });
+    release();
+    await Promise.all([loading, clearing]);
+    expect(await shell.match("/install")).toBeUndefined();
+    expect(await shell.match("/__keepup-assets__/install")).toBeUndefined();
   });
 
   it("overlapping saves of one page: a slow older answer never replaces the newer copy", async () => {

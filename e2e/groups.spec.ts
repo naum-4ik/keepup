@@ -153,7 +153,7 @@ test("an invited person joins from the link and lands on the group's habits", as
   await expect(guest).toHaveURL(/\/signup\?next=%2Finvite%2F/);
   await signUp(guest, uniqueEmail("guest"), { startOnSignupPage: true });
   await expect(guest).toHaveURL(/\/invite\//);
-  await guest.getByRole("button", { name: "Join Family" }).click();
+  await guest.getByRole("button", { name: "Join \u2068Family\u2069" }).click();
   await expect(guest).toHaveURL(/\/onboarding\?joined=/);
   await expect(guest.getByText("You're joining Family. A little about you first.")).toBeVisible();
   await expect(guest.getByText("Keepup is for")).toBeHidden();
@@ -175,13 +175,13 @@ test("someone already using Keepup joins with one tap", async ({ page, browser }
   const friend = await (await browser.newContext()).newPage();
   await signUpAndOnboard(friend);
   await friend.goto(url);
-  await friend.getByRole("button", { name: "Join Flatmates" }).click();
+  await friend.getByRole("button", { name: "Join \u2068Flatmates\u2069" }).click();
   await expect(friend).toHaveURL(/\/today\?joined=/);
   await expect(friend.getByRole("main").getByRole("status")).toContainText("Welcome to Flatmates");
   // Already in: the link now offers Open, not Join.
   await friend.goto(url);
   await expect(friend.getByRole("button", { name: /^Join / })).toHaveCount(0);
-  await friend.getByRole("link", { name: "Open Flatmates" }).click();
+  await friend.getByRole("link", { name: "Open \u2068Flatmates\u2069" }).click();
   await expect(friend).toHaveURL(/\/groups\/[0-9a-f-]{36}$/);
 });
 
@@ -195,10 +195,10 @@ test("Join on a page loaded before joining opens the group", async ({ page, brow
   await friend.goto(url);
   const otherTab = await context.newPage();
   await otherTab.goto(url);
-  await otherTab.getByRole("button", { name: "Join Flatmates" }).click();
+  await otherTab.getByRole("button", { name: "Join \u2068Flatmates\u2069" }).click();
   await expect(otherTab).toHaveURL(/\/today\?joined=/);
   // The first tab still shows Join; tapping it now opens the group instead of the welcome card.
-  await friend.getByRole("button", { name: "Join Flatmates" }).click();
+  await friend.getByRole("button", { name: "Join \u2068Flatmates\u2069" }).click();
   await expect(friend).toHaveURL(/\/groups\/[0-9a-f-]{36}$/);
 });
 
@@ -209,7 +209,7 @@ test("an admin opening their own link sees Open, not Join", async ({ page }) => 
   const url = await inviteLink(page);
   await page.goto(url);
   await expect(page.getByRole("button", { name: /^Join / })).toHaveCount(0);
-  await page.getByRole("link", { name: "Open Family" }).click();
+  await page.getByRole("link", { name: "Open \u2068Family\u2069" }).click();
   await expect(page).toHaveURL((u) => u.pathname === groupPath);
 });
 
@@ -222,7 +222,7 @@ test("a link turned off between the preview and the tap explains itself", async 
   await friend.goto(url);
   await page.getByRole("button", { name: "Turn off link" }).click();
   await expect(page.getByRole("button", { name: "Create invite link" })).toBeVisible();
-  await friend.getByRole("button", { name: "Join Flatmates" }).click();
+  await friend.getByRole("button", { name: "Join \u2068Flatmates\u2069" }).click();
   await expect(friend.getByRole("heading", { name: "This invite link doesn't work anymore" })).toBeVisible();
   await expect(friend.getByRole("main").getByRole("alert")).toHaveCount(0); // not an inline error
 });
