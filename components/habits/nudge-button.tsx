@@ -5,10 +5,12 @@ import { DropdownMenu } from "radix-ui";
 import { nudge } from "@/app/(app)/inbox/actions";
 import { Button } from "@/components/ui/button";
 import { NUDGE_KINDS } from "@/lib/feed-copy";
+import { useT } from "@/lib/i18n/client";
 import { NEEDS_CONNECTION } from "@/lib/offline-copy";
 
 // Three preset messages, no free text (ideas/notifications-tone.md). One per person, habit and day.
 export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: string; recipientId: string; name: string; sent: boolean }) {
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState(sent);
   // cannot_nudge: they checked in or are set for now; nothing more to send today.
@@ -60,7 +62,7 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
                 }
                 className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm font-semibold outline-none select-none data-highlighted:bg-muted"
               >
-                <span className="text-lg">{k.emoji}</span> {k.label}
+                <span className="text-lg">{k.emoji}</span> {t(`feed.nudgeLabel.${k.kind}`)}
               </DropdownMenu.Item>
             ))}
           </DropdownMenu.Content>

@@ -127,5 +127,25 @@
     "minutesAgo": "{n} min ago",
     "hoursAgo": "{n} h ago",
     "reviewBy": "Review by {time}"
+  },
+  "feed": {
+    "checkInApproved": "{who} approved your check-in.",
+    "groupHabitAdded": "{author} added {habit}.",
+    "habitArchived": "{habit} was archived.",
+    "memberPaused": "{who} paused {habit} for a while.",
+    "memberRemoved": "{who} was removed from {group}.",
+    "memberLeft": "{who} left {group}.",
+    "roleAdmin": "You're now an admin of {group}.",
+    "roleMember": "You're now a member of {group}.",
+    "cheer": "{who} cheered your check-in ❤️",
+    "kidLoggedBy": "{adult} logged {habit} for {kid} ⭐",
+    "kidDidIt": "{kid} did it: {habit} ⭐",
+    "dayEarlier": "earlier",
+    "recapReady": "Your recap is ready.",
+    "nudgeLabel": {
+      "thinking_of_you": "Thinking of you",
+      "you_got_this": "You've got this",
+      "gentle_reminder": "Gentle reminder"
+    }
   }
 }

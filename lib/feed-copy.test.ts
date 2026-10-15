@@ -28,10 +28,10 @@ describe("feedCopy", () => {
     expect(feedCopy(tEn, "en", item({ kind: "group_habit_created", habit_title: "Family dinner", payload: { period: "week", target_count: 1 } })).body)
       .toBe("\u2068Anna\u2069 added \u2068Family dinner\u2069, weekly.");
     expect(feedCopy(tEn, "en", item({ kind: "group_habit_created", habit_title: "Gym", payload: { period: "week", target_count: 3 } })).body)
-      .toBe("Anna added Gym.");
+      .toBe("\u2068Anna\u2069 added \u2068Gym\u2069.");
     expect(feedCopy(tEn, "en", item({ kind: "group_habit_paused", habit_title: "Family dinner", payload: { ends_on: "2026-10-12" } })).body)
       .toBe("\u2068Family dinner\u2069 is paused until Mon 12 Oct.");
-    expect(feedCopy(tEn, "en", item({ kind: "group_habit_created", habit_title: "Family dinner" })).body).toBe("Anna added Family dinner.");
+    expect(feedCopy(tEn, "en", item({ kind: "group_habit_created", habit_title: "Family dinner" })).body).toBe("\u2068Anna\u2069 added \u2068Family dinner\u2069.");
     expect(feedCopy(tEn, "en", item({ kind: "group_streak_ended", habit_title: "Family dinner", payload: { streak: 6, period: "week" } })).body)
       .toBe("\u2068Family dinner\u2069 streak ended at 6 weeks. Start a new one this week.");
     expect(feedCopy(tEn, "en", item({ kind: "member_joined", actor_name: "Grandma" })).body).toBe("\u2068Grandma\u2069 joined \u2068Family\u2069 👋");
@@ -43,9 +43,9 @@ describe("feedCopy", () => {
     expect(feedCopy(tEn, "en", item({ kind: "nudge", habit_title: "Family dinner", payload: { kind: "thinking_of_you" } })).body)
       .toBe("\u2068Anna\u2069: Thinking of you. \u2068Family dinner\u2069 today?");
     expect(feedCopy(tEn, "en", item({ kind: "kid_check_in", actor_name: null, subject_name: "Mary", habit_title: "Brush teeth" })).body)
-      .toBe("Mary did it: Brush teeth ⭐");
+      .toBe("\u2068Mary\u2069 did it: \u2068Brush teeth\u2069 ⭐");
     expect(feedCopy(tEn, "en", item({ kind: "kid_check_in", actor_name: "Dan", subject_name: "Mary", habit_title: "Brush teeth" })).body)
-      .toBe("Dan logged Brush teeth for Mary ⭐");
+      .toBe("\u2068Dan\u2069 logged \u2068Brush teeth\u2069 for \u2068Mary\u2069 ⭐");
     expect(feedCopy(tEn, "en", item({ kind: "kid_goal_reached", subject_name: "Mary", payload: { title: "Trip to the park", emoji: "🛝" } })))
       .toMatchObject({ title: "Mary", body: "\u2068Mary\u2069 reached a goal: \u2068Trip to the park\u2069 🛝" });
     expect(feedCopy(tEn, "en", item({ kind: "kid_garden_full", subject_name: "Mary" })).body).toBe("\u2068Mary\u2069's garden is in full bloom this week 🌷");
@@ -113,5 +113,27 @@ describe("M5 feed lines", () => {
   });
   it("a malformed recap still reads as a gentle line", () => {
     expect(feedCopy(tEn, "en", item({ kind: "weekly_recap", habit_id: null, payload: {} })).body).toBe("Your recap is ready.");
+  });
+});
+
+describe("plain feed lines", () => {
+  const I = (s: string) => `⁨${s}⁩`;
+  it("reads each kind from the catalog", () => {
+    expect(feedCopy(tEn, "en", item({ kind: "check_in_approved", actor_name: "Dan" })).body).toBe(`${I("Dan")} approved your check-in.`);
+    expect(feedCopy(tEn, "en", item({ kind: "group_habit_archived" })).body).toBe(`${I("Read 20 min")} was archived.`);
+    expect(feedCopy(tEn, "en", item({ kind: "member_paused" })).body).toBe(`${I("Anna")} paused ${I("Read 20 min")} for a while.`);
+    expect(feedCopy(tEn, "en", item({ kind: "member_left" })).body).toBe(`${I("Anna")} left ${I("Family")}.`);
+    expect(feedCopy(tEn, "en", item({ kind: "member_left", payload: { removed: true } })).body).toBe(`${I("Anna")} was removed from ${I("Family")}.`);
+    expect(feedCopy(tEn, "en", item({ kind: "role_changed", payload: { role: "admin" } })).body).toBe(`You're now an admin of ${I("Family")}.`);
+    expect(feedCopy(tEn, "en", item({ kind: "role_changed", payload: { role: "member" } })).body).toBe(`You're now a member of ${I("Family")}.`);
+    expect(feedCopy(tEn, "en", item({ kind: "cheer" })).body).toBe(`${I("Anna")} cheered your check-in ❤️`);
+    expect(feedCopy(tEn, "en", item({ kind: "group_streak_ended", payload: { streak: 2, period: "day" } })).body)
+      .toBe(`${I("Read 20 min")} streak ended at 2 days. Start a new one today.`);
+    expect(feedCopy(tEn, "en", item({ kind: "sync_dropped", payload: { tapped_on: "2026-10-05" } })).body).toContain("Mon");
+    expect(feedCopy(tEn, "en", item({ kind: "sync_dropped", payload: {} })).body).toContain("earlier");
+  });
+  it("falls back to gentle names", () => {
+    const body = feedCopy(tEn, "en", item({ kind: "member_joined", group_name: null, actor_name: null })).body;
+    expect(body).toBe(`${I("Someone")} joined ${I("Your group")} 👋`);
   });
 });
