@@ -40,9 +40,10 @@ export const NUDGE_KINDS: readonly { kind: NudgeKind; emoji: string }[] = [
   { kind: "gentle_reminder", emoji: "⏰" },
 ];
 
+const SCHEDULE_KEY: Record<PeriodUnit, string> = { day: "schedule.daily", week: "schedule.weekly", month: "schedule.monthly" };
+
 const asOutcome = (o: unknown): copy.ApprovalOutcome | null => (o === "approved" || o === "rejected" || o === "expired" ? o : null);
 const asPeriod = (p: unknown, fallback: PeriodUnit): PeriodUnit => (p === "day" || p === "week" || p === "month" ? p : fallback);
-const SCHEDULE: Record<PeriodUnit, string> = { day: "daily", week: "weekly", month: "monthly" };
 
 export function feedCopy(t: T, locale: Locale, n: FeedItem): { title: string; body: string; href: string | null } {
   const group = n.group_name ?? t("push.fallback.group");
@@ -74,7 +75,7 @@ export function feedCopy(t: T, locale: Locale, n: FeedItem): { title: string; bo
     case "group_habit_created": {
       // The feed row carries period and target_count, not the full schedule: say "weekly" only for a once-a-period habit.
       const p = n.payload.period;
-      if ((p === "day" || p === "week" || p === "month") && n.payload.target_count === 1) return { ...copy.groupHabitCreated(t, group, who, habit, SCHEDULE[p]), href: habitHref };
+      if ((p === "day" || p === "week" || p === "month") && n.payload.target_count === 1) return { ...copy.groupHabitCreated(t, group, who, habit, t(SCHEDULE_KEY[p])), href: habitHref };
       return { title: group, body: t("feed.groupHabitAdded", { author: isolate(who), habit: isolate(habit) }), href: habitHref };
     }
     case "group_habit_paused": return { ...copy.groupHabitPaused(t, group, habit, n.payload.ends_on ? formatLocalDate(String(n.payload.ends_on), locale) : null), href: habitHref };

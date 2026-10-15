@@ -132,6 +132,12 @@ describe("plain feed lines", () => {
     expect(feedCopy(tEn, "en", item({ kind: "sync_dropped", payload: { tapped_on: "2026-10-05" } })).body).toContain("Mon");
     expect(feedCopy(tEn, "en", item({ kind: "sync_dropped", payload: {} })).body).toContain("earlier");
   });
+  it("names a once-a-period group habit's schedule from the catalog", () => {
+    for (const [period, word] of [["day", "daily"], ["week", "weekly"], ["month", "monthly"]] as const) {
+      expect(feedCopy(tEn, "en", item({ kind: "group_habit_created", habit_title: "Run", payload: { period, target_count: 1 } })).body)
+        .toBe(`${I("Anna")} added ${I("Run")}, ${word}.`);
+    }
+  });
   it("falls back to gentle names", () => {
     const body = feedCopy(tEn, "en", item({ kind: "member_joined", group_name: null, actor_name: null })).body;
     expect(body).toBe(`${I("Someone")} joined ${I("Your group")} 👋`);
