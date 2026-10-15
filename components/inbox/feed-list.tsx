@@ -24,8 +24,8 @@ export function FeedList({ items, timeZone, now, t, locale }: { items: FeedItem[
   return (
     <div className="flex flex-col gap-4">
       {[...days].map(([day, rows]) => (
-        <section key={day} aria-label={dayLabel(day, today)} className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold text-muted-foreground">{dayLabel(day, today)}</h2>
+        <section key={day} aria-label={dayLabel(t, locale, day, today)} className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold text-muted-foreground">{dayLabel(t, locale, day, today)}</h2>
           <ul className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-soft">
             {rows.map((n) => {
               const { title, body, href } = feedCopy(t, locale, n);
@@ -55,7 +55,7 @@ export function FeedList({ items, timeZone, now, t, locale }: { items: FeedItem[
                     <span className="truncate text-xs font-semibold text-muted-foreground">{title}</span>
                     <span className="text-sm">{body}</span>
                   </span>
-                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{relativeTime(n.created_at, timeZone, now)}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{relativeTime(t, locale, n.created_at, timeZone, now)}</span>
                 </>
               );
               const className = cn("flex min-h-14 items-start gap-3 px-4 py-3", !n.read_at && "bg-accent/50");

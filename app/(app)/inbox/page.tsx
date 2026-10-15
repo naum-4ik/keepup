@@ -21,6 +21,8 @@ export default async function InboxPage() {
   const tz = profile.timezone;
   const now = new Date();
   const today = todayIn(tz, now);
+  // "today" and "yesterday" read mid-sentence in lower case; a date stays as formatted.
+  const lowerDay = (d: string) => ([t("dates.today"), t("dates.yesterday")].includes(d) ? d.toLocaleLowerCase(locale) : d);
   const rows: ApprovalRow[] = approvals.map((a) => ({
     check_in_id: a.check_in_id,
     author_name: a.author_name,
@@ -28,8 +30,8 @@ export default async function InboxPage() {
     author_avatar_color: a.author_avatar_color,
     habit_title: a.habit_title,
     group_name: a.group_name,
-    day: dayLabel(a.local_date, today).replace(/^(Today|Yesterday)$/, (d) => d.toLowerCase()),
-    reviewBy: reviewBy(a.review_deadline, tz, now),
+    day: lowerDay(dayLabel(t, locale, a.local_date, today)),
+    reviewBy: reviewBy(t, locale, a.review_deadline, tz, now),
   }));
 
   return (

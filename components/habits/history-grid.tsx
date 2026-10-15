@@ -1,4 +1,5 @@
 import { formatLocalDate } from "@/lib/dates";
+import type { Locale } from "@/supabase/functions/_shared/i18n";
 import type { HabitPeriod } from "@/lib/habit-schema";
 import type { HistoryCell } from "@/lib/habits";
 import { OUTCOME_LABEL } from "@/lib/week-overview";
@@ -13,7 +14,7 @@ const STYLE: Record<string, string> = {
 };
 const LABEL: Record<string, string> = OUTCOME_LABEL;
 
-export function HistoryGrid({ cells, period }: { cells: HistoryCell[]; period: HabitPeriod }) {
+export function HistoryGrid({ cells, period, locale }: { cells: HistoryCell[]; period: HabitPeriod; locale: Locale }) {
   // A habit that hasn't started has no periods yet: say how the grid fills instead of an empty box.
   if (cells.length === 0) {
     return <p className="text-sm text-muted-foreground">Nothing here yet. Each {period} you finish fills a square.</p>;
@@ -24,7 +25,7 @@ export function HistoryGrid({ cells, period }: { cells: HistoryCell[]; period: H
     <div className="flex flex-col gap-3">
       <ol className="flex flex-wrap gap-1.5">
         {cells.map((c) => {
-          const text = `${formatLocalDate(c.period_start)}: ${LABEL[c.outcome]}`;
+          const text = `${formatLocalDate(c.period_start, locale)}: ${LABEL[c.outcome]}`;
           return (
             <li key={c.period_start} title={text} className={cn(period === "day" ? "size-7" : "size-9", "rounded-md", STYLE[c.outcome])}>
               <span className="sr-only">{text}</span>

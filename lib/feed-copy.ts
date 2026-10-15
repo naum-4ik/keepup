@@ -78,7 +78,7 @@ export function feedCopy(t: T, locale: Locale, n: FeedItem): { title: string; bo
       if ((p === "day" || p === "week" || p === "month") && n.payload.target_count === 1) return { ...copy.groupHabitCreated(t, group, who, habit, SCHEDULE[p]), href: habitHref };
       return { title: group, body: `${who} added ${habit}.`, href: habitHref };
     }
-    case "group_habit_paused": return { ...copy.groupHabitPaused(t, group, habit, n.payload.ends_on ? formatLocalDate(String(n.payload.ends_on)) : null), href: habitHref };
+    case "group_habit_paused": return { ...copy.groupHabitPaused(t, group, habit, n.payload.ends_on ? formatLocalDate(String(n.payload.ends_on), locale) : null), href: habitHref };
     case "group_habit_resumed": return { ...copy.groupHabitResumed(t, group, habit), href: habitHref };
     case "group_habit_archived": return { title: group, body: `${habit} was archived.`, href: groupHref };
     case "member_paused": return { title: group, body: `${who} paused ${habit} for a while.`, href: habitHref };

@@ -6,6 +6,7 @@ import { freezeHabit, unfreezeHabit, type ActionResult, type FormActionState } f
 import { StartDatePicker } from "@/components/habits/start-date-picker";
 import { Button } from "@/components/ui/button";
 import { formatLocalDate } from "@/lib/dates";
+import { useT } from "@/lib/i18n/client";
 import type { HabitFreeze } from "@/lib/habits";
 import { pauseEndQuickPicks } from "@/lib/schedule";
 
@@ -41,6 +42,7 @@ export function FreezeForm({
   submitLabel?: string;
 }) {
   const [state, formAction, pending] = useActionState(kind.freeze.bind(null, habitId), initialState);
+  const { t, locale } = useT();
   const [resuming, startResume] = useTransition();
   const [resumeError, setResumeError] = useState<string | null>(null);
   const [startsOn, setStartsOn] = useState(today);
@@ -59,9 +61,9 @@ export function FreezeForm({
       <div className="flex flex-col gap-3">
         <p className="text-sm">
           {scheduled
-            ? `Pause starts ${formatLocalDate(activeFreeze.starts_on)}`
-            : `Paused from ${formatLocalDate(activeFreeze.starts_on)}${
-                activeFreeze.ends_on ? ` until ${formatLocalDate(activeFreeze.ends_on)}` : ""
+            ? `Pause starts ${formatLocalDate(activeFreeze.starts_on, locale)}`
+            : `Paused from ${formatLocalDate(activeFreeze.starts_on, locale)}${
+                activeFreeze.ends_on ? ` until ${formatLocalDate(activeFreeze.ends_on, locale)}` : ""
               }`}
         </p>
         <Button
@@ -98,7 +100,7 @@ export function FreezeForm({
       {endsOn === null ? (
         <button
           type="button"
-          onClick={() => setEndsOn(pauseEndQuickPicks(startsOn)[0].date)}
+          onClick={() => setEndsOn(pauseEndQuickPicks(t, startsOn)[0].date)}
           className="flex h-11 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-input text-sm font-semibold text-muted-foreground hover:bg-muted"
         >
           <CalendarPlus aria-hidden className="size-4" />
@@ -123,7 +125,7 @@ export function FreezeForm({
             today={today}
             min={startsOn}
             weekStart={weekStart}
-            quickPicks={pauseEndQuickPicks(startsOn)}
+            quickPicks={pauseEndQuickPicks(t, startsOn)}
           />
         </fieldset>
       )}

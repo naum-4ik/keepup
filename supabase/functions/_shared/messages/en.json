@@ -91,7 +91,20 @@
     "daily": "daily",
     "weekly": "weekly",
     "monthly": "monthly",
-    "timesPer": "{n}× a {unit, select, day {day} week {week} other {month}}"
+    "timesPer": "{n}× a {unit, select, day {day} week {week} other {month}}",
+    "once": { "day": "Daily", "week": "Weekly", "month": "Monthly" },
+    "progress": {
+      "starts": "Starts {date}",
+      "paused": "Paused",
+      "pausedUntil": "Paused until {date}",
+      "doneToday": "Done for today",
+      "notDoneYet": "Not done yet",
+      "todayCount": "{done} / {target} today",
+      "todayOf": "{done} of {target} today",
+      "doneForPeriod": "Done for this {period, select, week {week} other {month}}",
+      "periodCount": "{done} of {target} this {period, select, week {week} other {month}}",
+      "daysLeft": "{n, plural, one {# day left} other {# days left}}"
+    }
   },
   "units": {
     "day": "{n, plural, one {# day} other {# days}}",
@@ -106,5 +119,13 @@
     "Forest": "Forest",
     "line": "Level {level} · {name}",
     "toNext": "{xp} XP to Level {next}"
+  },
+  "dates": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "justNow": "just now",
+    "minutesAgo": "{n} min ago",
+    "hoursAgo": "{n} h ago",
+    "reviewBy": "Review by {time}"
   }
 }

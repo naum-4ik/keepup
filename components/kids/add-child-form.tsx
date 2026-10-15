@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CHILD_NAME_MAX } from "@/lib/kid-schema";
 import { DEFAULT_KID_TEMPLATE_IDS, KID_TEMPLATES, kidTemplatesByGroup, type KidTemplate } from "@/lib/kid-templates";
+import { useT } from "@/lib/i18n/client";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { keepFormValues } from "@/lib/keep-form-values";
@@ -19,6 +20,7 @@ const initialState: KidFormState = { status: "idle" };
 
 // A kid template as a big tappable card: the emoji large in a pastel circle, the title, how often.
 export function KidTemplateTile({ template, selected }: { template: KidTemplate; selected?: boolean }) {
+  const { t: tr } = useT();
   return (
     <>
       <span aria-hidden className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent text-3xl leading-none select-none">
@@ -26,7 +28,7 @@ export function KidTemplateTile({ template, selected }: { template: KidTemplate;
       </span>
       <span className="flex min-w-0 flex-1 flex-col text-left">
         <span className="font-bold leading-tight">{template.title}</span>
-        <span className="text-xs text-muted-foreground">{describeSchedule(template.targetCount, template.period)}</span>
+        <span className="text-xs text-muted-foreground">{describeSchedule(tr, template.targetCount, template.period)}</span>
       </span>
       {selected !== undefined && (
         <span
@@ -62,6 +64,7 @@ export function KidTemplateGroups({ templates, item }: { templates: readonly Kid
 // Add a child (ideas/design-review-backlog.md): nickname, avatar and the guardian box first, the
 // starter habits as short rows, "Choose more habits" for the rest, and the button always in reach.
 export function AddChildForm({ groupId }: { groupId: string }) {
+  const { t: tr } = useT();
   const [state, formAction, pending] = useActionState(addChild, initialState);
   const [name, setName] = useState("");
   const [picked, setPicked] = useState<Set<string>>(() => new Set(DEFAULT_KID_TEMPLATE_IDS));
@@ -130,7 +133,7 @@ export function AddChildForm({ groupId }: { groupId: string }) {
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate font-bold leading-tight">{t.title}</span>
-                  <span className="text-xs text-muted-foreground">{describeSchedule(t.targetCount, t.period)}</span>
+                  <span className="text-xs text-muted-foreground">{describeSchedule(tr, t.targetCount, t.period)}</span>
                 </span>
                 <button
                   type="button"

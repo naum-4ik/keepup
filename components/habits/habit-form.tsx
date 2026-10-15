@@ -23,6 +23,7 @@ import { startAfterSwitch, todayForGroup } from "@/lib/habit-start";
 import {
   HABIT_TITLE_MAX, isHabitCategory, TARGET_LIMITS, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod,
 } from "@/lib/habit-schema";
+import { useT } from "@/lib/i18n/client";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +61,7 @@ export function HabitForm({
   // ?group=<id>: the group page's "Add a group habit" link.
   initialGroupId?: string;
 }) {
+  const { t: tr } = useT();
   // Together is offered only when adding from a group (?group=<id> of a group the user admins).
   const showTogether = Boolean(initialGroupId);
   const [tab, setTab] = useState<Tab>(initialGroupId ? "together" : "popular");
@@ -132,7 +134,7 @@ export function HabitForm({
             <HabitEmoji category={t.category} emoji={t.emoji} size="xs" />
             <span className="flex min-w-0 flex-col">
               <span className="line-clamp-2 text-[0.9375rem] leading-snug font-bold">{t.title}</span>
-              <span className="text-xs text-muted-foreground">{describeSchedule(t.targetCount, t.period)}</span>
+              <span className="text-xs text-muted-foreground">{describeSchedule(tr, t.targetCount, t.period)}</span>
             </span>
           </button>
         ))}
@@ -202,6 +204,7 @@ function HabitFields({
   weekStart: 0 | 1;
   onPendingChange: (pending: boolean) => void;
 }) {
+  const { t: tr, locale } = useT();
   const [state, formAction, pending] = useActionState(submitHabit, initialState);
   const [groupId, setGroupId] = useState(initialGroupId);
   const group = groups.find((g) => g.id === groupId) ?? null;
@@ -346,7 +349,7 @@ function HabitFields({
           errorId={errors.startsOn ? "startsOn-error" : undefined}
         />
         <p className="text-xs text-muted-foreground">
-          {formatLocalDate(values.startsOn)}. Nothing before this day counts.
+          {formatLocalDate(values.startsOn, locale)}. Nothing before this day counts.
         </p>
         {errors.startsOn && <p id="startsOn-error" className="text-sm text-destructive">{errors.startsOn}</p>}
       </fieldset>
@@ -358,7 +361,7 @@ function HabitFields({
         <p role="alert" className="text-sm text-destructive">{state.message}</p>
       )}
       <Button type="submit" disabled={pending} className="h-11 text-base">
-        {pending ? "Adding…" : validCount ? `Add habit · ${describeSchedule(count, period)}` : "Add habit"}
+        {pending ? "Adding…" : validCount ? `Add habit · ${describeSchedule(tr, count, period)}` : "Add habit"}
       </Button>
     </form>
   );

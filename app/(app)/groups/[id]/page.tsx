@@ -18,6 +18,7 @@ import { childrenDeletionNotice, inviteUrl } from "@/lib/group-schema";
 import { getGroupDetail, getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
 import { getHabitSummaries } from "@/lib/habits";
+import { getT } from "@/lib/i18n/server";
 import { requestOrigin } from "@/lib/request-origin";
 import { describeSchedule } from "@/lib/schedule";
 import { listTimezones } from "@/lib/timezones";
@@ -42,6 +43,7 @@ export default async function GroupPage({
 }) {
   const [{ id }, { invite }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
+  const { t } = await getT();
   const [{ profile, userId }, group, summaries, myGroups] = await Promise.all([
     getProfile(),
     getGroupDetail(id),
@@ -144,7 +146,7 @@ export default async function GroupPage({
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate font-semibold">{h.title}</span>
                     <span className="text-xs text-muted-foreground">
-                      {describeSchedule(h.target_count, h.period)}
+                      {describeSchedule(t, h.target_count, h.period)}
                       {h.requires_approval && " · needs approval"}
                     </span>
                   </span>

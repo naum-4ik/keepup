@@ -23,6 +23,7 @@ import { todayIn } from "@/lib/dates";
 import { withoutEnded } from "@/lib/habit-end";
 import { getFinishedIds, getHabitEnds, getRecentTapRows, type HabitSummary } from "@/lib/habits";
 import { isUuid } from "@/lib/habit-schema";
+import { getT } from "@/lib/i18n/server";
 import { currentPeriods, renderedTapIds, tapPeriods } from "@/lib/rendered-taps";
 import { getChildCheckIns, getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { stateOf } from "@/lib/today";
@@ -36,6 +37,7 @@ export default async function KidPage({
 }) {
   const [{ id }, { habitsFailed }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
+  const { t, locale } = await getT();
   // Profiles are read-own under RLS: the child's name and group come from my_children().
   const child = (await getMyChildren()).find((c) => c.child_id === id);
   if (!child) notFound();
@@ -131,7 +133,7 @@ export default async function KidPage({
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate font-bold">{h.title}</span>
                         <span className="text-sm text-muted-foreground">
-                          {kidProgressText(h)}
+                          {kidProgressText(t, locale, h)}
                           {h.group_name && ` · ${h.group_name}`}
                         </span>
                       </span>

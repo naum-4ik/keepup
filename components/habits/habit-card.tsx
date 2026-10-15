@@ -5,16 +5,18 @@ import { MemberStatusRow } from "@/components/habits/member-status-row";
 import { StreakBadge } from "@/components/habits/streak-badge";
 import { KidCheckInButton } from "@/components/kids/kid-check-in-button";
 import type { HabitSummary } from "@/lib/habits";
+import { getT } from "@/lib/i18n/server";
 import { describeProgress } from "@/lib/schedule";
 import { everyoneDidIt, membersOf, openChildrenOf } from "@/lib/today-sections";
 import { stateOf } from "@/lib/today";
 import { CATEGORIES } from "@/lib/categories";
 import { cn } from "@/lib/utils";
+import type { Locale, T } from "@/supabase/functions/_shared/i18n";
 
 type Kid = { id: string; name: string };
 
-function progressOf(habit: HabitSummary) {
-  return describeProgress({
+function progressOf(t: T, locale: Locale, habit: HabitSummary) {
+  return describeProgress(t, locale, {
     targetCount: habit.target_count,
     period: habit.period,
     doneCount: habit.done_count,
@@ -27,17 +29,18 @@ function progressOf(habit: HabitSummary) {
 }
 
 // A kid's daily habit reads "1 of 2 today" (spec: Kid profiles); other periods as for adults.
-export function kidProgressText(habit: HabitSummary): string {
-  if (habit.period !== "day" || habit.frozen || habit.not_started) return progressOf(habit).text;
-  return `${Math.min(habit.done_count, habit.target_count)} of ${habit.target_count} today`;
+export function kidProgressText(t: T, locale: Locale, habit: HabitSummary): string {
+  if (habit.period !== "day" || habit.frozen || habit.not_started) return progressOf(t, locale, habit).text;
+  return t("schedule.progress.todayOf", { done: Math.min(habit.done_count, habit.target_count), target: habit.target_count });
 }
 
 // `kid`: the row is the child's (Today's kid section): big emoji, no link to the adult habit page,
 // and the check-in is for her. Group copy ("Everyone did it") stays on the group card.
 // `endLine`: "Day 12 of 30" for a habit with an end (ideas/habit-end-date.md).
-export function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; kid?: Kid; endLine?: string }) {
-  if (kid) return <KidHabitCard habit={habit} kid={kid} />;
-  const progress = progressOf(habit);
+export async function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; kid?: Kid; endLine?: string }) {
+  const { t, locale } = await getT();
+  if (kid) return <KidHabitCard t={t} locale={locale} habit={habit} kid={kid} />;
+  const progress = progressOf(t, locale, habit);
   const showBar = habit.period === "day" && habit.target_count > 1 && !habit.frozen;
   const members = membersOf(habit);
   const everyone = everyoneDidIt(habit);
@@ -99,7 +102,7 @@ export function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; kid?: 
   );
 }
 
-function KidHabitCard({ habit, kid }: { habit: HabitSummary; kid: Kid }) {
+function KidHabitCard({ t, locale, habit, kid }: { t: T; locale: Locale; habit: HabitSummary; kid: Kid }) {
   const state = stateOf(habit);
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-soft">
@@ -107,7 +110,7 @@ function KidHabitCard({ habit, kid }: { habit: HabitSummary; kid: Kid }) {
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="truncate font-bold">{habit.title}</span>
         <span className={cn("text-sm", state === "done" ? "font-semibold text-done" : "text-muted-foreground")}>
-          {kidProgressText(habit)}
+          {kidProgressText(t, locale, habit)}
         </span>
       </span>
       <StreakBadge count={habit.current_streak} />

@@ -5,6 +5,7 @@ import { changeHabitEnd, finishHabit, keepGoing, type ActionResult } from "@/app
 import { endOptions } from "@/lib/habit-end";
 import type { HabitPeriod } from "@/lib/habit-schema";
 import { formatLocalDate } from "@/lib/dates";
+import { useT } from "@/lib/i18n/client";
 
 // The habit page's end (ideas/habit-end-date.md): extend it or remove it; never earlier. Once the
 // habit's own today is past the end, only the finish card's two choices are left.
@@ -21,6 +22,7 @@ export function EndControl({
   endsOn: string | null;
   today: string;
 }) {
+  const { locale } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const run = (call: () => Promise<ActionResult>) =>
@@ -35,7 +37,7 @@ export function EndControl({
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm">
-        {endsOn ? `Last day: ${formatLocalDate(endsOn)}.` : "No end: it keeps going until you stop it."}
+        {endsOn ? `Last day: ${formatLocalDate(endsOn, locale)}.` : "No end: it keeps going until you stop it."}
         {!options && " It reached its end. Keep going removes the end; Finish moves it to Finished."}
       </p>
       <div className="flex flex-wrap gap-2">

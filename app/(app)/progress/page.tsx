@@ -15,6 +15,7 @@ import { inProgressTab, type ProgressTab } from "@/lib/progress-lists";
 import { RestoreHabitButton } from "@/components/habits/restore-habit-button";
 import { StartAgainButton } from "@/components/habits/start-again-button";
 import type { HabitPeriod } from "@/lib/habit-schema";
+import { getT } from "@/lib/i18n/server";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { hasWeekData } from "@/lib/week-overview";
@@ -23,6 +24,7 @@ const UNIT: Record<HabitPeriod, [string, string]> = { day: ["day", "days"], week
 
 export default async function ProgressPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const { view } = await searchParams;
+  const { t } = await getT();
   const showFinished = view === "finished";
   const showArchived = view === "archived" || showFinished;
   const tab: ProgressTab = showFinished ? "finished" : showArchived ? "archived" : "active";
@@ -110,7 +112,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                         </span>
                         <span className="text-sm text-muted-foreground">
                           {!h.archived_at && ended(h) && "Ended · decide on Today · "}
-                          {describeSchedule(h.target_count, h.period)}
+                          {describeSchedule(t, h.target_count, h.period)}
                           {h.best_streak > 0 && ` · best ${h.best_streak} ${UNIT[h.period][h.best_streak === 1 ? 0 : 1]}`}
                         </span>
                         {cellsFor.has(h.habit_id) && (

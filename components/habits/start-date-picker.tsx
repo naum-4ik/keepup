@@ -3,9 +3,14 @@
 import { useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { addDays, addMonths, formatLocalDate, formatMonth, monthGrid, nextWeekStart } from "@/lib/dates";
+import { INTL_LOCALE, type Locale } from "@/supabase/functions/_shared/i18n";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
-const shortDate = (date: string) => formatLocalDate(date).split(" ").slice(1).join(" ");
+const shortDate = (date: string, locale: Locale) => {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: "UTC", day: "numeric", month: "short" }).format(new Date(Date.UTC(y, m - 1, d)));
+};
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 // The one chip for date choices: Starts here, Ends in EndPicker (same height, type and pressed state).
 export const dateChipClass =
@@ -30,6 +35,7 @@ type Props = {
 // Quick picks cover the common case (start now); the month grid handles anything else.
 // Styled with the app's tokens instead of the browser's native date popup.
 export function StartDatePicker({ value, onChange, today, min = today, weekStart, errorId, quickPicks }: Props) {
+  const { locale } = useT();
   const quick =
     quickPicks ?? [
       { label: "Today", date: today },
@@ -50,10 +56,10 @@ export function StartDatePicker({ value, onChange, today, min = today, weekStart
             {q.label}
           </button>
         ))}
-        <button type="button" aria-pressed={!isQuick} aria-expanded={open} aria-label={isQuick ? "Pick a date" : `Pick a date, ${formatLocalDate(value)}`} className={dateChipClass}
+        <button type="button" aria-pressed={!isQuick} aria-expanded={open} aria-label={isQuick ? "Pick a date" : `Pick a date, ${formatLocalDate(value, locale)}`} className={dateChipClass}
           onClick={() => { setMonth(value.slice(0, 7)); setOpen((o) => !o); }}>
           <CalendarDays aria-hidden className="size-4" />
-          {isQuick ? "Date" : shortDate(value)}
+          {isQuick ? "Date" : shortDate(value, locale)}
         </button>
       </div>
 
@@ -65,7 +71,7 @@ export function StartDatePicker({ value, onChange, today, min = today, weekStart
               className="flex size-11 items-center justify-center rounded-full text-primary hover:bg-muted disabled:text-muted-foreground/40">
               <ChevronLeft className="size-5" />
             </button>
-            <span className="text-sm font-bold" aria-live="polite">{formatMonth(month)}</span>
+            <span className="text-sm font-bold" aria-live="polite">{formatMonth(month, locale)}</span>
             <button type="button" aria-label="Next month" onClick={() => setMonth((m) => addMonths(m, 1))}
               className="flex size-11 items-center justify-center rounded-full text-primary hover:bg-muted">
               <ChevronRight className="size-5" />
@@ -84,7 +90,7 @@ export function StartDatePicker({ value, onChange, today, min = today, weekStart
                   type="button"
                   disabled={date < min}
                   aria-pressed={date === value}
-                  aria-label={formatLocalDate(date)}
+                  aria-label={formatLocalDate(date, locale)}
                   onClick={() => { onChange(date); setOpen(false); }}
                   className={cn(
                     "flex h-11 w-full items-center justify-center rounded-full text-sm tabular-nums",
