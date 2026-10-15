@@ -150,6 +150,8 @@
   "dates": {
     "today": "Today",
     "yesterday": "Yesterday",
+    "todayInline": "today",
+    "yesterdayInline": "yesterday",
     "justNow": "just now",
     "minutesAgo": "{n, plural, other {# min ago}}",
     "hoursAgo": "{n, plural, other {# h ago}}",
@@ -219,6 +221,7 @@
     "hourHintNoDevice": "When your daily summary arrives, once reminders are on.",
     "status": {
       "paused": "Reminders are paused until {until}.",
+      "pausedUntilOn": "Reminders are paused until you turn them back on.",
       "inbox": "Reminders go to your Inbox.",
       "onWithHour": "Reminders are on for this device ✓ Your daily summary arrives at {time}.",
       "on": "Reminders are on for this device ✓"
@@ -246,7 +249,7 @@
     "dotCount": "{status, select, done {{n, plural, other {# done}}} missed {{n, plural, other {# missed}}} paused {{n, plural, other {# paused}}} not_started {{n, plural, other {# not started}}} open {{n, plural, other {# in progress}}} rested {{n, plural, other {# rest day}}} other {{n, plural, other {#}}}}"
   },
   "recaps": {
-    "weekOf": "Week of {day} {month}",
+    "weekOf": "Week of {date}",
     "quietWeek": "A quiet week.",
     "quietMonth": "A quiet month.",
     "nothingDue": "Nothing was due.",
@@ -368,8 +371,7 @@
   "demo": {
     "off": "That's off in the demo.",
     "banner": "You're in the demo. Data resets after 24 hours.",
-    "signIn": "Sign in",
-    "signInTail": "to start your own.",
+    "signInLine": "<signIn>Sign in</signIn> to start your own.",
     "failed": "The demo didn't start. Try again in a moment.",
     "justLooking": "Just looking?",
     "tryDemo": "Try the demo",
@@ -519,7 +521,7 @@
       "signUp": "Sign up",
       "forgot": "Forgot password?",
       "sending": "Sending…",
-      "needEmail": "Type your email above, then tap Forgot password? again.",
+      "needEmail": "Type your email above, then tap {forgot} again.",
       "orGoogle": "Or sign in with Google using the same email.",
       "signingIn": "Signing in…",
       "showPassword": "Show password",
@@ -824,6 +826,12 @@
         "3": "Flowers and a butterfly",
         "4": "A full garden"
       },
+      "toStage": {
+        "1": "a sprout",
+        "2": "the first flower",
+        "3": "flowers and a butterfly",
+        "4": "a full garden"
+      },
       "thisWeek": "This week's garden"
     },
     "aquarium": {
@@ -836,6 +844,12 @@
         "2": "A fish",
         "3": "Fish and a shell",
         "4": "A full reef"
+      },
+      "toStage": {
+        "1": "seaweed",
+        "2": "a fish",
+        "3": "fish and a shell",
+        "4": "a full reef"
       },
       "thisWeek": "This week's aquarium"
     },
@@ -850,6 +864,12 @@
         "3": "Planets",
         "4": "A starry galaxy"
       },
+      "toStage": {
+        "1": "a rocket",
+        "2": "the moon",
+        "3": "planets",
+        "4": "a starry galaxy"
+      },
       "thisWeek": "This week's space"
     },
     "dino": {
@@ -863,6 +883,12 @@
         "3": "A dino and its nest",
         "4": "A grown-up dino"
       },
+      "toStage": {
+        "1": "a cracking egg",
+        "2": "a baby dino",
+        "3": "a dino and its nest",
+        "4": "a grown-up dino"
+      },
       "thisWeek": "This week's dino egg"
     },
     "town": {
@@ -875,6 +901,12 @@
         "2": "A house and a tree",
         "3": "A street",
         "4": "A little town"
+      },
+      "toStage": {
+        "1": "a house",
+        "2": "a house and a tree",
+        "3": "a street",
+        "4": "a little town"
       },
       "thisWeek": "This week's town"
     }
@@ -1001,7 +1033,7 @@
     "how": "How?",
     "installTitle": "Install Keepup",
     "installIntro": "Keepup works best from your Home Screen: full screen, with reminders.",
-    "installReminders": "Reinstalled? Reminders don't move with the app. Turn them on again: Profile → Settings → Turn on reminders."
+    "installReminders": "Reinstalled? Reminders don't move with the app. Turn them on again: {profile} → {settings} → {turnOn}."
   },
   "offline": {
     "banner": "Offline · showing your last update",
@@ -1176,19 +1208,20 @@
       }
     },
     "history": {
-      "empty": "Nothing here yet. Each {period, select, day {day} week {week} other {month}} you finish fills a square."
+      "empty": "Nothing here yet. Each {period, select, day {day} week {week} other {month}} you finish fills a square.",
+      "cell": "{date}: {outcome}"
     },
     "countStepper": {
       "decrease": "Decrease",
       "increase": "Increase"
     },
     "cheer": {
-      "done": "Cheered",
-      "cta": "Cheer ❤️"
+      "done": "Cheered<sr> <bdi>{name}</bdi></sr>",
+      "cta": "Cheer ❤️<sr> <bdi>{name}</bdi></sr>"
     },
     "nudge": {
-      "done": "Nudged ✓",
-      "cta": "Nudge",
+      "done": "Nudged ✓<sr> <bdi>{name}</bdi></sr>",
+      "cta": "Nudge<sr> <bdi>{name}</bdi></sr>",
       "menuLabel": "Nudge {name}"
     },
     "archive": {
@@ -1450,7 +1483,7 @@
       "dailyReminder": "Daily reminder",
       "pauseAll": "Pause all",
       "pausedUntil": "Paused until {until}",
-      "untilTurnedOn": "you turn them back on",
+      "pausedUntilOn": "Paused until you turn them back on",
       "resume": "Resume",
       "whatToSend": "What to send",
       "devices": "Devices",
@@ -1569,7 +1602,7 @@
       "step3": "Tap Add to Home Screen.",
       "step4": "Check the name is Keepup, then tap Add.",
       "step5": "Open Keepup from the new icon and sign in.",
-      "step6": "Profile → Settings → Turn on reminders.",
+      "step6": "{profile} → {settings} → {turnOn}.",
       "step7": "Had the old icon? Press and hold it and remove it.",
       "pic1": "Step 1: in Safari, tap the Share button in the toolbar, or ⋯ and then Share",
       "pic2": "Step 2: in the share sheet, tap Add to Home Screen",
@@ -1580,7 +1613,7 @@
       "heading": "Android",
       "step1": "Open Keepup in Chrome.",
       "step2": "Tap ⋮, then Install app (or Add to Home screen).",
-      "step3": "Open Keepup from the new icon, then turn reminders on in Profile → Settings.",
+      "step3": "Open Keepup from the new icon, then turn reminders on in {profile} → {settings}.",
       "pic1": "Step 1: in Chrome, tap the ⋮ menu at the right of the address bar",
       "pic2": "Step 2: in the menu, tap Install app",
       "pic3": "Step 3: the Keepup icon on the home screen"
@@ -1588,7 +1621,7 @@
     "computer": {
       "heading": "Computer",
       "step1": "In Chrome or Edge, click the install icon at the right of the address bar, then Install.",
-      "step2": "Then turn reminders on in Profile → Settings.",
+      "step2": "Then turn reminders on in {profile} → {settings}.",
       "pic1": "The install icon at the right of the address bar, and Install Keepup with an Install button"
     }
   },

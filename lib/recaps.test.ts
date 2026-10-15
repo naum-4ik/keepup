@@ -19,6 +19,13 @@ describe("recaps", () => {
     expect(recapTitle(tEn, "en", parseRecap(week)!)).toBe("Week of 28 Sep");
     expect(recapTitle(tEn, "en", parseRecap({ ...week, kind: "month", start: "2026-09-01", end: "2026-10-01" })!)).toBe("September 2026");
   });
+  it("week titles read as before in every month (day, then the fixed English abbreviation)", () => {
+    const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    mon.forEach((m, i) => {
+      const start = `2026-${String(i + 1).padStart(2, "0")}-0${(i % 9) + 1}`;
+      expect(recapTitle(tEn, "en", parseRecap({ ...week, start })!)).toBe(`Week of ${(i % 9) + 1} ${m}`);
+    });
+  });
   it("uses the Inbox words, and stays gentle when nothing was due", () => {
     expect(recapLine(tEn, "en", parseRecap(week)!)).toBe("10 of 11 check-ins last week. Longest streak: \u2068Read\u2069 🔥 7 days");
     expect(recapLine(tEn, "en", parseRecap(week)!, "history")).toBe("10 of 11 check-ins. Longest streak: \u2068Read\u2069 🔥 7 days");

@@ -24,10 +24,14 @@ const pillClass =
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const hourLabel = (h: number) => `${String(h).padStart(2, "0")}:00`;
 
-function pausedUntil(t: T, locale: Locale, until: string, timeZone: string): string {
-  if (until === "infinity") return t("notifications.card.untilTurnedOn");
+// Null: paused until turned back on (muted_until = infinity).
+function pausedUntil(locale: Locale, until: string, timeZone: string): string | null {
+  if (until === "infinity") return null;
   return new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone, weekday: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(until));
 }
+
+const pausedLine = (t: T, until: string | null) =>
+  until ? t("notifications.card.pausedUntil", { until }) : t("notifications.card.pausedUntilOn");
 
 // isDemo: a demo login can't save a push device, so it never sees the browser's permission prompt.
 export function NotificationSettingsCard({ settings, isDemo = false }: { settings: NotificationSettings; isDemo?: boolean }) {
@@ -82,7 +86,7 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
         {thisDeviceOn ? (
           <p ref={confirmation} tabIndex={-1} role="status" className="text-sm text-muted-foreground outline-none">
             {reminderStatus(t, {
-              pausedUntil: paused ? pausedUntil(t, locale, settings.mutedUntil!, settings.timezone) : null,
+              paused: paused ? { until: pausedUntil(locale, settings.mutedUntil!, settings.timezone) } : null,
               delivery: settings.delivery.reminders,
               arrivesAt: justOn ? hourLabel(settings.reminderHour) : null,
             })}
@@ -104,7 +108,7 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
         <h3 className="text-sm font-semibold">{t("notifications.card.pauseAll")}</h3>
         {paused ? (
           <div className="flex flex-wrap items-center gap-3">
-            <p className="text-sm">{t("notifications.card.pausedUntil", { until: pausedUntil(t, locale, settings.mutedUntil!, settings.timezone) })}</p>
+            <p className="text-sm">{pausedLine(t, pausedUntil(locale, settings.mutedUntil!, settings.timezone))}</p>
             <Button type="button" variant="outline" className="h-11" disabled={pending} onClick={() => run(() => pauseAll("resume"))}>{t("notifications.card.resume")}</Button>
           </div>
         ) : (

@@ -60,10 +60,11 @@ export function formatMonth(month: string, locale: Locale): string {
   return new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: "UTC", month: "long", year: "numeric" }).format(new Date(Date.UTC(y, m - 1, 1)));
 }
 
-// Inbox day headings: "Today", "Yesterday", else "Thu 1 Oct".
-export function dayLabel(t: T, locale: Locale, localDate: string, today: string): string {
-  if (localDate === today) return t("dates.today");
-  if (localDate === addDays(today, -1)) return t("dates.yesterday");
+// Inbox day headings: "Today", "Yesterday", else "Thu 1 Oct". `inline`: the words as they read
+// mid-line ("today", "yesterday"), their own catalog keys (case and form are the language's).
+export function dayLabel(t: T, locale: Locale, localDate: string, today: string, inline = false): string {
+  if (localDate === today) return t(inline ? "dates.todayInline" : "dates.today");
+  if (localDate === addDays(today, -1)) return t(inline ? "dates.yesterdayInline" : "dates.yesterday");
   return formatLocalDate(localDate, locale);
 }
 

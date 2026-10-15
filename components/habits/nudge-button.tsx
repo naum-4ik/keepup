@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { DropdownMenu } from "radix-ui";
 import { nudge } from "@/app/(app)/inbox/actions";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,12 @@ import { NUDGE_KINDS } from "@/lib/nudge-kinds";
 import { useT } from "@/lib/i18n/client";
 import { isolate } from "@/supabase/functions/_shared/i18n";
 
+// The name follows the button word for screen readers only (rich tag <sr>).
+const srOnly = (c: ReactNode) => <span className="sr-only">{c}</span>;
+
 // Three preset messages, no free text (ideas/notifications-tone.md). One per person, habit and day.
 export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: string; recipientId: string; name: string; sent: boolean }) {
-  const { t } = useT();
+  const { t, rich } = useT();
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState(sent);
   // cannot_nudge: they checked in or are set for now; nothing more to send today.
@@ -20,7 +23,7 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
   if (done) {
     return (
       <Button type="button" variant="outline" className="h-11 rounded-full px-4" disabled>
-        {t("habits.nudge.done")}<span className="sr-only"> <bdi>{name}</bdi></span>
+        {rich("habits.nudge.done", { name, sr: srOnly })}
       </Button>
     );
   }
@@ -30,7 +33,7 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
           <Button type="button" variant="outline" className="h-11 rounded-full px-4" disabled={pending || closed}>
-            {t("habits.nudge.cta")}<span className="sr-only"> <bdi>{name}</bdi></span>
+            {rich("habits.nudge.cta", { name, sr: srOnly })}
           </Button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>

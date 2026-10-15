@@ -82,3 +82,39 @@ describe("counts before nouns are plurals (numeric args), English unchanged", ()
     }
   });
 });
+
+describe("one message where code composed pieces", () => {
+  it("paused until turned back on is its own sentence", () => {
+    expect(tEn("notifications.card.pausedUntil", { until: "Mon 08:00" })).toBe("Paused until Mon 08:00");
+    expect(tEn("notifications.card.pausedUntilOn")).toBe("Paused until you turn them back on");
+  });
+
+  it("the demo banner's Sign in is part of its sentence", () => {
+    const signIn = (c: ReactNode) => createElement("button", null, c);
+    expect(markup(richEn("demo.signInLine", { signIn }))).toBe("<button>Sign in</button> to start your own.");
+  });
+
+  it.each([
+    ["habits.cheer.cta", "Cheer ❤️"],
+    ["habits.cheer.done", "Cheered"],
+    ["habits.nudge.cta", "Nudge"],
+    ["habits.nudge.done", "Nudged ✓"],
+  ])("%s names the person for screen readers inside the message", (key, word) => {
+    expect(markup(richEn(key, { name: "Anna", sr }))).toBe(`${word}<span class="sr-only"> <bdi>Anna</bdi></span>`);
+  });
+
+  it("history squares: date and outcome", () => {
+    expect(tEn("habits.history.cell", { date: "Thu 1 Oct", outcome: "Done" })).toBe("Thu 1 Oct: Done");
+  });
+
+  it("Forgot password? quotes the button's own label", () => {
+    expect(tEn("auth.login.needEmail", { forgot: tEn("auth.login.forgot") })).toBe("Type your email above, then tap Forgot password? again.");
+  });
+
+  it("install steps name the app's labels from the catalog", () => {
+    const menu = { profile: tEn("nav.profile"), settings: tEn("settings.title"), turnOn: tEn("notifications.turnOn.label") };
+    expect(tEn("install.iphone.step6", menu)).toBe("Profile → Settings → Turn on reminders.");
+    expect(tEn("install.android.step3", menu)).toBe("Open Keepup from the new icon, then turn reminders on in Profile → Settings.");
+    expect(tEn("install.computer.step2", menu)).toBe("Then turn reminders on in Profile → Settings.");
+  });
+});

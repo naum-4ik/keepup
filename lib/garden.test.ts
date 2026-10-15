@@ -83,6 +83,14 @@ describe("garden", () => {
     expect(newWeekLine(tEn, "garden")).toBe("Last week's garden is in the album 📸 A new seed is planted 🌱");
     expect(newWeekLine(tEn, "dino")).toBe("Last week's dino egg is in the album 📸 A new egg is waiting 🥚");
   });
+  it("the next picture's name after \"to\" is the stage label in lower case (English, as before)", () => {
+    for (const th of KID_THEMES) {
+      for (let i = 1; i < th.stages.length; i++) {
+        const label = tEn(`kidThemes.${th.id}.stages.${i}`);
+        expect(tEn(`kidThemes.${th.id}.toStage.${i}`)).toBe(label[0].toLowerCase() + label.slice(1));
+      }
+    }
+  });
   it("names the themes", () => {
     expect(KID_THEMES.map((t) => themeName(tEn, t.id))).toEqual(["Garden", "Aquarium", "Space", "Dino egg", "Town"]);
   });

@@ -128,7 +128,8 @@ export function stepLines(t: T, stars: number, theme?: string | null, gender: Ge
   const next = nextStep(t, stars, id);
   return {
     now: `${labelAt(t, id, index)} ${stages[index].icon}`,
-    next: next && t("garden.starsToNext", { gender: genderOf(gender), left: next.left, label: next.label[0].toLowerCase() + next.label.slice(1), icon: next.icon }),
+    // kidThemes.<theme>.toStage: the picture's name as it reads after "to" (its own form per language).
+    next: next && t("garden.starsToNext", { gender: genderOf(gender), left: next.left, label: t(`kidThemes.${id}.toStage.${stages.findIndex((g) => g.min > stars)}`), icon: next.icon }),
   };
 }
 

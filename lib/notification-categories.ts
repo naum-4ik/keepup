@@ -54,10 +54,13 @@ export const reminderHourHint = (t: T, hasDevice: boolean) =>
   t(hasDevice ? "notificationSettings.hourHintDevice" : "notificationSettings.hourHintNoDevice");
 
 // The line under Daily reminder once this device is on. Pause all wins (nothing arrives anywhere),
-// then Inbox only for Reminders (nothing arrives on the device). `pausedUntil`: "Mon 08:00", "you
-// turn them back on", or null when not paused. `arrivesAt`: just turned on, say when the summary comes.
-export function reminderStatus(t: T, o: { pausedUntil: string | null; delivery: Delivery; arrivesAt: string | null }): string {
-  if (o.pausedUntil) return t("notificationSettings.status.paused", { until: o.pausedUntil });
+// then Inbox only for Reminders (nothing arrives on the device). `paused`: null when not paused, else
+// until when ("Mon 08:00"), or until: null for "until you turn them back on". `arrivesAt`: just turned
+// on, say when the summary comes.
+export function reminderStatus(t: T, o: { paused: { until: string | null } | null; delivery: Delivery; arrivesAt: string | null }): string {
+  if (o.paused) {
+    return o.paused.until ? t("notificationSettings.status.paused", { until: o.paused.until }) : t("notificationSettings.status.pausedUntilOn");
+  }
   if (o.delivery === "inbox") return t("notificationSettings.status.inbox");
   return o.arrivesAt ? t("notificationSettings.status.onWithHour", { time: o.arrivesAt }) : t("notificationSettings.status.on");
 }

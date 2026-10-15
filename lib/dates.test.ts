@@ -47,6 +47,11 @@ describe("inbox times", () => {
     expect(dayLabel(tEn, "en", "2026-10-04", "2026-10-05")).toBe("Yesterday");
     expect(dayLabel(tEn, "en", "2026-10-01", "2026-10-05")).toBe("Thu 1 Oct");
   });
+  it("mid-line (Inbox approvals): lower case as before, a date as formatted", () => {
+    expect(dayLabel(tEn, "en", "2026-10-05", "2026-10-05", true)).toBe("today");
+    expect(dayLabel(tEn, "en", "2026-10-04", "2026-10-05", true)).toBe("yesterday");
+    expect(dayLabel(tEn, "en", "2026-10-01", "2026-10-05", true)).toBe("Thu 1 Oct");
+  });
 
   it("gives a short relative time, then the clock time in the zone", () => {
     const now = new Date("2026-10-05T18:00:00Z");

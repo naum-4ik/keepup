@@ -36,6 +36,8 @@ const upTo = (n: number) => Array.from({ length: n }, (_, i) => i + 1);
 // "Keepup" in the back link is the app's name: not translated.
 export default async function InstallPage() {
   const { t } = await getT();
+  // The app's own labels the steps name (Profile → Settings → Turn on reminders), as the app shows them.
+  const menu = { profile: t("nav.profile"), settings: t("settings.title"), turnOn: t("notifications.turnOn.label") };
   return (
     <main className="mx-auto w-full max-w-md px-4 py-6">
       <Link href="/" className="-ml-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
@@ -49,7 +51,7 @@ export default async function InstallPage() {
           <h2 className="text-lg font-bold">{t(`install.${key}.heading`)}</h2>
           <ol className="mt-2 list-decimal space-y-1 pl-5">
             {upTo(steps).map((n) => (
-              <li key={n}>{t(`install.${key}.step${n}`)}</li>
+              <li key={n}>{t(`install.${key}.step${n}`, menu)}</li>
             ))}
           </ol>
           <div className="mt-3 grid grid-cols-2 gap-3">
@@ -59,7 +61,7 @@ export default async function InstallPage() {
           </div>
         </section>
       ))}
-      <p className="mt-6 rounded-xl bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground">{t("moved.installReminders")}</p>
+      <p className="mt-6 rounded-xl bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground">{t("moved.installReminders", menu)}</p>
     </main>
   );
 }

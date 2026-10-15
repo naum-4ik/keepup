@@ -37,14 +37,14 @@ describe("deliveryByCategory", () => {
 });
 
 describe("Settings: the reminder line for this device", () => {
-  const on = { pausedUntil: null, delivery: "silent" as const, arrivesAt: null };
+  const on = { paused: null, delivery: "silent" as const, arrivesAt: null };
   it("on, and just turned on with the hour", () => {
     expect(reminderStatus(tEn, on)).toBe("Reminders are on for this device ✓");
     expect(reminderStatus(tEn, { ...on, arrivesAt: "07:00" })).toBe("Reminders are on for this device ✓ Your daily summary arrives at 07:00.");
   });
   it("Pause all says until when, even over Inbox only", () => {
-    expect(reminderStatus(tEn, { ...on, pausedUntil: "Mon 08:00" })).toBe("Reminders are paused until Mon 08:00.");
-    expect(reminderStatus(tEn, { ...on, pausedUntil: "you turn them back on", delivery: "inbox" })).toBe("Reminders are paused until you turn them back on.");
+    expect(reminderStatus(tEn, { ...on, paused: { until: "Mon 08:00" } })).toBe("Reminders are paused until Mon 08:00.");
+    expect(reminderStatus(tEn, { ...on, paused: { until: null }, delivery: "inbox" })).toBe("Reminders are paused until you turn them back on.");
   });
   it("Inbox only says where they go", () => {
     expect(reminderStatus(tEn, { ...on, delivery: "inbox" })).toBe("Reminders go to your Inbox.");
