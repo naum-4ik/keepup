@@ -1,41 +1,42 @@
 import { describe, expect, it } from "vitest";
-import { OUTCOME_LABEL, STATUS_WORD, comparisonLine, goalsMet, hasWeekData, ringDash, ringFraction, streakUnit, withTodayPending, type WeekOverview } from "./week-overview";
+import { tEn } from "@/lib/i18n/test-t";
+import { comparisonLine, goalsMet, hasWeekData, outcomeLabel, ringDash, ringFraction, statusWord, streakSpan, withTodayPending, type WeekOverview } from "./week-overview";
 
 const week = (done: number, possible: number, prev_done: number, prev_possible: number) => ({ done, possible, prev_done, prev_possible });
 
 describe("comparisonLine", () => {
   it("counts how many more than last week", () => {
-    expect(comparisonLine(week(18, 22, 15, 21))).toBe("3 more than last week");
-    expect(comparisonLine(week(1, 1, 0, 3))).toBe("1 more than last week");
+    expect(comparisonLine(tEn, week(18, 22, 15, 21))).toBe("3 more than last week");
+    expect(comparisonLine(tEn, week(1, 1, 0, 3))).toBe("1 more than last week");
   });
 
   it("only compares with last week when there was one", () => {
-    expect(comparisonLine(week(1, 1, 0, 0))).toBeNull();
+    expect(comparisonLine(tEn, week(1, 1, 0, 0))).toBeNull();
   });
 
   it("calls it the best week yet when as much got done with fewer chances", () => {
-    expect(comparisonLine(week(10, 10, 10, 14))).toBe("Your best week yet");
+    expect(comparisonLine(tEn, week(10, 10, 10, 14))).toBe("Your best week yet");
   });
 
   it("needs a last week to compare with before calling it the best", () => {
-    expect(comparisonLine(week(0, 0, 0, 0))).toBe("A fresh start this week");
-    expect(comparisonLine(week(5, 5, 5, 0))).toBeNull();
+    expect(comparisonLine(tEn, week(0, 0, 0, 0))).toBe("A fresh start this week");
+    expect(comparisonLine(tEn, week(5, 5, 5, 0))).toBeNull();
   });
 
   it("stays neutral otherwise, never negative", () => {
-    expect(comparisonLine(week(4, 10, 12, 14))).toBeNull();
-    expect(comparisonLine(week(0, 3, 9, 12))).toBe("A fresh start this week");
-    expect(comparisonLine(week(6, 8, 6, 8))).toBeNull();
-    expect(comparisonLine(week(6, 9, 6, 8))).toBeNull();
+    expect(comparisonLine(tEn, week(4, 10, 12, 14))).toBeNull();
+    expect(comparisonLine(tEn, week(0, 3, 9, 12))).toBe("A fresh start this week");
+    expect(comparisonLine(tEn, week(6, 8, 6, 8))).toBeNull();
+    expect(comparisonLine(tEn, week(6, 9, 6, 8))).toBeNull();
   });
 });
 
 describe("goalsMet", () => {
   it("follows the total: goal for one, goals otherwise", () => {
-    expect(goalsMet(1, 1)).toBe("1 of 1 goal met");
-    expect(goalsMet(0, 1)).toBe("0 of 1 goal met");
-    expect(goalsMet(2, 3)).toBe("2 of 3 goals met");
-    expect(goalsMet(0, 0)).toBe("0 of 0 goals met");
+    expect(goalsMet(tEn, 1, 1)).toBe("1 of 1 goal met");
+    expect(goalsMet(tEn, 0, 1)).toBe("0 of 1 goal met");
+    expect(goalsMet(tEn, 2, 3)).toBe("2 of 3 goals met");
+    expect(goalsMet(tEn, 0, 0)).toBe("0 of 0 goals met");
   });
 });
 
@@ -70,11 +71,11 @@ describe("hasWeekData", () => {
   });
 });
 
-describe("streakUnit", () => {
+describe("streakSpan", () => {
   it("names the streak in the habit's periods", () => {
-    expect(streakUnit(12, "day")).toBe("days");
-    expect(streakUnit(1, "week")).toBe("week");
-    expect(streakUnit(3, "month")).toBe("months");
+    expect(streakSpan(tEn, 12, "day")).toBe("12 days");
+    expect(streakSpan(tEn, 1, "week")).toBe("1 week");
+    expect(streakSpan(tEn, 3, "month")).toBe("3 months");
   });
 });
 
@@ -97,8 +98,8 @@ describe("withTodayPending", () => {
 
 describe("rest days (M5)", () => {
   it("a rested period reads as a rest day, never as missed", () => {
-    expect(STATUS_WORD.rested).toBe("rest day");
-    expect(OUTCOME_LABEL.rested).toBe("Rest day");
-    expect(OUTCOME_LABEL.missed).toBe("Missed");
+    expect(statusWord(tEn, "rested")).toBe("rest day");
+    expect(outcomeLabel(tEn, "rested")).toBe("Rest day");
+    expect(outcomeLabel(tEn, "missed")).toBe("Missed");
   });
 });

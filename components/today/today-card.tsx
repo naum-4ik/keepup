@@ -7,6 +7,8 @@ import { Confetti } from "@/components/celebrations/confetti";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { useOfflineQueue } from "@/components/offline/offline-queue-provider";
 import { ProgressRing } from "@/components/overview/week-overview";
+import { useT } from "@/lib/i18n/client";
+import { goalsMet } from "@/lib/week-overview";
 import { takeBurstTurn } from "@/lib/burst-turns";
 import { todayLine, todayProgress, withQueuedProgress, type ProgressHabit } from "@/lib/today-progress";
 import { cn } from "@/lib/utils";
@@ -32,6 +34,7 @@ export function TodayCard({
   // Another celebration (e.g. "Everyone did it") is already on screen: don't burst twice.
   quiet?: boolean;
 }) {
+  const { t } = useT();
   const { delta } = useOfflineQueue();
   const { done, total, items } = useMemo(() => todayProgress(withQueuedProgress(habits, delta)), [habits, delta]);
   const allDone = total > 0 && done >= total;
@@ -129,7 +132,7 @@ export function TodayCard({
         >
           <span className="font-semibold">This week</span>
           <span aria-hidden>·</span>
-          <ProgressRing done={week.done} possible={week.possible} />
+          <ProgressRing done={week.done} possible={week.possible} label={t("weekOverview.ringLabel", { goals: goalsMet(t, week.done, week.possible) })} />
           {/* The ring's label says the same for screen readers. */}
           <span aria-hidden className="font-bold text-foreground tabular-nums">
             {week.done} of {week.possible}

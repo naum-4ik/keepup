@@ -54,7 +54,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
         <h1 className="text-xl font-bold">Progress</h1>
         <Link href="/progress/recaps" className="flex h-11 items-center rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted">Recaps</Link>
       </div>
-      {!showArchived && overview && hasWeekData(overview) && <WeekCard overview={overview} days={days} />}
+      {!showArchived && overview && hasWeekData(overview) && <WeekCard t={t} overview={overview} days={days} />}
 
       {/* The same segmented look as Inbox's tabs: filled pills read as primary buttons. */}
       <nav aria-label="Habit list" className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
@@ -117,7 +117,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                         </span>
                         {cellsFor.has(h.habit_id) && (
                           <span className="pt-1.5">
-                            <HabitDots cells={cellsFor.get(h.habit_id)!} category={h.category} period={h.period} />
+                            <HabitDots t={t} cells={cellsFor.get(h.habit_id)!} category={h.category} period={h.period} />
                           </span>
                         )}
                       </span>

@@ -256,7 +256,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
       </section>
 
       <Card title="History">
-        <HistoryGrid cells={history} period={h.period} locale={locale} />
+        <HistoryGrid t={t} locale={locale} cells={history} period={h.period} />
       </Card>
 
       {!archived && (

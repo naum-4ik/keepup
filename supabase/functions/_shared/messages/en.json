@@ -201,5 +201,29 @@
     "approvals": "Approvals",
     "approvalsCount": "Approvals ({n})",
     "activity": "Activity"
+  },
+  "weekOverview": {
+    "status": {
+      "done": "done",
+      "missed": "missed",
+      "paused": "paused",
+      "not_started": "not started",
+      "open": "in progress",
+      "rested": "rest day"
+    },
+    "outcome": {
+      "done": "Done",
+      "missed": "Missed",
+      "skipped": "Paused or not counted",
+      "rested": "Rest day",
+      "open": "In progress"
+    },
+    "goalsMet": "{done} of {possible, plural, one {# goal} other {# goals}} met",
+    "ringLabel": "{goals} this week",
+    "moreThanLastWeek": "{n} more than last week",
+    "bestWeekYet": "Your best week yet",
+    "freshStart": "A fresh start this week",
+    "dotsLabel": "Last {span}: {counts}",
+    "dotCount": "{n} {word}"
   }
 }
