@@ -180,7 +180,7 @@ async function networkFirstPage(event, req, url) {
       } else if (keep && !res.redirected) {
         event.waitUntil(track(savePage(url.pathname)));
       }
-      event.waitUntil(saveOfflinePage().then(saveShellPages));
+      event.waitUntil(track(saveOfflinePage().then(saveShellPages)));
     }
     return res;
   } catch {

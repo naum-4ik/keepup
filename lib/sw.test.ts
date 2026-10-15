@@ -555,6 +555,30 @@ describe("sw.js offline shell", () => {
     expect(sw.caches.store.has("keepup-shell-test")).toBe(true);
   });
 
+  it("a language change: waits for a shell save in flight, so /install is not cached again afterwards", async () => {
+    const net = network();
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    let reached!: () => void;
+    const started = new Promise<void>((r) => (reached = r));
+    const slow = vi.fn(async (r: string | { url: string }) => {
+      if (new URL(typeof r === "string" ? r : r.url, ORIGIN).pathname === "/offline") {
+        reached();
+        await gate;
+      }
+      return net.fetchImpl(r);
+    });
+    const sw = worker([], undefined, slow);
+    const shell = await sw.caches.api.open("keepup-shell-test");
+    const loading = sw.request("/today");
+    await started;
+    const clearing = sw.message({ type: "keepup:clear-pages" });
+    release();
+    await Promise.all([loading, clearing]);
+    expect(await shell.match("/install")).toBeUndefined();
+    expect(await shell.match("/__keepup-assets__/install")).toBeUndefined();
+  });
+
   it("overlapping saves of one page: a slow older answer never replaces the newer copy", async () => {
     const net = network();
     let releaseOld!: () => void;
