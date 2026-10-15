@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { TryDemoButton } from "@/components/demo/try-demo-button";
 import { createClient } from "@/lib/supabase/server";
 import { authErrorReason } from "@/lib/auth-errors";
-import { DELETED_NOTE } from "@/lib/my-data";
+import { getT } from "@/lib/i18n/server";
 
 export default async function Home({
   searchParams,
@@ -13,6 +13,7 @@ export default async function Home({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const params = await searchParams;
+  const { t } = await getT();
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (data?.claims) redirect(params.moved === "1" ? "/today?moved=1" : "/today");
@@ -32,7 +33,7 @@ export default async function Home({
         <p className="mt-3">Keep up your habits, and do the ones that matter with your family.</p>
       </div>
       <div className="flex flex-col gap-3">
-        {params.deleted === "1" && <p role="status" className="text-sm text-muted-foreground">{DELETED_NOTE}</p>}
+        {params.deleted === "1" && <p role="status" className="text-sm text-muted-foreground">{t("myData.deletedNote")}</p>}
         <Button asChild size="lg" className="h-12 w-full">
           <Link href="/signup">Get started</Link>
         </Button>

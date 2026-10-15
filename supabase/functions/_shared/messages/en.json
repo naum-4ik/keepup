@@ -246,5 +246,19 @@
     "did": "{together, select, yes {Together you did {done} of {span}} other {You did {done} of {span}}}",
     "withBest": "{main} · best streak {n} 🔥",
     "anotherGo": "Want to give it another go?"
+  },
+  "myData": {
+    "deleteWord": "delete",
+    "deleteTitle": "Delete your account?",
+    "deleteBody": "Your account, habits, check-ins, XP, badges and Inbox are deleted right away. This can't be undone.",
+    "exportHint": "A file with everything Keepup keeps about you.",
+    "tryAgain": "Try again",
+    "exportFirst": "Export your data first if you want a copy.",
+    "deleteFailed": "Couldn't delete your account. Reload Keepup and try again.",
+    "deletedNote": "Your account and data are deleted.",
+    "groupDeleted": "{group} will be deleted.",
+    "groupDeletedWithProfiles": "{group} will be deleted, with {names} {n, plural, one {profile} other {profiles}}.",
+    "possessive": "{name}'s",
+    "becomesAdmin": "{admin} becomes the admin of {group}."
   }
 }
