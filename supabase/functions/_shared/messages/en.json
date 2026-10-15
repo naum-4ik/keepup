@@ -147,5 +147,59 @@
       "you_got_this": "You've got this",
       "gentle_reminder": "Gentle reminder"
     }
+  },
+  "notificationCategories": {
+    "reminders": {
+      "label": "Reminders",
+      "hint": "Your daily summary and habit reminders."
+    },
+    "group_activity": {
+      "label": "Group activity",
+      "hint": "Check-ins, “Everyone did it” and your kids' big moments in your groups."
+    },
+    "approvals": {
+      "label": "Approvals",
+      "hint": "Check-ins waiting for your OK."
+    },
+    "nudges": {
+      "label": "Nudges",
+      "hint": "When someone in your group thinks of you."
+    },
+    "group_updates": {
+      "label": "Group updates",
+      "hint": "New habits, pauses, new members, streaks and milestones."
+    },
+    "achievements": {
+      "label": "Achievements",
+      "hint": "Level-ups, badges, streak milestones, rest days and your weekly recap. Inbox only unless you change it."
+    },
+    "approvalsOffNote": "Approvals still wait in your Inbox."
+  },
+  "notificationSettings": {
+    "pauseChoice": {
+      "1h": "1 hour",
+      "8h": "8 hours",
+      "tomorrow": "Until tomorrow",
+      "until_on": "Until I turn them back on"
+    },
+    "delivery": {
+      "sound": "Sound",
+      "silent": "Silent",
+      "inbox": "Inbox only"
+    },
+    "iphoneSoundHint": "On iPhone and iPad, sound is one switch for all of Keepup: Settings → Notifications → Keepup → Sounds.",
+    "hourHintDevice": "When your daily summary arrives.",
+    "hourHintNoDevice": "When your daily summary arrives, once reminders are on.",
+    "status": {
+      "paused": "Reminders are paused until {until}.",
+      "inbox": "Reminders go to your Inbox.",
+      "onWithHour": "Reminders are on for this device ✓ Your daily summary arrives at {time}.",
+      "on": "Reminders are on for this device ✓"
+    }
+  },
+  "tabs": {
+    "approvals": "Approvals",
+    "approvalsCount": "Approvals ({n})",
+    "activity": "Activity"
   }
 }
