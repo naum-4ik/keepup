@@ -124,8 +124,8 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "justNow": "just now",
-    "minutesAgo": "{n} min ago",
-    "hoursAgo": "{n} h ago",
+    "minutesAgo": "{n, plural, other {# min ago}}",
+    "hoursAgo": "{n, plural, other {# h ago}}",
     "reviewBy": "Review by {time}"
   },
   "feed": {
@@ -224,14 +224,29 @@
     "bestWeekYet": "Your best week yet",
     "freshStart": "A fresh start this week",
     "dotsLabel": "Last {span}: {counts}",
-    "dotCount": "{n} {word}"
+    "dotCount": "{status, select, done {{n, plural, other {# done}}} missed {{n, plural, other {# missed}}} paused {{n, plural, other {# paused}}} not_started {{n, plural, other {# not started}}} open {{n, plural, other {# in progress}}} rested {{n, plural, other {# rest day}}} other {{n, plural, other {#}}}}"
   },
   "recaps": {
     "weekOf": "Week of {day} {month}",
     "quietWeek": "A quiet week.",
     "quietMonth": "A quiet month.",
     "nothingDue": "Nothing was due.",
-    "streak": "{title} 🔥 {span}"
+    "streak": "{title} 🔥 {span}",
+    "page": {
+      "title": "Recaps",
+      "weeks": "Weeks",
+      "months": "Months",
+      "firstWeekly": "Your first weekly recap arrives on the first day of next week.",
+      "restDays": "Rest days: {n} (dashed)",
+      "topStreaks": "Top streaks",
+      "badges": "Badges: {list}"
+    },
+    "heatmap": {
+      "fullDays": "{n, plural, one {# day} other {# days}} with everything done",
+      "dayCounts": "{date}: {done} of {possible}{rested, select, yes {, Rest day} other {}}",
+      "dayRest": "{date}: Rest day",
+      "dayNothingDue": "{date}: nothing due"
+    }
   },
   "habitEnd": {
     "progress": {
@@ -998,6 +1013,53 @@
       "pickGroup": "Pick a group.",
       "pickDate": "Pick a date.",
       "startedAgainNoEnd": "Started again, but the end couldn't be set. Set it on the habit page."
+    }
+  }
+,
+  "progress": {
+    "title": "Progress",
+    "recaps": "Recaps",
+    "back": "Back to Progress",
+    "listLabel": "Habit list",
+    "tabs": { "active": "Active", "finished": "Finished", "archived": "Archived" },
+    "addHabit": "Add a habit",
+    "empty": {
+      "finished": "No finished habits yet. Give a habit an end, like 30 days.",
+      "archived": "No archived habits.",
+      "active": "No habits yet."
+    },
+    "endedDecide": "Ended · decide on Today",
+    "best": "best {span}",
+    "calendar": {
+      "title": "Calendar",
+      "monthLabel": "Month",
+      "previousMonth": "Previous month, {month}",
+      "nextMonth": "Next month, {month}"
+    }
+  },
+  "overview": {
+    "yourWeek": "Your week",
+    "calendar": "Calendar",
+    "noStreak": "No streak yet",
+    "checkIns": "{n, plural, one {check-in} other {check-ins}}",
+    "activeHabits": "{n, plural, one {active habit} other {active habits}}",
+    "byDayLabel": "This week by day",
+    "tapDay": "Tap a day to see what you did.",
+    "day": {
+      "future": "{name}: still to come",
+      "nothingDue": "{name}: nothing due",
+      "counts": "{name}: {done} of {possible} done"
+    },
+    "dailyDone": "{done} of {possible} daily done",
+    "noCheckIns": "No check-ins this day.",
+    "waiting": "{n} waiting",
+    "status": {
+      "done": "Done",
+      "checked_in": "Checked in",
+      "open": "Not done yet",
+      "missed": "Not done",
+      "paused": "Paused",
+      "rested": "Rest day"
     }
   }
 }

@@ -5,16 +5,12 @@ import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { addDays, addMonths, formatLocalDate, formatMonth, monthGrid, nextWeekStart } from "@/lib/dates";
 import { INTL_LOCALE, type Locale } from "@/supabase/functions/_shared/i18n";
 import { useT } from "@/lib/i18n/client";
+import { fromWeekStart, weekdayLabels } from "@/lib/weekdays";
 import { cn } from "@/lib/utils";
 
 const shortDate = (date: string, locale: Locale) => {
   const [y, m, d] = date.split("-").map(Number);
   return new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: "UTC", day: "numeric", month: "short" }).format(new Date(Date.UTC(y, m - 1, d)));
-};
-// Sunday first, from a fixed reference week (2026-01-04 is a Sunday).
-const weekdayNames = (locale: Locale, weekday: "short" | "narrow") => {
-  const f = new Intl.DateTimeFormat(INTL_LOCALE[locale], { weekday, timeZone: "UTC" });
-  return Array.from({ length: 7 }, (_, i) => f.format(new Date(Date.UTC(2026, 0, 4 + i))));
 };
 // The one chip for date choices: Starts here, Ends in EndPicker (same height, type and pressed state).
 export const dateChipClass =
@@ -40,9 +36,8 @@ type Props = {
 // Styled with the app's tokens instead of the browser's native date popup.
 export function StartDatePicker({ value, onChange, today, min = today, weekStart, errorId, quickPicks }: Props) {
   const { t, locale } = useT();
-  const short = useMemo(() => weekdayNames(locale, "short"), [locale]);
-  // The header: English keeps its two-letter names ("Su"); other scripts use the locale's narrow ones.
-  const headers = useMemo(() => (locale === "en" ? short.map((d) => d.slice(0, 2)) : weekdayNames(locale, "narrow")), [locale, short]);
+  const short = useMemo(() => weekdayLabels(locale, "short"), [locale]);
+  const headers = useMemo(() => weekdayLabels(locale, "two"), [locale]);
   const quick =
     quickPicks ?? [
       { label: t("dates.today"), date: today },
@@ -52,7 +47,7 @@ export function StartDatePicker({ value, onChange, today, min = today, weekStart
   const isQuick = quick.some((q) => q.date === value);
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(value.slice(0, 7));
-  const weekdays = [...headers.slice(weekStart), ...headers.slice(0, weekStart)];
+  const weekdays = fromWeekStart(headers, weekStart);
 
   return (
     <div className="flex flex-col gap-2">
