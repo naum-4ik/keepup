@@ -22,18 +22,23 @@ const nunito = localFont({
 
 // Cyrillic (Russian) from the same Nunito family (@fontsource-variable/nunito 5.3.0, nunito-cyrillic-wght-normal.woff2);
 // Hebrew from Rubik (@fontsource-variable/rubik 5.3.0, rubik-hebrew-wght-normal.woff2; rounded, close to Nunito):
-// Nunito has no Hebrew. Not preloaded: the browser fetches them only when a page uses those letters.
+// Nunito has no Hebrew. Not preloaded; unicode-range (from fontsource) makes the browser fetch them only
+// when a page uses those letters.
 const nunitoCyrillic = localFont({
   variable: "--font-nunito-cyr",
   src: [{ path: "./fonts/nunito-cyrillic.woff2", weight: "400 800", style: "normal" }],
   display: "swap",
   preload: false,
+  declarations: [{ prop: "unicode-range", value: "U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116" }],
+  adjustFontFallback: false, // the Arial fallback face would catch Cyrillic/Hebrew before these files
 });
 const rubikHebrew = localFont({
   variable: "--font-rubik-he",
   src: [{ path: "./fonts/rubik-hebrew.woff2", weight: "300 900", style: "normal" }],
   display: "swap",
   preload: false,
+  declarations: [{ prop: "unicode-range", value: "U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F" }],
+  adjustFontFallback: false, // the Arial fallback face would catch Cyrillic/Hebrew before these files
 });
 
 const geistMono = localFont({
