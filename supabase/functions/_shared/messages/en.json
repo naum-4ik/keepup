@@ -1,0 +1,7 @@
+{
+  "settings": {
+    "language": "Language",
+    "languageHint": "Keepup and its notifications use this language.",
+    "languageNames": { "en": "English", "ru": "Русский", "he": "עברית" }
+  }
+}
