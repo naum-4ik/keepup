@@ -81,7 +81,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
           action={
             !showArchived && (
               <Button asChild className="h-11">
-                <Link href="/habits/new">{t("progress.addHabit")}</Link>
+                <Link href="/habits/new">{t("common.addHabit")}</Link>
               </Button>
             )
           }

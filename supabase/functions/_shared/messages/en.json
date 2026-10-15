@@ -339,7 +339,8 @@
     "saveHabitFailed": "Couldn't save the habit. Try again.",
     "checkDetails": "Check the details.",
     "pickFamilyOrFriends": "Pick family or friends.",
-    "groupCreateFailed": "Couldn't create the group. Try again."
+    "groupCreateFailed": "Couldn't create the group. Try again.",
+    "childUnavailable": "That child isn't available."
   },
   "demo": {
     "off": "That's off in the demo.",
@@ -717,7 +718,8 @@
         "2": "The first flower",
         "3": "Flowers and a butterfly",
         "4": "A full garden"
-      }
+      },
+      "thisWeek": "This week's garden"
     },
     "aquarium": {
       "name": "Aquarium",
@@ -729,7 +731,8 @@
         "2": "A fish",
         "3": "Fish and a shell",
         "4": "A full reef"
-      }
+      },
+      "thisWeek": "This week's aquarium"
     },
     "space": {
       "name": "Space",
@@ -741,7 +744,8 @@
         "2": "The moon",
         "3": "Planets",
         "4": "A starry galaxy"
-      }
+      },
+      "thisWeek": "This week's space"
     },
     "dino": {
       "name": "Dino egg",
@@ -753,7 +757,8 @@
         "2": "A baby dino",
         "3": "A dino and its nest",
         "4": "A grown-up dino"
-      }
+      },
+      "thisWeek": "This week's dino egg"
     },
     "town": {
       "name": "Town",
@@ -765,7 +770,8 @@
         "2": "A house and a tree",
         "3": "A street",
         "4": "A little town"
-      }
+      },
+      "thisWeek": "This week's town"
     }
   },
   "kids": {
@@ -774,6 +780,111 @@
       "boy": "Boy",
       "girl": "Girl",
       "hint": "Used for words like ‘well done’ in Russian and Hebrew."
+    },
+    "noHabits": "No habits yet.",
+    "errors": {
+      "pickGroup": "Pick a group.",
+      "pickHabit": "Pick a habit.",
+      "themeFailed": "Couldn't change it. Try again."
+    },
+    "new": {
+      "askAdmin": "Ask an admin of <bdi>{group}</bdi> to add a child."
+    },
+    "form": {
+      "nickname": "Nickname",
+      "nicknameHelp": "A nickname is enough. No full names, photos or birthdays.",
+      "guardian": "I'm this child's parent or guardian",
+      "habitsToStart": "Habits to start",
+      "noneYet": "None yet. You can add habits later too.",
+      "remove": "Remove {title}",
+      "chooseMore": "Choose more habits",
+      "chooseHint": "Tap to pick or unpick. You can add your own later.",
+      "donePicked": "Done · {count} picked",
+      "submit": "{named, select, yes {Add <bdi>{name}</bdi>} other {Add child}}"
+    },
+    "edit": {
+      "button": "Edit",
+      "title": "Edit <bdi>{name}</bdi>"
+    },
+    "habit": {
+      "title": "Add a habit for <bdi>{name}</bdi>",
+      "description": "Tap one to add it, or make your own.",
+      "added": "Added {title} ✓",
+      "add": "Add {title}",
+      "hasAll": "<bdi>{name}</bdi> has all the suggested habits.",
+      "ownTitle": "Your own habit for <bdi>{name}</bdi>",
+      "ownDescription": "Give it a name <bdi>{name}</bdi> understands, and a picture.",
+      "titlePlaceholder": "Feed the fish",
+      "picture": "Picture",
+      "period": "{period, select, day {day} week {week} other {month}}",
+      "back": "Back"
+    },
+    "detail": {
+      "habitsFailed": "Some habits couldn't be added. Add them from here.",
+      "openView": "Open <bdi>{name}'s</bdi> view",
+      "habits": "Habits",
+      "progressInGroup": "{progress} · <bdi>{group}</bdi>",
+      "logged": "{by, select, child {<bdi>{name}</bdi> did it} you {Logged by you} member {Logged by <bdi>{name}</bdi>} other {Logged by a former member}} · {time}",
+      "undo": "Undo {title} at {time}",
+      "data": "Data",
+      "dataText": "Everything Keepup keeps about <bdi>{name}</bdi>, in one file."
+    },
+    "danger": {
+      "title": "Danger zone",
+      "moveLabel": "Move to another group",
+      "moveTo": "Move <bdi>{name}</bdi> to",
+      "move": "Move",
+      "moving": "Moving…",
+      "export": "Export <bdi>{name}'s</bdi> data",
+      "exporting": "Exporting…",
+      "resetTrigger": "Reset <bdi>{name}'s</bdi> profile",
+      "resetDone": "<bdi>{name}'s</bdi> profile is reset. A fresh start 🌱",
+      "resetTitle": "Reset <bdi>{name}'s</bdi> profile?",
+      "resetDescription": "Everything except <bdi>{name}'s</bdi> nickname and avatar is cleared: habits, check-ins, stars, the garden album and treat goals. This can't be undone.",
+      "reset": "Reset",
+      "resetting": "Resetting…",
+      "deleteTrigger": "Delete <bdi>{name}'s</bdi> profile",
+      "deleteTitle": "Delete <bdi>{name}'s</bdi> profile?",
+      "deleteDescription": "<bdi>{name}'s</bdi> profile and history will be deleted. This can't be undone."
+    },
+    "goal": {
+      "title": "Treat goal",
+      "starsLabel": "{stars} of {target, plural, one {# star} other {# stars}}",
+      "reached": "<bdi>{name}</bdi> reached the goal ✓",
+      "markReceived": "Mark as received",
+      "progress": "⭐ {stars} of {target}",
+      "cancel": "Cancel goal",
+      "cancelTitle": "Cancel the goal?",
+      "cancelDescription": "<bdi>{goal}</bdi> goes away with its star path. A new goal counts from zero; <bdi>{name}</bdi> keeps the stars.",
+      "keep": "Keep goal",
+      "cancelling": "Cancelling…",
+      "intro": "Pick a treat together, then collect stars for it.",
+      "set": "Set a goal",
+      "choose": "Choose a treat together",
+      "moreIdeas": "More ideas",
+      "own": "Our own idea",
+      "treat": "Treat",
+      "picture": "Picture: {emoji}. Change",
+      "placeholder": "A trip to the aquarium",
+      "emojiGroup": "Treat emoji",
+      "starsToCollect": "Stars to collect",
+      "other": "Other",
+      "stars": "Stars",
+      "earns": "A check-in earns one star.",
+      "submit": "Set goal"
+    },
+    "garden": {
+      "stars": "⭐ {stars} this week",
+      "album": "Garden album",
+      "weekOf": "Week of {date} · ⭐ {stars}"
+    },
+    "theme": {
+      "title": "What grows",
+      "hint": "Choose it with <bdi>{name}</bdi>. The stars stay the same.",
+      "group": "Theme"
+    },
+    "checkIn": {
+      "label": "{state, select, open {Check in for} done {Done for} pending {Waiting for approval for} checkedToday {Checked in today for} frozen {Paused for} other {Starts later for}} {name}: {title}"
     }
   },
   "garden": {
@@ -1146,7 +1257,6 @@
       "finished": "Finished",
       "archived": "Archived"
     },
-    "addHabit": "Add a habit",
     "empty": {
       "finished": "No finished habits yet. Give a habit an end, like 30 days.",
       "archived": "No archived habits.",
@@ -1201,7 +1311,8 @@
       "text": "Tap when you've done it"
     },
     "cancel": "Cancel",
-    "creating": "Creating…"
+    "creating": "Creating…",
+    "addHabit": "Add a habit"
   },
   "inbox": {
     "title": "Inbox",
@@ -1284,6 +1395,20 @@
       "hint": "Pick the time it is where you are now. Your days start at midnight there.",
       "useDevice": "Use this device's time zone ({city})",
       "changeNote": "Changes apply from your next day and week."
+    }
+  },
+  "kidView": {
+    "sound": "Sound",
+    "starsThisWeek": "{count, plural, one {# star this week} other {# stars this week}}",
+    "done": ", done",
+    "exitLabel": "Hold to exit {name}'s view",
+    "closing": "Closing…",
+    "holdToExit": "Hold to exit",
+    "hold": "{step, plural, =0 {Hold…} =1 {Hold… 1…} other {Hold… 1… 2}}",
+    "newWeek": {
+      "label": "A new week",
+      "album": "See the album",
+      "gotIt": "Got it"
     }
   }
 }

@@ -21,6 +21,7 @@ export const CLIENT_NAMESPACES = [
   "habits",
   "inbox",
   "kidThemes",
+  "kidView",
   "kids",
   "moved",
   "myData",

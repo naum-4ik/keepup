@@ -2,6 +2,7 @@
 
 import { useActionState, useState, type ReactNode } from "react";
 import { Check, Plus, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { addChild, type KidFormState } from "@/app/(app)/kids/actions";
 import { AvatarPicker } from "@/components/avatar-picker";
 import { addButtonClass } from "@/components/ui/add-button";
@@ -67,6 +68,7 @@ export function KidTemplateGroups({ templates, item }: { templates: readonly Kid
 // starter habits as short rows, "Choose more habits" for the rest, and the button always in reach.
 export function AddChildForm({ groupId }: { groupId: string }) {
   const { t: tr } = useT();
+  const tf = useTranslations("kids.form");
   const [state, formAction, pending] = useActionState(addChild, initialState);
   const [name, setName] = useState("");
   const [picked, setPicked] = useState<Set<string>>(() => new Set(DEFAULT_KID_TEMPLATE_IDS));
@@ -92,7 +94,7 @@ export function AddChildForm({ groupId }: { groupId: string }) {
 
       <section className="flex flex-col gap-4 rounded-2xl bg-card p-5 shadow-soft">
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="child-name" className="font-semibold">Nickname</Label>
+          <Label htmlFor="child-name" className="font-semibold">{tf("nickname")}</Label>
           <Input
             id="child-name"
             name="name"
@@ -105,7 +107,7 @@ export function AddChildForm({ groupId }: { groupId: string }) {
             aria-describedby="child-name-help"
           />
           <p id="child-name-help" className="text-sm text-muted-foreground">
-            A nickname is enough. No full names, photos or birthdays.
+            {tf("nicknameHelp")}
           </p>
         </div>
         <GenderField />
@@ -119,14 +121,14 @@ export function AddChildForm({ groupId }: { groupId: string }) {
             required
             className="size-5 shrink-0 accent-primary"
           />
-          <span className="text-sm font-semibold">I&apos;m this child&apos;s parent or guardian</span>
+          <span className="text-sm font-semibold">{tf("guardian")}</span>
         </label>
       </section>
 
       <section aria-labelledby="child-habits" className="flex flex-col gap-2">
-        <h2 id="child-habits" className="text-base font-bold">Habits to start</h2>
+        <h2 id="child-habits" className="text-base font-bold">{tf("habitsToStart")}</h2>
         {chosen.length === 0 ? (
-          <p className="text-sm text-muted-foreground">None yet. You can add habits later too.</p>
+          <p className="text-sm text-muted-foreground">{tf("noneYet")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {chosen.map((t) => (
@@ -141,7 +143,7 @@ export function AddChildForm({ groupId }: { groupId: string }) {
                 <button
                   type="button"
                   onClick={() => toggle(t.id)}
-                  aria-label={`Remove ${kidTemplateTitle(tr, t.id)}`}
+                  aria-label={tf("remove", { title: kidTemplateTitle(tr, t.id) })}
                   className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
                 >
                   <X aria-hidden className="size-4" />
@@ -156,15 +158,15 @@ export function AddChildForm({ groupId }: { groupId: string }) {
           className={addButtonClass}
         >
           <Plus aria-hidden className="size-4" />
-          Choose more habits
+          {tf("chooseMore")}
         </button>
       </section>
 
       <Dialog open={choosing} onOpenChange={setChoosing}>
         <DialogContent>
           <div className="flex flex-col gap-1 pr-10">
-            <DialogTitle>Habits to start</DialogTitle>
-            <DialogDescription>Tap to pick or unpick. You can add your own later.</DialogDescription>
+            <DialogTitle>{tf("habitsToStart")}</DialogTitle>
+            <DialogDescription>{tf("chooseHint")}</DialogDescription>
           </div>
           <div className="flex flex-col gap-4">
             <KidTemplateGroups
@@ -188,7 +190,7 @@ export function AddChildForm({ groupId }: { groupId: string }) {
             />
           </div>
           <Button type="button" className="sticky bottom-0 h-12 text-base" onClick={() => setChoosing(false)}>
-            Done · {picked.size} picked
+            {tf("donePicked", { count: picked.size })}
           </Button>
         </DialogContent>
       </Dialog>
@@ -198,7 +200,7 @@ export function AddChildForm({ groupId }: { groupId: string }) {
       {/* Sticky above the bottom nav (about 4rem), so the button is always in reach. */}
       <div className="sticky bottom-[calc(4.25rem+env(safe-area-inset-bottom))] -mx-4 bg-gradient-to-t from-background from-70% to-transparent px-4 pt-4 pb-2">
         <Button type="submit" className="h-12 w-full text-base" disabled={!guardian || pending}>
-          <span className="truncate">{pending ? "Adding…" : `Add ${nickname || "child"}`}</span>
+          <span className="truncate">{pending ? tr("habits.form.adding") : tf.rich("submit", { named: nickname ? "yes" : "no", name: nickname, bdi: (c) => <bdi>{c}</bdi> })}</span>
         </Button>
       </div>
     </form>

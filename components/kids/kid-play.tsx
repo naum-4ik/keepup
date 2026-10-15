@@ -480,7 +480,7 @@ export function KidPlay({
         <button
           type="button"
           onClick={toggleSound}
-          aria-label="Sound"
+          aria-label={t("kidView.sound")}
           aria-pressed={!muted}
           className="flex size-11 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground shadow-soft"
         >
@@ -516,7 +516,7 @@ export function KidPlay({
           {milestone && <Confetti key={milestone.id} />}
           {dance !== null && <Confetti key={dance} big />}
           <p className="sr-only" aria-live="polite">
-            {view.stars} {view.stars === 1 ? "star" : "stars"} this week
+            {t("kidView.starsThisWeek", { count: view.stars })}
           </p>
         </div>
       </div>
@@ -623,7 +623,7 @@ export function KidPlay({
                     <span aria-hidden data-mark="done" className="flex size-16 shrink-0 items-center justify-center rounded-full bg-done-foreground text-done">
                       <Check className="size-10" strokeWidth={3} />
                     </span>
-                    <span className="sr-only">, done</span>
+                    <span className="sr-only">{t("kidView.done")}</span>
                   </>
                 ) : (
                   <span aria-hidden data-mark="open" className="size-16 shrink-0 rounded-full border-4 border-done bg-background" />

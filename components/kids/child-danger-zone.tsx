@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { deleteChild, exportChild, moveChild, resetChild } from "@/app/(app)/kids/actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -9,8 +10,10 @@ import { exportFileName } from "@/lib/kid-schema";
 import { cn } from "@/lib/utils";
 
 export type MoveTarget = { id: string; name: string };
+const bdi = (c: ReactNode) => <bdi>{c}</bdi>;
 
-export function ExportChildButton({ childId, childName, label, className }: { childId: string; childName: string; label?: string; className?: string }) {
+export function ExportChildButton({ childId, childName, label, className }: { childId: string; childName: string; label?: ReactNode; className?: string }) {
+  const t = useTranslations("kids.danger");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
@@ -30,7 +33,7 @@ export function ExportChildButton({ childId, childName, label, className }: { ch
           })
         }
       >
-        <span className="truncate">{pending ? "Exporting…" : (label ?? `Export ${childName}'s data`)}</span>
+        <span className="truncate">{pending ? t("exporting") : (label ?? t.rich("export", { name: childName, bdi }))}</span>
       </Button>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </div>
@@ -42,15 +45,17 @@ export function MoveChildForm({
   childId,
   childName,
   targets,
-  label = "Move to another group",
+  label,
   onMoved,
 }: {
   childId: string;
   childName: string;
   targets: MoveTarget[];
-  label?: string;
+  label?: ReactNode;
   onMoved?: () => void;
 }) {
+  const t = useTranslations("kids.danger");
+  const tc = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [to, setTo] = useState(targets[0]?.id ?? "");
   const [pending, startTransition] = useTransition();
@@ -59,14 +64,14 @@ export function MoveChildForm({
   if (!open) {
     return (
       <Button type="button" variant="outline" className="h-11" onClick={() => setOpen(true)}>
-        {label}
+        {label ?? t("moveLabel")}
       </Button>
     );
   }
   return (
     <div className="flex flex-col gap-2 rounded-xl bg-muted p-3">
       <label className="flex flex-col gap-1.5 text-sm font-semibold">
-        Move {childName} to
+        {t.rich("moveTo", { name: childName, bdi })}
         <select
           value={to}
           onChange={(e) => setTo(e.target.value)}
@@ -81,7 +86,7 @@ export function MoveChildForm({
       </label>
       <div className="flex gap-2">
         <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => setOpen(false)}>
-          Cancel
+          {tc("cancel")}
         </Button>
         <Button
           type="button"
@@ -97,7 +102,7 @@ export function MoveChildForm({
             })
           }
         >
-          {pending ? "Moving…" : "Move"}
+          {pending ? t("moving") : t("move")}
         </Button>
       </div>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
@@ -107,6 +112,9 @@ export function MoveChildForm({
 
 // A fresh start: habits, check-ins, stars, the album and treat goals go; the nickname and avatar stay.
 function ResetChildButton({ childId, childName }: { childId: string; childName: string }) {
+  const t = useTranslations("kids.danger");
+  const tc = useTranslations("common");
+  const tg = useTranslations("groups.confirm");
   const [open, setOpen] = useState(false);
   const [done, setDone] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -123,27 +131,24 @@ function ResetChildButton({ childId, childName }: { childId: string; childName: 
           setOpen(true);
         }}
       >
-        <span className="truncate">Reset {childName}&apos;s profile</span>
+        <span className="truncate">{t.rich("resetTrigger", { name: childName, bdi })}</span>
       </Button>
       {done && (
         <p role="status" className="text-sm font-semibold text-done">
-          {childName}&apos;s profile is reset. A fresh start 🌱
+          {t.rich("resetDone", { name: childName, bdi })}
         </p>
       )}
       <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
         <DialogContent>
           <div className="flex flex-col gap-1 pr-10">
-            <DialogTitle>Reset {childName}&apos;s profile?</DialogTitle>
-            <DialogDescription>
-              Everything except {childName}&apos;s nickname and avatar is cleared: habits, check-ins, stars, the garden album and treat
-              goals. This can&apos;t be undone.
-            </DialogDescription>
+            <DialogTitle>{t.rich("resetTitle", { name: childName, bdi })}</DialogTitle>
+            <DialogDescription>{t.rich("resetDescription", { name: childName, bdi })}</DialogDescription>
           </div>
-          <ExportChildButton childId={childId} childName={childName} label="Export first" />
+          <ExportChildButton childId={childId} childName={childName} label={tg("exportFirst")} />
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <div className="flex gap-2">
             <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => setOpen(false)}>
-              Cancel
+              {tc("cancel")}
             </Button>
             <Button
               type="button"
@@ -159,7 +164,7 @@ function ResetChildButton({ childId, childName }: { childId: string; childName: 
                 })
               }
             >
-              {pending ? "Resetting…" : "Reset"}
+              {pending ? t("resetting") : t("reset")}
             </Button>
           </div>
         </DialogContent>
@@ -169,26 +174,27 @@ function ResetChildButton({ childId, childName }: { childId: string; childName: 
 }
 
 function DeleteChildButton({ childId, childName }: { childId: string; childName: string }) {
+  const t = useTranslations("kids.danger");
+  const tc = useTranslations("common");
+  const th = useTranslations("habits.delete");
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
     <>
       <Button type="button" variant="outline" className="h-11 text-destructive hover:text-destructive" onClick={() => setOpen(true)}>
-        <span className="truncate">Delete {childName}&apos;s profile</span>
+        <span className="truncate">{t.rich("deleteTrigger", { name: childName, bdi })}</span>
       </Button>
       <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
         <DialogContent>
           <div className="flex flex-col gap-1 pr-10">
-            <DialogTitle>Delete {childName}&apos;s profile?</DialogTitle>
-            <DialogDescription>
-              {childName}&apos;s profile and history will be deleted. This can&apos;t be undone.
-            </DialogDescription>
+            <DialogTitle>{t.rich("deleteTitle", { name: childName, bdi })}</DialogTitle>
+            <DialogDescription>{t.rich("deleteDescription", { name: childName, bdi })}</DialogDescription>
           </div>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <div className="flex gap-2">
             <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => setOpen(false)}>
-              Cancel
+              {tc("cancel")}
             </Button>
             <Button
               type="button"
@@ -203,7 +209,7 @@ function DeleteChildButton({ childId, childName }: { childId: string; childName:
                 })
               }
             >
-              {pending ? "Deleting…" : "Delete"}
+              {pending ? th("pending") : th("confirm")}
             </Button>
           </div>
         </DialogContent>
@@ -223,11 +229,12 @@ export function ChildDangerZone({
   isAdmin: boolean;
   moveTargets: MoveTarget[];
 }) {
+  const t = useTranslations("kids.danger");
   // Admins only: export (anyone's right to a copy) lives in the kid page's Data section.
   if (!isAdmin) return null;
   return (
-    <section aria-label="Danger zone" className="flex flex-col gap-2 rounded-2xl bg-card p-5 shadow-soft">
-      <h2 className="text-sm font-bold text-muted-foreground">Danger zone</h2>
+    <section aria-label={t("title")} className="flex flex-col gap-2 rounded-2xl bg-card p-5 shadow-soft">
+      <h2 className="text-sm font-bold text-muted-foreground">{t("title")}</h2>
       <MoveChildForm childId={childId} childName={childName} targets={moveTargets} />
       <ResetChildButton childId={childId} childName={childName} />
       <DeleteChildButton childId={childId} childName={childName} />

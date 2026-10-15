@@ -10,13 +10,14 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/client";
 import { isolate } from "@/supabase/functions/_shared/i18n";
 
-const LABEL: Record<CheckInState, string> = {
-  open: "Check in for",
-  done: "Done for",
-  pending: "Waiting for approval for",
-  "checked-today": "Checked in today for",
-  frozen: "Paused for",
-  "not-started": "Starts later for",
+// The select keys of kids.checkIn.label.
+const STATE_KEY: Record<CheckInState, string> = {
+  open: "open",
+  done: "done",
+  pending: "pending",
+  "checked-today": "checkedToday",
+  frozen: "frozen",
+  "not-started": "notStarted",
 };
 
 // An adult checks in for a child (Today's kid section, the kid page). On success a ⭐ bounces next
@@ -62,7 +63,7 @@ export function KidCheckInButton({
       <div className="relative">
         <button
           type="button"
-          aria-label={`${LABEL[shown]} ${isolate(childName)}: ${isolate(title)}`}
+          aria-label={t("kids.checkIn.label", { state: STATE_KEY[shown], name: isolate(childName), title: isolate(title) })}
           aria-describedby={savingShown ? savingId : undefined}
           disabled={shown !== "open" || pending}
           onClick={() => {
@@ -118,6 +119,7 @@ export function KidCheckInButton({
 
 // Any adult of the group may undo a child's check-in while its period is open.
 export function UndoForChildButton({ checkInId, habitId, childId, label }: { checkInId: string; habitId: string; childId: string; label: string }) {
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
@@ -135,7 +137,7 @@ export function UndoForChildButton({ checkInId, habitId, childId, label }: { che
         className="flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-60"
       >
         <Undo2 aria-hidden className="size-4" />
-        Undo
+        {t("offline.undo")}
       </button>
       {error && <span role="alert" className="text-xs text-destructive">{error}</span>}
     </span>

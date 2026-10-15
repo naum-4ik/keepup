@@ -1,6 +1,6 @@
 import { SceneIdle } from "@/components/kids/scene-idle";
 import { SceneItems, type Idle, type Landed } from "@/components/kids/scene-items";
-import { kidTheme, nextStep, restartDay, restartLine, stageFor, stageLabel, stepLines, themeName, type Gender } from "@/lib/garden";
+import { kidTheme, nextStep, restartDay, restartLine, stageFor, stageLabel, stepLines, type Gender } from "@/lib/garden";
 import { isFloatingTheme, sceneItems } from "@/lib/scene-items";
 import { cn } from "@/lib/utils";
 import type { Locale, T } from "@/supabase/functions/_shared/i18n";
@@ -124,14 +124,14 @@ export function GardenPicture({
 export function Garden({ t, locale, stars, theme, weekStart, gender = null }: { t: T; locale: Locale; stars: number; theme?: string | null; weekStart?: string; gender?: Gender }) {
   const th = kidTheme(theme);
   const { now, next } = stepLines(t, stars, th.id, gender);
-  const title = th.id === "garden" ? "This week's garden" : `This week's ${themeName(t, th.id).toLowerCase()}`;
+  const title = t(`kidThemes.${th.id}.thisWeek`);
   return (
     <section aria-label={title} className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
       <h2 className="text-sm font-bold text-muted-foreground">{title}</h2>
       <GardenPicture t={t} stars={stars} theme={th.id} />
       <div className="flex items-baseline justify-between gap-2">
         <p className="font-bold">{now}</p>
-        <p className="text-sm font-semibold tabular-nums">⭐ {stars} this week</p>
+        <p className="text-sm font-semibold tabular-nums">{t("kids.garden.stars", { stars })}</p>
       </div>
       {next && <p className="text-sm text-muted-foreground">{next}</p>}
       {weekStart && <p className="text-sm text-muted-foreground">{restartLine(t, th.id, restartDay(locale, weekStart), false, gender)}</p>}

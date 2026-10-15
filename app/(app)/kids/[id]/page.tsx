@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { RenderedTaps } from "@/components/offline/offline-queue-provider";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Avatar } from "@/components/avatar";
@@ -24,6 +25,8 @@ import { withoutEnded } from "@/lib/habit-end";
 import { getFinishedIds, getHabitEnds, getRecentTapRows, type HabitSummary } from "@/lib/habits";
 import { isUuid } from "@/lib/habit-schema";
 import { getT } from "@/lib/i18n/server";
+import { INTL_LOCALE, isolate } from "@/supabase/functions/_shared/i18n";
+import { kidTemplateTitlesAllLocales } from "@/lib/kid-template-titles";
 import { currentPeriods, renderedTapIds, tapPeriods } from "@/lib/rendered-taps";
 import { getChildCheckIns, getChildRewards, getChildSummaries, getMyChildren } from "@/lib/kids";
 import { stateOf } from "@/lib/today";
@@ -37,7 +40,11 @@ export default async function KidPage({
 }) {
   const [{ id }, { habitsFailed }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
-  const { t, locale } = await getT();
+  const { t: tg, locale } = await getT();
+  const t = await getTranslations("kids");
+  const tk = await getTranslations("kids.detail");
+  const tp = await getTranslations("progress.tabs");
+  const bdi = (c: React.ReactNode) => <bdi>{c}</bdi>;
   // Profiles are read-own under RLS: the child's name and group come from my_children().
   const child = (await getMyChildren()).find((c) => c.child_id === id);
   if (!child) notFound();
@@ -65,9 +72,11 @@ export default async function KidPage({
     ? groups.filter((g) => g.role === "admin" && g.group_id !== child.group_id).map((g) => ({ id: g.group_id, name: g.name }))
     : [];
   const names = new Map((group?.members ?? []).map((m) => [m.id, m.name]));
-  const whoLogged = (loggedBy: string | null) =>
-    loggedBy === null ? `${child.name} did it` : loggedBy === userId ? "Logged by you" : `Logged by ${names.get(loggedBy) ?? "a former member"}`;
-  const time = new Intl.DateTimeFormat("en-GB", { timeZone: group?.timezone ?? "UTC", hour: "2-digit", minute: "2-digit" });
+  const time = new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: group?.timezone ?? "UTC", hour: "2-digit", minute: "2-digit" });
+  const logged = (loggedBy: string | null, at: string) => {
+    const who = loggedBy === null ? { by: "child", name: child.name } : loggedBy === userId ? { by: "you", name: "" } : names.has(loggedBy) ? { by: "member", name: names.get(loggedBy)! } : { by: "former", name: "" };
+    return tk.rich("logged", { ...who, time: time.format(new Date(at)), bdi });
+  };
 
   return (
     <section className="flex flex-col gap-4 pt-2 pb-6">
@@ -91,7 +100,7 @@ export default async function KidPage({
 
       {habitsFailed === "1" && (
         <p role="status" className="rounded-2xl bg-pending-soft p-4 text-sm font-semibold text-pending">
-          Some habits couldn&apos;t be added. Add them from here.
+          {tk("habitsFailed")}
         </p>
       )}
 
@@ -99,7 +108,7 @@ export default async function KidPage({
         href={`/kids/${id}/play`}
         className="flex min-h-14 items-center justify-center rounded-2xl bg-primary px-5 text-base font-bold text-primary-foreground shadow-soft hover:brightness-95"
       >
-        Open {child.name}&apos;s view
+        {tk.rich("openView", { name: child.name, bdi })}
       </Link>
 
       {rewards && lastWeek(rewards.week_start, rewards.album) && (
@@ -112,13 +121,13 @@ export default async function KidPage({
           albumHref="#album"
         />
       )}
-      {rewards && <Garden t={t} locale={locale} stars={rewards.stars_this_week} theme={child.kid_theme} weekStart={rewards.week_start} gender={child.gender} />}
+      {rewards && <Garden t={tg} locale={locale} stars={rewards.stars_this_week} theme={child.kid_theme} weekStart={rewards.week_start} gender={child.gender} />}
       <ThemePicker childId={id} childName={child.name} theme={child.kid_theme} />
-      {rewards && <GardenAlbum t={t} weeks={rewards.album} theme={child.kid_theme} />}
+      {rewards && <GardenAlbum t={tg} locale={locale} weeks={rewards.album} theme={child.kid_theme} />}
       {rewards && <TreatGoal childId={id} childName={child.name} goal={rewards.goal} />}
 
-      <section aria-label="Habits" className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
-        <h2 className="text-sm font-bold text-muted-foreground">Habits</h2>
+      <section aria-label={tk("habits")} className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
+        <h2 className="text-sm font-bold text-muted-foreground">{tk("habits")}</h2>
         {habits.length > 0 ? (
           <ul className="flex flex-col gap-3">
             {habits.map((h) => {
@@ -134,8 +143,7 @@ export default async function KidPage({
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate font-bold">{h.title}</span>
                         <span className="text-sm text-muted-foreground">
-                          {kidProgressText(t, locale, h)}
-                          {h.group_name && ` · ${h.group_name}`}
+                          {h.group_name ? tk.rich("progressInGroup", { progress: kidProgressText(tg, locale, h), group: h.group_name, bdi }) : kidProgressText(tg, locale, h)}
                         </span>
                       </span>
                     </Link>
@@ -151,14 +159,12 @@ export default async function KidPage({
                   </div>
                   {mine.map((c) => (
                     <div key={c.id} className="ml-17 flex min-h-11 items-center justify-between gap-2 rounded-xl bg-muted py-1 pr-1 pl-3 text-sm">
-                      <span>
-                        {whoLogged(c.logged_by)} · {time.format(new Date(c.created_at))}
-                      </span>
+                      <span>{logged(c.logged_by, c.created_at)}</span>
                       <UndoForChildButton
                         checkInId={c.id}
                         habitId={h.habit_id}
                         childId={id}
-                        label={`Undo ${h.title} at ${time.format(new Date(c.created_at))}`}
+                        label={tk("undo", { title: isolate(h.title), time: time.format(new Date(c.created_at)) })}
                       />
                     </div>
                   ))}
@@ -167,20 +173,20 @@ export default async function KidPage({
             })}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">No habits yet.</p>
+          <p className="text-sm text-muted-foreground">{t("noHabits")}</p>
         )}
-        <AddKidHabit childId={id} childName={child.name} existingTitles={unarchived.map((h) => h.title)} />
+        <AddKidHabit childId={id} childName={child.name} existingTitles={unarchived.map((h) => h.title)} templateTitles={await kidTemplateTitlesAllLocales()} />
       </section>
 
       {/* Archived habits open their page, where a guardian restores them. Finished ones (an end that
           was reached and closed) are listed apart: they don't restore. */}
-      <HabitLinks title="Archived" habits={archivedHabits.filter((h) => !finishedIds.has(h.habit_id))} />
-      <HabitLinks title="Finished" habits={archivedHabits.filter((h) => finishedIds.has(h.habit_id))} />
+      <HabitLinks title={tp("archived")} habits={archivedHabits.filter((h) => !finishedIds.has(h.habit_id))} />
+      <HabitLinks title={tp("finished")} habits={archivedHabits.filter((h) => finishedIds.has(h.habit_id))} />
 
       {/* Taking a copy isn't dangerous: it sits on its own, for every adult in the group. */}
-      <section aria-label="Data" className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
-        <h2 className="text-sm font-bold text-muted-foreground">Data</h2>
-        <p className="text-sm text-muted-foreground">Everything Keepup keeps about {child.name}, in one file.</p>
+      <section aria-label={tk("data")} className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
+        <h2 className="text-sm font-bold text-muted-foreground">{tk("data")}</h2>
+        <p className="text-sm text-muted-foreground">{tk.rich("dataText", { name: child.name, bdi })}</p>
         <ExportChildButton childId={id} childName={child.name} />
       </section>
 

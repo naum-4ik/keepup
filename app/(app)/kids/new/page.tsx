@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { ChevronLeft } from "lucide-react";
 import { AddChildForm } from "@/components/kids/add-child-form";
 import { getGroupDetail } from "@/lib/groups";
@@ -10,6 +11,7 @@ export default async function NewChildPage({ searchParams }: { searchParams: Pro
   if (!groupId || !isUuid(groupId)) notFound();
   const group = await getGroupDetail(groupId);
   if (!group) notFound();
+  const [t, tg] = await Promise.all([getTranslations("kids.new"), getTranslations("groups.detail")]);
 
   return (
     <section className="flex flex-col gap-3 pt-2 pb-6">
@@ -20,11 +22,11 @@ export default async function NewChildPage({ searchParams }: { searchParams: Pro
         <ChevronLeft aria-hidden className="size-4 shrink-0" />
         <span className="truncate">{group.name}</span>
       </Link>
-      <h1 className="text-xl font-bold">Add a child</h1>
+      <h1 className="text-xl font-bold">{tg("addChild")}</h1>
       {group.my_role === "admin" ? (
         <AddChildForm groupId={group.id} />
       ) : (
-        <p className="rounded-2xl bg-card p-5 text-sm shadow-soft">Ask an admin of {group.name} to add a child.</p>
+        <p className="rounded-2xl bg-card p-5 text-sm shadow-soft">{t.rich("askAdmin", { group: group.name, bdi: (c) => <bdi>{c}</bdi> })}</p>
       )}
     </section>
   );

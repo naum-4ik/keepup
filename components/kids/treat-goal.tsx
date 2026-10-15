@@ -1,6 +1,7 @@
 "use client";
 
 import { PenLine } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useActionState, useState, useTransition } from "react";
 import { cancelGoal, markReceived, setGoal, type KidFormState } from "@/app/(app)/kids/actions";
 import { Button } from "@/components/ui/button";
@@ -16,18 +17,21 @@ import { cn } from "@/lib/utils";
 const initialState: KidFormState = { status: "idle" };
 const STAR_PICKS = [10, 20, 30];
 const SHORT_IDEAS = 6;
+const bdi = (c: React.ReactNode) => <bdi>{c}</bdi>;
 
 // ideas/achievements-and-rewards.md §8: a treat the family agrees on, reached with stars.
 export function TreatGoal({ childId, childName, goal }: { childId: string; childName: string; goal: Goal | null }) {
+  const t = useTranslations("kids.goal");
   return (
-    <section aria-label="Treat goal" className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
-      <h2 className="text-sm font-bold text-muted-foreground">Treat goal</h2>
+    <section aria-label={t("title")} className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
+      <h2 className="text-sm font-bold text-muted-foreground">{t("title")}</h2>
       {goal ? <ActiveGoal childId={childId} childName={childName} goal={goal} /> : <SetGoalForm childId={childId} />}
     </section>
   );
 }
 
 function ActiveGoal({ childId, childName, goal }: { childId: string; childName: string; goal: Goal }) {
+  const t = useTranslations("kids.goal");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -48,7 +52,7 @@ function ActiveGoal({ childId, childName, goal }: { childId: string; childName: 
       {/* The star-dot path: one dot per star, filled as they come, leading to the treat. */}
       <div
         role="img"
-        aria-label={`${stars} of ${goal.target} stars`}
+        aria-label={t("starsLabel", { stars, target: goal.target })}
         className="flex flex-wrap items-center gap-1.5"
       >
         {Array.from({ length: goal.target }, (_, i) => (
@@ -62,13 +66,13 @@ function ActiveGoal({ childId, childName, goal }: { childId: string; childName: 
       </div>
       {reached ? (
         <>
-          <p className="font-semibold text-done">{childName} reached the goal ✓</p>
+          <p className="font-semibold text-done">{t.rich("reached", { name: childName, bdi })}</p>
           <Button type="button" className="h-11" disabled={pending} onClick={() => run(() => markReceived(goal.id, childId))}>
-            Mark as received
+            {t("markReceived")}
           </Button>
         </>
       ) : (
-        <p className="text-sm text-muted-foreground">⭐ {stars} of {goal.target}</p>
+        <p className="text-sm text-muted-foreground">{t("progress", { stars, target: goal.target })}</p>
       )}
       {error && !confirming && <p role="alert" className="text-sm text-destructive">{error}</p>}
       <button
@@ -80,22 +84,20 @@ function ActiveGoal({ childId, childName, goal }: { childId: string; childName: 
         }}
         className="h-11 w-fit rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
       >
-        Cancel goal
+        {t("cancel")}
       </button>
 
       {/* Like the other destructive actions: an in-app confirm with the error inline. */}
       <Dialog open={confirming} onOpenChange={(next) => !pending && setConfirming(next)}>
         <DialogContent>
           <div className="flex flex-col gap-1 pr-10">
-            <DialogTitle>Cancel the goal?</DialogTitle>
-            <DialogDescription>
-              {goal.title} goes away with its star path. A new goal counts from zero; {childName} keeps the stars.
-            </DialogDescription>
+            <DialogTitle>{t("cancelTitle")}</DialogTitle>
+            <DialogDescription>{t.rich("cancelDescription", { goal: goal.title, name: childName, bdi })}</DialogDescription>
           </div>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <div className="flex gap-2">
             <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => setConfirming(false)}>
-              Keep goal
+              {t("keep")}
             </Button>
             <Button
               type="button"
@@ -110,7 +112,7 @@ function ActiveGoal({ childId, childName, goal }: { childId: string; childName: 
                 })
               }
             >
-              {pending ? "Cancelling…" : "Cancel goal"}
+              {pending ? t("cancelling") : t("cancel")}
             </Button>
           </div>
         </DialogContent>
@@ -122,7 +124,9 @@ function ActiveGoal({ childId, childName, goal }: { childId: string; childName: 
 const OWN = "own";
 
 function SetGoalForm({ childId }: { childId: string }) {
-  const { t } = useT();
+  const { t: tr } = useT();
+  const t = useTranslations("kids.goal");
+  const tc = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(setGoal.bind(null, childId), initialState);
   const [picked, setPicked] = useState<string | null>(null); // an idea's id, OWN, or nothing yet
@@ -136,9 +140,9 @@ function SetGoalForm({ childId }: { childId: string }) {
   if (!open) {
     return (
       <>
-        <p className="text-sm text-muted-foreground">Pick a treat together, then collect stars for it.</p>
+        <p className="text-sm text-muted-foreground">{t("intro")}</p>
         <Button type="button" variant="outline" className="h-11" onClick={() => setOpen(true)}>
-          Set a goal
+          {t("set")}
         </Button>
       </>
     );
@@ -151,7 +155,7 @@ function SetGoalForm({ childId }: { childId: string }) {
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <p id="treat-ideas" className="text-sm font-semibold">Choose a treat together</p>
+        <p id="treat-ideas" className="text-sm font-semibold">{t("choose")}</p>
         <div role="group" aria-labelledby="treat-ideas" className="grid grid-cols-3 gap-2">
           {ideas.map((idea) => (
             <button
@@ -160,20 +164,20 @@ function SetGoalForm({ childId }: { childId: string }) {
               aria-pressed={picked === idea.id}
               onClick={() => {
                 setPicked(idea.id);
-                setTitle(treatTitle(t, idea.id));
+                setTitle(treatTitle(tr, idea.id));
                 setEmoji(idea.emoji);
                 setEmojiOpen(false);
               }}
               className={cn(tile, "border-transparent")}
             >
               <span aria-hidden className="text-4xl leading-none">{idea.emoji}</span>
-              {treatTitle(t, idea.id)}
+              {treatTitle(tr, idea.id)}
             </button>
           ))}
           {!allIdeas && (
             <button type="button" onClick={() => setAllIdeas(true)} className={cn(tile, "border-dashed border-border text-primary")}>
               <span aria-hidden className="text-3xl leading-none">…</span>
-              More ideas
+              {t("moreIdeas")}
             </button>
           )}
           <button
@@ -187,18 +191,18 @@ function SetGoalForm({ childId }: { childId: string }) {
             className={cn(tile, "border-dashed border-border")}
           >
             <PenLine aria-hidden className="size-8 text-primary" />
-            Our own idea
+            {t("own")}
           </button>
         </div>
       </div>
 
       {picked && (
         <div className="flex flex-col gap-2">
-          <Label htmlFor="goal-title" className="font-semibold">Treat</Label>
+          <Label htmlFor="goal-title" className="font-semibold">{t("treat")}</Label>
           <div className="flex items-center gap-2">
             <button
               type="button"
-              aria-label={`Picture: ${emoji}. Change`}
+              aria-label={t("picture", { emoji })}
               aria-expanded={emojiOpen}
               onClick={() => setEmojiOpen((o) => !o)}
               className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-input text-2xl leading-none hover:bg-muted"
@@ -212,14 +216,14 @@ function SetGoalForm({ childId }: { childId: string }) {
               maxLength={GOAL_TITLE_MAX}
               autoComplete="off"
               autoFocus={picked === OWN}
-              placeholder="A trip to the aquarium"
+              placeholder={t("placeholder")}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="h-11 rounded-xl px-3 text-base"
             />
           </div>
           {emojiOpen && (
-            <div role="group" aria-label="Treat emoji" className="grid grid-cols-6 gap-1 rounded-xl bg-muted/50 p-1">
+            <div role="group" aria-label={t("emojiGroup")} className="grid grid-cols-6 gap-1 rounded-xl bg-muted/50 p-1">
               {TREAT_EMOJI.map((e) => (
                 <button
                   key={e}
@@ -242,7 +246,7 @@ function SetGoalForm({ childId }: { childId: string }) {
 
       {picked && (
         <div className="flex flex-col gap-2">
-          <p id="goal-stars" className="text-sm font-semibold">Stars to collect</p>
+          <p id="goal-stars" className="text-sm font-semibold">{t("starsToCollect")}</p>
           <div role="group" aria-labelledby="goal-stars" className="grid grid-cols-4 gap-2">
             {STAR_PICKS.map((n) => (
               <button
@@ -264,12 +268,12 @@ function SetGoalForm({ childId }: { childId: string }) {
               onClick={() => setOtherTarget(true)}
               className="flex h-11 items-center justify-center rounded-xl border border-border text-sm font-semibold hover:bg-muted aria-pressed:border-primary aria-pressed:bg-accent"
             >
-              Other
+              {t("other")}
             </button>
           </div>
           {otherTarget ? (
             <div className="flex items-center gap-2">
-              <Label htmlFor="goal-target" className="text-sm">Stars</Label>
+              <Label htmlFor="goal-target" className="text-sm">{t("stars")}</Label>
               <Input
                 id="goal-target"
                 name="target"
@@ -287,17 +291,17 @@ function SetGoalForm({ childId }: { childId: string }) {
           ) : (
             <input type="hidden" name="target" value={target} />
           )}
-          <p className="text-xs text-muted-foreground">A check-in earns one star.</p>
+          <p className="text-xs text-muted-foreground">{t("earns")}</p>
         </div>
       )}
 
       {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
       <div className="flex gap-2">
         <Button type="button" variant="outline" className="h-11 flex-1" onClick={() => setOpen(false)} disabled={pending}>
-          Cancel
+          {tc("cancel")}
         </Button>
         <Button type="submit" className="h-11 flex-1" disabled={pending || !picked}>
-          {pending ? "Saving…" : "Set goal"}
+          {pending ? tc("saving") : t("submit")}
         </Button>
       </div>
     </form>

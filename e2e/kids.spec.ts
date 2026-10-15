@@ -132,7 +132,7 @@ test("the kid view: big buttons, a tap counts at once, and hold to exit", async 
   await expect(sound).toHaveAttribute("aria-pressed", "false");
   await page.reload();
   await expect(page.getByRole("button", { name: "Sound" })).toHaveAttribute("aria-pressed", "false");
-  const exit = page.getByRole("button", { name: "Hold to exit Mary's view" });
+  const exit = page.getByRole("button", { name: "Hold to exit \u2068Mary\u2069's view" });
   await exit.click(); // a quick tap does nothing
   await expect(page).toHaveURL(/\/play$/);
   await exit.hover();
