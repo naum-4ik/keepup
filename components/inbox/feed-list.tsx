@@ -5,10 +5,11 @@ import { Avatar } from "@/components/avatar";
 import { SproutIcon } from "@/components/sprout-icon";
 import { dayLabel, relativeTime, todayIn } from "@/lib/dates";
 import { feedCopy, type FeedItem } from "@/lib/feed-copy";
+import type { Locale, T } from "@/supabase/functions/_shared/i18n";
 import { cn } from "@/lib/utils";
 
 // Activity, newest first, under day headings in the viewer's time zone.
-export function FeedList({ items, timeZone, now }: { items: FeedItem[]; timeZone: string; now: Date }) {
+export function FeedList({ items, timeZone, now, t, locale }: { items: FeedItem[]; timeZone: string; now: Date; t: T; locale: Locale }) {
   if (items.length === 0) {
     return <EmptyState icon={<Bell className="size-6" />}>Nothing yet. Activity from your groups shows up here.</EmptyState>;
   }
@@ -27,7 +28,7 @@ export function FeedList({ items, timeZone, now }: { items: FeedItem[]; timeZone
           <h2 className="text-sm font-semibold text-muted-foreground">{dayLabel(day, today)}</h2>
           <ul className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-soft">
             {rows.map((n) => {
-              const { title, body, href } = feedCopy(n);
+              const { title, body, href } = feedCopy(t, locale, n);
               // Unread: a dot and words, not just the tint (docs/design.md: colour is never the only signal).
               const inner = (
                 <>

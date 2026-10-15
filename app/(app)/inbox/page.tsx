@@ -4,6 +4,7 @@ import { FeedList } from "@/components/inbox/feed-list";
 import { InboxTabs } from "@/components/inbox/inbox-tabs";
 import { MarkReadOnView } from "@/components/inbox/mark-read-on-view";
 import { getProfile } from "@/lib/auth";
+import { getT } from "@/lib/i18n/server";
 import { dayLabel, reviewBy, todayIn } from "@/lib/dates";
 import { getFeed, getPendingApprovals } from "@/lib/inbox";
 import { recapKey, recapLine, visibleRecaps } from "@/lib/today-cards";
@@ -13,6 +14,7 @@ export default async function InboxPage() {
   const [{ profile }, approvals, feed, recaps, dismissed] = await Promise.all([
     getProfile(), getPendingApprovals(), getFeed(), getFamilyRecaps(), getDismissedCards(),
   ]);
+  const { t, locale } = await getT();
   // The weekly family recap (first day of the group's week), dismissible. Dismissals couldn't be read:
   // none shown, rather than bring back closed ones.
   const shownRecaps = dismissed ? visibleRecaps(recaps, dismissed) : [];
@@ -42,7 +44,7 @@ export default async function InboxPage() {
             {shownRecaps.map((r) => (
               <FamilyRecapCard key={recapKey(r)} cardKey={recapKey(r)} group={r.group_name} line={recapLine(r)} />
             ))}
-            <FeedList items={feed} timeZone={tz} now={now} />
+            <FeedList items={feed} timeZone={tz} now={now} t={t} locale={locale} />
             <MarkReadOnView ids={feed.filter((n) => !n.read_at).map((n) => n.id)} />
           </>
         }

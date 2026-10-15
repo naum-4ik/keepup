@@ -3,12 +3,13 @@ import { CalendarCheck } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { MonthHeatmap } from "@/components/recaps/month-heatmap";
 import { getProfile } from "@/lib/auth";
+import { getT } from "@/lib/i18n/server";
 import { getRecaps } from "@/lib/recaps-data";
 import { recapLine, recapTitle, streakLabel } from "@/lib/recaps";
 
 // Past recaps (ideas/achievements-and-rewards.md §6): the last 8 weeks and 6 months, wins first.
 export default async function RecapsPage() {
-  const [{ profile }, weeks, months] = await Promise.all([getProfile(), getRecaps("week", 8), getRecaps("month", 6)]);
+  const [{ profile }, weeks, months, { t, locale }] = await Promise.all([getProfile(), getRecaps("week", 8), getRecaps("month", 6), getT()]);
   const weekStart = (profile.week_start === 0 ? 0 : 1) as 0 | 1;
 
   return (
@@ -31,7 +32,7 @@ export default async function RecapsPage() {
             {weeks.map((r) => (
               <li key={r.start} className="flex flex-col gap-1 rounded-2xl bg-card p-4 shadow-soft">
                 <p className="text-xs font-semibold text-muted-foreground">{recapTitle(r)}</p>
-                <p className="font-semibold">{recapLine(r, "history")}</p>
+                <p className="font-semibold">{recapLine(t, locale, r, "history")}</p>
               </li>
             ))}
           </ul>
@@ -48,7 +49,7 @@ export default async function RecapsPage() {
                 <li key={r.start} className="flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-soft">
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground">{recapTitle(r)}</p>
-                    <p className="font-semibold">{recapLine(r, "history")}</p>
+                    <p className="font-semibold">{recapLine(t, locale, r, "history")}</p>
                   </div>
                   <MonthHeatmap recap={r} weekStart={weekStart} />
                   {rested > 0 && <p className="text-sm text-muted-foreground">Rest days: {rested} (dashed)</p>}

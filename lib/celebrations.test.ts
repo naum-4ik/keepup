@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { tEn } from "@/lib/i18n/test-t";
 import { celebrationQueue, isCelebrationMode, parseSeen } from "./celebrations";
 
 describe("celebrationQueue", () => {
   it("one moment for the highest new level, then the badges, oldest first, at most three", () => {
-    const q = celebrationQueue(
+    const q = celebrationQueue(tEn, 
       [{ level: 2 }, { level: 3 }],
       [
         { code: "first_step", name: "First step", icon: "CircleCheck", unlockedAt: "2026-10-04T09:01:00Z" },
@@ -15,7 +16,7 @@ describe("celebrationQueue", () => {
     expect(q.map((c) => `${c.title}: ${c.line}`)).toEqual(["Level 3: Seedling 🌱", "Unlocked: Planted", "Unlocked: First step", "Unlocked: Full day"]);
   });
   it("nothing new, nothing shown", () => {
-    expect(celebrationQueue([], [])).toEqual([]);
+    expect(celebrationQueue(tEn, [], [])).toEqual([]);
   });
 });
 

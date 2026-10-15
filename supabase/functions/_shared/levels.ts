@@ -1,6 +1,9 @@
 // supabase/functions/_shared/levels.ts
 // XP → level (ideas/achievements-and-rewards.md §3). Mirrors private.level_for in the database:
 // level = floor(sqrt(xp / 50)) + 1. Shared by the app (lib/levels.ts) and send-push (Deno).
+import type { T } from "./i18n.ts";
+
+// Level codes: identifiers, shown through the catalog (`levels.<code>`).
 export type LevelName = "Seedling" | "Sprout" | "Sapling" | "Tree" | "Forest";
 
 export function levelFor(xp: number): number {
@@ -29,7 +32,10 @@ export function levelProgress(xp: number): { level: number; name: LevelName; int
 }
 
 // Profile's level line: "Level 7 · Sprout" and "650 XP to Level 8".
-export function levelLine(xp: number): { title: string; toNext: string } {
+export function levelLine(t: T, xp: number): { title: string; toNext: string } {
   const p = levelProgress(xp);
-  return { title: `Level ${p.level} · ${p.name}`, toNext: `${p.toNext} XP to Level ${p.level + 1}` };
+  return {
+    title: t("levels.line", { level: String(p.level), name: t(`levels.${p.name}`) }),
+    toNext: t("levels.toNext", { xp: String(p.toNext), next: String(p.level + 1) }),
+  };
 }

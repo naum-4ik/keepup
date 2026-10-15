@@ -1,4 +1,5 @@
 import { recapCopy } from "@/lib/notification-copy";
+import type { Locale, T } from "@/supabase/functions/_shared/i18n";
 
 // Progress → Recaps (ideas/achievements-and-rewards.md §6): the shape of private.recap_impl.
 export type Streak = { title: string; emoji: string; length: number; period: "day" | "week" | "month" };
@@ -44,9 +45,9 @@ export function recapTitle(r: Recap): string {
 
 // Wins only (owner 2026-10-04): never "0 of N".
 // `context`: "history" drops the Inbox row's "last week" (the card is dated already).
-export function recapLine(r: Recap, context: "inbox" | "history" = "inbox"): string {
+export function recapLine(t: T, locale: Locale, r: Recap, context: "inbox" | "history" = "inbox"): string {
   if (r.possible > 0 && r.done === 0) return r.kind === "week" ? "A quiet week." : "A quiet month.";
-  return recapCopy(r as unknown as Record<string, unknown>, context)?.body ?? "Nothing was due.";
+  return recapCopy(t, locale, r as unknown as Record<string, unknown>, context)?.body ?? "Nothing was due.";
 }
 
 // 0 = nothing due that day; 1–4 = a share of it done (1 is a soft tint, never red).

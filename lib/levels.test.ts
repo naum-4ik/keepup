@@ -1,5 +1,6 @@
 // lib/levels.test.ts
 import { describe, expect, it } from "vitest";
+import { tEn } from "@/lib/i18n/test-t";
 import { levelFor, levelFraction, levelLine, levelName, levelProgress, xpForLevel } from "./levels";
 
 describe("levels (ideas/achievements-and-rewards.md §3)", () => {
@@ -25,14 +26,14 @@ describe("levels (ideas/achievements-and-rewards.md §3)", () => {
 
 describe("levelLine", () => {
   it("reads 'Level 7 · Sprout' and what's left to the next level", () => {
-    expect(levelLine(1800)).toEqual({ title: "Level 7 · Sprout", toNext: "650 XP to Level 8" });
-    expect(levelLine(0)).toEqual({ title: "Level 1 · Seedling", toNext: "50 XP to Level 2" });
+    expect(levelLine(tEn, 1800)).toEqual({ title: "Level 7 · Sprout", toNext: "650 XP to Level 8" });
+    expect(levelLine(tEn, 0)).toEqual({ title: "Level 1 · Seedling", toNext: "50 XP to Level 2" });
   });
   it("turns over exactly at each level's start", () => {
-    expect(levelLine(49)).toEqual({ title: "Level 1 · Seedling", toNext: "1 XP to Level 2" });
-    expect(levelLine(50)).toEqual({ title: "Level 2 · Seedling", toNext: "150 XP to Level 3" });
-    expect(levelLine(199)).toEqual({ title: "Level 2 · Seedling", toNext: "1 XP to Level 3" });
-    expect(levelLine(200)).toEqual({ title: "Level 3 · Seedling", toNext: "250 XP to Level 4" });
+    expect(levelLine(tEn, 49)).toEqual({ title: "Level 1 · Seedling", toNext: "1 XP to Level 2" });
+    expect(levelLine(tEn, 50)).toEqual({ title: "Level 2 · Seedling", toNext: "150 XP to Level 3" });
+    expect(levelLine(tEn, 199)).toEqual({ title: "Level 2 · Seedling", toNext: "1 XP to Level 3" });
+    expect(levelLine(tEn, 200)).toEqual({ title: "Level 3 · Seedling", toNext: "250 XP to Level 4" });
   });
 });
 

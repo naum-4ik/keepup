@@ -363,10 +363,10 @@ test("approval: check-ins wait, each approves the other in the Inbox, both see E
   await expect(guest.getByText("Everyone did it ✓")).toBeVisible();
   await guest.getByRole("link", { name: /Inbox/ }).click();
   await guest.getByRole("tab", { name: "Activity" }).click();
-  await expect(guest.getByText("Everyone did it: Gym ✓")).toBeVisible();
+  await expect(guest.getByText("Everyone did it: \u2068Gym\u2069 ✓")).toBeVisible();
   // The decided request reads its outcome, no longer "Approve?".
-  await expect(guest.getByText(/ did Gym: approved$/)).toBeVisible();
-  await expect(guest.getByText(/ did Gym\. Approve\?$/)).toHaveCount(0);
+  await expect(guest.getByText(/ did \u2068Gym\u2069: approved$/)).toBeVisible();
+  await expect(guest.getByText(/ did \u2068Gym\u2069\. Approve\?$/)).toHaveCount(0);
 });
 
 test("nudge a member with a preset, and they see it in their Inbox", async ({ page, browser }) => {
@@ -385,7 +385,7 @@ test("nudge a member with a preset, and they see it in their Inbox", async ({ pa
   await page.goto("/inbox");
   // Unread says so in words, not only with a tint (read within MarkReadOnView's 1.5 s; Activity is
   // the default tab with no approvals).
-  await expect(page.getByRole("listitem").filter({ hasText: /You've got this: Walk/ })).toContainText("Unread");
+  await expect(page.getByRole("listitem").filter({ hasText: /You've got this: \u2068Walk\u2069/ })).toContainText("Unread");
   // Tabs by keyboard: only the selected tab is in the Tab order; the arrows move and select.
   await expect(page.getByRole("tab", { name: "Activity" })).toHaveAttribute("tabindex", "0");
   await expect(page.getByRole("tab", { name: /^Approvals/ })).toHaveAttribute("tabindex", "-1");
@@ -395,7 +395,7 @@ test("nudge a member with a preset, and they see it in their Inbox", async ({ pa
   await expect(page.getByRole("tab", { name: /^Approvals/ })).toHaveAttribute("aria-selected", "true");
   await page.keyboard.press("ArrowRight");
   await expect(page.getByRole("tab", { name: "Activity" })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByText(/You've got this: Walk/)).toBeVisible();
+  await expect(page.getByText(/You've got this: \u2068Walk\u2069/)).toBeVisible();
   // After a moment on Activity, the rows shown count as read and the badge clears.
   await expect(page.getByRole("link", { name: "Inbox", exact: true })).toBeVisible();
 });
@@ -475,12 +475,12 @@ test("a group milestone is an Inbox row, not a card on Today", async ({ page }) 
   await page.getByRole("button", { name: "Check in: Family dinner" }).click();
   await page.goto("/today");
   await expect(page.getByRole("button", { name: "Done: Family dinner" })).toBeVisible();
-  await expect(page.getByText("🔥 Family dinner: 7 days in a row, together")).toHaveCount(0);
+  await expect(page.getByText("🔥 \u2068Family dinner\u2069: 7 days in a row, together")).toHaveCount(0);
   // No milestone card any more, so no "milestone day" rule: the gentle card may show.
   await expect(page.getByText("Add a child? 🐼")).toBeVisible();
   await page.goto("/inbox");
   await page.getByRole("tab", { name: "Activity" }).click();
-  await expect(page.getByText("🔥 Family dinner: 7 days in a row, together")).toBeVisible();
+  await expect(page.getByText("🔥 \u2068Family dinner\u2069: 7 days in a row, together")).toBeVisible();
 });
 
 test("the weekly family recap tops the Inbox's Activity tab, not Today, and Dismiss sticks", async ({ page }) => {
@@ -560,7 +560,7 @@ test("Inbox rows show who they're from, and an empty Approvals tab has no (0)", 
   await page.goto("/inbox");
   await expect(page.getByRole("tab", { name: "Approvals", exact: true })).toBeVisible();
   // The avatar is decoration (the line names Dan), so it's found by its markup, not its role.
-  const row = page.getByRole("listitem").filter({ hasText: "Dan joined Family" });
+  const row = page.getByRole("listitem").filter({ hasText: "\u2068Dan\u2069 joined \u2068Family\u2069" });
   await expect(row.locator('[role="img"]')).toContainText("🦊");
 });
 

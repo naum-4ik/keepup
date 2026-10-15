@@ -3,5 +3,108 @@
     "language": "Language",
     "languageHint": "Keepup and its notifications use this language.",
     "languageNames": { "en": "English", "ru": "Русский", "he": "עברית" }
+  },
+  "push": {
+    "today": "Today",
+    "dailySummary": {
+      "body": "Still to do: {items} 🌱",
+      "atRisk": "{habit}: {done} of {target} {period, select, month {this month} other {this week}}, {days} left"
+    },
+    "allDoneToday": "All done for today 🎉",
+    "habitReminder": "Time for {habit}.",
+    "groupCheckIn": "{names} checked in: {habit}",
+    "others": "{n, plural, one {# other} other {# others}}",
+    "everyoneDidIt": "Everyone did it: {habit} ✓",
+    "approvalNeeded": {
+      "one": "{author} did {habit}. Approve?",
+      "many": "{n, plural, one {# check-in waiting for you} other {# check-ins waiting for you}}"
+    },
+    "approvalExpiring": "{author}'s {habit} check-in needs a yes within 2 hours",
+    "approvalDecided": "{author} did {habit}: {outcome, select, approved {approved} rejected {not approved} other {not reviewed in time}}",
+    "checkInNotApproved": "{reviewer} didn't approve your check-in. You can check in again {period, select, week {this week} month {this month} other {today}}.",
+    "nudge": "{sender}: {kind, select, you_got_this {You've got this: {habit}} gentle_reminder {Gentle reminder: {habit}} other {Thinking of you. {habit} today?}}",
+    "groupStreakEnded": "{habit} streak ended at {span}. Start a new one {period, select, week {this week} month {this month} other {today}}.",
+    "privateStreakEnded": {
+      "best": "{habit} streak ended at {span}. Your best is still {best}.",
+      "restart": "{habit} streak ended at {span}. Start a new one {period, select, week {this week} month {this month} other {today}}."
+    },
+    "groupStreakBack": "A late check-in arrived. {habit} streak is back 🔥",
+    "groupHabitCreated": "{author} added {habit}, {schedule}.",
+    "groupHabitPaused": {
+      "until": "{habit} is paused until {until}.",
+      "open": "{habit} is paused."
+    },
+    "groupHabitResumed": "{habit} is back.",
+    "memberJoined": "{member} joined {group} 👋",
+    "restDayUsed": "{period, select, week {Rest week used. Your {n}-week streak is safe 💤} other {Rest day used. Your {n}-day streak is safe 💤}}",
+    "longestStreak": "Longest streak: {habit} 🔥 {span}",
+    "weeklyRecap": {
+      "title": "Your week",
+      "inbox": "{done} of {possible, plural, one {# check-in} other {# check-ins}} last week.",
+      "history": "{done} of {possible, plural, one {# check-in} other {# check-ins}}."
+    },
+    "monthlyRecap": {
+      "title": "Your month",
+      "body": "{done} of {possible, plural, one {# check-in} other {# check-ins}} in {month}.",
+      "lastMonth": "the last month"
+    },
+    "familyRecap": {
+      "plain": "Together last week: {n, plural, one {# check-in} other {# check-ins}}",
+      "best": "Together last week: {n, plural, one {# check-in} other {# check-ins}} · {habit} {span} 🔥"
+    },
+    "levelUp": "Level {level}",
+    "badgeUnlocked": "Unlocked",
+    "groupMilestone": "🔥 {habit}: {span} in a row, together",
+    "milestoneCard": "🔥 {habit}: {span} in a row",
+    "streakMilestone": {
+      "fresh": "A fresh start: {habit} ✨",
+      "first": "First {period, select, week {week} month {month} other {day}} of {habit} ✨",
+      "day2Again": "Day 2 in a row again 🌱",
+      "day2": "Day 2 in a row. Nice start 🌱",
+      "back": "Back to {span} of {habit} 🔥"
+    },
+    "kidTreatGoal": "{gender, select, other {{kid} reached a goal: {goal} {emoji}}}",
+    "kidFullGarden": "{gender, select, other {{kid}'s garden is in full bloom this week 🌷}}",
+    "kidStreak": "{gender, select, other {{kid}: {span} in a row: {habit} 🔥}}",
+    "alreadyLogged": {
+      "byAdult": "{adult} already logged {habit} for {kid} ✓",
+      "byKid": "{kid} already did {habit} ✓"
+    },
+    "syncDropped": "A check-in from {day} couldn't count: it was more than 3 days old when it synced.",
+    "undoDropped": {
+      "approved": "Couldn't undo {habit}, it was already approved.",
+      "periodClosed": "Couldn't undo {habit}, its time has passed."
+    },
+    "fallback": {
+      "group": "Your group",
+      "habit": "a habit",
+      "someone": "Someone",
+      "child": "Your child",
+      "badge": "A new badge"
+    },
+    "actions": {
+      "approve": "Approve",
+      "reject": "Don't approve"
+    }
+  },
+  "schedule": {
+    "daily": "daily",
+    "weekly": "weekly",
+    "monthly": "monthly",
+    "timesPer": "{n}× a {unit, select, day {day} week {week} other {month}}"
+  },
+  "units": {
+    "day": "{n, plural, one {# day} other {# days}}",
+    "week": "{n, plural, one {# week} other {# weeks}}",
+    "month": "{n, plural, one {# month} other {# months}}"
+  },
+  "levels": {
+    "Seedling": "Seedling",
+    "Sprout": "Sprout",
+    "Sapling": "Sapling",
+    "Tree": "Tree",
+    "Forest": "Forest",
+    "line": "Level {level} · {name}",
+    "toNext": "{xp} XP to Level {next}"
   }
 }
