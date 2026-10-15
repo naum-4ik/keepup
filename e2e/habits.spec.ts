@@ -469,7 +469,7 @@ test("a habit that ended: the finish card, Keep going, Finish, and Start again",
   endHabitYesterday(stretch);
   await page.reload();
 
-  const readCard = page.getByRole("region", { name: "Read is finished" });
+  const readCard = page.getByRole("region", { name: "\u2068Read\u2069 is finished" });
   // Nothing done: no 🎉, an invitation instead of a count.
   await expect(readCard).toContainText("Read reached its end");
   await expect(readCard).not.toContainText("🎉");
@@ -480,8 +480,8 @@ test("a habit that ended: the finish card, Keep going, Finish, and Start again",
   await expect(readCard).toBeHidden();
   await expect(page.getByRole("button", { name: "Check in: Read" })).toBeVisible();
 
-  await page.getByRole("region", { name: "Stretch is finished" }).getByRole("button", { name: "Finish" }).click();
-  await expect(page.getByRole("region", { name: "Stretch is finished" })).toBeHidden();
+  await page.getByRole("region", { name: "\u2068Stretch\u2069 is finished" }).getByRole("button", { name: "Finish" }).click();
+  await expect(page.getByRole("region", { name: "\u2068Stretch\u2069 is finished" })).toBeHidden();
   await page.goto("/progress?view=finished");
   await expect(page.getByRole("link", { name: /Stretch/ })).toBeVisible();
   await page.goto("/progress?view=archived");
@@ -511,7 +511,7 @@ test("Progress → Active leaves out a habit past its end, as Today does; Finish
   await expect(page.getByRole("button", { name: "Start Read again" })).toHaveCount(0); // not finished yet
   // Keep going (on Today) brings it back to Active.
   await page.goto("/today");
-  await page.getByRole("region", { name: "Read is finished" }).getByRole("button", { name: "Keep going" }).click();
+  await page.getByRole("region", { name: "\u2068Read\u2069 is finished" }).getByRole("button", { name: "Keep going" }).click();
   await expect(page.getByRole("button", { name: "Check in: Read" })).toBeVisible();
   await page.goto("/progress");
   await expect(page.getByRole("link", { name: /Read/ })).toBeVisible();

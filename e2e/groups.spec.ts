@@ -161,7 +161,7 @@ test("an invited person joins from the link and lands on the group's habits", as
   const welcome = guest.getByRole("main").getByRole("status");
   await expect(welcome).toContainText("Welcome to Family");
   await expect(welcome).toContainText("2 people · no group habits yet");
-  await expect(welcome.getByRole("link", { name: "Open Family" })).toHaveAttribute("href", /^\/groups\/[0-9a-f-]{36}$/);
+  await expect(welcome.getByRole("link", { name: "Open \u2068Family\u2069" })).toHaveAttribute("href", /^\/groups\/[0-9a-f-]{36}$/);
 
   await page.goto("/groups");
   await expect(page.getByRole("link", { name: /Family/ })).toContainText("2 members");

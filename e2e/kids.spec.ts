@@ -340,7 +340,7 @@ test("a group habit with a child that ended leaves the kid views, and Start agai
 
   endHabitYesterday(id);
   await page.reload();
-  await expect(page.getByRole("region", { name: "Walk the dog is finished" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "\u2068Walk the dog\u2069 is finished" })).toBeVisible();
   await expect(mary).not.toContainText("Walk the dog");
   await page.goto(kidPage);
   await expect(page.getByRole("region", { name: "Habits" })).toContainText("Tidy my toys");
@@ -350,8 +350,8 @@ test("a group habit with a child that ended leaves the kid views, and Start agai
   await expect(page.getByText("Walk the dog")).toHaveCount(0);
 
   await page.goto("/today");
-  await page.getByRole("region", { name: "Walk the dog is finished" }).getByRole("button", { name: "Finish" }).click();
-  await expect(page.getByRole("region", { name: "Walk the dog is finished" })).toBeHidden();
+  await page.getByRole("region", { name: "\u2068Walk the dog\u2069 is finished" }).getByRole("button", { name: "Finish" }).click();
+  await expect(page.getByRole("region", { name: "\u2068Walk the dog\u2069 is finished" })).toBeHidden();
   await page.goto("/progress?view=finished");
   await page.getByRole("button", { name: "Start Walk the dog again" }).click();
   await expect(page).toHaveURL(/\/today$/);
