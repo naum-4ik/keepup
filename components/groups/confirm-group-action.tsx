@@ -28,7 +28,7 @@ type Action = (confirmChildren: boolean) => Promise<GroupActionState>;
 // Leave and Delete, like ConfirmHabitAction: an in-app Dialog confirm with an inline error. When the
 // group has children the database asks for a second, explicit confirmation (children_would_be_deleted);
 // the dialog then names them, offers Export first and Move to another group for each (a blocking
-// warning, ideas/kids-and-groups.md §3), and tc("deleteAnyway") last.
+// warning, ideas/kids-and-groups.md §3), and "Delete anyway" last.
 export function ConfirmGroupAction({
   triggerLabel,
   destructiveTrigger = false,
@@ -36,7 +36,7 @@ export function ConfirmGroupAction({
   ...copy
 }: Copy & { triggerLabel: string; destructiveTrigger?: boolean; action: Action }) {
   const [open, setOpen] = useState(false);
-  // Each opening is a new session: the tc("deleteAnyway") step must never survive a Cancel, or the
+  // Each opening is a new session: the "Delete anyway" step must never survive a Cancel, or the
   // next confirm tap would delete the children without the warning being shown first.
   const [session, setSession] = useState(0);
 

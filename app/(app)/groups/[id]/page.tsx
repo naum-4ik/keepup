@@ -77,7 +77,7 @@ export default async function GroupPage({
     <section className="flex flex-col gap-4 pt-2 pb-6">
       <Link href="/groups" className="-ml-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
         <ChevronLeft aria-hidden className="size-4" />
-        {tg("groups.title")}
+        {tg("nav.groups")}
       </Link>
 
       <header className="flex items-center gap-4">
@@ -205,10 +205,10 @@ export default async function GroupPage({
 
       <div className="flex flex-col gap-2 pt-2">
         <ConfirmGroupAction
-          triggerLabel={t("leave.trigger")}
+          triggerLabel={t("leave.action")}
           title={t.rich("leave.title", { name: group.name, bdi })}
           description={alone ? t("leave.descriptionAlone") : t("leave.description")}
-          confirmLabel={t("leave.confirm")}
+          confirmLabel={t("leave.action")}
           pendingLabel={t("leave.pending")}
           childrenNotice={childrenNotice}
           groupChildren={children}
@@ -217,10 +217,10 @@ export default async function GroupPage({
         />
         {isAdmin && (
           <ConfirmGroupAction
-            triggerLabel={t("delete.trigger")}
+            triggerLabel={t("delete.action")}
             title={t.rich("delete.title", { name: group.name, bdi })}
             description={t("delete.description")}
-            confirmLabel={t("delete.confirm")}
+            confirmLabel={t("delete.action")}
             pendingLabel={t("delete.pending")}
             childrenNotice={childrenNotice}
             groupChildren={children}

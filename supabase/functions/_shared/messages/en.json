@@ -384,7 +384,6 @@
     "defaultFamily": "Family",
     "defaultFriends": "Friends",
     "childrenDeletion": "{n, plural, =0 {The children's profiles and history will be deleted.} one {{names}'s profile and history will be deleted.} other {{names}'s profiles and history will be deleted.}}",
-    "title": "Groups",
     "newGroup": "New group",
     "list": {
       "empty": "Share habits with the people you live and hang out with.",
@@ -400,8 +399,7 @@
       "avatar": "Avatar <muted>(optional)</muted>",
       "avatarHint": "Until you pick one, the group shows its first letter.",
       "timezoneHelp": "Your time zone ({city}) and week start are used for the group's habits. Admins can change them later.",
-      "create": "Create group",
-      "creating": "Creating…"
+      "create": "Create group"
     },
     "detail": {
       "avatarTitle": "Change the group avatar",
@@ -417,19 +415,17 @@
       "settings": "Group settings",
       "settingsHint": "Time zone and week start",
       "leave": {
-        "trigger": "Leave group",
         "title": "Leave <bdi>{name}</bdi>?",
         "descriptionAlone": "You're the only member, so leaving deletes the group.",
         "description": "You stop seeing its habits. Your own habits stay with you.",
-        "confirm": "Leave group",
-        "pending": "Leaving…"
+        "pending": "Leaving…",
+        "action": "Leave group"
       },
       "delete": {
-        "trigger": "Delete group",
         "title": "Delete <bdi>{name}</bdi>?",
         "description": "This removes the group and its shared habits for everyone. It can't be undone.",
-        "confirm": "Delete group",
-        "pending": "Deleting…"
+        "pending": "Deleting…",
+        "action": "Delete group"
       }
     },
     "confirm": {
@@ -460,7 +456,6 @@
       "helpNone": "Anyone with the link can join <bdi>{group}</bdi> for 7 days.",
       "helpActive": "Anyone with this link can join <bdi>{group}</bdi> for 7 days.",
       "create": "Create invite link",
-      "creating": "Creating…",
       "copyFailed": "Couldn't copy. Select the link and copy it.",
       "label": "Invite link <muted>· valid until {date}</muted>",
       "linkAria": "Invite link",
@@ -979,9 +974,6 @@
       "cta": "Nudge",
       "menuLabel": "Nudge {name}"
     },
-    "confirm": {
-      "cancel": "Cancel"
-    },
     "archive": {
       "trigger": "Archive habit",
       "title": "Archive \"<bdi>{title}</bdi>\"?",
@@ -1208,7 +1200,8 @@
       "dismiss": "Dismiss tip: ",
       "text": "Tap when you've done it"
     },
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "creating": "Creating…"
   },
   "inbox": {
     "title": "Inbox",

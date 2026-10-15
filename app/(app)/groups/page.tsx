@@ -11,11 +11,12 @@ import { getMyGroups } from "@/lib/groups";
 export default async function GroupsPage() {
   const { t: tg } = await getT();
   const t = await getTranslations("groups");
+  const tn = await getTranslations("nav");
   const groups = await getMyGroups();
 
   return (
     <section className="flex flex-col gap-4 pt-4 pb-6">
-      <h1 className="text-xl font-bold">{t("title")}</h1>
+      <h1 className="text-xl font-bold">{tn("groups")}</h1>
       {groups.length === 0 ? (
         <EmptyState
           icon={<Users className="size-6" />}

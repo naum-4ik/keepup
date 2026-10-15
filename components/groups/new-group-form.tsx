@@ -18,6 +18,7 @@ const initialState: GroupActionState = { status: "idle" };
 export function NewGroupForm({ city }: { city: string }) {
   const { t } = useT();
   const tn = useTranslations("groups.new");
+  const tc = useTranslations("common");
   const [state, formAction, pending] = useActionState(createGroup, initialState);
   const [name, setName] = useState("");
   const [kind, setKind] = useState<GroupKind | "">("");
@@ -88,7 +89,7 @@ export function NewGroupForm({ city }: { city: string }) {
       </p>
 
       <Button type="submit" className="h-11" disabled={pending}>
-        {pending ? tn("creating") : tn("create")}
+        {pending ? tc("creating") : tn("create")}
       </Button>
     </form>
   );

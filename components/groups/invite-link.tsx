@@ -26,6 +26,7 @@ export function InviteLink({
   autoFocus?: boolean;
 }) {
   const t = useTranslations("groups.invite");
+  const tc = useTranslations("common");
   const bdi = (c: ReactNode) => <bdi>{c}</bdi>;
   const share = useSyncExternalStore(noSubscribe, canShare, () => false);
   const [pending, startTransition] = useTransition();
@@ -59,7 +60,7 @@ export function InviteLink({
       <div className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">{t.rich("helpNone", { group: groupName, bdi })}</p>
         <Button type="button" className="h-11" disabled={pending} autoFocus={autoFocus} onClick={() => run(() => createInvite(groupId))}>
-          {pending ? t("creating") : t("create")}
+          {pending ? tc("creating") : t("create")}
         </Button>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       </div>

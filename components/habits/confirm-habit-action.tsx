@@ -28,7 +28,7 @@ export function ConfirmHabitAction({
   confirmVariant: "destructive" | "outline";
   action: (prev: FormActionState, formData: FormData) => Promise<FormActionState>;
 }) {
-  const t = useTranslations("habits.confirm");
+  const t = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(action, initialState);
 
