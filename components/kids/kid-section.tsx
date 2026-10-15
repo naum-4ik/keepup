@@ -9,7 +9,7 @@ import { groupForToday } from "@/lib/today";
 
 // Today: a section per child. Any adult of her group checks in for her inline.
 export async function KidSection({ child, habits, stars }: { child: MyChild; habits: HabitSummary[]; stars: number | null }) {
-  const t = await getTranslations("kids");
+  const t = await getTranslations();
   const { todo, done, later } = groupForToday(habits);
   const ordered = [...todo, ...done, ...later];
   return (
@@ -29,7 +29,7 @@ export async function KidSection({ child, habits, stars }: { child: MyChild; hab
           ))}
         </ul>
       ) : (
-        <p className="rounded-2xl bg-card p-4 text-center text-sm text-muted-foreground shadow-soft">{t("noHabits")}</p>
+        <p className="rounded-2xl bg-card p-4 text-center text-sm text-muted-foreground shadow-soft">{t("common.noHabits")}</p>
       )}
     </section>
   );

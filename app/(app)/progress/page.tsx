@@ -86,7 +86,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
             )
           }
         >
-          {showFinished ? t("progress.empty.finished") : showArchived ? t("progress.empty.archived") : t("progress.empty.active")}
+          {showFinished ? t("progress.empty.finished") : showArchived ? t("progress.empty.archived") : t("common.noHabits")}
         </EmptyState>
       ) : (
         categories.map((c) => (

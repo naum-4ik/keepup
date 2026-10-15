@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { Gender } from "@/lib/garden";
 import { GOAL_DEFAULT_EMOJI, GOAL_DEFAULT_TARGET, GOAL_TITLE_MAX } from "@/lib/kid-schema";
 import type { TreatGoal as Goal } from "@/lib/kids";
 import { useT } from "@/lib/i18n/client";
@@ -20,17 +21,17 @@ const SHORT_IDEAS = 6;
 const bdi = (c: React.ReactNode) => <bdi>{c}</bdi>;
 
 // ideas/achievements-and-rewards.md §8: a treat the family agrees on, reached with stars.
-export function TreatGoal({ childId, childName, goal }: { childId: string; childName: string; goal: Goal | null }) {
+export function TreatGoal({ childId, childName, gender, goal }: { childId: string; childName: string; gender: Gender; goal: Goal | null }) {
   const t = useTranslations("kids.goal");
   return (
     <section aria-label={t("title")} className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
       <h2 className="text-sm font-bold text-muted-foreground">{t("title")}</h2>
-      {goal ? <ActiveGoal childId={childId} childName={childName} goal={goal} /> : <SetGoalForm childId={childId} />}
+      {goal ? <ActiveGoal childId={childId} childName={childName} gender={gender} goal={goal} /> : <SetGoalForm childId={childId} />}
     </section>
   );
 }
 
-function ActiveGoal({ childId, childName, goal }: { childId: string; childName: string; goal: Goal }) {
+function ActiveGoal({ childId, childName, gender, goal }: { childId: string; childName: string; gender: Gender; goal: Goal }) {
   const t = useTranslations("kids.goal");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +67,7 @@ function ActiveGoal({ childId, childName, goal }: { childId: string; childName: 
       </div>
       {reached ? (
         <>
-          <p className="font-semibold text-done">{t.rich("reached", { name: childName, bdi })}</p>
+          <p className="font-semibold text-done">{t.rich("reached", { name: childName, gender: gender ?? "other", bdi })}</p>
           <Button type="button" className="h-11" disabled={pending} onClick={() => run(() => markReceived(goal.id, childId))}>
             {t("markReceived")}
           </Button>
@@ -92,7 +93,7 @@ function ActiveGoal({ childId, childName, goal }: { childId: string; childName: 
         <DialogContent>
           <div className="flex flex-col gap-1 pr-10">
             <DialogTitle>{t("cancelTitle")}</DialogTitle>
-            <DialogDescription>{t.rich("cancelDescription", { goal: goal.title, name: childName, bdi })}</DialogDescription>
+            <DialogDescription>{t.rich("cancelDescription", { goal: goal.title, name: childName, gender: gender ?? "other", bdi })}</DialogDescription>
           </div>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <div className="flex gap-2">

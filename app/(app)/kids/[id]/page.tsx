@@ -41,7 +41,6 @@ export default async function KidPage({
   const [{ id }, { habitsFailed }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
   const { t: tg, locale } = await getT();
-  const t = await getTranslations("kids");
   const tk = await getTranslations("kids.detail");
   const tp = await getTranslations("progress.tabs");
   const bdi = (c: React.ReactNode) => <bdi>{c}</bdi>;
@@ -49,13 +48,14 @@ export default async function KidPage({
   const child = (await getMyChildren()).find((c) => c.child_id === id);
   if (!child) notFound();
 
-  const [{ userId, profile }, group, groups, summaries, rewards, tapRows] = await Promise.all([
+  const [{ userId, profile }, group, groups, summaries, rewards, tapRows, templateTitles] = await Promise.all([
     getProfile(),
     getGroupDetail(child.group_id),
     getMyGroups(),
     getChildSummaries(id),
     getChildRewards(id),
     getRecentTapRows([id]),
+    kidTemplateTitlesAllLocales(),
   ]);
   const unarchived = summaries.filter((h) => !h.archived_at);
   const archivedHabits = summaries.filter((h) => h.archived_at && !h.group_id);
@@ -75,7 +75,7 @@ export default async function KidPage({
   const time = new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: group?.timezone ?? "UTC", hour: "2-digit", minute: "2-digit" });
   const logged = (loggedBy: string | null, at: string) => {
     const who = loggedBy === null ? { by: "child", name: child.name } : loggedBy === userId ? { by: "you", name: "" } : names.has(loggedBy) ? { by: "member", name: names.get(loggedBy)! } : { by: "former", name: "" };
-    return tk.rich("logged", { ...who, time: time.format(new Date(at)), bdi });
+    return tk.rich("logged", { ...who, gender: child.gender ?? "other", time: time.format(new Date(at)), bdi });
   };
 
   return (
@@ -108,7 +108,7 @@ export default async function KidPage({
         href={`/kids/${id}/play`}
         className="flex min-h-14 items-center justify-center rounded-2xl bg-primary px-5 text-base font-bold text-primary-foreground shadow-soft hover:brightness-95"
       >
-        {tk.rich("openView", { name: child.name, bdi })}
+        {tk("openView", { name: isolate(child.name) })}
       </Link>
 
       {rewards && lastWeek(rewards.week_start, rewards.album) && (
@@ -124,7 +124,7 @@ export default async function KidPage({
       {rewards && <Garden t={tg} locale={locale} stars={rewards.stars_this_week} theme={child.kid_theme} weekStart={rewards.week_start} gender={child.gender} />}
       <ThemePicker childId={id} childName={child.name} theme={child.kid_theme} />
       {rewards && <GardenAlbum t={tg} locale={locale} weeks={rewards.album} theme={child.kid_theme} />}
-      {rewards && <TreatGoal childId={id} childName={child.name} goal={rewards.goal} />}
+      {rewards && <TreatGoal childId={id} childName={child.name} gender={child.gender} goal={rewards.goal} />}
 
       <section aria-label={tk("habits")} className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
         <h2 className="text-sm font-bold text-muted-foreground">{tk("habits")}</h2>
@@ -173,9 +173,9 @@ export default async function KidPage({
             })}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">{t("noHabits")}</p>
+          <p className="text-sm text-muted-foreground">{tg("common.noHabits")}</p>
         )}
-        <AddKidHabit childId={id} childName={child.name} existingTitles={unarchived.map((h) => h.title)} templateTitles={await kidTemplateTitlesAllLocales()} />
+        <AddKidHabit childId={id} childName={child.name} existingTitles={unarchived.map((h) => h.title)} templateTitles={templateTitles} gender={child.gender} />
       </section>
 
       {/* Archived habits open their page, where a guardian restores them. Finished ones (an end that

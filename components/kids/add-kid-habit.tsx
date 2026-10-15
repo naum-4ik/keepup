@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HABIT_TITLE_MAX, type HabitPeriod } from "@/lib/habit-schema";
 import { useT } from "@/lib/i18n/client";
+import type { Gender } from "@/lib/garden";
 import { KID_TEMPLATES, kidTemplateTitle, templatesLeft, type KidTemplateTitles } from "@/lib/kid-templates";
 import { keepFormValues } from "@/lib/keep-form-values";
 
@@ -30,11 +31,13 @@ export function AddKidHabit({
   childName,
   existingTitles,
   templateTitles,
+  gender,
 }: {
   childId: string;
   childName: string;
   existingTitles: string[];
   templateTitles: KidTemplateTitles;
+  gender: Gender;
 }) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
@@ -56,7 +59,7 @@ export function AddKidHabit({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           {custom ? (
-            <CustomHabitForm childId={childId} childName={childName} onBack={() => setCustom(false)} onAdded={() => setOpen(false)} />
+            <CustomHabitForm childId={childId} childName={childName} gender={gender} onBack={() => setCustom(false)} onAdded={() => setOpen(false)} />
           ) : (
             <TemplatePicker childId={childId} childName={childName} existingTitles={existingTitles} templateTitles={templateTitles} onCustom={() => setCustom(true)} />
           )}
@@ -126,11 +129,13 @@ function TemplatePicker({
 function CustomHabitForm({
   childId,
   childName,
+  gender,
   onBack,
   onAdded,
 }: {
   childId: string;
   childName: string;
+  gender: Gender;
   onBack: () => void;
   onAdded: () => void;
 }) {
@@ -149,7 +154,7 @@ function CustomHabitForm({
     <>
       <div className="flex flex-col gap-1 pr-10">
         <DialogTitle>{t.rich("ownTitle", { name: childName, bdi })}</DialogTitle>
-        <DialogDescription>{t.rich("ownDescription", { name: childName, bdi })}</DialogDescription>
+        <DialogDescription>{t.rich("ownDescription", { name: childName, gender: gender ?? "other", bdi })}</DialogDescription>
       </div>
       <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">

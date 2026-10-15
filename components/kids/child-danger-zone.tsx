@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { downloadJson } from "@/lib/download-json";
 import { exportFileName } from "@/lib/kid-schema";
 import { cn } from "@/lib/utils";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 
 export type MoveTarget = { id: string; name: string };
 const bdi = (c: ReactNode) => <bdi>{c}</bdi>;
@@ -33,7 +34,7 @@ export function ExportChildButton({ childId, childName, label, className }: { ch
           })
         }
       >
-        <span className="truncate">{pending ? t("exporting") : (label ?? t.rich("export", { name: childName, bdi }))}</span>
+        <span className="truncate">{pending ? t("exporting") : (label ?? t("export", { name: isolate(childName) }))}</span>
       </Button>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </div>
@@ -131,7 +132,7 @@ function ResetChildButton({ childId, childName }: { childId: string; childName: 
           setOpen(true);
         }}
       >
-        <span className="truncate">{t.rich("resetTrigger", { name: childName, bdi })}</span>
+        <span className="truncate">{t("resetTrigger", { name: isolate(childName) })}</span>
       </Button>
       {done && (
         <p role="status" className="text-sm font-semibold text-done">
@@ -183,7 +184,7 @@ function DeleteChildButton({ childId, childName }: { childId: string; childName:
   return (
     <>
       <Button type="button" variant="outline" className="h-11 text-destructive hover:text-destructive" onClick={() => setOpen(true)}>
-        <span className="truncate">{t.rich("deleteTrigger", { name: childName, bdi })}</span>
+        <span className="truncate">{t("deleteTrigger", { name: isolate(childName) })}</span>
       </Button>
       <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
         <DialogContent>

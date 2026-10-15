@@ -781,9 +781,7 @@
       "girl": "Girl",
       "hint": "Used for words like ‘well done’ in Russian and Hebrew."
     },
-    "noHabits": "No habits yet.",
     "errors": {
-      "pickGroup": "Pick a group.",
       "pickHabit": "Pick a habit.",
       "themeFailed": "Couldn't change it. Try again."
     },
@@ -813,7 +811,7 @@
       "add": "Add {title}",
       "hasAll": "<bdi>{name}</bdi> has all the suggested habits.",
       "ownTitle": "Your own habit for <bdi>{name}</bdi>",
-      "ownDescription": "Give it a name <bdi>{name}</bdi> understands, and a picture.",
+      "ownDescription": "{gender, select, boy {Give it a name <bdi>{name}</bdi> understands, and a picture.} girl {Give it a name <bdi>{name}</bdi> understands, and a picture.} other {Give it a name <bdi>{name}</bdi> understands, and a picture.}}",
       "titlePlaceholder": "Feed the fish",
       "picture": "Picture",
       "period": "{period, select, day {day} week {week} other {month}}",
@@ -821,10 +819,10 @@
     },
     "detail": {
       "habitsFailed": "Some habits couldn't be added. Add them from here.",
-      "openView": "Open <bdi>{name}'s</bdi> view",
+      "openView": "Open {name}'s view",
       "habits": "Habits",
       "progressInGroup": "{progress} · <bdi>{group}</bdi>",
-      "logged": "{by, select, child {<bdi>{name}</bdi> did it} you {Logged by you} member {Logged by <bdi>{name}</bdi>} other {Logged by a former member}} · {time}",
+      "logged": "{by, select, child {{gender, select, boy {<bdi>{name}</bdi> did it} girl {<bdi>{name}</bdi> did it} other {<bdi>{name}</bdi> did it}}} you {Logged by you} member {Logged by <bdi>{name}</bdi>} other {Logged by a former member}} · {time}",
       "undo": "Undo {title} at {time}",
       "data": "Data",
       "dataText": "Everything Keepup keeps about <bdi>{name}</bdi>, in one file."
@@ -835,27 +833,27 @@
       "moveTo": "Move <bdi>{name}</bdi> to",
       "move": "Move",
       "moving": "Moving…",
-      "export": "Export <bdi>{name}'s</bdi> data",
+      "export": "Export {name}'s data",
       "exporting": "Exporting…",
-      "resetTrigger": "Reset <bdi>{name}'s</bdi> profile",
-      "resetDone": "<bdi>{name}'s</bdi> profile is reset. A fresh start 🌱",
-      "resetTitle": "Reset <bdi>{name}'s</bdi> profile?",
-      "resetDescription": "Everything except <bdi>{name}'s</bdi> nickname and avatar is cleared: habits, check-ins, stars, the garden album and treat goals. This can't be undone.",
+      "resetTrigger": "Reset {name}'s profile",
+      "resetDone": "<bdi>{name}</bdi>'s profile is reset. A fresh start 🌱",
+      "resetTitle": "Reset <bdi>{name}</bdi>'s profile?",
+      "resetDescription": "Everything except <bdi>{name}</bdi>'s nickname and avatar is cleared: habits, check-ins, stars, the garden album and treat goals. This can't be undone.",
       "reset": "Reset",
       "resetting": "Resetting…",
-      "deleteTrigger": "Delete <bdi>{name}'s</bdi> profile",
-      "deleteTitle": "Delete <bdi>{name}'s</bdi> profile?",
-      "deleteDescription": "<bdi>{name}'s</bdi> profile and history will be deleted. This can't be undone."
+      "deleteTrigger": "Delete {name}'s profile",
+      "deleteTitle": "Delete <bdi>{name}</bdi>'s profile?",
+      "deleteDescription": "<bdi>{name}</bdi>'s profile and history will be deleted. This can't be undone."
     },
     "goal": {
       "title": "Treat goal",
       "starsLabel": "{stars} of {target, plural, one {# star} other {# stars}}",
-      "reached": "<bdi>{name}</bdi> reached the goal ✓",
+      "reached": "{gender, select, boy {<bdi>{name}</bdi> reached the goal ✓} girl {<bdi>{name}</bdi> reached the goal ✓} other {<bdi>{name}</bdi> reached the goal ✓}}",
       "markReceived": "Mark as received",
       "progress": "⭐ {stars} of {target}",
       "cancel": "Cancel goal",
       "cancelTitle": "Cancel the goal?",
-      "cancelDescription": "<bdi>{goal}</bdi> goes away with its star path. A new goal counts from zero; <bdi>{name}</bdi> keeps the stars.",
+      "cancelDescription": "{gender, select, boy {<bdi>{goal}</bdi> goes away with its star path. A new goal counts from zero; <bdi>{name}</bdi> keeps the stars.} girl {<bdi>{goal}</bdi> goes away with its star path. A new goal counts from zero; <bdi>{name}</bdi> keeps the stars.} other {<bdi>{goal}</bdi> goes away with its star path. A new goal counts from zero; <bdi>{name}</bdi> keeps the stars.}}",
       "keep": "Keep goal",
       "cancelling": "Cancelling…",
       "intro": "Pick a treat together, then collect stars for it.",
@@ -1259,8 +1257,7 @@
     },
     "empty": {
       "finished": "No finished habits yet. Give a habit an end, like 30 days.",
-      "archived": "No archived habits.",
-      "active": "No habits yet."
+      "archived": "No archived habits."
     },
     "endedDecide": "Ended · decide on Today",
     "best": "best {span}",
@@ -1312,7 +1309,8 @@
     },
     "cancel": "Cancel",
     "creating": "Creating…",
-    "addHabit": "Add a habit"
+    "addHabit": "Add a habit",
+    "noHabits": "No habits yet."
   },
   "inbox": {
     "title": "Inbox",
@@ -1404,7 +1402,7 @@
     "exitLabel": "Hold to exit {name}'s view",
     "closing": "Closing…",
     "holdToExit": "Hold to exit",
-    "hold": "{step, plural, =0 {Hold…} =1 {Hold… 1…} other {Hold… 1… 2}}",
+    "hold": "{step, select, 0 {Hold…} 1 {Hold… 1…} other {Hold… 1… 2}}",
     "newWeek": {
       "label": "A new week",
       "album": "See the album",

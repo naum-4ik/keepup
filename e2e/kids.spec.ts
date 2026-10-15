@@ -103,7 +103,7 @@ test("the kid view: big buttons, a tap counts at once, and hold to exit", async 
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await addChild(page, "Family", "Mary");
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
   // For a toddler: no counts or "what's next" here (they're on the kid page), just the scene.
   await expect(page.getByText(/more ⭐ to/)).toHaveCount(0);
@@ -301,7 +301,7 @@ test("choose what grows with the child: the kid page and the kid view switch the
   await expect(page.getByRole("region", { name: "This week's aquarium" })).toBeVisible();
   await page.reload(); // saved
   await expect(page.getByRole("region", { name: "What grows" }).getByRole("button", { name: /Aquarium/ })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   await expect(page.getByRole("img", { name: "Clear water" })).toBeVisible();
 });
 
@@ -311,7 +311,7 @@ test("reset a child's profile: export first is offered, and only the nickname an
   await addChild(page, "Family", "Mary");
   await expect(page.getByText("Brush teeth")).toBeVisible();
   const zone = page.getByRole("region", { name: "Danger zone" });
-  await zone.getByRole("button", { name: "Reset Mary's profile" }).click();
+  await zone.getByRole("button", { name: "Reset \u2068Mary\u2069's profile" }).click();
   const dialog = page.getByRole("dialog", { name: "Reset Mary's profile?" });
   await expect(dialog).toContainText("Everything except Mary's nickname and avatar is cleared");
   const download = page.waitForEvent("download");
@@ -380,7 +380,7 @@ test("the kid view: the third star brings the sprout, and the last habit of the 
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await addChild(page, "Family", "Mary");
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   await expect(page).toHaveURL(/\/play$/); // the kid page shows the same picture: tap only in the kid view
   await expect(page.getByRole("img", { name: "A seed in the soil" })).toBeVisible();
   await page.getByRole("button", { name: /Read a book together/ }).click();
@@ -421,7 +421,7 @@ test("the kid view with five habits: a done card slides to the bottom, and the p
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await addChildWithFiveHabits(page, "Family", "Mary");
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   await expect(page).toHaveURL(/\/play$/);
   const cards = page.getByRole("listitem");
   await expect(cards).toHaveCount(5);
@@ -458,7 +458,7 @@ test("the kid view's idle motion: the scene moves gently, and not at all with Re
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await addChild(page, "Family", "Mary");
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   await page.getByRole("button", { name: /Tidy my toys/ }).click();
   await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "1");
   const idleRunning = () =>
@@ -478,7 +478,7 @@ test("the kid view: while a done card slides down, a card that isn't moving stil
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await addChildWithFiveHabits(page, "Family", "Mary");
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   const cards = page.getByRole("listitem");
   await expect(cards).toHaveCount(5);
   // A one-tap card below the first, so the first card stays where it is when it slides down.
@@ -530,7 +530,7 @@ test("the kid view: a finishing tap shows the new thing big in the middle, then 
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await addChild(page, "Family", "Mary");
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   await expect(page).toHaveURL(/\/play$/);
   await page.getByRole("button", { name: /Tidy my toys/ }).click();
   await expect(page.getByText("1 star this week")).toBeAttached(); // said at once, for screen readers
@@ -591,7 +591,7 @@ test("the kid view: a 2×-a-day habit's first tap shows its new thing big in the
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await addChild(page, "Family", "Mary");
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   await expect(page).toHaveURL(/\/play$/);
   await page.getByRole("button", { name: /Brush teeth/ }).click(); // 1 of 2: it earns a star
   await expect(page.getByText("1 star this week")).toBeAttached();
@@ -617,7 +617,7 @@ test("the kid view: an undone card shows a big empty circle, and a 2×-a-day hab
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await addChild(page, "Family", "Mary");
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   await expect(page).toHaveURL(/\/play$/);
   const teeth = page.getByRole("button", { name: "Brush teeth" });
   // The place to tap: a big empty circle, sized for a small finger.
@@ -656,7 +656,7 @@ test("the kid view: a new-picture tap shows its new thing first, then the new pi
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await addChild(page, "Family", "Mary");
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   await expect(page).toHaveURL(/\/play$/);
   await page.getByRole("button", { name: /Read a book together/ }).click();
   await page.getByRole("button", { name: /Tidy my toys/ }).click();
@@ -688,7 +688,7 @@ test("the kid view: two taps 200 ms apart both show big, each long enough to see
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await addChild(page, "Family", "Mary");
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   await expect(page).toHaveURL(/\/play$/);
   const seen = await watchBig(page);
   await page.getByRole("button", { name: /Tidy my toys/ }).click();
@@ -714,7 +714,7 @@ test("the kid view with Reduce Motion: no zoom, the new thing fades in at its sp
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await addChild(page, "Family", "Mary");
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   await expect(page).toHaveURL(/\/play$/);
   await page.getByRole("button", { name: /Tidy my toys/ }).click();
   await expect(page.getByRole("button", { name: "Tidy my toys , done" })).toBeVisible();
@@ -733,7 +733,7 @@ test("the kid view: the big reveal still lands on its spot when the picture shri
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await addChildWithFiveHabits(page, "Family", "Mary");
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   const cards = page.getByRole("listitem");
   await expect(cards).toHaveCount(5);
   const titles = (await cards.allInnerTexts()).map((t) => t.trim().split("\n").pop()!.trim());
@@ -883,7 +883,7 @@ test("a child's data export has its own Data section, outside the danger zone", 
   await addChild(page, "Family", "Mary");
   await expect(page.getByRole("region", { name: "Danger zone" }).getByRole("button", { name: /^Export/ })).toHaveCount(0);
   const download = page.waitForEvent("download");
-  await page.getByRole("region", { name: "Data", exact: true }).getByRole("button", { name: "Export Mary's data" }).click();
+  await page.getByRole("region", { name: "Data", exact: true }).getByRole("button", { name: "Export \u2068Mary\u2069's data" }).click();
   expect((await download).suggestedFilename()).toMatch(/^keepup-Mary-\d{4}-\d{2}-\d{2}\.json$/);
 });
 

@@ -67,7 +67,7 @@ function readAvatar(formData: FormData) {
 export async function addChild(_prev: KidFormState, formData: FormData): Promise<KidFormState> {
   const { t } = await getT();
   const groupId = String(formData.get("groupId") ?? "");
-  if (!isUuid(groupId)) return { status: "error", message: t("kids.errors.pickGroup") };
+  if (!isUuid(groupId)) return { status: "error", message: t("habits.actions.pickGroup") };
   const name = parseChildName(String(formData.get("name") ?? ""));
   if (!name.ok) return { status: "error", message: errorText(t, name.error) };
   if (formData.get("guardian") !== "on") return { status: "error", message: habitErrorMessage(t, { message: "keepup:guardian_required" }) };

@@ -41,7 +41,7 @@ test("Try it: a full account in under 5 seconds, with a check-in to approve", as
   await expect(page.getByRole("button", { name: /invite link/i })).toHaveCount(0);
 
   await page.getByRole("link", { name: /Nova/ }).first().click();
-  await page.getByRole("link", { name: "Open Nova's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Nova\u2069's view" }).click();
   await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}\/play$/);
   await expect(page.getByText(BANNER)).toBeVisible();
 
