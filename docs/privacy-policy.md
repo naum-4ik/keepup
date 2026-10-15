@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Effective date:** 12 October 2026
+**Effective date:** 15 October 2026
 
 This policy explains what personal data Keepup ("the app", "we") processes, why, for how long, who we share it with, and the rights you have. It applies to the Keepup web app at its published address and to any installed version of it.
 
@@ -22,7 +22,7 @@ We process only the data the app needs to work.
 
 **Profile and settings** (from you)
 
-- Display name, avatar emoji and colour, time zone, first day of the week, and what you use Keepup for (optional).
+- Display name, avatar emoji and colour, time zone, first day of the week, the language you choose (English, Russian or Hebrew), and what you use Keepup for (optional).
 - The daily reminder hour, Pause all notifications, the celebrations setting (full or subtle), and the dates you finished onboarding, accepted this policy and last used Reset my data.
 - Notification settings for each kind of notification (on or off; sound, silent or Inbox only) and for each habit (muted, reminders on or off, reminder time).
 
@@ -40,6 +40,7 @@ We process only the data the app needs to work.
 **Children's profiles** (from the parent or guardian who adds the child, see section 9)
 
 - Nickname, avatar emoji and colour, and the chosen kid view theme.
+- Boy or girl, if the parent or guardian chooses to set it (optional).
 - The child's habits and check-ins (and whether the child tapped it), stars, garden progress and treat goals.
 - Points, levels and badges the app keeps for the child behind the scenes; children never see them.
 
@@ -153,14 +154,15 @@ No system is perfectly secure. If a personal data breach is likely to put you at
 
 - **Own accounts:** Keepup accounts are for adults aged **18 or older**.
 - **Anyone under 18** can appear in Keepup only as a **child profile** added by a parent or legal guardian who is an admin of a group. By adding a child, the parent or guardian confirms that they have parental responsibility and agrees to the processing described here for that child.
-- **What a child profile contains:** a **nickname and an avatar emoji** (never a photo, full name, birth date or contact details), plus the child's habits, check-ins, stars, garden and treat goals.
+- **What a child profile contains:** a **nickname and an avatar emoji** (never a photo, full name, birth date or contact details), plus the child's habits, check-ins, stars, garden and treat goals. A parent or guardian may also, optionally, set **boy or girl** for the child. It is used only to choose the right words in Russian and Hebrew, and can be changed or cleared at any time.
 - **Who sees it:** only the adult members of the child's group. Children don't have their own login, can't message anyone, and can't be found by other users. Like other app data, a child's data is processed by our service providers (section 5); the usage reports include the child's nickname when the child is added (with the habits added at the same time) and for each check-in made for the child, and the kid view's screens are reported like any other, with the child's ID in the page address.
 - **Control:** any adult member of the child's group can view, export or correct the child's profile at any time from the child's page; a group admin can reset or delete it; anyone can also ask us by contacting us.
 - **Accidental accounts:** if we learn that an account belongs to someone under 18, we will delete it or, with a parent's agreement, turn it into a child profile.
 
 ## 10. Cookies and storage on your device
 
-- We use only **strictly necessary** cookies: to keep you signed in and to protect the sign-in flow.
+- We use only **strictly necessary** cookies: to keep you signed in, to protect the sign-in flow, and to remember your chosen language.
+- A **language cookie** remembers the language you chose on this device, so the app opens in it.
 - The app keeps a few small settings in your browser's local storage: tips and cards you have already seen, the kid view's sound setting, and which account the saved pages below belong to.
 - **Offline check-ins:** a check-in you make without a connection is kept on your device (in the browser's IndexedDB) until it reaches our servers, then removed from the device.
 - **Saved pages:** the app's offline page, this policy, the app's scripts, and your last Today page and kid view are kept in the browser's cache so they open without a connection.
@@ -172,6 +174,7 @@ No system is perfectly secure. If a personal data breach is likely to put you at
 
 If we change this policy in a meaningful way, we will say so in the app's What's new before the change takes effect. The effective date at the top always shows the current version.
 
+- **15 October 2026:** you can choose the app's language (English, Russian or Hebrew), saved with your profile and in a cookie on your device; a parent or guardian can optionally set boy or girl for a child, used only to choose words in Russian and Hebrew (sections 2, 9 and 10).
 - **12 October 2026:** each sign-up and demo start also sends us an email alert with your email address or demo ID, IP address and its country and city, kept up to 90 days (sections 2, 5 and 6).
 - **11 October 2026:** sign-ups, sign-ins and demo starts also record your IP address and the country, region and city it points to (sections 2 and 5).
 - **8 October 2026:** added the events the app records for each action and the error and speed reports your browser sends (section 2), and what Grafana Labs receives from both (section 5).
