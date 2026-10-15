@@ -2,11 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { setChildTheme } from "@/app/(app)/kids/actions";
-import { KID_THEMES } from "@/lib/garden";
+import { KID_THEMES, themeName } from "@/lib/garden";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 // ideas/kid-view-next.md §2: what grows as the stars come in. Big picture tiles to choose together.
 export function ThemePicker({ childId, childName, theme }: { childId: string; childName: string; theme: string }) {
+  const { t: tr } = useT();
   const [current, setCurrent] = useState(theme);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export function ThemePicker({ childId, childName, theme }: { childId: string; ch
             )}
           >
             <span aria-hidden className="text-3xl leading-none">{t.icon}</span>
-            {t.name}
+            {themeName(tr, t.id)}
           </button>
         ))}
       </div>

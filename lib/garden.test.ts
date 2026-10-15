@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { GARDEN_STAGES, KID_THEMES, isKidTheme, lastWeek, newWeekLine, nextStep, restartDay, restartLine, stageFor, starsToNext, themeStages, stepLines } from "@/lib/garden";
+import { tEn } from "@/lib/i18n/test-t";
+import { GARDEN_STAGES, KID_THEMES, isKidTheme, lastWeek, newWeekLine, nextStep, restartDay, restartLine, stageFor, stageLabel, starsToNext, themeName, themeStages, stepLines } from "@/lib/garden";
 
 describe("garden", () => {
   it("gives every stage its own picture and its own sky", () => {
@@ -10,11 +11,11 @@ describe("garden", () => {
     }
   });
   it("names this week's picture and the next one on the kid page", () => {
-    expect(stepLines(7, "space")).toEqual({ now: "The moon 🌙", next: "5 more stars to planets 🪐" });
-    expect(stepLines(2, "garden")).toEqual({ now: "A seed in the soil 🌰", next: "1 more star to a sprout 🌱" });
-    expect(stepLines(18, "garden")).toEqual({ now: "A full garden 🌻", next: null });
+    expect(stepLines(tEn, 7, "space")).toEqual({ now: "The moon 🌙", next: "5 more stars to planets 🪐" });
+    expect(stepLines(tEn, 2, "garden")).toEqual({ now: "A seed in the soil 🌰", next: "1 more star to a sprout 🌱" });
+    expect(stepLines(tEn, 18, "garden")).toEqual({ now: "A full garden 🌻", next: null });
     // Every line reads as plain English, in every theme.
-    const lines = KID_THEMES.flatMap((t) => t.stages.slice(0, -1).map((s) => stepLines(s.min, t.id).next));
+    const lines = KID_THEMES.flatMap((t) => t.stages.slice(0, -1).map((s) => stepLines(tEn, s.min, t.id).next));
     expect(lines).toEqual([
       "3 more stars to a sprout 🌱",
       "4 more stars to the first flower 🌷",
@@ -47,40 +48,51 @@ describe("garden", () => {
     expect(starsToNext(18)).toBeNull();
   });
   it("describes the next step for the kid view: stars since this picture, stars it needs, and what comes", () => {
-    expect(nextStep(0)).toEqual({ have: 0, need: 3, left: 3, icon: "🌱", label: "A sprout" });
-    expect(nextStep(4)).toEqual({ have: 1, need: 4, left: 3, icon: "🌷", label: "The first flower" });
-    expect(nextStep(11)).toEqual({ have: 4, need: 5, left: 1, icon: "🦋", label: "Flowers and a butterfly" });
-    expect(nextStep(12)).toMatchObject({ have: 0, need: 6, icon: "🌻" });
-    expect(nextStep(18)).toBeNull();
-    expect(nextStep(30)).toBeNull();
+    expect(nextStep(tEn, 0)).toEqual({ have: 0, need: 3, left: 3, icon: "🌱", label: "A sprout" });
+    expect(nextStep(tEn, 4)).toEqual({ have: 1, need: 4, left: 3, icon: "🌷", label: "The first flower" });
+    expect(nextStep(tEn, 11)).toEqual({ have: 4, need: 5, left: 1, icon: "🦋", label: "Flowers and a butterfly" });
+    expect(nextStep(tEn, 12)).toMatchObject({ have: 0, need: 6, icon: "🌻" });
+    expect(nextStep(tEn, 18)).toBeNull();
+    expect(nextStep(tEn, 30)).toBeNull();
   });
   it("has five themes, each with five stages at the same stars, the garden unchanged", () => {
     expect(KID_THEMES.map((t) => t.id)).toEqual(["garden", "aquarium", "space", "dino", "town"]);
     for (const t of KID_THEMES) {
       expect(t.stages).toHaveLength(5);
       expect(t.stages.map((s) => s.min)).toEqual([0, 3, 7, 12, 18]);
-      expect(new Set(t.stages.map((s) => s.label)).size).toBe(5);
+      expect(new Set(t.stages.map((s) => stageLabel(tEn, t.id, s.min))).size).toBe(5);
       expect(t.stages.every((s) => s.icon.length > 0)).toBe(true);
     }
     expect(themeStages("garden")).toBe(GARDEN_STAGES);
   });
   it("names the next picture in the chosen theme, and falls back to the garden", () => {
-    expect(nextStep(4, "aquarium")).toMatchObject({ left: 3, icon: "🐠", label: "A fish" });
-    expect(nextStep(4, "unknown")).toMatchObject({ icon: "🌷" });
+    expect(nextStep(tEn, 4, "aquarium")).toMatchObject({ left: 3, icon: "🐠", label: "A fish" });
+    expect(nextStep(tEn, 4, "unknown")).toMatchObject({ icon: "🌷" });
     expect(isKidTheme("space")).toBe(true);
     expect(isKidTheme("jungle")).toBe(false);
   });
   it("says which day the next one starts: the family's first day of the week", () => {
-    expect(restartDay("2026-09-27")).toBe("Sunday"); // a Sunday-start week -> next Sunday
-    expect(restartDay("2026-09-28")).toBe("Monday");
+    expect(restartDay("en", "2026-09-27")).toBe("Sunday"); // a Sunday-start week -> next Sunday
+    expect(restartDay("en", "2026-09-28")).toBe("Monday");
   });
   it("words the restart and the new week in the chosen theme", () => {
-    expect(restartLine("garden", "Sunday", false)).toBe("A new garden starts on Sunday 🌱");
-    expect(restartLine("garden", "Sunday", true)).toBe("Full garden! 🌻 A new one starts on Sunday");
-    expect(restartLine("space", "Monday", false)).toBe("A new galaxy starts on Monday 🚀");
-    expect(restartLine("aquarium", "Monday", true)).toBe("A full reef! 🐙 A new one starts on Monday");
-    expect(newWeekLine("garden")).toBe("Last week's garden is in the album 📸 A new seed is planted 🌱");
-    expect(newWeekLine("dino")).toBe("Last week's dino egg is in the album 📸 A new egg is waiting 🥚");
+    expect(restartLine(tEn, "garden", "Sunday", false)).toBe("A new garden starts on Sunday 🌱");
+    expect(restartLine(tEn, "garden", "Sunday", true)).toBe("Full garden! 🌻 A new one starts on Sunday");
+    expect(restartLine(tEn, "space", "Monday", false)).toBe("A new galaxy starts on Monday 🚀");
+    expect(restartLine(tEn, "aquarium", "Monday", true)).toBe("A full reef! 🐙 A new one starts on Monday");
+    expect(newWeekLine(tEn, "garden")).toBe("Last week's garden is in the album 📸 A new seed is planted 🌱");
+    expect(newWeekLine(tEn, "dino")).toBe("Last week's dino egg is in the album 📸 A new egg is waiting 🥚");
+  });
+  it("names the themes", () => {
+    expect(KID_THEMES.map((t) => themeName(tEn, t.id))).toEqual(["Garden", "Aquarium", "Space", "Dino egg", "Town"]);
+  });
+  it("words the kid lines the same for a boy, a girl and no answer, in English", () => {
+    for (const g of ["boy", "girl", null] as const) {
+      expect(stepLines(tEn, 2, "garden", g).next).toBe("1 more star to a sprout 🌱");
+      expect(restartLine(tEn, "garden", "Sunday", false, g)).toBe("A new garden starts on Sunday 🌱");
+      expect(restartLine(tEn, "space", "Monday", true, g)).toBe("A starry galaxy! 🌟 A new one starts on Monday");
+      expect(newWeekLine(tEn, "garden", g)).toBe("Last week's garden is in the album 📸 A new seed is planted 🌱");
+    }
   });
   it("finds last week in the album (only if it had stars)", () => {
     const album = [{ week_start: "2026-09-20", stars: 9, stage: 2 }, { week_start: "2026-09-13", stars: 3, stage: 1 }];

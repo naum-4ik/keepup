@@ -111,9 +111,9 @@ export default async function KidPage({
           albumHref="#album"
         />
       )}
-      {rewards && <Garden stars={rewards.stars_this_week} theme={child.kid_theme} weekStart={rewards.week_start} />}
+      {rewards && <Garden t={t} locale={locale} stars={rewards.stars_this_week} theme={child.kid_theme} weekStart={rewards.week_start} />}
       <ThemePicker childId={id} childName={child.name} theme={child.kid_theme} />
-      {rewards && <GardenAlbum weeks={rewards.album} theme={child.kid_theme} />}
+      {rewards && <GardenAlbum t={t} weeks={rewards.album} theme={child.kid_theme} />}
       {rewards && <TreatGoal childId={id} childName={child.name} goal={rewards.goal} />}
 
       <section aria-label="Habits" className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">

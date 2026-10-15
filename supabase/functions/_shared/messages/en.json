@@ -593,5 +593,75 @@
     "categories": "Categories",
     "comeback": "Comeback",
     "family": "Family"
+  },
+  "kidThemes": {
+    "garden": {
+      "name": "Garden",
+      "noun": "garden",
+      "seed": "A new seed is planted 🌱",
+      "stages": {
+        "0": "A seed in the soil",
+        "1": "A sprout",
+        "2": "The first flower",
+        "3": "Flowers and a butterfly",
+        "4": "A full garden"
+      }
+    },
+    "aquarium": {
+      "name": "Aquarium",
+      "noun": "aquarium",
+      "seed": "Fresh water is ready 💧",
+      "stages": {
+        "0": "Clear water",
+        "1": "Seaweed",
+        "2": "A fish",
+        "3": "Fish and a shell",
+        "4": "A full reef"
+      }
+    },
+    "space": {
+      "name": "Space",
+      "noun": "galaxy",
+      "seed": "A new launch pad is ready 🚀",
+      "stages": {
+        "0": "A launch pad",
+        "1": "A rocket",
+        "2": "The moon",
+        "3": "Planets",
+        "4": "A starry galaxy"
+      }
+    },
+    "dino": {
+      "name": "Dino egg",
+      "noun": "dino egg",
+      "seed": "A new egg is waiting 🥚",
+      "stages": {
+        "0": "An egg",
+        "1": "A cracking egg",
+        "2": "A baby dino",
+        "3": "A dino and its nest",
+        "4": "A grown-up dino"
+      }
+    },
+    "town": {
+      "name": "Town",
+      "noun": "town",
+      "seed": "A new field is ready 🌾",
+      "stages": {
+        "0": "An empty field",
+        "1": "A house",
+        "2": "A house and a tree",
+        "3": "A street",
+        "4": "A little town"
+      }
+    }
+  },
+  "garden": {
+    "starsToNext": "{gender, select, boy {{left, plural, one {# more star to {label} {icon}} other {# more stars to {label} {icon}}}} girl {{left, plural, one {# more star to {label} {icon}} other {# more stars to {label} {icon}}}} other {{left, plural, one {# more star to {label} {icon}} other {# more stars to {label} {icon}}}}}",
+    "restart": "{gender, select, boy {A new {noun} starts on {day} {start}} girl {A new {noun} starts on {day} {start}} other {A new {noun} starts on {day} {start}}}",
+    "restartFull": "{gender, select, boy {{done} A new one starts on {day}} girl {{done} A new one starts on {day}} other {{done} A new one starts on {day}}}",
+    "fullGarden": "Full garden! 🌻",
+    "stageDone": "{label}! {icon}",
+    "newWeek": "{gender, select, boy {Last week's {noun} is in the album 📸 {seed}} girl {Last week's {noun} is in the album 📸 {seed}} other {Last week's {noun} is in the album 📸 {seed}}}"
   }
 }

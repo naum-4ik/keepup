@@ -10,6 +10,7 @@ import { HoldToExit } from "@/components/kids/hold-to-exit";
 import { useReducedMotion } from "@/components/kids/use-calm";
 import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
 import { stageFor, themeStages } from "@/lib/garden";
+import { useT } from "@/lib/i18n/client";
 import { createTapGuard, inOrder, orderForKid } from "@/lib/kid-order";
 import { createMoments, FLY_AT, LAND_AT, momentsForTap, type Moment, type Moments, type Step } from "@/lib/kid-reveal";
 import { isMuted, playKidSound, setMuted } from "@/lib/kid-sound";
@@ -134,6 +135,7 @@ export function KidPlay({
   // Last week's stars, when it had any: the new-week card shows that picture going to the album.
   lastStars?: number;
 }) {
+  const { t } = useT();
   const [, startTransition] = useTransition();
   // Only the tapped habit waits for its save; the others stay tappable. The ref guards a quick
   // second tap on the same one before React re-renders it busy.
@@ -498,6 +500,7 @@ export function KidPlay({
         <div ref={backdrop} aria-hidden className="absolute -inset-x-4 top-0 -bottom-2 bg-background" />
         <div ref={picture} className="relative origin-top">
           <GardenPicture
+            t={t}
             stars={view.stars}
             size="lg"
             theme={child.theme}
