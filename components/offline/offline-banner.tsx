@@ -3,17 +3,18 @@
 import { CloudOff, X } from "lucide-react";
 import { useOfflineNotice } from "@/components/offline/offline-queue-provider";
 import { useOnline } from "@/components/offline/use-online";
-import { COULDNT_SAVE, OFFLINE_BANNER } from "@/lib/offline-copy";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/client";
 
 // Offline, Today and the kid view are the copies saved on this phone (ideas/offline.md §3). Online, it
 // says when a queued check-in had to be given up. The status region is always there (screen readers
 // announce a change of its text, not a region that appears).
 // "header": inside the app header, sticky with it. "bottom" (the kid view): the picture owns the top there.
 export function OfflineBanner({ placement }: { placement: "header" | "bottom" }) {
+  const { t } = useT();
   const online = useOnline();
   const { notice, dismiss } = useOfflineNotice();
-  const text = !online ? OFFLINE_BANNER : notice ? COULDNT_SAVE : null;
+  const text = !online ? t("offline.banner") : notice ? t("offline.couldntSave") : null;
   return (
     <div role="status">
       {text && (

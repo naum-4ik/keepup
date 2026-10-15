@@ -321,10 +321,20 @@
     "alreadyReviewedSomeone": "Someone already reviewed this.",
     "groupNameLength": "Give the group a name up to {max} characters.",
     "saveHabitFailed": "Couldn't save the habit. Try again.",
-    "checkDetails": "Check the details."
+    "checkDetails": "Check the details.",
+    "pickFamilyOrFriends": "Pick family or friends.",
+    "groupCreateFailed": "Couldn't create the group. Try again."
   },
   "demo": {
-    "off": "That's off in the demo."
+    "off": "That's off in the demo.",
+    "banner": "You're in the demo. Data resets after 24 hours.",
+    "signIn": "Sign in",
+    "signInTail": "to start your own.",
+    "failed": "The demo didn't start. Try again in a moment.",
+    "justLooking": "Just looking?",
+    "tryDemo": "Try the demo",
+    "settingUp": "Setting up…",
+    "loading": "Loading…"
   },
   "validation": {
     "nameRequired": "Enter a name.",
@@ -663,5 +673,34 @@
     "fullGarden": "Full garden! 🌻",
     "stageDone": "{label}! {icon}",
     "newWeek": "{gender, select, boy {Last week's {noun} is in the album 📸 {seed}} girl {Last week's {noun} is in the album 📸 {seed}} other {Last week's {noun} is in the album 📸 {seed}}}"
+  },
+  "moved": {
+    "notice": "Keepup has a new address. Add it to your Home Screen from here, then delete the old icon and turn reminders on again.",
+    "how": "How?",
+    "dismiss": "Dismiss",
+    "installTitle": "Install Keepup",
+    "installIntro": "Keepup works best from your Home Screen: full screen, with reminders.",
+    "installReminders": "Reinstalled? Reminders don't move with the app. Turn them on again: Profile → Settings → Turn on reminders."
+  },
+  "offline": {
+    "banner": "Offline · showing your last update",
+    "needsConnection": "Needs a connection",
+    "saving": "Saving… ☁️",
+    "undo": "Undo",
+    "undoLabel": "Undo check-in for {habit}",
+    "couldntSave": "A check-in couldn't be saved. Please add it again.",
+    "unsavedSignOut": "{n, plural, one {{count} check-in hasn't been saved yet. Sign out anyway? It'll be removed from this phone.} other {{count} check-ins haven't been saved yet. Sign out anyway? They'll be removed from this phone.}}",
+    "signOutAnyway": "Sign out anyway",
+    "staySignedIn": "Stay signed in"
+  },
+  "pushSupport": {
+    "needsInstall": "On iPhone, reminders work once Keepup is on your Home Screen.",
+    "iosTooOld": "Reminders need iOS 16.4 or later. You can update in Settings → General → Software Update.",
+    "unsupported": "This browser can't show notifications. Try Chrome, or Safari on iPhone.",
+    "blocked": "Notifications are turned off for Keepup. You can allow them in your browser or phone settings.",
+    "notConfigured": "Notifications aren't set up here yet."
+  },
+  "devices": {
+    "generic": "A device"
   }
 }

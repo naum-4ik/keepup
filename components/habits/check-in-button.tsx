@@ -7,7 +7,7 @@ import { dismissFirstCheckinTip } from "@/components/first-checkin-tip";
 import { floatXp, useXpFloat } from "@/components/habits/xp-float";
 import { useOfflineQueue, useSubmitTap, useUndoQueuedTap } from "@/components/offline/offline-queue-provider";
 import { useT } from "@/lib/i18n/client";
-import { NEEDS_CONNECTION, SAVING, UNDO, undoLabel } from "@/lib/offline-copy";
+import { undoLabel } from "@/lib/offline-copy";
 import { queueKey } from "@/lib/offline-queue";
 import { ringOf, type RingInput } from "@/lib/today";
 import { ringDash } from "@/lib/week-overview";
@@ -93,7 +93,7 @@ export function CheckInButton({
       if (childIds.length > 0) {
         // "Me + Mary" stays online-only (owner decision).
         if (!navigator.onLine) {
-          setError(NEEDS_CONNECTION);
+          setError(t("offline.needsConnection"));
           return;
         }
         try {
@@ -101,7 +101,7 @@ export function CheckInButton({
           if (!result.ok) setError(result.message);
           else celebrate();
         } catch {
-          setError(navigator.onLine ? t("errors.generic") : NEEDS_CONNECTION);
+          setError(navigator.onLine ? t("errors.generic") : t("offline.needsConnection"));
         }
         return;
       }
@@ -186,12 +186,12 @@ export function CheckInButton({
       {savingShown && (
         <div className="flex items-center gap-1">
           <p id={savingId} className="text-xs text-muted-foreground">
-            {SAVING}
+            {t("offline.saving")}
           </p>
           {/* Takes the waiting tap back: it is never sent, and the card is open again. */}
           <button
             type="button"
-            aria-label={undoLabel(title)}
+            aria-label={undoLabel(t, title)}
             onClick={async () => {
               await undoQueued(habitId);
               // The Undo button goes away with the tap: focus goes back to the check-in button.
@@ -199,7 +199,7 @@ export function CheckInButton({
             }}
             className="flex min-h-11 min-w-11 items-center justify-center rounded-full px-2 text-xs font-semibold text-primary underline-offset-2 hover:underline"
           >
-            {UNDO}
+            {t("offline.undo")}
           </button>
         </div>
       )}

@@ -4,9 +4,9 @@ import { useState, useTransition } from "react";
 import { setHabitMute, setHabitReminder } from "@/app/(app)/habits/actions";
 import { TurnOnReminders } from "@/components/notifications/turn-on-reminders";
 import { Button } from "@/components/ui/button";
-import { DEMO_OFF } from "@/lib/demo-copy";
 import type { HabitSettings } from "@/lib/habit-settings";
 import { QUARTER_HOURS, type ReminderMode } from "@/lib/reminder-mode";
+import { useT } from "@/lib/i18n/client";
 
 const MODES: { mode: ReminderMode; label: string }[] = [
   { mode: "summary", label: "In my daily summary" },
@@ -15,6 +15,7 @@ const MODES: { mode: ReminderMode; label: string }[] = [
 ];
 
 export function ReminderControl({ habitId, settings, isDemo = false }: { habitId: string; settings: HabitSettings; isDemo?: boolean }) {
+  const { t } = useT();
   const [mode, setMode] = useState<ReminderMode>(settings.mode);
   const [time, setTime] = useState(settings.remindAt ?? "08:00");
   const [muted, setMuted] = useState(settings.muted);
@@ -73,7 +74,7 @@ export function ReminderControl({ habitId, settings, isDemo = false }: { habitId
 
       {!settings.hasDevice && mode !== "off" &&
         (isDemo ? (
-          <p className="text-sm text-muted-foreground">{DEMO_OFF}</p>
+          <p className="text-sm text-muted-foreground">{t("demo.off")}</p>
         ) : (
           <TurnOnReminders hour={settings.reminderHour} label="Turn on reminders on this device" />
         ))}

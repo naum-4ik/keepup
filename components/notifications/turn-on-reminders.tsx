@@ -7,8 +7,9 @@ import { savePushSubscription, setReminderHour } from "@/app/(app)/profile/setti
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
-  browserSubscription, PUSH_SUPPORT_TEXT, pushSupport, readPushEnv, subscribeAndSave, urlBase64ToUint8Array, withTimeout, type PushSupport,
+  browserSubscription, pushSupport, pushSupportText, readPushEnv, subscribeAndSave, urlBase64ToUint8Array, withTimeout, type PushSupport,
 } from "@/lib/push-support";
+import { useT } from "@/lib/i18n/client";
 
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 // Inlined at build time, so the server and the browser render the same thing.
@@ -31,6 +32,7 @@ export function TurnOnReminders({ hour, label = "Turn on reminders", onDone }: {
   const [chosen, setChosen] = useState(hour);
   const [message, setMessage] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const { t: tr } = useT();
   const [pending, startTransition] = useTransition();
 
   function allow() {
@@ -77,7 +79,7 @@ export function TurnOnReminders({ hour, label = "Turn on reminders", onDone }: {
             <DialogDescription>Reminders are on for this device ✓ Your daily summary arrives at {hourLabel(chosen)}.</DialogDescription>
           ) : support === "needs-install" ? (
             <>
-              <DialogDescription>{PUSH_SUPPORT_TEXT["needs-install"]}</DialogDescription>
+              <DialogDescription>{pushSupportText(tr, "needs-install")}</DialogDescription>
               <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm">
                 <li>In Safari, tap Share (the square with an arrow).</li>
                 <li>Choose Add to Home Screen, then Add.</li>
@@ -85,7 +87,7 @@ export function TurnOnReminders({ hour, label = "Turn on reminders", onDone }: {
               </ol>
             </>
           ) : support && support !== "ready" ? (
-            <DialogDescription>{PUSH_SUPPORT_TEXT[support]}</DialogDescription>
+            <DialogDescription>{pushSupportText(tr, support)}</DialogDescription>
           ) : (
             <>
               <DialogDescription>{"One summary a day of what's still to do. You can pause or change it any time."}</DialogDescription>

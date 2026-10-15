@@ -1,4 +1,6 @@
 // lib/push-support.ts
+import type { T } from "@/supabase/functions/_shared/i18n";
+
 // Whether this device can get Web Push, and why not (spec: Pipeline; ideas/onboarding.md). iPhone
 // allows push only from iOS 16.4, and only once Keepup is on the Home Screen.
 
@@ -34,23 +36,26 @@ export function pushSupport(env: PushEnv): PushSupport {
   return "ready";
 }
 
-export const PUSH_SUPPORT_TEXT: Record<Exclude<PushSupport, "ready">, string> = {
-  "needs-install": "On iPhone, reminders work once Keepup is on your Home Screen.",
-  "ios-too-old": "Reminders need iOS 16.4 or later. You can update in Settings → General → Software Update.",
-  unsupported: "This browser can't show notifications. Try Chrome, or Safari on iPhone.",
-  blocked: "Notifications are turned off for Keepup. You can allow them in your browser or phone settings.",
-  "not-configured": "Notifications aren't set up here yet.",
+const SUPPORT_KEYS: Record<Exclude<PushSupport, "ready">, string> = {
+  "needs-install": "pushSupport.needsInstall",
+  "ios-too-old": "pushSupport.iosTooOld",
+  unsupported: "pushSupport.unsupported",
+  blocked: "pushSupport.blocked",
+  "not-configured": "pushSupport.notConfigured",
 };
 
-export function deviceLabel(userAgent: string | null): string {
-  if (!userAgent) return "A device";
+// Why this device can't get reminders (pushSupport.*).
+export const pushSupportText = (t: T, support: Exclude<PushSupport, "ready">): string => t(SUPPORT_KEYS[support]);
+
+export function deviceLabel(t: T, userAgent: string | null): string {
+  if (!userAgent) return t("devices.generic");
   const os = /iPhone/.test(userAgent) ? "iPhone"
     : /iPad/.test(userAgent) ? "iPad"
     : /Android/.test(userAgent) ? "Android"
     : /Macintosh|Mac OS X/.test(userAgent) ? "Mac"
     : /Windows/.test(userAgent) ? "Windows"
     : /Linux/.test(userAgent) ? "Linux"
-    : "A device";
+    : t("devices.generic");
   const browser = /Edg\//.test(userAgent) ? "Edge"
     : /CriOS|Chrome\//.test(userAgent) ? "Chrome"
     : /Firefox|FxiOS/.test(userAgent) ? "Firefox"

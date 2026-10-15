@@ -16,7 +16,6 @@ import {
   myDataFileName,
   runDelete,
 } from "@/lib/my-data";
-import { NEEDS_CONNECTION } from "@/lib/offline-copy";
 import { clearOfflineCaches, markPagesOwnerDeleted } from "@/lib/offline-pages";
 import { browserSubscription, signOutCleanup } from "@/lib/push-support";
 
@@ -88,7 +87,7 @@ function DeleteAccount() {
       const preview = await deleteAccountPreview();
       next = preview ? { lines: deletePreviewLines(t, locale, preview) } : { error: t("errors.generic") };
     } catch {
-      next = { error: navigator.onLine ? t("errors.generic") : NEEDS_CONNECTION };
+      next = { error: navigator.onLine ? t("errors.generic") : t("offline.needsConnection") };
     }
     if (id !== request.current) return;
     if ("lines" in next) setLines(next.lines);
@@ -105,7 +104,7 @@ function DeleteAccount() {
   function remove() {
     setError(null);
     if (!navigator.onLine) {
-      setError(NEEDS_CONNECTION);
+      setError(t("offline.needsConnection"));
       return;
     }
     startTransition(async () => {

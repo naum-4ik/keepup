@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useT } from "@/lib/i18n/client";
-import { NEEDS_CONNECTION } from "@/lib/offline-copy";
 import { isResetWord, RESET_CLEARS, RESET_KEEPS, RESET_WORD, runReset } from "@/lib/reset-my-data";
 
 // Settings → Reset my data (owner 2026-10-06): a fresh start that keeps the account and the family.
@@ -28,7 +27,7 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
   function reset() {
     setError(null);
     if (!navigator.onLine) {
-      setError(NEEDS_CONNECTION);
+      setError(t("offline.needsConnection"));
       return;
     }
     startTransition(async () => {
@@ -40,7 +39,7 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
         });
         if (message) setError(message);
       } catch {
-        setError(navigator.onLine ? t("errors.generic") : NEEDS_CONNECTION);
+        setError(navigator.onLine ? t("errors.generic") : t("offline.needsConnection"));
       }
     });
   }

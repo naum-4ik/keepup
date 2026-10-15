@@ -6,7 +6,6 @@ import { nudge } from "@/app/(app)/inbox/actions";
 import { Button } from "@/components/ui/button";
 import { NUDGE_KINDS } from "@/lib/feed-copy";
 import { useT } from "@/lib/i18n/client";
-import { NEEDS_CONNECTION } from "@/lib/offline-copy";
 
 // Three preset messages, no free text (ideas/notifications-tone.md). One per person, habit and day.
 export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: string; recipientId: string; name: string; sent: boolean }) {
@@ -47,7 +46,7 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
                   startTransition(async () => {
                     setError(null);
                     // Offline, or the request never came back (a thrown action): it needs the server.
-                    if (!navigator.onLine) return setError(NEEDS_CONNECTION);
+                    if (!navigator.onLine) return setError(t("offline.needsConnection"));
                     try {
                       const r = await nudge(habitId, recipientId, k.kind);
                       if (r.ok || r.code === "already_nudged") setDone(true);
@@ -56,7 +55,7 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
                         setError(r.message ?? null);
                       } else setError(r.message ?? null);
                     } catch {
-                      setError(NEEDS_CONNECTION);
+                      setError(t("offline.needsConnection"));
                     }
                   })
                 }

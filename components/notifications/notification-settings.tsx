@@ -7,7 +7,6 @@ import { forgetPushSubscription, pauseAll, setDelivery, setReminderHour } from "
 import { currentEndpoint, TurnOnReminders } from "@/components/notifications/turn-on-reminders";
 import { InfoHint } from "@/components/info-hint";
 import { Button } from "@/components/ui/button";
-import { DEMO_OFF } from "@/lib/demo-copy";
 import { useT } from "@/lib/i18n/client";
 import {
   DELIVERIES, NOTIFICATION_CATEGORIES, PAUSE_CHOICES, reminderHourHint, reminderStatus,
@@ -88,7 +87,7 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
             })}
           </p>
         ) : isDemo ? (
-          <p className="text-sm text-muted-foreground">{DEMO_OFF}</p>
+          <p className="text-sm text-muted-foreground">{t("demo.off")}</p>
         ) : (
           <TurnOnReminders
             hour={settings.reminderHour}

@@ -4,10 +4,10 @@ import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Check, Clock, Plus, Snowflake, Undo2 } from "lucide-react";
 import { undoForChild } from "@/app/(app)/kids/actions";
 import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
-import { SAVING } from "@/lib/offline-copy";
 import { queueKey } from "@/lib/offline-queue";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/client";
 
 const LABEL: Record<CheckInState, string> = {
   open: "Check in for",
@@ -36,6 +36,7 @@ export function KidCheckInButton({
   state: CheckInState;
   multi: boolean;
 }) {
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [star, setStar] = useState(0);
@@ -107,7 +108,7 @@ export function KidCheckInButton({
       )}
       {savingShown && (
         <p id={savingId} className="text-xs text-muted-foreground">
-          {SAVING}
+          {t("offline.saving")}
         </p>
       )}
     </div>
