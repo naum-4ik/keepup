@@ -1600,5 +1600,9 @@
     "title": "Page not found",
     "text": "The page you're looking for doesn't exist or has moved.",
     "backHome": "Back home"
+  },
+  "whatsNew": {
+    "version": "Version {version}",
+    "comingSoon": "Coming soon"
   }
 }
