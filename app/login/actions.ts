@@ -1,6 +1,9 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { LOCALES } from "@/supabase/functions/_shared/i18n";
+import { pickLocale } from "@/i18n/config";
 import { createClient } from "@/lib/supabase/server";
 import { isValidEmail } from "@/lib/email";
 import { CONFIRM_EMAIL_SENT, RESET_LINK_SENT, RESET_LINK_STALE, credentialsError, isFreshRecovery, newPasswordError, passwordAuthMessage } from "@/lib/password";
@@ -27,7 +30,8 @@ export async function submitCredentials(_prev: LoginState, formData: FormData): 
   const supabase = await createClient();
   const { data, error } =
     mode === "signup"
-      ? await supabase.auth.signUp({ email, password })
+      ? // The phone's language against all LOCALES, enabled or not: emails use it from the first one.
+        await supabase.auth.signUp({ email, password, options: { data: { locale: pickLocale((await headers()).get("accept-language"), [...LOCALES]) } } })
       : await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     const accountExists = error.code === "user_already_exists" || error.code === "email_exists";

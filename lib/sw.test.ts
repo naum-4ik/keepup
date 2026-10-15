@@ -514,6 +514,24 @@ describe("sw.js offline shell", () => {
     expect(port.postMessage).toHaveBeenCalledWith("cleared");
   });
 
+  it("a language change: waits for a save in flight, then drops the saved pages and keeps the rest", async () => {
+    const net = network();
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const slow = vi.fn(async (r: string | { url: string }) => {
+      await gate;
+      return net.fetchImpl(r);
+    });
+    const sw = worker([], undefined, slow);
+    await (await sw.caches.api.open("keepup-shell-test")).put("/offline", res("offline"));
+    const saving = sw.message({ type: "keepup:save-page", path: "/today" });
+    const clearing = sw.message({ type: "clear-pages" });
+    release();
+    await Promise.all([saving, clearing]);
+    expect(sw.caches.store.get("keepup-pages")).toBeUndefined();
+    expect(sw.caches.store.has("keepup-shell-test")).toBe(true);
+  });
+
   it("overlapping saves of one page: a slow older answer never replaces the newer copy", async () => {
     const net = network();
     let releaseOld!: () => void;

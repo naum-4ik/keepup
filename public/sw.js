@@ -238,6 +238,10 @@ self.addEventListener("message", (event) => {
   } else if (data.type === "keepup:clear") {
     const port = event.ports && event.ports[0];
     event.waitUntil(clearAll().then(() => port && port.postMessage("cleared")));
+  } else if (data.type === "clear-pages") {
+    // A language change (Settings → Language): the saved pages are in the old language. Saves in
+    // flight finish first, or they'd put an old-language page back.
+    event.waitUntil(Promise.all([...saving]).then(() => caches.delete(PAGES)));
   }
 });
 
