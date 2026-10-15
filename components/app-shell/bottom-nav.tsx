@@ -79,7 +79,7 @@ export function BottomNav({
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const onProfile = isActive(PROFILE.href);
   const percent = xpProgress == null ? null : Math.floor(Math.min(Math.max(xpProgress, 0), 1) * 100);
-  const profileName = !level ? undefined : percent == null ? t("profileLevel", { level }) : t("profileLevelProgress", { level, percent, next: level + 1 });
+  const profileName = !level ? undefined : percent == null ? t("profileLevel", { level }) : t("profileLevelProgress", { level, percent: percent / 100, next: level + 1 });
 
   return (
     <nav

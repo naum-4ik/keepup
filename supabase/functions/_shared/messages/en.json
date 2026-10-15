@@ -31,7 +31,7 @@
     "today": "Today",
     "dailySummary": {
       "body": "Still to do: {items} 🌱",
-      "atRisk": "{habit}: {done} of {target} {period, select, month {this month} other {this week}}, {days} left"
+      "atRisk": "{habit}: {done} of {target} {period, select, month {this month} other {this week}}, {days, plural, one {# day left} other {# days left}}"
     },
     "allDoneToday": "All done for today 🎉",
     "habitReminder": "Time for {habit}.",
@@ -59,7 +59,7 @@
     },
     "groupHabitResumed": "{habit} is back.",
     "memberJoined": "{member} joined {group} 👋",
-    "restDayUsed": "{period, select, week {Rest week used. Your {n}-week streak is safe 💤} other {Rest day used. Your {n}-day streak is safe 💤}}",
+    "restDayUsed": "{period, select, week {{n, plural, other {Rest week used. Your {n, number, ::group-off}-week streak is safe 💤}}} other {{n, plural, other {Rest day used. Your {n, number, ::group-off}-day streak is safe 💤}}}}",
     "longestStreak": "Longest streak: {habit} 🔥 {span}",
     "weeklyRecap": {
       "title": "Your week",
@@ -357,7 +357,7 @@
     "endsAfterStart": "The last day can't be before the first day.",
     "alreadyReviewedBy": "{reviewer} already reviewed this.",
     "alreadyReviewedSomeone": "Someone already reviewed this.",
-    "groupNameLength": "Give the group a name up to {max} characters.",
+    "groupNameLength": "{max, plural, other {Give the group a name up to # characters.}}",
     "saveHabitFailed": "Couldn't save the habit. Try again.",
     "checkDetails": "Check the details.",
     "pickFamilyOrFriends": "Pick family or friends.",
@@ -378,22 +378,22 @@
   },
   "validation": {
     "nameRequired": "Enter a name.",
-    "maxChars": "Keep it to {max} characters.",
+    "maxChars": "{max, plural, other {Keep it to # characters.}}",
     "timezone": "Pick a time zone from the list.",
     "weekStart": "Pick Sunday or Monday.",
     "purpose": "Pick one of the options, or none.",
     "nickname": "Enter a nickname.",
     "treatName": "Name the treat.",
     "emoji": "Pick one emoji.",
-    "stars": "Pick 1–{max} stars.",
+    "stars": "{max, plural, other {Pick 1–# stars.}}",
     "groupName": "Give the group a name.",
     "title": "Enter a title.",
     "category": "Pick a category.",
     "frequency": "Pick how often.",
     "targetCount": {
-      "day": "Pick 1–{limit} times a day.",
-      "week": "Pick 1–{limit} times a week.",
-      "month": "Pick 1–{limit} times a month."
+      "day": "{limit, plural, other {Pick 1–# times a day.}}",
+      "week": "{limit, plural, other {Pick 1–# times a week.}}",
+      "month": "{limit, plural, other {Pick 1–# times a month.}}"
     },
     "startDate": "Pick a start date."
   },
@@ -497,7 +497,7 @@
   "auth": {
     "emailInvalid": "Enter a valid email address.",
     "passwordRequired": "Enter your password.",
-    "passwordMin": "Use at least {min} characters.",
+    "passwordMin": "{min, plural, other {Use at least # characters.}}",
     "resetLinkStale": "This reset link has expired. Ask for a new one from the sign-in screen.",
     "confirmEmailSent": "Almost done: open the link we emailed you to confirm your address, then sign in.",
     "resetLinkSent": "If that email has an account, a reset link is on its way.",
@@ -529,7 +529,7 @@
       "title": "Create your account",
       "subtitle": "Track your habits on your own, or together with your family.",
       "haveAccount": "Already have an account?",
-      "passwordRule": "At least {min} characters.",
+      "passwordRule": "{min, plural, other {At least # characters.}}",
       "signInInstead": "Sign in instead",
       "creating": "Creating your account…",
       "create": "Create account"
@@ -562,19 +562,19 @@
       "friends": "Friends"
     },
     "habits": {
-      "title": "Pick 1–{max} habits to start",
+      "title": "{max, plural, other {Pick 1–# habits to start}}",
       "subtitle": "Each starts today. You can change them any time.",
       "joinedEmpty": "Add a few habits of your own?",
       "joinedTogether": "<bdi>{group}</bdi> already has {n, plural, one {# habit} other {# habits}} together. Add your own too?",
       "joinedSubtitle": "Pick up to {max}. Each starts today.",
       "atLimit": "Pick up to {max}",
-      "picked": "{n} of {max} picked",
+      "picked": "{n, plural, other {# of {max} picked}}",
       "pickToStart": "Pick a habit to start",
       "startWith": "Start with {n, plural, one {# habit} other {# habits}}",
       "skip": "Skip",
       "skipForNow": "Skip for now",
       "addFailed": "Couldn't add your habits. Try again.",
-      "pickRange": "Pick 1–{max} habits."
+      "pickRange": "{max, plural, other {Pick 1–# habits.}}"
     }
   },
   "invite": {
@@ -903,7 +903,7 @@
       "remove": "Remove {title}",
       "chooseMore": "Choose more habits",
       "chooseHint": "Tap to pick or unpick. You can add your own later.",
-      "donePicked": "Done · {count} picked",
+      "donePicked": "{count, plural, other {Done · # picked}}",
       "submit": "{named, select, yes {Add <bdi>{name}</bdi>} other {Add child}}"
     },
     "edit": {
@@ -1105,7 +1105,7 @@
     "inbox": "Inbox",
     "inboxUnread": "{n, plural, other {Inbox, {n, number, ::group-off} unread}}",
     "profileLevel": "Profile, level {level}",
-    "profileLevelProgress": "Profile, level {level}, {percent}% to level {next}"
+    "profileLevelProgress": "Profile, level {level}, {percent, number, ::percent} to level {next}"
   },
   "habits": {
     "new": {
@@ -1547,7 +1547,7 @@
   },
   "achievements": {
     "title": "Achievements",
-    "earnedCount": "{earned} of {total} earned",
+    "earnedCount": "{earned, plural, other {# of {total} earned}}",
     "earnedLabel": "{name}, earned {date}",
     "lockedLabel": "{name}, locked: {hint}",
     "earnedNote": "Earned {date}",
