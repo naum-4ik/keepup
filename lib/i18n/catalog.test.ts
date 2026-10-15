@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createTranslator } from "use-intl/core";
+import type { Locale } from "@/supabase/functions/_shared/i18n";
 import {
   isDateElement, isLiteralElement, isNumberElement, isPluralElement, isPoundElement,
   isSelectElement, isTagElement, isTimeElement, parse, type MessageFormatElement,
@@ -65,7 +66,7 @@ describe.each(["en.json", ...others])("%s", (file) => {
     }
   });
   it("every message formats, and every plural/select has an other branch", () => {
-    const t = createTranslator({ locale, messages: load(file), onError: (e) => { throw e; } });
+    const t = createTranslator({ locale: locale as Locale, messages: load(file), onError: (e) => { throw e; } });
     for (const [k, msg] of Object.entries(cat)) {
       const { args, tags, noOther } = analyze(msg);
       expect(noOther, `${k}: plural/select without other`).toEqual([]);
