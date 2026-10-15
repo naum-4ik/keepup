@@ -178,7 +178,7 @@ test("the last adult leaving is warned about the child and can export first", as
   await page.getByRole("button", { name: "Leave group" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Leave group" }).click();
   const warn = page.getByRole("dialog");
-  await expect(warn).toContainText("Mary's profile and history will be deleted.");
+  await expect(warn).toContainText("\u2068Mary\u2069's profile and history will be deleted.");
   const download = page.waitForEvent("download");
   await warn.getByRole("button", { name: "Export first" }).click();
   expect((await download).suggestedFilename()).toMatch(/^keepup-Mary-\d{4}-\d{2}-\d{2}\.json$/);

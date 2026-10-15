@@ -199,7 +199,7 @@ test("offline: the Today card counts a queued tap; Undo takes it back and nothin
   await expect(card.getByText("1 of 2 done")).toBeVisible();
   await expect(card.getByRole("img", { name: "1 of 2 done today" })).toBeVisible();
 
-  const undo = page.getByRole("button", { name: "Undo check-in for Walk" });
+  const undo = page.getByRole("button", { name: "Undo check-in for \u2068Walk\u2069" });
   const box = await undo.boundingBox();
   expect(box!.width).toBeGreaterThanOrEqual(44);
   expect(box!.height).toBeGreaterThanOrEqual(44);
@@ -237,7 +237,7 @@ test("Undo after an online try that got no answer in time: the server ends witho
   await page.route("**/api/check-ins/sync", (route) => route.abort());
   await page.getByRole("button", { name: "Check in: Walk" }).click();
   await expect.poll(() => countCheckIns(id)).toBe(1); // the server has it
-  const undo = page.getByRole("button", { name: "Undo check-in for Walk" });
+  const undo = page.getByRole("button", { name: "Undo check-in for \u2068Walk\u2069" });
   await expect(undo).toBeVisible({ timeout: 15_000 }); // the try timed out: it waits on the phone
   await undo.click();
   await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible(); // open again at once
@@ -271,7 +271,7 @@ test("a tap right after the page opens keeps Saving… and Undo through live ref
   await page.reload();
   await page.getByRole("button", { name: "Check in: Walk" }).click();
   await expect.poll(() => countCheckIns(id)).toBe(1); // the server has it
-  const undo = page.getByRole("button", { name: "Undo check-in for Walk" });
+  const undo = page.getByRole("button", { name: "Undo check-in for \u2068Walk\u2069" });
   await expect(undo).toBeVisible();
   // The listener goes live (it refreshes to catch up), and the app comes back into view (it refreshes
   // again). Neither may swap the waiting tap for the server's "Done" while it's unsent.
@@ -315,7 +315,7 @@ test("a live refresh while the online try is still running doesn't show the tap 
   // refresh was asked for in the meantime still doesn't draw the server's "Done".
   await page.waitForTimeout(10_000);
   release();
-  const undo = page.getByRole("button", { name: "Undo check-in for Walk" });
+  const undo = page.getByRole("button", { name: "Undo check-in for \u2068Walk\u2069" });
   await expect(undo).toBeVisible();
   await page.waitForTimeout(1_500);
   await expect(undo).toBeVisible();
