@@ -37,8 +37,8 @@ export function EndControl({
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm">
-        {endsOn ? `Last day: ${formatLocalDate(endsOn, locale)}.` : "No end: it keeps going until you stop it."}
-        {!options && " It reached its end. Keep going removes the end; Finish moves it to Finished."}
+        {endsOn ? t("habits.end.lastDay", { date: formatLocalDate(endsOn, locale) }) : t("habits.end.noEnd")}
+        {!options && ` ${t("habits.end.reached")}`}
       </p>
       <div className="flex flex-wrap gap-2">
         {options ? (
@@ -50,17 +50,17 @@ export function EndControl({
             ))}
             {endsOn && (
               <button type="button" disabled={pending} onClick={() => run(() => changeHabitEnd(habitId, null))} className={chip}>
-                Remove end
+                {t("habits.end.removeEnd")}
               </button>
             )}
           </>
         ) : (
           <>
             <button type="button" disabled={pending} onClick={() => run(() => finishHabit(habitId))} className={chip}>
-              Finish
+              {t("today.finish.finish")}
             </button>
             <button type="button" disabled={pending} onClick={() => run(() => keepGoing(habitId))} className={chip}>
-              Keep going
+              {t("today.finish.keepGoing")}
             </button>
           </>
         )}

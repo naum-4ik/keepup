@@ -21,11 +21,11 @@ export function EndPicker({ period, startsOn, name = "endsOn" }: { period: Habit
   const endsOn = choice === "none" ? "" : choice === "date" ? date : endsOnFor(startsOn, period, choice);
   return (
     <fieldset className="flex flex-col gap-1.5">
-      <legend className="mb-1.5 text-sm font-semibold">Ends</legend>
+      <legend className="mb-1.5 text-sm font-semibold">{t("habits.endPicker.legend")}</legend>
       <input type="hidden" name={name} value={endsOn} />
       <div className="grid grid-cols-3 gap-1.5">
         <button type="button" aria-pressed={choice === "none"} onClick={() => setChoice("none")} className={dateChipClass}>
-          No end
+          {t("habits.endPicker.noEnd")}
         </button>
         {END_PRESETS[period].map((n) => (
           <button key={n} type="button" aria-pressed={choice === n} onClick={() => setChoice(n)} className={dateChipClass}>
@@ -33,13 +33,13 @@ export function EndPicker({ period, startsOn, name = "endsOn" }: { period: Habit
           </button>
         ))}
         <button type="button" aria-pressed={choice === "date"} onClick={() => setChoice("date")} className={dateChipClass}>
-          Until a date
+          {t("habits.endPicker.untilDate")}
         </button>
       </div>
       {choice === "date" && (
         <Input
           type="date"
-          aria-label="End date"
+          aria-label={t("habits.endPicker.dateLabel")}
           min={startsOn}
           value={date}
           onChange={(e) => setDate(e.target.value)}
@@ -47,7 +47,7 @@ export function EndPicker({ period, startsOn, name = "endsOn" }: { period: Habit
         />
       )}
       <p className={cn("text-xs text-muted-foreground")}>
-        {endsOn ? `Last day: ${formatLocalDate(endsOn, locale)}. Then you choose to keep going or finish.` : "Keeps going until you stop it."}
+        {endsOn ? t("habits.endPicker.lastDay", { date: formatLocalDate(endsOn, locale) }) : t("habits.endPicker.keepsGoing")}
       </p>
     </fieldset>
   );

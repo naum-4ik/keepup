@@ -250,14 +250,14 @@ test("a group habit: both check in, both see Everyone did it, live", async ({ pa
   await expect(page).toHaveURL(/\/today$/);
   await expect(page.getByRole("region", { name: "Family" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Check in: Family dinner" }).click();
-  await expect(page.getByRole("button", { name: "Done: Family dinner" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: \u2068Family dinner\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Done: \u2068Family dinner\u2069" })).toBeVisible();
   // The first page must be listening before the guest's check-in lands (else Realtime drops it).
   // "ready" means the server confirmed the postgres_changes listener, which can take seconds under load.
   await expect(page.locator('[data-live="ready"][data-table="check_ins"]')).toBeAttached({ timeout: 20_000 });
   await guest.goto("/today");
   await expect(guest.getByRole("img", { name: /: done$/ })).toBeVisible(); // Ana's avatar shows done, no names in text
-  await guest.getByRole("button", { name: "Check in: Family dinner" }).click();
+  await guest.getByRole("button", { name: "Check in: \u2068Family dinner\u2069" }).click();
   await expect(guest.getByText("Everyone did it ✓")).toBeVisible();
   // The first browser updates without a reload (Realtime → router.refresh()).
   await expect(page.getByText("Everyone did it ✓")).toBeVisible({ timeout: 10_000 });
@@ -278,9 +278,9 @@ test("a member pauses just themselves; the habit carries on for the others", asy
   await expect(guest.getByText("Edit details")).toBeHidden();
   await guest.getByText("Pause just me").click();
   await guest.getByRole("button", { name: "Pause" }).click();
-  await expect(guest.getByRole("button", { name: "Paused: Walk" })).toBeVisible();
+  await expect(guest.getByRole("button", { name: "Paused: \u2068Walk\u2069" })).toBeVisible();
   await page.goto("/today");
-  await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Check in: \u2068Walk\u2069" })).toBeEnabled();
 });
 
 test("Together templates show only when adding from a group, and never offer Just me", async ({ page }) => {
@@ -342,10 +342,10 @@ test("approval: check-ins wait, each approves the other in the Inbox, both see E
   await dialog.getByRole("switch", { name: "Needs approval" }).click();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
 
-  await page.getByRole("button", { name: "Check in: Gym" }).click();
-  await expect(page.getByRole("button", { name: "Waiting for approval: Gym" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: \u2068Gym\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Waiting for approval: \u2068Gym\u2069" })).toBeVisible();
   await guest.goto("/today");
-  await guest.getByRole("button", { name: "Check in: Gym" }).click();
+  await guest.getByRole("button", { name: "Check in: \u2068Gym\u2069" }).click();
   await expect(guest.getByRole("link", { name: /check-in waiting for you/ })).toBeVisible();
 
   await guest.getByRole("link", { name: /Inbox/ }).click();
@@ -406,7 +406,7 @@ test("after the first check-in, a family user gets one gentle Invite card, and c
   await completeOnboarding(page, { purpose: "My family" });
   await createHabit(page, { template: "Drink water" });
   await expect(page.getByText("Invite your family")).toBeHidden();
-  await page.getByRole("button", { name: "Check in: Drink water" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Drink water\u2069" }).click();
   await expect(page.getByRole("link", { name: "Drink water", exact: true })).toHaveAccessibleDescription(/1 \/ 8 today/);
   await page.reload();
   await expect(page.getByText("Invite your family")).toBeVisible();
@@ -425,7 +425,7 @@ test("Invite a friend: one tap creates the group and opens its invite link", asy
   await signUp(page, uniqueEmail());
   await completeOnboarding(page, { purpose: "Friends" });
   await createHabit(page, { template: "Drink water" });
-  await page.getByRole("button", { name: "Check in: Drink water" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Drink water\u2069" }).click();
   await expect(page.getByRole("link", { name: "Drink water", exact: true })).toHaveAccessibleDescription(/1 \/ 8 today/);
   await page.reload();
   await page.getByRole("button", { name: "Invite", exact: true }).click();
@@ -447,7 +447,7 @@ test("Everyone did it shows once, with confetti, then not again", async ({ page 
     (r) => r.request().method() === "POST" && new URL(r.url()).pathname === "/today" && /^\[\["/.test(r.request().postData() ?? ""),
     { timeout: 15_000 },
   );
-  await page.getByRole("button", { name: "Check in: Family dinner" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Family dinner\u2069" }).click();
   const card = page.getByText("Everyone did it! Family dinner ✓");
   await expect(card).toBeVisible();
   const confetti = page.locator('[aria-hidden] > .animate-confetti');
@@ -460,7 +460,7 @@ test("Everyone did it shows once, with confetti, then not again", async ({ page 
   await expect(page.locator("[data-seen]")).toContainText("Everyone did it! Family dinner ✓");
   await expect(confetti).toHaveCount(24);
   await page.reload();
-  await expect(page.getByRole("button", { name: "Done: Family dinner" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Done: \u2068Family dinner\u2069" })).toBeVisible();
   await expect(card).toBeHidden();
 });
 
@@ -472,9 +472,9 @@ test("a group milestone is an Inbox row, not a card on Today", async ({ page }) 
   const href = await page.getByRole("link", { name: /Family dinner/ }).first().getAttribute("href");
   const habitId = href!.match(/\/habits\/([0-9a-f-]{36})/)![1];
   await seedGroupMilestone(groupId, habitId, 7, "day");
-  await page.getByRole("button", { name: "Check in: Family dinner" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Family dinner\u2069" }).click();
   await page.goto("/today");
-  await expect(page.getByRole("button", { name: "Done: Family dinner" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Done: \u2068Family dinner\u2069" })).toBeVisible();
   await expect(page.getByText("🔥 \u2068Family dinner\u2069: 7 days in a row, together")).toHaveCount(0);
   // No milestone card any more, so no "milestone day" rule: the gentle card may show.
   await expect(page.getByText("Add a child? 🐼")).toBeVisible();
@@ -514,7 +514,7 @@ test("with reduced motion, Everyone did it shows without confetti", async ({ pag
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await createGroupHabitVia(page, "Family", "Family dinner");
-  await page.getByRole("button", { name: "Check in: Family dinner" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Family dinner\u2069" }).click();
   await expect(page.getByText("Everyone did it! Family dinner ✓")).toBeVisible();
   const confetti = page.locator('[aria-hidden] > .animate-confetti');
   await expect(confetti).toHaveCount(24);
@@ -581,8 +581,8 @@ test("approving a check-in someone just reviewed says who did, and the note stay
   await dialog.getByRole("switch", { name: "Needs approval" }).click();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
   await expect(page).toHaveURL(/\/today$/);
-  await page.getByRole("button", { name: "Check in: Gym" }).click();
-  await expect(page.getByRole("button", { name: "Waiting for approval: Gym" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: \u2068Gym\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Waiting for approval: \u2068Gym\u2069" })).toBeVisible();
 
   // Eve's Inbox stays as loaded (Realtime is cut off), so only her own tap can change it.
   await eve.routeWebSocket(/\/realtime\//, () => {});
@@ -603,13 +603,13 @@ test("an undo by another member shows up live", async ({ page, browser }) => {
   await createGroupHabitVia(page, "Family", "Walk");
   await expect(page.locator('[data-live="ready"][data-table="check_ins"]')).toBeAttached({ timeout: 20_000 });
   await guest.goto("/today");
-  await guest.getByRole("button", { name: "Check in: Walk" }).click();
-  await expect(page.getByRole("img", { name: "Dan: done" })).toBeVisible({ timeout: 10_000 });
+  await guest.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
+  await expect(page.getByRole("img", { name: "\u2068Dan\u2069: done" })).toBeVisible({ timeout: 10_000 });
   // Undo is a hard delete; a filtered Realtime listener never hears DELETE. (Dan joined today, so
   // without his check-in he reads "joins next period", not "not yet": only "done" going away is checked.)
   await guest.getByRole("link", { name: /Walk/ }).click();
   await guest.getByRole("button", { name: /^Undo check-in at / }).click();
-  await expect(page.getByRole("img", { name: "Dan: done" })).toBeHidden({ timeout: 10_000 });
+  await expect(page.getByRole("img", { name: "\u2068Dan\u2069: done" })).toBeHidden({ timeout: 10_000 });
 });
 
 test("the bell counts a new nudge while you're on Today", async ({ page, browser }) => {

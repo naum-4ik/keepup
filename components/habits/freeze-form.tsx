@@ -12,16 +12,15 @@ import { pauseEndQuickPicks } from "@/lib/schedule";
 
 const initialState: FormActionState = { status: "idle" };
 
-// The pause actions and labels: the whole habit by default; PauseMeForm passes a member's own pause.
+// The pause actions: the whole habit by default; PauseMeForm passes a member's own pause (`me`: its
+// own labels and note).
 export type PauseKind = {
   freeze: (habitId: string, prev: FormActionState, formData: FormData) => Promise<FormActionState>;
   unfreeze: (habitId: string) => Promise<ActionResult>;
-  submitLabel: string;
-  resumeLabel: string;
-  note?: string;
+  me?: boolean;
 };
 
-const WHOLE_HABIT: PauseKind = { freeze: freezeHabit, unfreeze: unfreezeHabit, submitLabel: "Pause habit", resumeLabel: "Resume" };
+const WHOLE_HABIT: PauseKind = { freeze: freezeHabit, unfreeze: unfreezeHabit };
 
 export function FreezeForm({
   habitId,
@@ -30,7 +29,7 @@ export function FreezeForm({
   activeFreeze,
   paused,
   kind = WHOLE_HABIT,
-  submitLabel = kind.submitLabel,
+  submitLabel,
 }: {
   habitId: string;
   today: string;
@@ -43,6 +42,7 @@ export function FreezeForm({
 }) {
   const [state, formAction, pending] = useActionState(kind.freeze.bind(null, habitId), initialState);
   const { t, locale } = useT();
+  const submitText = submitLabel ?? t(kind.me ? "habits.freeze.pause" : "habits.freeze.pauseHabit");
   const [resuming, startResume] = useTransition();
   const [resumeError, setResumeError] = useState<string | null>(null);
   const [startsOn, setStartsOn] = useState(today);
@@ -61,10 +61,10 @@ export function FreezeForm({
       <div className="flex flex-col gap-3">
         <p className="text-sm">
           {scheduled
-            ? `Pause starts ${formatLocalDate(activeFreeze.starts_on, locale)}`
-            : `Paused from ${formatLocalDate(activeFreeze.starts_on, locale)}${
-                activeFreeze.ends_on ? ` until ${formatLocalDate(activeFreeze.ends_on, locale)}` : ""
-              }`}
+            ? t("habits.freeze.starts", { date: formatLocalDate(activeFreeze.starts_on, locale) })
+            : activeFreeze.ends_on
+              ? t("habits.freeze.pausedFromUntil", { from: formatLocalDate(activeFreeze.starts_on, locale), until: formatLocalDate(activeFreeze.ends_on, locale) })
+              : t("habits.freeze.pausedFrom", { from: formatLocalDate(activeFreeze.starts_on, locale) })}
         </p>
         <Button
           type="button"
@@ -78,7 +78,7 @@ export function FreezeForm({
             })
           }
         >
-          {scheduled ? "Cancel pause" : kind.resumeLabel}
+          {scheduled ? t("habits.freeze.cancel") : t(kind.me ? "habits.freeze.resumeMe" : "habits.freeze.resume")}
         </Button>
         {resumeError && <p role="alert" className="text-sm text-destructive">{resumeError}</p>}
       </div>
@@ -87,13 +87,13 @@ export function FreezeForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
-      {kind.note && <p className="text-sm text-muted-foreground">{kind.note}</p>}
+      {kind.me && <p className="text-sm text-muted-foreground">{t("habits.freeze.meNote")}</p>}
       {/* Today is sent as empty, so the server uses its own today (this page's may be stale after midnight). */}
       <input type="hidden" name="startsOn" value={startsOn === today ? "" : startsOn} />
       <input type="hidden" name="endsOn" value={endsOn ?? ""} />
 
       <fieldset className="flex flex-col gap-1.5">
-        <legend className="text-sm font-semibold">Pause from</legend>
+        <legend className="text-sm font-semibold">{t("habits.freeze.pauseFrom")}</legend>
         <StartDatePicker value={startsOn} onChange={changeStart} today={today} weekStart={weekStart} />
       </fieldset>
 
@@ -104,19 +104,19 @@ export function FreezeForm({
           className="flex h-11 items-center justify-center gap-2 rounded-xl border-2 border-dashed border-input text-sm font-semibold text-muted-foreground hover:bg-muted"
         >
           <CalendarPlus aria-hidden className="size-4" />
-          Add a return date
+          {t("habits.freeze.addReturn")}
         </button>
       ) : (
         <fieldset className="flex flex-col gap-1.5">
           <legend className="flex w-full items-center justify-between text-sm font-semibold">
-            <span>Until</span>
+            <span>{t("habits.freeze.until")}</span>
             <button
               type="button"
               onClick={() => setEndsOn(null)}
               className="flex h-11 items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
             >
               <X aria-hidden className="size-3.5" />
-              Remove end date
+              {t("habits.freeze.removeEnd")}
             </button>
           </legend>
           <StartDatePicker
@@ -132,7 +132,7 @@ export function FreezeForm({
 
       {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
       <Button type="submit" className="h-11" disabled={pending}>
-        {pending ? "Pausing…" : submitLabel}
+        {pending ? t("habits.freeze.pausing") : submitText}
       </Button>
     </form>
   );

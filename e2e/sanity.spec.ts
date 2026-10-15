@@ -8,7 +8,7 @@ test("sanity: sign up, add a habit, check in, and it's saved", async ({ page }) 
   await signUpAndOnboard(page);
   await createHabit(page, { template: "Drink water" });
   await expect(page.getByText("0 / 8 today")).toBeVisible();
-  await page.getByRole("button", { name: "Check in: Drink water" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Drink water\u2069" }).click();
   await expect(page.getByText("1 / 8 today")).toBeVisible();
   await page.reload();
   await expect(page.getByText("1 / 8 today")).toBeVisible();

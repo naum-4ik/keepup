@@ -16,10 +16,10 @@ describe("reminderMode", () => {
 
 describe("reminderHint", () => {
   it("says when, in plain words", () => {
-    expect(reminderHint({ mode: "summary", remindAt: null, reminderHour: 20, muted: false })).toBe("In your daily summary at 20:00");
-    expect(reminderHint({ mode: "time", remindAt: "07:30", reminderHour: 20, muted: false })).toBe("At 07:30");
-    expect(reminderHint({ mode: "off", remindAt: null, reminderHour: 20, muted: false })).toBe("No reminders");
-    expect(reminderHint({ mode: "summary", remindAt: null, reminderHour: 7, muted: true })).toBe("Muted: no reminders for this habit");
+    expect(reminderHint(tEn, { mode: "summary", remindAt: null, reminderHour: 20, muted: false })).toBe("In your daily summary at 20:00");
+    expect(reminderHint(tEn, { mode: "time", remindAt: "07:30", reminderHour: 20, muted: false })).toBe("At 07:30");
+    expect(reminderHint(tEn, { mode: "off", remindAt: null, reminderHour: 20, muted: false })).toBe("No reminders");
+    expect(reminderHint(tEn, { mode: "summary", remindAt: null, reminderHour: 7, muted: true })).toBe("Muted: no reminders for this habit");
   });
 });
 

@@ -16,14 +16,14 @@ test("the Today card counts today's habits, cheers you on, and celebrates the la
   const row = card.getByRole("img", { name: /^Today's habits:/ });
   await expect(row).toHaveAccessibleName("Today's habits: \u2068Walk\u2069 to do, \u2068Read\u2069 to do, \u2068Stretch\u2069 to do");
 
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect(row).toHaveAccessibleName("Today's habits: \u2068Walk\u2069 done, \u2068Read\u2069 to do, \u2068Stretch\u2069 to do");
   await expect(card.getByRole("status")).toHaveText("2 to go");
 
-  await page.getByRole("button", { name: "Check in: Read" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Read\u2069" }).click();
   await expect(card.getByRole("status")).toHaveText("One more to go!");
 
-  await page.getByRole("button", { name: "Check in: Stretch" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Stretch\u2069" }).click();
   await expect(card.getByRole("status")).toHaveText("Today's all done 🎉");
   await expect(card).toContainText("3 of 3 done");
 });
@@ -47,6 +47,6 @@ test("the Today card's This week counts a group habit you take part in", async (
   const card = page.getByRole("region", { name: "Today's progress" });
   // A group habit used to leave the week line out ("0 of 0", or no line at all).
   await expect(card.getByRole("img", { name: "0 of 1 goal met this week" })).toBeVisible();
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect(card.getByRole("img", { name: "1 of 1 goal met this week" })).toBeVisible();
 });

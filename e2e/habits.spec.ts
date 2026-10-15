@@ -173,7 +173,7 @@ test.describe("Today check-ins", () => {
     await signUpAndOnboard(page);
     await createHabit(page, { template: "Drink water" });
     await expect(page.getByText("0 / 8 today")).toBeVisible();
-    await page.getByRole("button", { name: "Check in: Drink water" }).click();
+    await page.getByRole("button", { name: "Check in: \u2068Drink water\u2069" }).click();
     await expect(page.getByText("1 / 8 today")).toBeVisible();
     // The link is named by the title alone; the progress is its description.
     const link = page.getByRole("link", { name: "Drink water", exact: true });
@@ -184,22 +184,22 @@ test.describe("Today check-ins", () => {
   test("a weekly habit allows one check-in per day", async ({ page }) => {
     await signUpAndOnboard(page);
     await createHabit(page, { template: "Work out" });
-    await page.getByRole("button", { name: "Check in: Work out" }).click();
+    await page.getByRole("button", { name: "Check in: \u2068Work out\u2069" }).click();
     // A 3×/week habit with one check-in shows a ring with "1/3", and says so in words.
-    const button = page.getByRole("button", { name: "Checked in today: Work out, 1 of 3" });
+    const button = page.getByRole("button", { name: "Checked in today: \u2068Work out\u2069, 1 of 3" });
     await expect(button).toBeDisabled();
     await expect(button).toContainText("1/3");
     await expect(page.getByText(/1 of 3 this week/)).toBeVisible();
     await page.getByRole("link", { name: /Work out/ }).click();
-    await expect(page.getByRole("button", { name: "Checked in today: Work out, 1 of 3" })).toContainText("1/3");
+    await expect(page.getByRole("button", { name: "Checked in today: \u2068Work out\u2069, 1 of 3" })).toContainText("1/3");
   });
 
   test("a double tap checks in only once", async ({ page }) => {
     await signUpAndOnboard(page);
     await createHabit(page, { template: "Read 20 min" });
     const habitRow = page.getByRole("listitem").filter({ hasText: "Read 20 min" });
-    await habitRow.getByRole("button", { name: "Check in: Read 20 min" }).dblclick();
-    const button = habitRow.getByRole("button", { name: "Done: Read 20 min" });
+    await habitRow.getByRole("button", { name: "Check in: \u2068Read 20 min\u2069" }).dblclick();
+    const button = habitRow.getByRole("button", { name: "Done: \u2068Read 20 min\u2069" });
     await expect(button).toBeVisible();
     await expect(button).toBeDisabled();
     // Wait for the request to fully settle (not just dimmed while pending) before checking for an
@@ -220,8 +220,8 @@ test.describe("Today check-ins", () => {
     await createHabit(page, { template: "Meditate" });
     await createHabit(page, { template: "Walk 10,000 steps" });
 
-    await page.getByRole("button", { name: "Check in: Meditate" }).click();
-    await expect(page.getByRole("button", { name: "Done: Meditate" })).toBeVisible();
+    await page.getByRole("button", { name: "Check in: \u2068Meditate\u2069" }).click();
+    await expect(page.getByRole("button", { name: "Done: \u2068Meditate\u2069" })).toBeVisible();
 
     const rows = await page.locator('li:has(a[href^="/habits/"]:not([href="/habits/new"]))').allInnerTexts();
     expect(rows).toHaveLength(3);
@@ -238,8 +238,8 @@ test.describe("Habit detail", () => {
   test("the habit page shows this period's check-ins and can undo them", async ({ page }) => {
     await signUpAndOnboard(page);
     await createHabit(page, { template: "Read 20 min" });
-    await page.getByRole("button", { name: "Check in: Read 20 min" }).click();
-    await expect(page.getByRole("button", { name: "Done: Read 20 min" })).toBeVisible();
+    await page.getByRole("button", { name: "Check in: \u2068Read 20 min\u2069" }).click();
+    await expect(page.getByRole("button", { name: "Done: \u2068Read 20 min\u2069" })).toBeVisible();
 
     await page.getByRole("link", { name: /Read 20 min/ }).click();
     // One check-in: the card already says "Done for today", so no "1 check-in this period" line.
@@ -262,7 +262,7 @@ test.describe("Habit detail", () => {
     await page.getByRole("button", { name: "Pause habit" }).click();
     await expect(page.getByText(/^Paused from /)).toBeVisible();
     await page.goto("/today");
-    await expect(page.getByRole("button", { name: "Paused: Meditate" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Paused: \u2068Meditate\u2069" })).toBeDisabled();
     await page.getByRole("link", { name: /Meditate/ }).click();
     await openSection(page, "Paused");
     await page.getByRole("button", { name: "Resume" }).click();
@@ -282,8 +282,8 @@ test.describe("Habit detail", () => {
     await expect(page.getByText("Tidy up")).toHaveCount(0);
 
     await createHabit(page, { template: "Make the bed", tab: "Home" });
-    await page.getByRole("button", { name: "Check in: Make the bed" }).click();
-    await expect(page.getByRole("button", { name: "Done: Make the bed" })).toBeVisible();
+    await page.getByRole("button", { name: "Check in: \u2068Make the bed\u2069" }).click();
+    await expect(page.getByRole("button", { name: "Done: \u2068Make the bed\u2069" })).toBeVisible();
     await page.getByRole("link", { name: /Make the bed/ }).click();
     await expect(page.locator("summary").filter({ hasText: /^Delete/ })).toHaveCount(0);
     await openSection(page, "Archive");
@@ -317,8 +317,8 @@ test.describe("Habit detail", () => {
   test("an archived habit can be restored, from Progress or its page, with its history", async ({ page }) => {
     await signUpAndOnboard(page);
     await createHabit(page, { template: "Make the bed", tab: "Home" });
-    await page.getByRole("button", { name: "Check in: Make the bed" }).click();
-    await expect(page.getByRole("button", { name: "Done: Make the bed" })).toBeVisible();
+    await page.getByRole("button", { name: "Check in: \u2068Make the bed\u2069" }).click();
+    await expect(page.getByRole("button", { name: "Done: \u2068Make the bed\u2069" })).toBeVisible();
     const archive = async () => {
       await page.getByRole("link", { name: /Make the bed/ }).click();
       await openSection(page, "Archive");
@@ -328,18 +328,18 @@ test.describe("Habit detail", () => {
     };
 
     await archive();
-    await page.getByRole("button", { name: "Restore Make the bed" }).click();
+    await page.getByRole("button", { name: "Restore \u2068Make the bed\u2069" }).click();
     await expect(page).toHaveURL(/\/today$/);
     // Back on Today, today's check-in kept.
-    await expect(page.getByRole("button", { name: "Done: Make the bed" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Done: \u2068Make the bed\u2069" })).toBeVisible();
 
     await archive();
     await page.getByRole("link", { name: /Make the bed/ }).click();
     const card = page.getByRole("region", { name: "Archived" });
     await expect(card).toContainText("don't count against you");
-    await card.getByRole("button", { name: "Restore Make the bed" }).click();
+    await card.getByRole("button", { name: "Restore \u2068Make the bed\u2069" }).click();
     await expect(page).toHaveURL(/\/today$/);
-    await expect(page.getByRole("button", { name: "Done: Make the bed" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Done: \u2068Make the bed\u2069" })).toBeVisible();
     await page.goto("/progress?view=archived");
     await expect(page.getByText("No archived habits.")).toBeVisible();
   });
@@ -416,8 +416,8 @@ test("progress groups habits by category and lists archived ones", async ({ page
   await expect(page.getByRole("heading", { name: "Fitness" })).toBeVisible();
 
   await page.goto("/today");
-  await page.getByRole("button", { name: "Check in: Read 20 min" }).click();
-  await expect(page.getByRole("button", { name: "Done: Read 20 min" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: \u2068Read 20 min\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Done: \u2068Read 20 min\u2069" })).toBeVisible();
   await page.getByRole("link", { name: /Read 20 min/ }).click();
   await openSection(page, "Archive");
   await page.getByRole("button", { name: "Archive habit" }).click();
@@ -474,11 +474,11 @@ test("a habit that ended: the finish card, Keep going, Finish, and Start again",
   await expect(readCard).toContainText("Read reached its end");
   await expect(readCard).not.toContainText("🎉");
   await expect(readCard).toContainText("Want to give it another go?");
-  await expect(page.getByRole("button", { name: "Check in: Read" })).toHaveCount(0); // no more check-ins
+  await expect(page.getByRole("button", { name: "Check in: \u2068Read\u2069" })).toHaveCount(0); // no more check-ins
 
   await readCard.getByRole("button", { name: "Keep going" }).click();
   await expect(readCard).toBeHidden();
-  await expect(page.getByRole("button", { name: "Check in: Read" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check in: \u2068Read\u2069" })).toBeVisible();
 
   await page.getByRole("region", { name: "\u2068Stretch\u2069 is finished" }).getByRole("button", { name: "Finish" }).click();
   await expect(page.getByRole("region", { name: "\u2068Stretch\u2069 is finished" })).toBeHidden();
@@ -487,11 +487,11 @@ test("a habit that ended: the finish card, Keep going, Finish, and Start again",
   await page.goto("/progress?view=archived");
   await expect(page.getByRole("link", { name: /Stretch/ })).toHaveCount(0); // finished, not just archived
   await page.goto("/progress?view=finished");
-  await expect(page.getByRole("button", { name: "Restore Stretch" })).toHaveCount(0); // Start again instead
+  await expect(page.getByRole("button", { name: "Restore \u2068Stretch\u2069" })).toHaveCount(0); // Start again instead
   await page.goto(`/habits/${stretch}`);
   await expect(page.getByRole("region", { name: "Archived" })).toHaveCount(0);
   await page.goto("/progress?view=finished");
-  await page.getByRole("button", { name: "Start Stretch again" }).click();
+  await page.getByRole("button", { name: "Start \u2068Stretch\u2069 again" }).click();
   await expect(page).toHaveURL(/\/today$/);
   await expect(page.getByRole("link", { name: /Stretch/ })).toContainText("Day 1 of 3");
 });
@@ -508,11 +508,11 @@ test("Progress → Active leaves out a habit past its end, as Today does; Finish
   await page.goto("/progress?view=finished");
   const ended = page.getByRole("link", { name: /Read/ });
   await expect(ended).toContainText("Ended · decide on Today");
-  await expect(page.getByRole("button", { name: "Start Read again" })).toHaveCount(0); // not finished yet
+  await expect(page.getByRole("button", { name: "Start \u2068Read\u2069 again" })).toHaveCount(0); // not finished yet
   // Keep going (on Today) brings it back to Active.
   await page.goto("/today");
   await page.getByRole("region", { name: "\u2068Read\u2069 is finished" }).getByRole("button", { name: "Keep going" }).click();
-  await expect(page.getByRole("button", { name: "Check in: Read" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check in: \u2068Read\u2069" })).toBeVisible();
   await page.goto("/progress");
   await expect(page.getByRole("link", { name: /Read/ })).toBeVisible();
 });

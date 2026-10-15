@@ -781,5 +781,223 @@
     "inboxUnread": "Inbox, {n} unread",
     "profileLevel": "Profile, level {level}",
     "profileLevelProgress": "Profile, level {level}, {percent}% to level {next}"
+  },
+  "habits": {
+    "new": { "title": "New habit" },
+    "common": { "everyoneDidIt": "Everyone did it ✓" },
+    "form": {
+      "tabsLabel": "Template categories",
+      "popular": "Popular",
+      "together": "Together",
+      "createOwn": "Create your own",
+      "addHabit": "Add habit",
+      "adding": "Adding…",
+      "addHabitSchedule": "Add habit · {schedule}",
+      "titleLabel": "Title",
+      "categoryLabel": "Category",
+      "pickCategory": "Pick a category",
+      "howOften": "How often",
+      "times": "Times",
+      "per": "Per",
+      "frequencyOption": "{n, plural, one {time} other {times}} a {period, select, day {day} week {week} other {month}}",
+      "whoFor": "Who's it for",
+      "justMe": "Just me",
+      "groupNote": "Everyone in <bdi>{group}</bdi> does this together. It's done when everyone's checked in.",
+      "needsApproval": "Needs approval",
+      "needsApprovalHint": "Someone else in <bdi>{group}</bdi> confirms each check-in.",
+      "include": "Include <bdi>{name}</bdi>",
+      "starts": "Starts",
+      "startsNote": "{date}. Nothing before this day counts."
+    },
+    "checkIn": {
+      "state": {
+        "open": "Check in",
+        "done": "Done",
+        "pending": "Waiting for approval",
+        "checked-today": "Checked in today",
+        "frozen": "Paused",
+        "not-started": "Starts later"
+      },
+      "label": "{state}: {title}",
+      "labelRing": "{state}: {title}, {done} of {target}",
+      "whoDid": "Who did {title}?",
+      "justMe": "Just me",
+      "meAndChild": "Me + <bdi>{name}</bdi>",
+      "meAndEveryone": "Me + everyone"
+    },
+    "checkIns": {
+      "empty": "No check-ins this period yet.",
+      "count": "{n, plural, one {{count} check-in this period} other {{count} check-ins this period}}",
+      "undoAt": "Undo check-in at {time}"
+    },
+    "streak": { "label": "Streak:" },
+    "memberStatus": {
+      "done": "Done",
+      "pending": "Waiting for approval",
+      "paused": "Paused",
+      "open": "Not yet",
+      "not_required": "Joins next period",
+      "avatar": {
+        "done": "{name}: done",
+        "pending": "{name}: waiting for approval",
+        "paused": "{name}: paused",
+        "open": "{name}: not yet",
+        "not_required": "{name}: joins next period"
+      }
+    },
+    "history": {
+      "empty": "Nothing here yet. Each {period, select, day {day} week {week} other {month}} you finish fills a square."
+    },
+    "countStepper": { "decrease": "Decrease", "increase": "Increase" },
+    "cheer": { "done": "Cheered", "cta": "Cheer ❤️" },
+    "nudge": { "done": "Nudged ✓", "cta": "Nudge", "menuLabel": "Nudge {name}" },
+    "confirm": { "cancel": "Cancel" },
+    "archive": {
+      "trigger": "Archive habit",
+      "title": "Archive \"<bdi>{title}</bdi>\"?",
+      "description": "It leaves Today and keeps its history in Progress → Archived.",
+      "confirm": "Archive",
+      "pending": "Archiving…"
+    },
+    "delete": {
+      "trigger": "Delete habit",
+      "title": "Delete \"<bdi>{title}</bdi>\"?",
+      "description": "This can't be undone.",
+      "confirm": "Delete",
+      "pending": "Deleting…"
+    },
+    "restore": { "label": "Restore", "aria": "Restore {title}", "pending": "Restoring…" },
+    "startAgain": {
+      "label": "Start again",
+      "aria": "Start {title} again",
+      "pending": "Starting…",
+      "openNew": "Open the new <bdi>{title}</bdi>"
+    },
+    "reminders": {
+      "group": "Reminders",
+      "legend": "When to remind you",
+      "summary": "In my daily summary",
+      "time": "At a time",
+      "off": "No reminders",
+      "timeLabel": "Reminder time",
+      "save": "Save",
+      "saved": "Saved ✓",
+      "mute": "Mute this habit",
+      "muteHint": "No notifications about it, not even from your group. It stays in your Inbox.",
+      "turnOn": "Turn on reminders on this device",
+      "hintMuted": "Muted: no reminders for this habit",
+      "hintOff": "No reminders",
+      "hintTime": "At {time}",
+      "hintSummary": "In your daily summary at {time}"
+    },
+    "freeze": {
+      "pauseHabit": "Pause habit",
+      "pause": "Pause",
+      "resume": "Resume",
+      "resumeMe": "Resume me",
+      "meNote": "You won't be counted while paused. Everyone else carries on.",
+      "starts": "Pause starts {date}",
+      "pausedFrom": "Paused from {from}",
+      "pausedFromUntil": "Paused from {from} until {until}",
+      "cancel": "Cancel pause",
+      "pauseFrom": "Pause from",
+      "addReturn": "Add a return date",
+      "until": "Until",
+      "removeEnd": "Remove end date",
+      "pausing": "Pausing…"
+    },
+    "end": {
+      "lastDay": "Last day: {date}.",
+      "noEnd": "No end: it keeps going until you stop it.",
+      "reached": "It reached its end. Keep going removes the end; Finish moves it to Finished.",
+      "removeEnd": "Remove end"
+    },
+    "endPicker": {
+      "legend": "Ends",
+      "noEnd": "No end",
+      "untilDate": "Until a date",
+      "dateLabel": "End date",
+      "lastDay": "Last day: {date}. Then you choose to keep going or finish.",
+      "keepsGoing": "Keeps going until you stop it."
+    },
+    "emoji": {
+      "choose": "Choose emoji (now {emoji})",
+      "suggested": "Suggested emoji",
+      "another": "Another emoji",
+      "help": "Tap the box, then the 😀 key on your keyboard.",
+      "notEmoji": "That's text, not an emoji. Pick one above or use your emoji keyboard.",
+      "justOne": "Just one emoji, please."
+    },
+    "details": { "none": "None" },
+    "datePicker": {
+      "tomorrow": "Tomorrow",
+      "next": "Next {weekday}",
+      "date": "Date",
+      "pick": "Pick a date",
+      "pickWith": "Pick a date, {date}",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month"
+    },
+    "detail": {
+      "groupLine": "<bdi>{group}</bdi> · {schedule}{approval, select, yes { · needs approval} other {}}",
+      "categoryLine": "{schedule} · {category}",
+      "archivedSuffix": " · Archived",
+      "archived": {
+        "title": "Archived",
+        "note": "{who, select, child {Restore it to put it back on <bdi>{name}</bdi>'s list. The days it was archived don't count against <bdi>{name}</bdi>.} other {Restore it to put it back on Today. The days it was archived don't count against you.}}"
+      },
+      "periodTitle": { "day": "Today", "week": "This week", "month": "This month" },
+      "together": "Together",
+      "you": "(you)",
+      "streaksLabel": "Streaks",
+      "childStreak": "<bdi>{name}</bdi>'s streak",
+      "yourStreak": "Your streak",
+      "bestStreak": "Best streak",
+      "streakUnit": {
+        "day": "{n, plural, one {day} other {days}}",
+        "week": "{n, plural, one {week} other {weeks}}",
+        "month": "{n, plural, one {month} other {months}}"
+      },
+      "history": "History",
+      "manage": {
+        "label": "Manage habit",
+        "reminders": "Reminders",
+        "pauseMe": {
+          "title": "Pause just me",
+          "hintPaused": "You're paused. Resume any time",
+          "hintScheduled": "Your pause is scheduled",
+          "hintIdle": "Away for a while? The others carry on"
+        },
+        "ends": {
+          "title": "Ends",
+          "hintReached": "Reached its end. Keep going or finish",
+          "hintLastDay": "Last day {date}",
+          "hintNone": "No end yet"
+        },
+        "pause": {
+          "everyone": "Pause for everyone",
+          "paused": "Paused",
+          "scheduled": "Pause scheduled",
+          "title": "Pause",
+          "hintResume": "Resume or cancel the pause",
+          "hintGroup": "Going away together? Pausing keeps the group's streak safe",
+          "hintChild": "Going away? <bdi>{name}</bdi>'s streak waits",
+          "hintOwn": "Going away? Your streak waits for you"
+        },
+        "edit": {
+          "title": "Edit details",
+          "hintWithStart": "Title, emoji, category and start date",
+          "hintNoStart": "Title, emoji and category"
+        },
+        "archive": { "title": "Archive", "hint": "Keeps its history, leaves Today" },
+        "delete": { "title": "Delete", "hint": "It has no check-ins yet, so nothing is lost" }
+      }
+    },
+    "actions": {
+      "pickValidDates": "Pick valid dates.",
+      "pickGroup": "Pick a group.",
+      "pickDate": "Pick a date.",
+      "startedAgainNoEnd": "Started again, but the end couldn't be set. Set it on the habit page."
+    }
   }
 }

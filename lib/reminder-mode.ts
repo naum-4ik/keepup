@@ -10,11 +10,11 @@ export function reminderMode(row: { reminders: boolean; remind_at: string | null
   return row.remind_at ? { mode: "time", remindAt: row.remind_at.slice(0, 5) } : { mode: "summary", remindAt: null };
 }
 
-export function reminderHint(s: { mode: ReminderMode; remindAt: string | null; reminderHour: number; muted: boolean }): string {
-  if (s.muted) return "Muted: no reminders for this habit";
-  if (s.mode === "off") return "No reminders";
-  if (s.mode === "time" && s.remindAt) return `At ${s.remindAt}`;
-  return `In your daily summary at ${String(s.reminderHour).padStart(2, "0")}:00`;
+export function reminderHint(t: T, s: { mode: ReminderMode; remindAt: string | null; reminderHour: number; muted: boolean }): string {
+  if (s.muted) return t("habits.reminders.hintMuted");
+  if (s.mode === "off") return t("habits.reminders.hintOff");
+  if (s.mode === "time" && s.remindAt) return t("habits.reminders.hintTime", { time: s.remindAt });
+  return t("habits.reminders.hintSummary", { time: `${String(s.reminderHour).padStart(2, "0")}:00` });
 }
 
 // The scheduler runs every 15 minutes, so the database only takes quarter-hour times (keepup:invalid_time).

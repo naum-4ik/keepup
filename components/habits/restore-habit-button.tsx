@@ -3,16 +3,19 @@
 import { ArchiveRestore } from "lucide-react";
 import { useState, useTransition } from "react";
 import { restoreHabit } from "@/app/(app)/habits/actions";
+import { useT } from "@/lib/i18n/client";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 
 // Archived tab and an archived habit's page: back on Today, history kept.
 export function RestoreHabitButton({ habitId, title }: { habitId: string; title: string }) {
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
     <div className="flex flex-col gap-1">
       <button
         type="button"
-        aria-label={`Restore ${title}`}
+        aria-label={t("habits.restore.aria", { title: isolate(title) })}
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
@@ -23,7 +26,7 @@ export function RestoreHabitButton({ habitId, title }: { habitId: string; title:
         className="flex h-11 items-center gap-1.5 self-start rounded-full px-3 text-sm font-semibold text-primary hover:bg-accent"
       >
         <ArchiveRestore aria-hidden className="size-4" />
-        {pending ? "Restoring…" : "Restore"}
+        {pending ? t("habits.restore.pending") : t("habits.restore.label")}
       </button>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </div>
