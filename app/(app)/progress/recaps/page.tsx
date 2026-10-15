@@ -60,7 +60,7 @@ export default async function RecapsPage() {
                     </ul>
                   )}
                   {r.badges.length > 0 && (
-                    <p className="text-sm text-muted-foreground">{t("recaps.page.badges", { list: r.badges.map((b) => badgeName(t, b.code, b.name)).join(", ") })}</p>
+                    <p className="text-sm text-muted-foreground">{t("recaps.page.badges", { list: r.badges.map((b) => badgeName(t, b.code, b.name)).join(t("common.listSeparator")) })}</p>
                   )}
                 </li>
               );

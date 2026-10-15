@@ -166,11 +166,10 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
           <h1 className="truncate text-xl font-bold">{h.title}</h1>
           <p className="text-sm text-muted-foreground">
             {h.group_id
-              ? tr.rich("habits.detail.groupLine", { group: h.group_name, schedule: describeSchedule(t, h.target_count, h.period), approval: h.requires_approval ? "yes" : "no", bdi })
+              ? tr.rich("habits.detail.groupLine", { group: h.group_name, schedule: describeSchedule(t, h.target_count, h.period), approval: h.requires_approval ? "yes" : "no", archived: archived ? "yes" : "no", bdi })
               : h.category
-                ? t("habits.detail.categoryLine", { schedule: describeSchedule(t, h.target_count, h.period), category: categoryLabel(t, h.category) })
-                : describeSchedule(t, h.target_count, h.period)}
-            {archived && t("habits.detail.archivedSuffix")}
+                ? t("habits.detail.categoryLine", { schedule: describeSchedule(t, h.target_count, h.period), category: categoryLabel(t, h.category), archived: archived ? "yes" : "no" })
+                : t("habits.detail.scheduleLine", { schedule: describeSchedule(t, h.target_count, h.period), archived: archived ? "yes" : "no" })}
           </p>
         </div>
       </header>

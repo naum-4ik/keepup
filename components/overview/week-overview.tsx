@@ -154,7 +154,7 @@ export function HabitDots({ t, cells, category, period }: { t: T; cells: HabitCe
   for (const c of cells) counts.set(c.status, (counts.get(c.status) ?? 0) + 1);
   const label = t("weekOverview.dotsLabel", {
     span: t(`units.${period}`, { n: cells.length }),
-    counts: [...counts].map(([status, n]) => t("weekOverview.dotCount", { status, n })).join(", "),
+    counts: [...counts].map(([status, n]) => t("weekOverview.dotCount", { status, n })).join(t("common.listSeparator")),
   });
   return (
     <span role="img" aria-label={label} className={cn("flex gap-1", CATEGORIES[category].iconClass)}>
