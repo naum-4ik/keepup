@@ -15,7 +15,11 @@ export function LocaleSync({ save, cookie, refresh }: { save: Locale | null; coo
     if (ran.current) return;
     ran.current = true;
     syncLocale(save, cookie)
-      .then((r) => { if (r.ok && refresh) router.refresh(); })
+      .then((r) => {
+        if (!r.ok || !refresh) return;
+        navigator.serviceWorker?.controller?.postMessage({ type: "keepup:clear-pages" });
+        router.refresh();
+      })
       .catch(() => {});
   }, [save, cookie, refresh, router]);
   return null;

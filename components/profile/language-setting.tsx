@@ -24,7 +24,7 @@ export function LanguageSetting({ current, enabled }: { current: Locale; enabled
     startTransition(async () => {
       const r = await setLanguage(next);
       if (!r.ok) return setValue(before);
-      navigator.serviceWorker?.controller?.postMessage({ type: "clear-pages" });
+      navigator.serviceWorker?.controller?.postMessage({ type: "keepup:clear-pages" });
       router.refresh();
     });
   }

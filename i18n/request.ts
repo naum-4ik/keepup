@@ -1,6 +1,7 @@
 import { getRequestConfig } from "next-intl/server";
 import { cookies, headers } from "next/headers";
 import en from "@/supabase/functions/_shared/messages/en.json";
+import { deepMerge } from "./merge-messages";
 import { LOCALE_COOKIE, asLocale, enabledLocales, pickLocale } from "./config";
 
 // Order: an explicit locale (getTranslations({ locale })) → the device cookie (a cache of
@@ -11,7 +12,9 @@ export default getRequestConfig(async ({ locale: explicit }) => {
     asLocale(explicit, enabled) ??
     asLocale((await cookies()).get(LOCALE_COOKIE)?.value, enabled) ??
     pickLocale((await headers()).get("accept-language"), enabled);
-  const messages = locale === "en" ? en : (await import(`../supabase/functions/_shared/messages/${locale}.json`)).default;
+  // English underneath every language: the client provider gets only `messages`, not getMessageFallback.
+  const messages =
+    locale === "en" ? en : deepMerge(en, (await import(`../supabase/functions/_shared/messages/${locale}.json`)).default);
   return {
     locale,
     messages,

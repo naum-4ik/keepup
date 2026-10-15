@@ -525,7 +525,7 @@ describe("sw.js offline shell", () => {
     const sw = worker([], undefined, slow);
     await (await sw.caches.api.open("keepup-shell-test")).put("/offline", res("offline"));
     const saving = sw.message({ type: "keepup:save-page", path: "/today" });
-    const clearing = sw.message({ type: "clear-pages" });
+    const clearing = sw.message({ type: "keepup:clear-pages" });
     release();
     await Promise.all([saving, clearing]);
     expect(sw.caches.store.get("keepup-pages")).toBeUndefined();
