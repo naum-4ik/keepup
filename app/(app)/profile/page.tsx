@@ -8,7 +8,6 @@ import { getT } from "@/lib/i18n/server";
 import { isAvatarColor } from "@/lib/avatars";
 import { cityOf } from "@/lib/timezones";
 import { appVersion } from "@/lib/version";
-import { weekdayLabels } from "@/lib/weekdays";
 import { getMyLevel } from "@/lib/xp-data";
 import { saveAvatar } from "./actions";
 
@@ -21,7 +20,7 @@ const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
 ];
 
 export default async function ProfilePage() {
-  const [{ profile }, level, { t, locale }] = await Promise.all([getProfile(), getMyLevel(), getT()]);
+  const [{ profile }, level, { t }] = await Promise.all([getProfile(), getMyLevel(), getT()]);
 
   return (
     <section className="flex flex-col gap-6 py-6">
@@ -37,7 +36,7 @@ export default async function ProfilePage() {
         <div className="min-w-0">
           <h1 className="text-xl font-bold">{profile.display_name}</h1>
           <p className="text-sm text-muted-foreground">
-            {t("profile.summary", { city: cityOf(profile.timezone), day: weekdayLabels(locale, "long")[profile.week_start === 0 ? 0 : 1] })}
+            {t("profile.summary", { city: cityOf(profile.timezone), weekStart: profile.week_start === 0 ? "sun" : "mon" })}
           </p>
         </div>
       </div>

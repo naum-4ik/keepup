@@ -36,13 +36,12 @@ type Props = {
 // Styled with the app's tokens instead of the browser's native date popup.
 export function StartDatePicker({ value, onChange, today, min = today, weekStart, errorId, quickPicks }: Props) {
   const { t, locale } = useT();
-  const short = useMemo(() => weekdayLabels(locale, "short"), [locale]);
   const headers = useMemo(() => weekdayLabels(locale, "two"), [locale]);
   const quick =
     quickPicks ?? [
       { label: t("dates.today"), date: today },
       { label: t("habits.datePicker.tomorrow"), date: addDays(today, 1) },
-      { label: t("habits.datePicker.next", { weekday: short[weekStart] }), date: nextWeekStart(today, weekStart) },
+      { label: t("habits.datePicker.next", { day: weekStart }), date: nextWeekStart(today, weekStart) },
     ];
   const isQuick = quick.some((q) => q.date === value);
   const [open, setOpen] = useState(false);

@@ -3,7 +3,7 @@ import { SceneItems, type Idle, type Landed } from "@/components/kids/scene-item
 import { kidTheme, nextStep, restartDay, restartLine, stageFor, stageLabel, stepLines, type Gender } from "@/lib/garden";
 import { isFloatingTheme, sceneItems } from "@/lib/scene-items";
 import { cn } from "@/lib/utils";
-import type { Locale, T } from "@/supabase/functions/_shared/i18n";
+import type { T } from "@/supabase/functions/_shared/i18n";
 
 // The week's picture (ideas/kid-view-next.md §4): the stage's big emoji in the middle with a soft glow,
 // in front of the items the taps added, on the stage's own sky. The stage comes from the stars (same
@@ -121,7 +121,7 @@ export function GardenPicture({
   );
 }
 
-export function Garden({ t, locale, stars, theme, weekStart, gender = null }: { t: T; locale: Locale; stars: number; theme?: string | null; weekStart?: string; gender?: Gender }) {
+export function Garden({ t, stars, theme, weekStart, gender = null }: { t: T; stars: number; theme?: string | null; weekStart?: string; gender?: Gender }) {
   const th = kidTheme(theme);
   const { now, next } = stepLines(t, stars, th.id, gender);
   const title = t(`kidThemes.${th.id}.thisWeek`);
@@ -134,7 +134,7 @@ export function Garden({ t, locale, stars, theme, weekStart, gender = null }: { 
         <p className="text-sm font-semibold tabular-nums">{t("kids.garden.stars", { stars })}</p>
       </div>
       {next && <p className="text-sm text-muted-foreground">{next}</p>}
-      {weekStart && <p className="text-sm text-muted-foreground">{restartLine(t, th.id, restartDay(locale, weekStart), false, gender)}</p>}
+      {weekStart && <p className="text-sm text-muted-foreground">{restartLine(t, th.id, restartDay(weekStart), false, gender)}</p>}
     </section>
   );
 }

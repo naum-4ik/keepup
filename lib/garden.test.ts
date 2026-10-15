@@ -72,14 +72,14 @@ describe("garden", () => {
     expect(isKidTheme("jungle")).toBe(false);
   });
   it("says which day the next one starts: the family's first day of the week", () => {
-    expect(restartDay("en", "2026-09-27")).toBe("Sunday"); // a Sunday-start week -> next Sunday
-    expect(restartDay("en", "2026-09-28")).toBe("Monday");
+    expect(restartDay("2026-09-27")).toBe("sun"); // a Sunday-start week -> next Sunday
+    expect(restartDay("2026-09-28")).toBe("mon");
   });
   it("words the restart and the new week in the chosen theme", () => {
-    expect(restartLine(tEn, "garden", "Sunday", false)).toBe("A new garden starts on Sunday 🌱");
-    expect(restartLine(tEn, "garden", "Sunday", true)).toBe("Full garden! 🌻 A new one starts on Sunday");
-    expect(restartLine(tEn, "space", "Monday", false)).toBe("A new galaxy starts on Monday 🚀");
-    expect(restartLine(tEn, "aquarium", "Monday", true)).toBe("A full reef! 🐙 A new one starts on Monday");
+    expect(restartLine(tEn, "garden", "sun", false)).toBe("A new garden starts on Sunday 🌱");
+    expect(restartLine(tEn, "garden", "sun", true)).toBe("Full garden! 🌻 A new one starts on Sunday");
+    expect(restartLine(tEn, "space", "mon", false)).toBe("A new galaxy starts on Monday 🚀");
+    expect(restartLine(tEn, "aquarium", "mon", true)).toBe("A full reef! 🐙 A new one starts on Monday");
     expect(newWeekLine(tEn, "garden")).toBe("Last week's garden is in the album 📸 A new seed is planted 🌱");
     expect(newWeekLine(tEn, "dino")).toBe("Last week's dino egg is in the album 📸 A new egg is waiting 🥚");
   });
@@ -89,8 +89,8 @@ describe("garden", () => {
   it("words the kid lines the same for a boy, a girl and no answer, in English", () => {
     for (const g of ["boy", "girl", null] as const) {
       expect(stepLines(tEn, 2, "garden", g).next).toBe("1 more star to a sprout 🌱");
-      expect(restartLine(tEn, "garden", "Sunday", false, g)).toBe("A new garden starts on Sunday 🌱");
-      expect(restartLine(tEn, "space", "Monday", true, g)).toBe("A starry galaxy! 🌟 A new one starts on Monday");
+      expect(restartLine(tEn, "garden", "sun", false, g)).toBe("A new garden starts on Sunday 🌱");
+      expect(restartLine(tEn, "space", "mon", true, g)).toBe("A starry galaxy! 🌟 A new one starts on Monday");
       expect(newWeekLine(tEn, "garden", g)).toBe("Last week's garden is in the album 📸 A new seed is planted 🌱");
     }
   });

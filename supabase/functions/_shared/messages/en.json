@@ -555,7 +555,6 @@
     "title": "Welcome to Keepup",
     "subtitle": "A little about you, then your first habits.",
     "subtitleInvited": "You're joining <bdi>{group}</bdi>. A little about you first.",
-    "weeksStart": "weeks start {day}",
     "purposeLabel": "Keepup is for… <muted>(optional)</muted>",
     "purpose": {
       "me": "Me",
@@ -991,8 +990,8 @@
   },
   "garden": {
     "starsToNext": "{gender, select, boy {{left, plural, one {# more star to {label} {icon}} other {# more stars to {label} {icon}}}} girl {{left, plural, one {# more star to {label} {icon}} other {# more stars to {label} {icon}}}} other {{left, plural, one {# more star to {label} {icon}} other {# more stars to {label} {icon}}}}}",
-    "restart": "{gender, select, boy {A new {noun} starts on {day} {start}} girl {A new {noun} starts on {day} {start}} other {A new {noun} starts on {day} {start}}}",
-    "restartFull": "{gender, select, boy {{done} A new one starts on {day}} girl {{done} A new one starts on {day}} other {{done} A new one starts on {day}}}",
+    "restart": "{gender, select, boy {{weekStart, select, sun {A new {noun} starts on Sunday {start}} mon {A new {noun} starts on Monday {start}} other {A new {noun} starts on Monday {start}}}} girl {{weekStart, select, sun {A new {noun} starts on Sunday {start}} mon {A new {noun} starts on Monday {start}} other {A new {noun} starts on Monday {start}}}} other {{weekStart, select, sun {A new {noun} starts on Sunday {start}} mon {A new {noun} starts on Monday {start}} other {A new {noun} starts on Monday {start}}}}}",
+    "restartFull": "{gender, select, boy {{weekStart, select, sun {{done} A new one starts on Sunday} mon {{done} A new one starts on Monday} other {{done} A new one starts on Monday}}} girl {{weekStart, select, sun {{done} A new one starts on Sunday} mon {{done} A new one starts on Monday} other {{done} A new one starts on Monday}}} other {{weekStart, select, sun {{done} A new one starts on Sunday} mon {{done} A new one starts on Monday} other {{done} A new one starts on Monday}}}}",
     "fullGarden": "Full garden! 🌻",
     "stageDone": "{label}! {icon}",
     "newWeek": "{gender, select, boy {Last week's {noun} is in the album 📸 {seed}} girl {Last week's {noun} is in the album 📸 {seed}} other {Last week's {noun} is in the album 📸 {seed}}}"
@@ -1274,7 +1273,7 @@
     },
     "datePicker": {
       "tomorrow": "Tomorrow",
-      "next": "Next {weekday}",
+      "next": "{day, select, 0 {Next Sun} 1 {Next Mon} 2 {Next Tue} 3 {Next Wed} 4 {Next Thu} 5 {Next Fri} 6 {Next Sat} other {Next week}}",
       "date": "Date",
       "pick": "Pick a date",
       "pickWith": "Pick a date, {date}",
@@ -1519,7 +1518,7 @@
       "title": "Change your avatar",
       "description": "Shown to your groups."
     },
-    "summary": "{city} · weeks start {day}",
+    "summary": "{city} · weeks start {weekStart, select, sun {Sunday} mon {Monday} other {Monday}}",
     "footer": {
       "privacy": "Privacy Policy",
       "install": "How to install"

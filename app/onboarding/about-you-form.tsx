@@ -99,9 +99,7 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
 
       {!showDetails && (
         <p className={cn("flex min-h-11 flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground", !detected && "invisible")}>
-          <span>{cityOf(timezone)}</span>
-          <span aria-hidden>·</span>
-          <span>{t("onboarding.weeksStart", { day: weekStart === "0" ? weekdays[0] : weekdays[1] })}</span>
+          <span>{t("profile.summary", { city: cityOf(timezone), weekStart: weekStart === "0" ? "sun" : "mon" })}</span>
           <span aria-hidden>·</span>
           <button
             type="button"

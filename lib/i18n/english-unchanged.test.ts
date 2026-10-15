@@ -1,5 +1,6 @@
 import { createElement, type ReactNode } from "react";
 import { describe, expect, it } from "vitest";
+import { weekdayLabels } from "@/lib/weekdays";
 import { markup, richEn, tEn } from "./test-t";
 
 // PR 7 prep: messages restructured so ru/he can be written without code changes. Each case pins the
@@ -34,5 +35,18 @@ describe("lists and separators are catalog words", () => {
   it("Needs a connection names the card for screen readers in one message", () => {
     expect(markup(richEn("offline.needsConnectionFor", { label: "Invite", sr })))
       .toBe('Needs a connection<span class="sr-only">: Invite</span>');
+  });
+});
+
+describe("weekdays inside a phrase are a select with the English day words", () => {
+  it("Next <weekday> reads as before for every day index", () => {
+    const short = weekdayLabels("en", "short");
+    for (let day = 0; day < 7; day++) expect(tEn("habits.datePicker.next", { day })).toBe(`Next ${short[day]}`);
+  });
+
+  it("city and week start (Profile and onboarding share it)", () => {
+    const long = weekdayLabels("en", "long");
+    expect(tEn("profile.summary", { city: "Tokyo", weekStart: "sun" })).toBe(`Tokyo · weeks start ${long[0]}`);
+    expect(tEn("profile.summary", { city: "Rome", weekStart: "mon" })).toBe(`Rome · weeks start ${long[1]}`);
   });
 });
