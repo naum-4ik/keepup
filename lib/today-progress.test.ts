@@ -52,6 +52,9 @@ describe("todayLine", () => {
     [3, 5, "Halfway there 💪"],
     [4, 5, "One more to go!"],
     [0, 1, "1 to go today"],
+    [0, 2, "2 to go today"],
+    [0, 0, "Today's all done 🎉"],
+    [1, 6, "5 to go"],
     [5, 5, "Today's all done 🎉"],
   ])("%i of %i → %s", (done, total, line) => {
     expect(todayLine(tEn, done, total)).toBe(line);

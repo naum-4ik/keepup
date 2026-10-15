@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createTranslator } from "use-intl/core";
+import { tFor } from "./test-t";
 import type { Locale } from "@/supabase/functions/_shared/i18n";
 import {
   isDateElement, isLiteralElement, isNumberElement, isPluralElement, isPoundElement,
@@ -87,4 +88,17 @@ describe("analyze (guard regressions)", () => {
   it("flags a plural without other", () => expect(analyze("{n, plural, one {x}}").noOther).toEqual(["n"]));
   it("flags only the node that lacks other", () =>
     expect(analyze("{a, select, x {1} other {2}} {b, select, y {3}}").noOther).toEqual(["b"]));
+});
+
+// Count messages are ICU plurals (so ru/he can add their forms); English reads the same for every n.
+describe("count messages (English)", () => {
+  const t = tFor("en");
+  it.each([
+    ["nav.inboxUnread", ["Inbox, 0 unread", "Inbox, 1 unread", "Inbox, 2 unread"]],
+    ["overview.waiting", ["0 waiting", "1 waiting", "2 waiting"]],
+    ["recaps.page.restDays", ["Rest days: 0 (dashed)", "Rest days: 1 (dashed)", "Rest days: 2 (dashed)"]],
+  ])("%s for 0, 1, 2", (key, lines) => {
+    expect([0, 1, 2].map((n) => t(key, { n }))).toEqual(lines);
+  });
+  it("keeps the unread count ungrouped", () => expect(t("nav.inboxUnread", { n: 1234 })).toBe("Inbox, 1234 unread"));
 });

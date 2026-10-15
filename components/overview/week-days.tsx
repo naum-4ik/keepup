@@ -160,7 +160,7 @@ export function DayPanel({ id, date, today, day, rows }: { id: string; date: str
                   {r.pending > 0 && (
                     <span className="flex items-center gap-1 text-xs font-semibold text-pending">
                       <Clock aria-hidden className="size-3.5" />
-                      {t("overview.waiting", { n: String(r.pending) })}
+                      {t("overview.waiting", { n: r.pending })}
                     </span>
                   )}
                   <RowStatus row={r} />

@@ -4,7 +4,11 @@ import { describe, expect, it } from "vitest";
 import { CLIENT_NAMESPACES } from "@/i18n/client-namespaces";
 
 // Guard for i18n/client-namespaces.ts: the browser gets only those namespaces, so a client component
-// reading any other one would show a raw key. Static scan, regex based:
+// reading any other one would show a raw key. Static scan, regex based, so it has blind spots:
+//  - only literal keys count: a key built from a variable (t(key), t(map[x])) is invisible;
+//  - translators are recognised by name only: t, tr, tx, tf, tt (TR below); any other name is missed;
+//  - dynamic keys (`ns.${x}`) count only via a scoped useTranslations("ns") or a literal `ns.` prefix.
+// Steps:
 // 1. roots: "use client" files, files calling useTranslations/useT (they may render on the client),
 //    and modules typed with FieldError (server actions return their validation keys untranslated);
 // 2. from each, follow the imports it hands a translator to: fn(…, t, …) and <Comp t={t}>;
@@ -12,7 +16,7 @@ import { CLIENT_NAMESPACES } from "@/i18n/client-namespaces";
 const root = process.cwd();
 const en = JSON.parse(readFileSync(join(root, "supabase/functions/_shared/messages/en.json"), "utf8")) as Record<string, unknown>;
 const catalog = new Set(Object.keys(en));
-const TR = "(?:t|tr|tx|tf)"; // the names this codebase gives translators
+const TR = "(?:t|tr|tx|tf|tt)"; // the names this codebase gives translators
 
 const walk = (d: string): string[] =>
   readdirSync(d).flatMap((f) => {

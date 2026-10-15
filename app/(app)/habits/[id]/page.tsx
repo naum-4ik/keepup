@@ -219,7 +219,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
       )}
 
       {members && !archived && (
-        <Card title={t("habits.detail.together")}>
+        <Card title={t("habits.form.together")}>
           <ul className="flex flex-col gap-2">
             {members.map((m) => {
               const status = memberStatus(m, h.target_count);
@@ -248,7 +248,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
             {h.current_streak}
             <span className="text-sm font-bold">{unit(t, h.current_streak, h.period)}</span>
           </p>
-          <p className="text-xs font-semibold text-muted-foreground">{members ? t("habits.detail.together") : child ? tr.rich("habits.detail.childStreak", { name: child.name, bdi }) : t("habits.detail.yourStreak")}</p>
+          <p className="text-xs font-semibold text-muted-foreground">{members ? t("habits.form.together") : child ? tr.rich("habits.detail.childStreak", { name: child.name, bdi }) : t("habits.detail.yourStreak")}</p>
         </div>
         <div className="flex flex-col items-center gap-0.5">
           <p className="flex items-center gap-1 text-2xl font-extrabold tabular-nums">

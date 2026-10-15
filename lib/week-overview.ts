@@ -3,8 +3,6 @@ import type { T } from "@/supabase/functions/_shared/i18n";
 
 // The shape of public.week_overview() (a jsonb object, so the generated type is just `Json`).
 export type DayCellStatus = "done" | "missed" | "paused" | "not_started" | "open" | "rested";
-// Words for the week dots' label and the history grid (M5: a rest day keeps the streak, never "missed").
-export const statusWord = (t: T, status: DayCellStatus): string => t(`weekOverview.status.${status}`);
 export type Outcome = "done" | "missed" | "skipped" | "rested" | "open";
 export const outcomeLabel = (t: T, outcome: Outcome): string => t(`weekOverview.outcome.${outcome}`);
 export type WeekDay = { local_date: string; daily_done: number; daily_possible: number };

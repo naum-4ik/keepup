@@ -53,7 +53,7 @@ export default async function RecapsPage() {
                     <p className="font-semibold">{recapLine(t, locale, r, "history")}</p>
                   </div>
                   <MonthHeatmap recap={r} weekStart={weekStart} t={t} locale={locale} />
-                  {rested > 0 && <p className="text-sm text-muted-foreground">{t("recaps.page.restDays", { n: String(rested) })}</p>}
+                  {rested > 0 && <p className="text-sm text-muted-foreground">{t("recaps.page.restDays", { n: rested })}</p>}
                   {r.top.length > 0 && (
                     <ul aria-label={t("recaps.page.topStreaks")} className="flex flex-col gap-1 text-sm">
                       {r.top.map((s) => <li key={s.title}>{s.emoji} {streakLabel(t, s)}</li>)}

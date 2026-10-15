@@ -167,7 +167,7 @@ export function CheckInButton({
           className="flex max-w-56 flex-wrap justify-end gap-1.5"
           onKeyDown={(e) => e.key === "Escape" && setChoosing(false)}
         >
-          <ChoiceButton onClick={() => run([])}>{tr("justMe")}</ChoiceButton>
+          <ChoiceButton onClick={() => run([])}>{t("habits.form.justMe")}</ChoiceButton>
           {withChildren.map((c) => (
             <ChoiceButton key={c.id} onClick={() => run([c.id])}>
               {tr.rich("meAndChild", { name: c.name, bdi: (x) => <bdi>{x}</bdi> })}
