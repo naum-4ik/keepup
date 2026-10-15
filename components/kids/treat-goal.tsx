@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GOAL_DEFAULT_EMOJI, GOAL_DEFAULT_TARGET, GOAL_TITLE_MAX } from "@/lib/kid-schema";
 import type { TreatGoal as Goal } from "@/lib/kids";
-import { TREAT_EMOJI, TREAT_IDEAS } from "@/lib/treat-ideas";
+import { useT } from "@/lib/i18n/client";
+import { TREAT_EMOJI, TREAT_IDEAS, treatTitle } from "@/lib/treat-ideas";
 import { cn } from "@/lib/utils";
 
 const initialState: KidFormState = { status: "idle" };
@@ -121,9 +122,10 @@ function ActiveGoal({ childId, childName, goal }: { childId: string; childName: 
 const OWN = "own";
 
 function SetGoalForm({ childId }: { childId: string }) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(setGoal.bind(null, childId), initialState);
-  const [picked, setPicked] = useState<string | null>(null); // an idea's title, OWN, or nothing yet
+  const [picked, setPicked] = useState<string | null>(null); // an idea's id, OWN, or nothing yet
   const [title, setTitle] = useState("");
   const [emoji, setEmoji] = useState<string>(GOAL_DEFAULT_EMOJI);
   const [emojiOpen, setEmojiOpen] = useState(false);
@@ -153,19 +155,19 @@ function SetGoalForm({ childId }: { childId: string }) {
         <div role="group" aria-labelledby="treat-ideas" className="grid grid-cols-3 gap-2">
           {ideas.map((idea) => (
             <button
-              key={idea.title}
+              key={idea.id}
               type="button"
-              aria-pressed={picked === idea.title}
+              aria-pressed={picked === idea.id}
               onClick={() => {
-                setPicked(idea.title);
-                setTitle(idea.title);
+                setPicked(idea.id);
+                setTitle(treatTitle(t, idea.id));
                 setEmoji(idea.emoji);
                 setEmojiOpen(false);
               }}
               className={cn(tile, "border-transparent")}
             >
               <span aria-hidden className="text-4xl leading-none">{idea.emoji}</span>
-              {idea.title}
+              {treatTitle(t, idea.id)}
             </button>
           ))}
           {!allIdeas && (

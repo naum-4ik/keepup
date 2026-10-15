@@ -7,7 +7,8 @@ import { StartDatePicker } from "@/components/habits/start-date-picker";
 import { SaveButton } from "@/components/save-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
+import { categoryLabel, CATEGORY_ORDER } from "@/lib/categories";
+import { useT } from "@/lib/i18n/client";
 import { isHabitCategory, type HabitCategory } from "@/lib/habit-schema";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,7 @@ export function HabitDetailsForm({
   // Controlled, like the new-habit form's HabitFields: a failed save must keep what the user
   // typed rather than reverting to the original values (the browser resets uncontrolled
   // <form> fields to their mount-time defaultValue once the action returns).
+  const { t } = useT();
   const [values, setValues] = useState({ title, emoji, category: category ?? "", startsOn });
   const offerNone = category === null;
   const categoryRef = useRef<HTMLSelectElement>(null);
@@ -76,7 +78,7 @@ export function HabitDetailsForm({
           {offerNone && <option value="">None</option>}
           {CATEGORY_ORDER.map((c) => (
             <option key={c} value={c}>
-              {CATEGORIES[c].label}
+              {categoryLabel(t, c)}
             </option>
           ))}
         </select>

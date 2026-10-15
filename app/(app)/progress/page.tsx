@@ -5,7 +5,7 @@ import { HabitEmoji } from "@/components/habits/category-icon";
 import { StreakBadge } from "@/components/habits/streak-badge";
 import { HabitDots, WeekCard } from "@/components/overview/week-overview";
 import { Button } from "@/components/ui/button";
-import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
+import { categoryLabel, CATEGORY_ORDER } from "@/lib/categories";
 import { dayDetail } from "@/lib/day-detail";
 import { getProfile } from "@/lib/auth";
 import { todayIn } from "@/lib/dates";
@@ -91,7 +91,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
       ) : (
         categories.map((c) => (
           <section key={c} aria-labelledby={`cat-${c}-title`} className="flex flex-col gap-2">
-            <h2 id={`cat-${c}-title`} className="text-sm font-bold text-muted-foreground">{CATEGORIES[c].label}</h2>
+            <h2 id={`cat-${c}-title`} className="text-sm font-bold text-muted-foreground">{categoryLabel(t, c)}</h2>
             <ul className="flex flex-col gap-2">
               {habits
                 .filter((h) => h.category === c)

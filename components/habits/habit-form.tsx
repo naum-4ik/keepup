@@ -14,11 +14,11 @@ import { addButtonClass } from "@/components/ui/add-button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
+import { categoryLabel, CATEGORY_ORDER } from "@/lib/categories";
 import { formatLocalDate } from "@/lib/dates";
 import type { GroupKind } from "@/lib/group-schema";
 import { groupTemplatesFor } from "@/lib/group-templates";
-import { HABIT_TEMPLATES, type HabitTemplate } from "@/lib/habit-templates";
+import { HABIT_TEMPLATES, templateTitle, type HabitTemplate } from "@/lib/habit-templates";
 import { startAfterSwitch, todayForGroup } from "@/lib/habit-start";
 import {
   HABIT_TITLE_MAX, isHabitCategory, TARGET_LIMITS, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod,
@@ -86,7 +86,7 @@ export function HabitForm({
   const pickTemplate = (t: HabitTemplate) =>
     open(
       false,
-      { title: t.title, emoji: t.emoji, category: t.category, targetCount: String(t.targetCount), period: t.period },
+      { title: templateTitle(tr, t.id), emoji: t.emoji, category: t.category, targetCount: String(t.targetCount), period: t.period },
       // A Together template pre-selects a group (the one from the link, else the first).
       tab === "together" ? (initialGroupId ?? groups[0].id) : undefined,
       // Together templates are for groups only: no "Just me".
@@ -117,7 +117,7 @@ export function HabitForm({
             ) : (
               <CategoryIcon category={key} size="xs" />
             )}
-            {key === "popular" ? "Popular" : key === "together" ? "Together" : CATEGORIES[key].label}
+            {key === "popular" ? "Popular" : key === "together" ? "Together" : categoryLabel(tr, key)}
           </button>
         ))}
       </div>
@@ -134,7 +134,7 @@ export function HabitForm({
           >
             <HabitEmoji category={t.category} emoji={t.emoji} size="xs" />
             <span className="flex min-w-0 flex-col">
-              <span className="line-clamp-2 text-[0.9375rem] leading-snug font-bold">{t.title}</span>
+              <span className="line-clamp-2 text-[0.9375rem] leading-snug font-bold">{templateTitle(tr, t.id)}</span>
               <span className="text-xs text-muted-foreground">{describeSchedule(tr, t.targetCount, t.period)}</span>
             </span>
           </button>
@@ -267,7 +267,7 @@ function HabitFields({
           {/* Not `required`: the browser would block the submit and hide the other fields' messages. */}
           <option value="" disabled>Pick a category</option>
           {CATEGORY_ORDER.map((c) => (
-            <option key={c} value={c}>{CATEGORIES[c].label}</option>
+            <option key={c} value={c}>{categoryLabel(tr, c)}</option>
           ))}
         </select>
         {errors.category && <p id="category-error" className="text-sm text-destructive">{errors.category}</p>}

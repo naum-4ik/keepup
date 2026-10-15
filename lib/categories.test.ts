@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { CATEGORIES, CATEGORY_ORDER, habitEmoji, normalizeCategory } from "./categories";
+import { tEn } from "@/lib/i18n/test-t";
+import { categoryLabel, CATEGORIES, CATEGORY_ORDER, habitEmoji, normalizeCategory } from "./categories";
 
 describe("CATEGORIES", () => {
   it("has Work & money in place of Money, and a default emoji per category", () => {
     expect(CATEGORY_ORDER).toEqual(["health", "fitness", "mind", "learning", "people", "home", "work_money", "break_habit"]);
-    expect(CATEGORIES.work_money.label).toBe("Work & money");
+    expect(categoryLabel(tEn, "work_money")).toBe("Work & money");
     expect(CATEGORY_ORDER.map((c) => CATEGORIES[c].defaultEmoji)).toEqual(["🍎", "👟", "🌿", "📚", "💛", "🏠", "💼", "🚫"]);
   });
 });

@@ -10,7 +10,7 @@ import { errorText } from "@/lib/field-error";
 import { getT } from "@/lib/i18n/server";
 import { isOneEmoji, isUuid, parseHabit } from "@/lib/habit-schema";
 import { isKidTheme } from "@/lib/garden";
-import { isKidTemplateId, KID_TEMPLATES } from "@/lib/kid-templates";
+import { isKidTemplateId, KID_TEMPLATES, kidTemplateTitle } from "@/lib/kid-templates";
 import { parseChildName, parseGoal } from "@/lib/kid-schema";
 import { logError, track } from "@/lib/log";
 
@@ -86,19 +86,20 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
 
   let habitsFailed = false;
   // In template order, so her habit list reads like the picker.
-  for (const t of KID_TEMPLATES.filter((t) => picked.has(t.id))) {
+  for (const tpl of KID_TEMPLATES.filter((x) => picked.has(x.id))) {
+    const title = kidTemplateTitle(t, tpl.id);
     const { error: habitError } = await supabase.rpc("create_child_habit", {
       p_child_id: childId,
-      p_title: t.title,
-      p_emoji: t.emoji,
-      p_target_count: t.targetCount,
-      p_period: t.period,
+      p_title: title,
+      p_emoji: tpl.emoji,
+      p_target_count: tpl.targetCount,
+      p_period: tpl.period,
     });
     if (habitError) {
       logError("create_child_habit failed", habitError.message);
       habitsFailed = true;
     } else {
-      track("child_habit_added", who, { "child.id": childId, "child.nickname": name.value, "habit.title": t.title, "habit.period": t.period, "habit.target_count": t.targetCount });
+      track("child_habit_added", who, { "child.id": childId, "child.nickname": name.value, "habit.title": title, "habit.period": tpl.period, "habit.target_count": tpl.targetCount });
     }
   }
   refresh(childId);
@@ -131,9 +132,9 @@ export async function addChildHabit(childId: string, _prev: KidFormState, formDa
   const templateId = String(formData.get("templateId") ?? "");
   let habit: { title: string; emoji: string; targetCount: number; period: "day" | "week" | "month" };
   if (templateId) {
-    const t = KID_TEMPLATES.find((x) => x.id === templateId);
-    if (!t) return { status: "error", message: "Pick a habit." };
-    habit = { title: t.title, emoji: t.emoji, targetCount: t.targetCount, period: t.period };
+    const tpl = KID_TEMPLATES.find((x) => x.id === templateId);
+    if (!tpl) return { status: "error", message: "Pick a habit." };
+    habit = { title: kidTemplateTitle(t, tpl.id), emoji: tpl.emoji, targetCount: tpl.targetCount, period: tpl.period };
   } else {
     const emoji = String(formData.get("emoji") ?? "").trim();
     if (emoji !== "" && !isOneEmoji(emoji)) return { status: "error", message: "Pick one emoji." };

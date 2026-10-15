@@ -17,7 +17,7 @@ import { NudgeButton } from "@/components/habits/nudge-button";
 import { PauseMeForm } from "@/components/habits/pause-me-form";
 import { RenderedTaps } from "@/components/offline/offline-queue-provider";
 import { getProfile } from "@/lib/auth";
-import { CATEGORIES } from "@/lib/categories";
+import { CATEGORIES, categoryLabel } from "@/lib/categories";
 import { todayIn } from "@/lib/dates";
 import { isUuid, type HabitPeriod } from "@/lib/habit-schema";
 import { getGroupDetail } from "@/lib/groups";
@@ -164,7 +164,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
           <p className="text-sm text-muted-foreground">
             {h.group_id
               ? `${h.group_name} · ${describeSchedule(t, h.target_count, h.period)}${h.requires_approval ? " · needs approval" : ""}`
-              : `${describeSchedule(t, h.target_count, h.period)}${h.category ? ` · ${CATEGORIES[h.category].label}` : ""}`}
+              : `${describeSchedule(t, h.target_count, h.period)}${h.category ? ` · ${categoryLabel(t, h.category)}` : ""}`}
             {archived && " · Archived"}
           </p>
         </div>
