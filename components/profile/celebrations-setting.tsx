@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { setCelebrations } from "@/app/(app)/profile/settings/actions";
+import { useTranslations } from "next-intl";
 import type { CelebrationMode } from "@/lib/celebrations";
 
 const pillClass =
@@ -10,6 +11,8 @@ const pillClass =
 // §9: Full plays a short full-screen moment with confetti for level-ups and new badges; Subtle shows a
 // small card instead. Check-in bounce and haptics stay either way; reduced motion is always respected.
 export function CelebrationsSetting({ saved }: { saved: CelebrationMode }) {
+  const t = useTranslations("settings.celebrations");
+  const tc = useTranslations("common");
   const [value, setValue] = useState<CelebrationMode>(saved);
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState<string | null>(null);
@@ -20,26 +23,26 @@ export function CelebrationsSetting({ saved }: { saved: CelebrationMode }) {
     setNote(null);
     startTransition(async () => {
       const r = await setCelebrations(next);
-      setNote(r.ok ? "Saved" : r.message);
+      setNote(r.ok ? tc("saved") : r.message);
       if (!r.ok) setValue(before);
     });
   }
 
   return (
-    <section aria-label="Celebrations settings" className="flex flex-col gap-3 rounded-2xl bg-card p-6 shadow-soft">
-      <h2 id="celebrations-label" className="text-base font-bold">Celebrations</h2>
-      <p className="text-sm text-muted-foreground">How level-ups and new badges appear.</p>
+    <section aria-label={t("label")} className="flex flex-col gap-3 rounded-2xl bg-card p-6 shadow-soft">
+      <h2 id="celebrations-label" className="text-base font-bold">{t("title")}</h2>
+      <p className="text-sm text-muted-foreground">{t("hint")}</p>
       <div role="radiogroup" aria-labelledby="celebrations-label" className="grid grid-cols-2 gap-2">
-        {([["full", "Full"], ["subtle", "Subtle"]] as const).map(([mode, label]) => (
+        {(["full", "subtle"] as const).map((mode) => (
           <label key={mode} className={pillClass}>
             <input type="radio" name="celebrations" value={mode} checked={value === mode} disabled={pending}
               onChange={() => choose(mode)} className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0" />
-            {label}
+            {t(mode)}
           </label>
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        {value === "full" ? "A short full-screen moment with confetti." : "A small card at the bottom, no confetti."}
+        {t(value === "full" ? "fullHint" : "subtleHint")}
       </p>
       {/* aria-live, not role="status": Settings' profile form already has the page's one status ("Saved"), which e2e reads. */}
       <p aria-live="polite" className="min-h-4 text-xs text-muted-foreground">{note}</p>

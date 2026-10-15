@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition, type ReactNode } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { deleteAccountPreview, deleteMyAccount, exportMyData } from "@/app/(app)/profile/settings/actions";
 import { forgetPushSubscription } from "@/app/(app)/profile/settings/notification-actions";
@@ -21,6 +21,7 @@ import { browserSubscription, signOutCleanup } from "@/lib/push-support";
 
 // Saves everything Keepup keeps about this person as keepup-my-data-{date}.json.
 function ExportMyDataButton() {
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
@@ -39,7 +40,7 @@ function ExportMyDataButton() {
           })
         }
       >
-        {pending ? "Exporting…" : "Export my data"}
+        {pending ? t("common.exporting") : t("myData.export")}
       </Button>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </div>
@@ -55,7 +56,7 @@ export function MyData({ isDemo = false }: { isDemo?: boolean }) {
   const { t } = useT();
   return (
     <section aria-labelledby="my-data-title" className="flex flex-col gap-3 rounded-2xl bg-card p-6 shadow-soft">
-      <h2 id="my-data-title" className="text-base font-bold">Your data</h2>
+      <h2 id="my-data-title" className="text-base font-bold">{t("myData.title")}</h2>
       <p className="text-sm text-muted-foreground">{t("myData.exportHint")}</p>
       <ExportMyDataButton />
       {!isDemo && <DeleteAccount />}
@@ -64,10 +65,10 @@ export function MyData({ isDemo = false }: { isDemo?: boolean }) {
 }
 
 function DeleteAccount() {
-  const { t, locale } = useT();
+  const { t, rich, locale } = useT();
   const [open, setOpen] = useState(false);
   const [word, setWord] = useState("");
-  const [lines, setLines] = useState<string[] | null>(null);
+  const [lines, setLines] = useState<ReactNode[] | null>(null);
   // The preview loads outside the transition: Cancel and Escape work meanwhile; only the delete holds
   // the dialog open. Until it's in, Delete stays off.
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -82,10 +83,10 @@ function DeleteAccount() {
     const id = ++request.current;
     setLines(null);
     setPreviewError(null);
-    let next: { lines: string[] } | { error: string };
+    let next: { lines: ReactNode[] } | { error: string };
     try {
       const preview = await deleteAccountPreview();
-      next = preview ? { lines: deletePreviewLines(t, locale, preview) } : { error: t("errors.generic") };
+      next = preview ? { lines: deletePreviewLines(rich, locale, preview) } : { error: t("errors.generic") };
     } catch {
       next = { error: navigator.onLine ? t("errors.generic") : t("offline.needsConnection") };
     }
@@ -138,7 +139,7 @@ function DeleteAccount() {
   return (
     <>
       <Button type="button" variant="outline" className="h-11 text-destructive hover:text-destructive" onClick={openDialog}>
-        Delete account
+        {t("myData.deleteAccount")}
       </Button>
       <Dialog open={open} onOpenChange={(next) => !pending && !next && close()}>
         <DialogContent>
@@ -148,8 +149,8 @@ function DeleteAccount() {
           </div>
           {lines && lines.length > 0 && (
             <ul className="flex flex-col gap-1 text-sm">
-              {lines.map((line) => (
-                <li key={line}>{line}</li>
+              {lines.map((line, i) => (
+                <li key={i}>{line}</li>
               ))}
             </ul>
           )}
@@ -171,7 +172,7 @@ function DeleteAccount() {
             }}
           >
             <label htmlFor={inputId} className="text-sm font-semibold">
-              Type &ldquo;{t("myData.deleteWord")}&rdquo; to confirm
+              {t("settings.typeToConfirm", { word: t("myData.deleteWord") })}
             </label>
             <Input
               id={inputId}
@@ -185,10 +186,10 @@ function DeleteAccount() {
             {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2">
               <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={close}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button type="submit" variant="destructive" className="h-11 flex-1" disabled={pending || !ready || !isDeleteWord(t, word)}>
-                {pending ? "Deleting…" : "Delete"}
+                {pending ? t("common.deleting") : t("common.delete")}
               </Button>
             </div>
           </form>

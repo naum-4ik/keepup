@@ -17,6 +17,13 @@ export function parseChildName(raw: string): Parsed<string> {
   return { ok: true, value };
 }
 
+export type KidGender = "boy" | "girl";
+
+// The optional boy/girl choice (for gendered words in Russian and Hebrew). Anything else = not set.
+export function parseGender(raw: string | null | undefined): KidGender | null {
+  return raw === "boy" || raw === "girl" ? raw : null;
+}
+
 // A treat goal: 1–200 stars (the treat_goals check), a short title, one emoji (🎁 when none).
 export function parseGoal(values: { title: string; emoji: string; target: string }): Parsed<{ title: string; emoji: string; target: number }> {
   const title = values.title.trim();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { tEn } from "@/lib/i18n/test-t";
+import { markup, richEn, tEn } from "@/lib/i18n/test-t";
 import { deletePreviewLines, isDeleteWord, myDataFileName, runDelete } from "./my-data";
 
 describe("my data", () => {
@@ -17,23 +17,23 @@ describe("my data", () => {
   });
   it("explains what goes and who takes over", () => {
     expect(
-      deletePreviewLines(tEn, "en", {
+      deletePreviewLines(richEn, "en", {
         groups_deleted: [{ name: "Solo", children: ["Leo"] }, { name: "Book", children: [] }],
         admin_handover: [{ group: "Family", new_admin: "Ben" }],
-      }),
+      }).map(markup),
     ).toEqual([
-      "\u2068Solo\u2069 will be deleted, with \u2068Leo\u2069's profile.",
-      "\u2068Book\u2069 will be deleted.",
-      "\u2068Ben\u2069 becomes the admin of \u2068Family\u2069.",
+      "<bdi>Solo</bdi> will be deleted, with <bdi>Leo</bdi>'s profile.",
+      "<bdi>Book</bdi> will be deleted.",
+      "<bdi>Ben</bdi> becomes the admin of <bdi>Family</bdi>.",
     ]);
   });
   it("lists several children with their own possessives", () => {
-    expect(deletePreviewLines(tEn, "en", { groups_deleted: [{ name: "Home", children: ["Leo", "Mia"] }], admin_handover: [] })).toEqual([
-      "\u2068Home\u2069 will be deleted, with \u2068Leo\u2069's and \u2068Mia\u2069's profiles.",
+    expect(deletePreviewLines(richEn, "en", { groups_deleted: [{ name: "Home", children: ["Leo", "Mia"] }], admin_handover: [] }).map(markup)).toEqual([
+      "<bdi>Home</bdi> will be deleted, with <bdi>Leo</bdi>'s and <bdi>Mia</bdi>'s profiles.",
     ]);
   });
   it("says nothing extra when no group is affected", () => {
-    expect(deletePreviewLines(tEn, "en", { groups_deleted: [], admin_handover: [] })).toEqual([]);
+    expect(deletePreviewLines(richEn, "en", { groups_deleted: [], admin_handover: [] })).toEqual([]);
   });
 });
 

@@ -16,7 +16,7 @@ export const ERROR_CODES = [
   "habit_not_ended", "end_passed", "bad_range", "not_archived",
   "habit_finished", "already_nudged", "cannot_nudge", "cannot_cheer",
   "invalid_category", "invalid_choice", "invalid_subscription", "invalid_time",
-  "tap_in_future",
+  "tap_in_future", "invalid_gender",
 ] as const;
 const KNOWN = new Set<string>(ERROR_CODES);
 

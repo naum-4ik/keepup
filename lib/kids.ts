@@ -6,8 +6,10 @@ import type { Database } from "@/lib/database.types";
 import type { HabitSummary } from "@/lib/habits";
 import { logError } from "@/lib/log";
 
-export type MyChild = Omit<Database["public"]["Functions"]["my_children"]["Returns"][number], "avatar_color"> & {
+export type MyChild = Omit<Database["public"]["Functions"]["my_children"]["Returns"][number], "avatar_color" | "gender"> & {
   avatar_color: AvatarColor | null;
+  // null = not set (kid copy then uses neutral wording)
+  gender: "boy" | "girl" | null;
 };
 
 export type TreatGoal = {

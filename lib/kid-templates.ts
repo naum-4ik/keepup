@@ -48,3 +48,27 @@ export function kidTemplatesByGroup(templates: readonly KidTemplate[]): { group:
     (g) => g.templates.length > 0,
   );
 }
+
+// Each template's title in every language that has a catalog (Partial: ru and he join as their files land).
+export type KidTemplateTitles = Record<string, string[]>;
+type Catalog = { templates?: { kid?: Record<string, string> } };
+export function kidTemplateTitlesIn(catalogs: Record<string, unknown>): KidTemplateTitles {
+  const out: KidTemplateTitles = {};
+  for (const c of Object.values(catalogs)) {
+    for (const [id, title] of Object.entries((c as Catalog | undefined)?.templates?.kid ?? {})) {
+      if (!(out[id] ??= []).includes(title)) out[id].push(title);
+    }
+  }
+  return out;
+}
+
+// The templates a child doesn't have yet: a habit counts as the template when its title is the
+// template's title in ANY language (so switching the app's language doesn't bring them back).
+export function templatesLeft<T extends { id: string }>(
+  templates: readonly T[],
+  titles: KidTemplateTitles,
+  have: ReadonlySet<string>,
+  currentTitle: (id: string) => string,
+): T[] {
+  return templates.filter((t) => !have.has(currentTitle(t.id)) && !(titles[t.id] ?? []).some((x) => have.has(x)));
+}

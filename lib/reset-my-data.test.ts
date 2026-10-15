@@ -1,14 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 import { tEn } from "@/lib/i18n/test-t";
-import { isResetWord, RESET_CLEARS, RESET_KEEPS, runReset } from "./reset-my-data";
+import { isResetWord, runReset } from "./reset-my-data";
+
+const RESET_CLEARS = tEn("settings.reset.clears");
+const RESET_KEEPS = tEn("settings.reset.keeps");
 
 describe("Reset my data", () => {
   it("asks for the word reset, in any case", () => {
-    expect(isResetWord("reset")).toBe(true);
-    expect(isResetWord("  Reset ")).toBe(true);
-    expect(isResetWord("")).toBe(false);
-    expect(isResetWord("rese")).toBe(false);
-    expect(isResetWord("reset please")).toBe(false);
+    expect(isResetWord(tEn, "reset")).toBe(true);
+    expect(isResetWord(tEn, "  Reset ")).toBe(true);
+    expect(isResetWord(tEn, "")).toBe(false);
+    expect(isResetWord(tEn, "rese")).toBe(false);
+    expect(isResetWord(tEn, "reset please")).toBe(false);
   });
 
   it("says what goes and what stays, calmly: no guilt words, at most one emoji per line", () => {

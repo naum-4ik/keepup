@@ -38,7 +38,7 @@ test("deleting a group with a child asks again, and Cancel resets that step", as
 
   await page.getByRole("button", { name: "Delete group" }).click();
   await dialog.getByRole("button", { name: "Delete group" }).click();
-  await expect(dialog.getByRole("alert")).toHaveText("\u2068Mary\u2069's profile and history will be deleted.");
+  await expect(dialog.getByRole("alert")).toHaveText("Mary's profile and history will be deleted.");
   await dialog.getByRole("button", { name: "Cancel" }).click();
   await expect(dialog).toBeHidden();
 
@@ -47,7 +47,7 @@ test("deleting a group with a child asks again, and Cancel resets that step", as
   await expect(dialog.getByRole("alert")).toBeHidden();
   await expect(dialog.getByRole("button", { name: "Delete anyway" })).toBeHidden();
   await dialog.getByRole("button", { name: "Delete group" }).click();
-  await expect(dialog.getByRole("alert")).toHaveText("\u2068Mary\u2069's profile and history will be deleted.");
+  await expect(dialog.getByRole("alert")).toHaveText("Mary's profile and history will be deleted.");
   await dialog.getByRole("button", { name: "Delete anyway" }).click();
   await expect(page).toHaveURL(/\/groups$/);
   await expect(page.getByText("Levi family")).toBeHidden();
@@ -116,7 +116,7 @@ test("the member menu closes on Escape and on a tap outside", async ({ page, bro
   await joinByLink(guest, url, "Dan");
   await page.reload();
   // A real button for assistive tech (a flex <summary> loses its role in some engines), with its state.
-  const summary = page.getByRole("button", { name: /Options for Dan/ });
+  const summary = page.getByRole("button", { name: /Options for \u2068Dan\u2069/ });
   const makeAdmin = page.getByRole("button", { name: "Make admin" });
   await expect(summary).toHaveAttribute("aria-expanded", "false");
   await summary.click();

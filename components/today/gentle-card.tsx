@@ -9,16 +9,17 @@ import { Button } from "@/components/ui/button";
 import type { GentleCard as GentleCardData } from "@/lib/today-cards";
 
 // ideas/onboarding.md → the gentle cards after the first check-in. One at a time, dismissable.
-const COPY_KEY = { invite_family: "inviteFamily", invite_friend: "inviteFriend", add_child: "addChild" } as const;
+const COPY_KEY = { invite_family: "inviteFamily", invite_friend: "inviteFriend" } as const;
 
 export function GentleCard({ card }: { card: GentleCardData }) {
   const t = useTranslations("today.gentle");
+  const tg = useTranslations("groups.detail");
   const [hidden, setHidden] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   if (hidden) return null;
 
-  const copyKey = "groupId" in card ? COPY_KEY.add_child : COPY_KEY[card.key];
+  const copyKey = "groupId" in card ? "addChild" : COPY_KEY[card.key];
   const Icon = "groupId" in card ? Baby : UserPlus;
   const invite = () =>
     startTransition(async () => {
@@ -37,11 +38,11 @@ export function GentleCard({ card }: { card: GentleCardData }) {
         <div className="pt-2">
           {"groupId" in card ? (
             <Button asChild size="lg" className="h-11 px-4">
-              <Link href={`/kids/new?group=${card.groupId}`}>{t(`${copyKey}.cta`)}</Link>
+              <Link href={`/kids/new?group=${card.groupId}`}>{tg("addChild")}</Link>
             </Button>
           ) : (
             <Button size="lg" className="h-11 px-4" disabled={pending} onClick={invite}>
-              {t(`${copyKey}.cta`)}
+              {t(`${COPY_KEY[card.key]}.cta`)}
             </Button>
           )}
         </div>

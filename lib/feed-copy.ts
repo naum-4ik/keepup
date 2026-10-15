@@ -86,7 +86,7 @@ export function feedCopy(t: T, locale: Locale, n: FeedItem): { title: string; bo
     }
     case "cheer": return { title: habit, body: t("feed.cheer", { who: isolate(who) }), href: habitHref };
     case "kid_check_in":
-      return { title: kid, body: n.actor_name ? t("feed.kidLoggedBy", { adult: isolate(who), habit: isolate(habit), kid: isolate(kid) }) : t("feed.kidDidIt", { kid: isolate(kid), habit: isolate(habit) }), href: kidHref };
+      return { title: kid, body: n.actor_name ? t("feed.kidLoggedBy", { adult: isolate(who), habit: isolate(habit), kid: isolate(kid) }) : t("feed.kidDidIt", { gender: "other", kid: isolate(kid), habit: isolate(habit) }), href: kidHref };
     case "kid_streak": return { ...copy.kidStreak(t, kid, streak, habit), href: kidHref };
     case "kid_goal_reached": {
       const goal = copy.kidTreatGoal(t, kid, String(n.payload.title ?? ""), String(n.payload.emoji ?? ""));

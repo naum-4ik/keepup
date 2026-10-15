@@ -5,8 +5,6 @@ import { groupKindLabel, isGroupKind } from "@/lib/group-schema";
 import type { MyGroup } from "@/lib/groups";
 import type { T } from "@/supabase/functions/_shared/i18n";
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
 export function KindChip({ kind, t }: { kind: string; t: T }) {
   return (
     <span className="inline-flex h-6 items-center rounded-full bg-muted px-2.5 text-xs font-semibold text-muted-foreground">
@@ -16,8 +14,11 @@ export function KindChip({ kind, t }: { kind: string; t: T }) {
 }
 
 export function GroupCard({ group, t }: { group: MyGroup; t: T }) {
-  const counts = [plural(group.member_count, "member", "members")];
-  if (group.child_count > 0) counts.push(plural(group.child_count, "child", "children"));
+  const counts = t("groups.card.counts", {
+    members: group.member_count,
+    children: group.child_count,
+    withChildren: group.child_count > 0 ? "yes" : "no",
+  });
   return (
     <Link
       href={`/groups/${group.group_id}`}
@@ -31,7 +32,7 @@ export function GroupCard({ group, t }: { group: MyGroup; t: T }) {
         <span className="truncate font-bold">{group.name}</span>
         <span className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <KindChip kind={group.kind} t={t} />
-          <span className="tabular-nums">{counts.join(" · ")}</span>
+          <span className="tabular-nums">{counts}</span>
         </span>
       </span>
       <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />

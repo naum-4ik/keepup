@@ -11,7 +11,7 @@ import { getT } from "@/lib/i18n/server";
 import { isOneEmoji, isUuid, parseHabit } from "@/lib/habit-schema";
 import { isKidTheme } from "@/lib/garden";
 import { isKidTemplateId, KID_TEMPLATES, kidTemplateTitle } from "@/lib/kid-templates";
-import { parseChildName, parseGoal } from "@/lib/kid-schema";
+import { parseChildName, parseGender, parseGoal } from "@/lib/kid-schema";
 import { logError, track } from "@/lib/log";
 
 // code: the database rule that refused it ("keepup:<code>"), when there was one (an offline-queued
@@ -19,8 +19,10 @@ import { logError, track } from "@/lib/log";
 export type KidActionResult = { ok: true } | { ok: false; message: string; code?: string };
 export type KidFormState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string };
 
-const NO_CHILD = "That child isn't available.";
-const NOT_FOUND: KidActionResult = { ok: false, message: NO_CHILD };
+const notAvailable = async (): Promise<KidActionResult> => {
+  const { t } = await getT();
+  return { ok: false, message: t("errors.childUnavailable") };
+};
 
 // The child's pages, Today, and the group pages (a child's avatar and habits show on them).
 function refresh(childId?: string) {
@@ -65,11 +67,12 @@ function readAvatar(formData: FormData) {
 export async function addChild(_prev: KidFormState, formData: FormData): Promise<KidFormState> {
   const { t } = await getT();
   const groupId = String(formData.get("groupId") ?? "");
-  if (!isUuid(groupId)) return { status: "error", message: "Pick a group." };
+  if (!isUuid(groupId)) return { status: "error", message: t("habits.actions.pickGroup") };
   const name = parseChildName(String(formData.get("name") ?? ""));
   if (!name.ok) return { status: "error", message: errorText(t, name.error) };
   if (formData.get("guardian") !== "on") return { status: "error", message: habitErrorMessage(t, { message: "keepup:guardian_required" }) };
   const avatar = readAvatar(formData);
+  const gender = parseGender(formData.get("gender") as string | null);
   const picked = new Set(formData.getAll("templates").map(String).filter(isKidTemplateId));
 
   const { supabase, who } = await requireUser();
@@ -83,6 +86,12 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
   });
   if (error || !childId) return { status: "error", message: habitErrorMessage(t, error) };
   track("child_added", who, { "child.id": childId, "child.nickname": name.value, "group.id": groupId });
+
+  // Optional. The child exists by now, so a failure here is logged and her page still opens.
+  if (gender) {
+    const { error: genderError } = await supabase.rpc("set_child_gender", { p_child_id: childId, p_gender: gender });
+    if (genderError) logError("set_child_gender failed", genderError.message);
+  }
 
   let habitsFailed = false;
   // In template order, so her habit list reads like the picker.
@@ -109,10 +118,12 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
 
 export async function updateChild(childId: string, _prev: KidFormState, formData: FormData): Promise<KidFormState> {
   const { t } = await getT();
-  if (!isUuid(childId)) return { status: "error", message: NO_CHILD };
+  if (!isUuid(childId)) return { status: "error", message: t("errors.childUnavailable") };
   const name = parseChildName(String(formData.get("name") ?? ""));
   if (!name.ok) return { status: "error", message: errorText(t, name.error) };
   const avatar = readAvatar(formData);
+  const gender = parseGender(formData.get("gender") as string | null);
+  const previousGender = parseGender(formData.get("previousGender") as string | null);
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("update_child", {
     p_child_id: childId,
@@ -121,6 +132,11 @@ export async function updateChild(childId: string, _prev: KidFormState, formData
     ...(avatar.color ? { p_avatar_color: avatar.color } : {}),
   });
   if (error) return { status: "error", message: habitErrorMessage(t, error) };
+  // "Not set" posts "" (null) and clears it; an unchanged choice skips the call.
+  if (gender !== previousGender) {
+    const { error: genderError } = await supabase.rpc("set_child_gender", { p_child_id: childId, p_gender: gender as unknown as string });
+    if (genderError) return { status: "error", message: habitErrorMessage(t, genderError) };
+  }
   refresh(childId);
   return { status: "saved" };
 }
@@ -128,16 +144,16 @@ export async function updateChild(childId: string, _prev: KidFormState, formData
 // A kid template (templateId) or "Create your own" (title, emoji, targetCount, period).
 export async function addChildHabit(childId: string, _prev: KidFormState, formData: FormData): Promise<KidFormState> {
   const { t } = await getT();
-  if (!isUuid(childId)) return { status: "error", message: NO_CHILD };
+  if (!isUuid(childId)) return { status: "error", message: t("errors.childUnavailable") };
   const templateId = String(formData.get("templateId") ?? "");
   let habit: { title: string; emoji: string; targetCount: number; period: "day" | "week" | "month" };
   if (templateId) {
     const tpl = KID_TEMPLATES.find((x) => x.id === templateId);
-    if (!tpl) return { status: "error", message: "Pick a habit." };
+    if (!tpl) return { status: "error", message: t("kids.errors.pickHabit") };
     habit = { title: kidTemplateTitle(t, tpl.id), emoji: tpl.emoji, targetCount: tpl.targetCount, period: tpl.period };
   } else {
     const emoji = String(formData.get("emoji") ?? "").trim();
-    if (emoji !== "" && !isOneEmoji(emoji)) return { status: "error", message: "Pick one emoji." };
+    if (emoji !== "" && !isOneEmoji(emoji)) return { status: "error", message: t("validation.emoji") };
     // The adult habit rules, minus the category (kid habits have none).
     const parsed = parseHabit({
       title: String(formData.get("title") ?? ""),
@@ -169,7 +185,7 @@ export async function addChildHabit(childId: string, _prev: KidFormState, formDa
 }
 
 export async function undoForChild(checkInId: string, habitId: string, childId: string): Promise<KidActionResult> {
-  if (!isUuid(checkInId) || !isUuid(habitId) || !isUuid(childId)) return NOT_FOUND;
+  if (!isUuid(checkInId) || !isUuid(habitId) || !isUuid(childId)) return notAvailable();
   const { supabase, who } = await requireUser();
   const result = await call(childId, () => supabase.rpc("undo_check_in", { p_check_in_id: checkInId }), {
     name: "check_in_undone",
@@ -182,7 +198,7 @@ export async function undoForChild(checkInId: string, habitId: string, childId: 
 
 export async function setGoal(childId: string, _prev: KidFormState, formData: FormData): Promise<KidFormState> {
   const { t } = await getT();
-  if (!isUuid(childId)) return { status: "error", message: NO_CHILD };
+  if (!isUuid(childId)) return { status: "error", message: t("errors.childUnavailable") };
   const goal = parseGoal({
     title: String(formData.get("title") ?? ""),
     emoji: String(formData.get("emoji") ?? ""),
@@ -203,13 +219,13 @@ export async function setGoal(childId: string, _prev: KidFormState, formData: Fo
 }
 
 export async function cancelGoal(goalId: string, childId: string): Promise<KidActionResult> {
-  if (!isUuid(goalId) || !isUuid(childId)) return NOT_FOUND;
+  if (!isUuid(goalId) || !isUuid(childId)) return notAvailable();
   const { supabase } = await requireUser();
   return call(childId, () => supabase.rpc("cancel_treat_goal", { p_goal_id: goalId }));
 }
 
 export async function markReceived(goalId: string, childId: string): Promise<KidActionResult> {
-  if (!isUuid(goalId) || !isUuid(childId)) return NOT_FOUND;
+  if (!isUuid(goalId) || !isUuid(childId)) return notAvailable();
   const { supabase, who } = await requireUser();
   return call(childId, () => supabase.rpc("mark_treat_received", { p_goal_id: goalId }), {
     name: "treat_received",
@@ -220,14 +236,14 @@ export async function markReceived(goalId: string, childId: string): Promise<Kid
 
 // Admins of both groups (the RPC enforces it).
 export async function moveChild(childId: string, toGroupId: string): Promise<KidActionResult> {
-  if (!isUuid(childId) || !isUuid(toGroupId)) return NOT_FOUND;
+  if (!isUuid(childId) || !isUuid(toGroupId)) return notAvailable();
   const { supabase } = await requireUser();
   return call(childId, () => supabase.rpc("move_child", { p_child_id: childId, p_to_group_id: toGroupId }));
 }
 
 // Driven by a confirm dialog; on success the page is gone, so go to the group list.
 export async function deleteChild(childId: string): Promise<KidActionResult> {
-  if (!isUuid(childId)) return NOT_FOUND;
+  if (!isUuid(childId)) return notAvailable();
   const { supabase } = await requireUser();
   const result = await call(undefined, () => supabase.rpc("delete_child", { p_child_id: childId }));
   if (!result.ok) return result;
@@ -237,7 +253,7 @@ export async function deleteChild(childId: string): Promise<KidActionResult> {
 
 // Reset (admins; the RPC enforces it): everything except the nickname and avatar is cleared.
 export async function resetChild(childId: string): Promise<KidActionResult> {
-  if (!isUuid(childId)) return NOT_FOUND;
+  if (!isUuid(childId)) return notAvailable();
   const { supabase, who } = await requireUser();
   return call(childId, () => supabase.rpc("reset_child", { p_child_id: childId }), { name: "child_reset", who, fields: { "child.id": childId } });
 }
@@ -245,7 +261,7 @@ export async function resetChild(childId: string): Promise<KidActionResult> {
 // The JSON for "Export {Mary}'s data"; the client saves it as a file.
 export async function exportChild(childId: string): Promise<{ ok: true; data: unknown } | { ok: false; message: string }> {
   const { t } = await getT();
-  if (!isUuid(childId)) return { ok: false, message: NO_CHILD };
+  if (!isUuid(childId)) return { ok: false, message: t("errors.childUnavailable") };
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("export_child", { p_child_id: childId });
   if (error) return { ok: false, message: habitErrorMessage(t, error) };
@@ -253,10 +269,13 @@ export async function exportChild(childId: string): Promise<{ ok: true; data: un
 }
 
 export async function setChildTheme(childId: string, theme: string): Promise<KidActionResult> {
-  if (!isUuid(childId) || !isKidTheme(theme)) return NOT_FOUND;
+  if (!isUuid(childId) || !isKidTheme(theme)) return notAvailable();
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("set_child_theme", { p_child_id: childId, p_theme: theme });
-  if (error) return { ok: false, message: "Couldn't change it. Try again." };
+  if (error) {
+    const { t } = await getT();
+    return { ok: false, message: t("kids.errors.themeFailed") };
+  }
   revalidatePath(`/kids/${childId}`);
   revalidatePath(`/kids/${childId}/play`);
   return { ok: true };

@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { Ellipsis } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { removeMember, setMemberRole, type GroupActionState } from "@/app/(app)/groups/actions";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import type { GroupMember } from "@/lib/groups";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 
 const menuItem = "flex min-h-11 w-full items-center rounded-xl px-3 text-left text-sm font-semibold hover:bg-muted disabled:opacity-50";
 
@@ -23,6 +25,9 @@ export function MemberRow({
   isSelf: boolean;
   canManage: boolean;
 }) {
+  const t = useTranslations("groups.member");
+  const tc = useTranslations("common");
+  const bdi = (c: ReactNode) => <bdi>{c}</bdi>;
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -66,10 +71,10 @@ export function MemberRow({
     <li className="flex flex-col gap-1">
       <div className="flex min-h-11 items-center gap-3">
         <Avatar name={member.name} emoji={member.avatar_emoji} color={member.avatar_color} size="md" />
-        <span className="min-w-0 flex-1 truncate font-semibold">{isSelf ? "You" : member.name}</span>
+        <span className="min-w-0 flex-1 truncate font-semibold">{isSelf ? t("you") : member.name}</span>
         {isAdmin && (
           <span className="inline-flex h-6 items-center rounded-full bg-accent px-2.5 text-xs font-semibold text-accent-foreground">
-            Admin
+            {t("admin")}
           </span>
         )}
         {canManage && (
@@ -78,7 +83,7 @@ export function MemberRow({
             <summary
               role="button"
               aria-expanded={menuOpen}
-              aria-label={`Options for ${member.name}`}
+              aria-label={t("options", { name: isolate(member.name) })}
               className="flex size-11 list-none items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground [&::-webkit-details-marker]:hidden"
             >
               <Ellipsis aria-hidden className="size-5" />
@@ -90,7 +95,7 @@ export function MemberRow({
                 className={menuItem}
                 onClick={() => run(() => setMemberRole(groupId, member.id, isAdmin ? "member" : "admin"))}
               >
-                {isAdmin ? "Make member" : "Make admin"}
+                {isAdmin ? t("makeMember") : t("makeAdmin")}
               </button>
               <button
                 type="button"
@@ -101,7 +106,7 @@ export function MemberRow({
                   setConfirming(true);
                 }}
               >
-                Remove from group
+                {t("remove")}
               </button>
             </div>
           </details>
@@ -112,15 +117,15 @@ export function MemberRow({
       <Dialog open={confirming} onOpenChange={(next) => !pending && setConfirming(next)}>
         <DialogContent>
           <div className="flex flex-col gap-1 pr-10">
-            <DialogTitle>Remove {member.name}?</DialogTitle>
+            <DialogTitle>{t.rich("removeTitle", { name: member.name, bdi })}</DialogTitle>
             <DialogDescription>
-              They leave {groupName} and stop seeing its habits. Their own habits stay with them.
+              {t.rich("removeDescription", { group: groupName, bdi })}
             </DialogDescription>
           </div>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <div className="flex gap-2">
             <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => setConfirming(false)}>
-              Cancel
+              {tc("cancel")}
             </Button>
             <Button
               type="button"
@@ -129,7 +134,7 @@ export function MemberRow({
               disabled={pending}
               onClick={() => run(() => removeMember(groupId, member.id), () => setConfirming(false))}
             >
-              {pending ? "Removing…" : "Remove"}
+              {pending ? t("removing") : t("confirmRemove")}
             </Button>
           </div>
         </DialogContent>

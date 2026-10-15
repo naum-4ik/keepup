@@ -2,7 +2,9 @@
 // (`myData.*`): the delete word, title, body, hints, and the failed-delete line (a reload brings back
 // the check-in queue and push) and the note on the landing page right after a delete (?deleted=1).
 import { deviceTimeZone, todayIn } from "@/lib/dates";
-import { INTL_LOCALE, isolate, type Locale, type T } from "@/supabase/functions/_shared/i18n";
+import type { ReactNode } from "react";
+import { listNodes, type Rich } from "@/lib/list-nodes";
+import { type Locale, type T } from "@/supabase/functions/_shared/i18n";
 
 export type DeletePreview = {
   groups_deleted: { name: string; children: string[] }[];
@@ -20,19 +22,18 @@ export function myDataFileName(now: Date, timeZone = deviceTimeZone()): string {
   return `keepup-my-data-${todayIn(timeZone, now)}.json`;
 }
 
-export function deletePreviewLines(t: T, locale: Locale, p: DeletePreview): string[] {
-  const names = (list: string[]) => new Intl.ListFormat(INTL_LOCALE[locale], { type: "conjunction" }).format(list);
+export function deletePreviewLines(rich: Rich, locale: Locale, p: DeletePreview): ReactNode[] {
   return [
     ...p.groups_deleted.map((g) =>
       g.children.length === 0
-        ? t("myData.groupDeleted", { group: isolate(g.name) })
-        : t("myData.groupDeletedWithProfiles", {
-            group: isolate(g.name),
+        ? rich("myData.groupDeleted", { group: g.name })
+        : rich("myData.groupDeletedWithProfiles", {
+            group: g.name,
             n: g.children.length,
-            names: names(g.children.map((c) => t("myData.possessive", { name: isolate(c) }))),
+            names: listNodes(locale, g.children, (c) => rich("myData.possessive", { name: c })),
           }),
     ),
-    ...p.admin_handover.map((h) => t("myData.becomesAdmin", { admin: isolate(h.new_admin), group: isolate(h.group) })),
+    ...p.admin_handover.map((h) => rich("myData.becomesAdmin", { admin: h.new_admin, group: h.group })),
   ];
 }
 

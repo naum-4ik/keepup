@@ -40,6 +40,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const { joined, reset } = await searchParams;
   const { t, locale } = await getT();
   const tt = await getTranslations("today");
+  const tg = await getTranslations("groups.detail");
   const childrenP = getMyChildren();
   const [summaries, overview, groups, approvals, children, { profile }, celebrations, dismissed, checkedIn, tapRows] = await Promise.all([
     getHabitSummaries(),
@@ -209,7 +210,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       />
       {/* Offline (the saved page), cards whose buttons need the server say so (ideas/offline.md §3). */}
       {gentle && (
-        <NeedsConnection key={gentle.key} label={tt(gentle.key.startsWith("add_child") ? "gentle.addChild.cta" : "gentle.inviteFamily.cta")}>
+        <NeedsConnection key={gentle.key} label={gentle.key.startsWith("add_child") ? tg("addChild") : tt("gentle.inviteFamily.cta")}>
           <GentleCard card={gentle} />
         </NeedsConnection>
       )}

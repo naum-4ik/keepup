@@ -241,11 +241,11 @@ export const kidStreak = (t: T, kid: string, length: number, habit: string, gend
 });
 
 // Offline sync notes (ideas/offline.md §4), feed only. `day` is the tap's weekday ("Mon"), or "earlier".
-export const alreadyLogged = (t: T, kid: string, adult: string | null, habit: string): Copy => ({
+export const alreadyLogged = (t: T, kid: string, adult: string | null, habit: string, gender: KidGender = "other"): Copy => ({
   title: kid,
   body: adult
     ? t("push.alreadyLogged.byAdult", { adult: isolate(adult), habit: isolate(habit), kid: isolate(kid) })
-    : t("push.alreadyLogged.byKid", { kid: isolate(kid), habit: isolate(habit) }),
+    : t("push.alreadyLogged.byKid", { gender, kid: isolate(kid), habit: isolate(habit) }),
 });
 
 export const syncDropped = (t: T, habit: string, day: string): Copy => ({

@@ -40,7 +40,7 @@ export default async function KidViewPage({ params }: { params: Promise<{ id: st
     <>
       <RenderedTaps ids={renderedTaps} periods={tapPeriods(running, () => zone)} />
       <KidPlay
-        child={{ id, name: child.name, emoji: child.avatar_emoji, color: child.avatar_color, theme: child.kid_theme }}
+        child={{ id, name: child.name, emoji: child.avatar_emoji, color: child.avatar_color, theme: child.kid_theme, gender: child.gender }}
         habits={habits}
         stars={rewards?.stars_this_week ?? 0}
         weekStart={rewards?.week_start}

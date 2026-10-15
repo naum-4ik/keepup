@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useT } from "@/lib/i18n/client";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 
 const HOLD_MS = 1500;
 
@@ -12,6 +14,7 @@ const HOLD_MS = 1500;
 // prefetched, and the button says "Closing…" at once in case the page is slow.
 export function HoldToExit({ href, childName }: { href: string; childName: string }) {
   const router = useRouter();
+  const { t } = useT();
   const [holding, setHolding] = useState(false);
   const [step, setStep] = useState(0);
   const [leaving, setLeaving] = useState(false);
@@ -50,7 +53,7 @@ export function HoldToExit({ href, childName }: { href: string; childName: strin
   return (
     <button
       type="button"
-      aria-label={`Hold to exit ${childName}'s view`}
+      aria-label={t("kidView.exitLabel", { name: isolate(childName) })}
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId);
         start();
@@ -92,13 +95,13 @@ export function HoldToExit({ href, childName }: { href: string; childName: strin
       </svg>
       <span aria-live="polite">
         {leaving ? (
-          "Closing…"
+          t("kidView.closing")
         ) : !holding ? (
-          "Hold to exit"
+          t("kidView.holdToExit")
         ) : (
           <>
-            <span className="motion-safe:hidden">{["Hold…", "Hold… 1…", "Hold… 1… 2"][step]}</span>
-            <span className="motion-reduce:hidden">Hold…</span>
+            <span className="motion-safe:hidden">{t("kidView.hold", { step })}</span>
+            <span className="motion-reduce:hidden">{t("kidView.hold", { step: 0 })}</span>
           </>
         )}
       </span>

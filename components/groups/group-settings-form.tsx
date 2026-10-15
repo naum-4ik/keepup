@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { GroupActionState } from "@/app/(app)/groups/actions";
 import { SaveButton } from "@/components/save-button";
 import { TimezonePicker } from "@/components/timezone-picker";
@@ -19,6 +20,8 @@ export function GroupSettingsForm({
   timezones: string[];
   action: (prev: GroupActionState, formData: FormData) => Promise<GroupActionState>;
 }) {
+  const t = useTranslations("groups.settingsForm");
+  const tp = useTranslations("profile.form");
   const [state, formAction, pending] = useActionState(action, initialState);
   const [timezone, setTimezone] = useState(initialTimezone);
 
@@ -26,13 +29,13 @@ export function GroupSettingsForm({
     <form action={formAction} className="flex flex-col gap-4">
       <TimezonePicker name="timezone" value={timezone} onChange={setTimezone} timezones={timezones} />
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="group-week-start" className="text-sm font-semibold">Week starts on</label>
+        <label htmlFor="group-week-start" className="text-sm font-semibold">{tp("weekStart")}</label>
         <select id="group-week-start" name="weekStart" key={weekStart} defaultValue={String(weekStart)} className={selectClass}>
-          <option value="1">Monday</option>
-          <option value="0">Sunday</option>
+          <option value="1">{tp("monday")}</option>
+          <option value="0">{tp("sunday")}</option>
         </select>
       </div>
-      <p className="text-xs text-muted-foreground">Applies to new weekly habits.</p>
+      <p className="text-xs text-muted-foreground">{t("note")}</p>
       {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
       <SaveButton state={state} pending={pending} />
     </form>

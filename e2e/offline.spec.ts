@@ -106,7 +106,7 @@ test("the kid view offline: a tap plays and counts once, stays after a reload, a
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   const childId = await addChild(page, "Mary");
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   await expect(page).toHaveURL(/\/play$/);
   await waitForWorker(page, `/kids/${childId}/play`);
   await expect(page.getByText("0 stars this week")).toBeAttached();

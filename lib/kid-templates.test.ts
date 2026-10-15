@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { tEn } from "@/lib/i18n/test-t";
-import { DEFAULT_KID_TEMPLATE_IDS, KID_TEMPLATE_GROUPS, KID_TEMPLATES, kidTemplatesByGroup, kidTemplateTitle } from "@/lib/kid-templates";
+import { DEFAULT_KID_TEMPLATE_IDS, KID_TEMPLATE_GROUPS, KID_TEMPLATES, kidTemplatesByGroup, kidTemplateTitle, kidTemplateTitlesIn, templatesLeft } from "@/lib/kid-templates";
 
 describe("kid templates", () => {
   it("are 24, the toddler core still first, ids and titles unique", () => {
@@ -24,5 +24,22 @@ describe("kid templates", () => {
   it("drops empty groups (e.g. once a child has all of a group's habits)", () => {
     const some = KID_TEMPLATES.filter((t) => t.group === "healthy");
     expect(kidTemplatesByGroup(some).map((g) => g.group)).toEqual(["healthy"]);
+  });
+  it("collects each template's title from every catalog, once", () => {
+    const titles = kidTemplateTitlesIn({
+      en: { templates: { kid: { bath: "Bath time", water: "Drink water" } } },
+      ru: { templates: { kid: { bath: "Купание", water: "Drink water" } } },
+      he: {},
+    });
+    expect(titles).toEqual({ bath: ["Bath time", "Купание"], water: ["Drink water"] });
+  });
+  it("keeps a template hidden after the language changes", () => {
+    const titles = { bath: ["Bath time", "Купание"], water: ["Drink water", "Пить воду"] };
+    const tpls = [{ id: "bath" }, { id: "water" }, { id: "draw" }];
+    // Added while the app was in Russian; now shown in English.
+    const left = templatesLeft(tpls, titles, new Set(["Купание"]), (id) => ({ bath: "Bath time", water: "Drink water", draw: "Draw" })[id]!);
+    expect(left.map((t) => t.id)).toEqual(["water", "draw"]);
+    // And the current language alone still hides it.
+    expect(templatesLeft(tpls, {}, new Set(["Bath time"]), (id) => ({ bath: "Bath time", water: "Drink water", draw: "Draw" })[id]!).map((t) => t.id)).toEqual(["water", "draw"]);
   });
 });

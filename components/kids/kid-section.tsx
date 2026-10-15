@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { Avatar } from "@/components/avatar";
 import { HabitCard } from "@/components/habits/habit-card";
 import type { HabitSummary } from "@/lib/habits";
@@ -7,7 +8,8 @@ import type { MyChild } from "@/lib/kids";
 import { groupForToday } from "@/lib/today";
 
 // Today: a section per child. Any adult of her group checks in for her inline.
-export function KidSection({ child, habits, stars }: { child: MyChild; habits: HabitSummary[]; stars: number | null }) {
+export async function KidSection({ child, habits, stars }: { child: MyChild; habits: HabitSummary[]; stars: number | null }) {
+  const t = await getTranslations();
   const { todo, done, later } = groupForToday(habits);
   const ordered = [...todo, ...done, ...later];
   return (
@@ -27,7 +29,7 @@ export function KidSection({ child, habits, stars }: { child: MyChild; habits: H
           ))}
         </ul>
       ) : (
-        <p className="rounded-2xl bg-card p-4 text-center text-sm text-muted-foreground shadow-soft">No habits yet.</p>
+        <p className="rounded-2xl bg-card p-4 text-center text-sm text-muted-foreground shadow-soft">{t("common.noHabits")}</p>
       )}
     </section>
   );
