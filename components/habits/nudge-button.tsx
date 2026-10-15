@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { DropdownMenu } from "radix-ui";
 import { nudge } from "@/app/(app)/inbox/actions";
 import { Button } from "@/components/ui/button";
-import { NUDGE_KINDS } from "@/lib/feed-copy";
+import { NUDGE_KINDS } from "@/lib/nudge-kinds";
 import { useT } from "@/lib/i18n/client";
 
 // Three preset messages, no free text (ideas/notifications-tone.md). One per person, habit and day.

@@ -2,6 +2,7 @@
 // One feed row → one notification payload. Pure: send-push's handler and tests call it.
 import * as copy from "../_shared/notification-copy.ts";
 import { levelName } from "../_shared/levels.ts";
+import { badgeName } from "./i18n.ts";
 import { INTL_LOCALE, type Locale, type T } from "../_shared/i18n.ts";
 
 export type PushJob = {
@@ -103,7 +104,7 @@ function copyFor(job: PushJob, t: T, locale: Locale): copy.Copy | null {
     case "kid_garden_full": return copy.kidFullGarden(t, kid, gender);
     case "kid_streak": return copy.kidStreak(t, kid, num(job.payload.streak), habit, gender);
     case "level_up": return copy.levelUp(t, num(job.payload.level), levelName(num(job.payload.level)));
-    case "badge_unlocked": return copy.badgeUnlocked(t, String(job.payload.name ?? t("push.fallback.badge")));
+    case "badge_unlocked": return copy.badgeUnlocked(t, badgeName(t, String(job.payload.code ?? ""), String(job.payload.name ?? t("push.fallback.badge"))));
     case "streak_milestone": return copy.streakMilestone(t, habit, num(job.payload.streak), period(job.payload.period), job.payload.back === true);
     case "rest_day_used": return copy.restDayUsed(t, habit, num(job.payload.streak), job.payload.period === "week" ? "week" : "day");
     case "weekly_recap":

@@ -1,17 +1,7 @@
-import {
-  Bike, BookOpen, BriefcaseBusiness, CalendarCheck, CalendarDays, CalendarRange, CircleCheck, Droplet, Flame, Handshake, Heart, House,
-  Leaf, Moon, Mountain, PartyPopper, RotateCcw, Scale, Shield, Sprout, Star, TreePine, Users, Zap, type LucideIcon,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { badgeIcon } from "@/lib/badge-icons";
 import en from "@/supabase/functions/_shared/messages/en.json";
 import type { T } from "@/supabase/functions/_shared/i18n";
-
-// The 24 badges (ideas/achievements-and-rewards.md §4): lucide line icons in pastel circles, no tiers.
-// achievements.icon holds the component name; an unknown one (a newer database) shows a star.
-export const BADGE_ICONS: Record<string, LucideIcon> = {
-  Bike, BookOpen, BriefcaseBusiness, CalendarCheck, CalendarDays, CalendarRange, CircleCheck, Droplet, Flame, Handshake, Heart, House,
-  Leaf, Moon, Mountain, PartyPopper, RotateCcw, Scale, Shield, Sprout, Star, TreePine, Users, Zap,
-};
-export const badgeIcon = (icon: string): LucideIcon => BADGE_ICONS[icon] ?? Star;
 
 // One pastel per group, from the category colours (lib/categories.ts).
 export const BADGE_GROUPS = [
@@ -36,6 +26,9 @@ export function badgeText(t: T, code: string, fallback: { name: string; descript
     ? { name: t(`badges.${code}.name`), description: t(`badges.${code}.description`) }
     : { name: fallback.name, description: fallback.description };
 }
+
+// A badge's name by code on every surface: the catalog's words when it has the code, else the database's.
+export const badgeName = (t: T, code: string, fallback: string): string => (BADGE_CODES.has(code) ? t(`badges.${code}.name`) : fallback);
 
 export function badgeGrid(t: T, catalog: CatalogRow[], earned: EarnedRow[]): BadgeGroup[] {
   const when = new Map(earned.map((e) => [e.achievement_code, e.unlocked_at]));

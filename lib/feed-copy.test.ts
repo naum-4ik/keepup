@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { tEn } from "@/lib/i18n/test-t";
-import { FEED_KINDS, NUDGE_KINDS, feedCopy, type FeedItem } from "@/lib/feed-copy";
+import { FEED_KINDS, feedCopy, type FeedItem } from "@/lib/feed-copy";
+import { NUDGE_KINDS } from "@/lib/nudge-kinds";
 import { BANNED_PATTERNS, BANNED_WORDS } from "@/lib/notification-copy";
 
 const item = (o: Partial<FeedItem>): FeedItem => ({
@@ -100,6 +101,10 @@ describe("M5 feed lines", () => {
       .toEqual({ title: "Level 6", body: "Sprout 🌿", href: "/profile" });
     expect(feedCopy(tEn, "en", item({ kind: "badge_unlocked", habit_id: null, payload: { code: "bookworm", name: "Bookworm" } })))
       .toEqual({ title: "Unlocked", body: "Bookworm", href: "/profile/achievements" });
+  });
+  it("a badge's name comes from the catalog by code; an unknown code shows the payload's name", () => {
+    expect(feedCopy(tEn, "en", item({ kind: "badge_unlocked", habit_id: null, payload: { code: "bookworm", name: "Old DB name" } })).body).toBe("Bookworm");
+    expect(feedCopy(tEn, "en", item({ kind: "badge_unlocked", habit_id: null, payload: { code: "from_the_future", name: "Future" } })).body).toBe("Future");
   });
   it("a personal milestone, a rest day and the recaps", () => {
     expect(feedCopy(tEn, "en", item({ kind: "streak_milestone", group_name: null, payload: { streak: 30, period: "day", back: false } })))

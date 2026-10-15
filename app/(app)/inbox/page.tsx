@@ -11,10 +11,9 @@ import { recapKey, recapLine, visibleRecaps } from "@/lib/today-cards";
 import { getDismissedCards, getFamilyRecaps } from "@/lib/today-cards-data";
 
 export default async function InboxPage() {
-  const [{ profile }, approvals, feed, recaps, dismissed] = await Promise.all([
-    getProfile(), getPendingApprovals(), getFeed(), getFamilyRecaps(), getDismissedCards(),
+  const [{ profile }, approvals, feed, recaps, dismissed, { t, locale }] = await Promise.all([
+    getProfile(), getPendingApprovals(), getFeed(), getFamilyRecaps(), getDismissedCards(), getT(),
   ]);
-  const { t, locale } = await getT();
   // The weekly family recap (first day of the group's week), dismissible. Dismissals couldn't be read:
   // none shown, rather than bring back closed ones.
   const shownRecaps = dismissed ? visibleRecaps(recaps, dismissed) : [];

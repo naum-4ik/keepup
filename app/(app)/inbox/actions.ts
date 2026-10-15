@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { NUDGE_KINDS } from "@/lib/feed-copy";
+import { NUDGE_KINDS } from "@/lib/nudge-kinds";
 import { errorCode, habitErrorMessage, reviewerOf } from "@/lib/habit-errors";
 import { getT } from "@/lib/i18n/server";
 import { isUuid } from "@/lib/habit-schema";

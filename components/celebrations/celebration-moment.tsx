@@ -5,11 +5,11 @@ import { usePathname } from "next/navigation";
 import { Star } from "lucide-react";
 import { Confetti } from "@/components/celebrations/confetti";
 import { SproutIcon } from "@/components/sprout-icon";
-import { BADGE_ICONS } from "@/lib/badges";
+import { BADGE_ICONS } from "@/lib/badge-icons";
 import { takeBurstTurn } from "@/lib/burst-turns";
 import { isCelebrationMode, type Celebration, type CelebrationMode, type SeenItem } from "@/lib/celebrations";
 
-// A level-up shows the app's sprout (docs/design.md: never lucide's); a badge its own icon (lib/badges.ts).
+// A level-up shows the app's sprout (docs/design.md: never lucide's); a badge its own icon (lib/badge-icons.ts).
 function CelebrationIcon({ item, className }: { item: Celebration; className: string }) {
   if (item.kind === "level") return <SproutIcon className={className} />;
   const Icon = BADGE_ICONS[item.icon] ?? Star;

@@ -1,7 +1,8 @@
 import { Moon, Sprout, Star } from "lucide-react";
 import { describe, expect, it } from "vitest";
 import { tEn } from "@/lib/i18n/test-t";
-import { BADGE_CODES, badgeGrid, badgeIcon, badgeText, type CatalogRow } from "./badges";
+import { BADGE_CODES, badgeGrid, badgeText, type CatalogRow } from "./badges";
+import { badgeIcon } from "./badge-icons";
 
 const row = (code: string, group: string, sort: number, icon = "Sprout"): CatalogRow =>
   ({ code, name: code, description: `hint ${code}`, icon, badge_group: group, sort_order: sort });

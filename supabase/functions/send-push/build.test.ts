@@ -141,6 +141,20 @@ Deno.test("catalog words: buttons, fallbacks, schedules and a kid's gender keep 
   }
 });
 
+Deno.test("a badge's name comes from the catalog by code; an unknown code shows the payload's name", () => {
+  const known = job({ kind: "badge_unlocked", habit_id: null, payload: { code: "bookworm", name: "Old DB name" } });
+  assertEquals(buildPush(known, t)!.body, "Bookworm");
+  const { t: tr } = makeTranslator("en", { badges: { bookworm: { name: "Translated" } } });
+  assertEquals(buildPush(known, tr)!.body, "Translated");
+  assertEquals(buildPush(job({ kind: "badge_unlocked", habit_id: null, payload: { code: "from_the_future", name: "Future" } }), t)!.body, "Future");
+});
+
+Deno.test("subject_gender reaches the ICU select of a kid push", () => {
+  const { t: g } = makeTranslator("en", { push: { kidFullGarden: "{gender, select, boy {B} girl {G} other {O}}" } });
+  const body = (subject_gender: "boy" | "girl" | null) => buildPush(job({ kind: "kid_garden_full", subject: "Noa", subject_gender }), g)!.body;
+  assertEquals([body("boy"), body("girl"), body(null)], ["B", "G", "O"]);
+});
+
 Deno.test("a key missing from a translation falls back to English, with its values", () => {
   const { t } = makeTranslator("ru", { push: { today: "Сегодня" } });
   assertEquals(t("push.everyoneDidIt", { habit: isolate("Read") }), "Everyone did it: \u2068Read\u2069 ✓");

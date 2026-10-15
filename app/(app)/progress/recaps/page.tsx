@@ -3,6 +3,7 @@ import { CalendarCheck } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { MonthHeatmap } from "@/components/recaps/month-heatmap";
 import { getProfile } from "@/lib/auth";
+import { badgeName } from "@/lib/badges";
 import { getT } from "@/lib/i18n/server";
 import { getRecaps } from "@/lib/recaps-data";
 import { recapLine, recapTitle, streakLabel } from "@/lib/recaps";
@@ -59,7 +60,7 @@ export default async function RecapsPage() {
                     </ul>
                   )}
                   {r.badges.length > 0 && (
-                    <p className="text-sm text-muted-foreground">Badges: {r.badges.map((b) => b.name).join(", ")}</p>
+                    <p className="text-sm text-muted-foreground">Badges: {r.badges.map((b) => badgeName(t, b.code, b.name)).join(", ")}</p>
                   )}
                 </li>
               );

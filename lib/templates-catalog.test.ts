@@ -151,4 +151,8 @@ describe("templates in the catalog", () => {
     expect([...CATEGORY_ORDER].sort()).toEqual(Object.keys(CATEGORY_LABELS).sort());
     for (const c of CATEGORY_ORDER) expect(categoryLabel(tEn, c), c).toBe(CATEGORY_LABELS[c]);
   });
+  it("no template id collides with a templates.* sub-namespace (kid, treat, kidGroup)", () => {
+    const ids = [...HABIT_TEMPLATES, ...GROUP_TEMPLATES, ...KID_TEMPLATES].map((x) => x.id);
+    for (const reserved of ["kid", "treat", "kidGroup"]) expect(ids).not.toContain(reserved);
+  });
 });

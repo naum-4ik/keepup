@@ -17,6 +17,11 @@ export function makeTranslator(locale: Locale, messages: Record<string, unknown>
   };
 }
 
+// A badge's name by code: the catalog's words when it has the code, else the payload's own name (a
+// newer database's badge). Mirrors lib/badges.ts badgeName.
+const BADGE_CODES = new Set(Object.keys((en as { badges: Record<string, unknown> }).badges));
+export const badgeName = (t: T, code: string, fallback: string): string => (BADGE_CODES.has(code) ? t(`badges.${code}.name`) : fallback);
+
 // Unknown or missing locale → English.
 export function translatorFor(raw: string | undefined | null): { t: T; locale: Locale } {
   const locale = (LOCALES as readonly string[]).includes(raw ?? "") && catalogs[raw as Locale] ? (raw as Locale) : "en";

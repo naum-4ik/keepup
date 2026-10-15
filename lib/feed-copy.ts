@@ -2,7 +2,9 @@ import type { Database } from "@/lib/database.types";
 import { formatLocalDate } from "@/lib/dates";
 import * as copy from "@/lib/notification-copy";
 import { levelName } from "@/lib/levels";
-import type { NudgeKind, PeriodUnit } from "@/lib/notification-copy";
+import { NUDGE_KINDS } from "@/lib/nudge-kinds";
+import { badgeName } from "@/lib/badges";
+import type { PeriodUnit } from "@/lib/notification-copy";
 import { INTL_LOCALE, isolate, type Locale, type T } from "@/supabase/functions/_shared/i18n";
 
 type FeedRow = Database["public"]["Functions"]["inbox_feed"]["Returns"][number];
@@ -32,13 +34,6 @@ type Kind = (typeof FEED_KINDS)[number];
 export function isFeedKind(kind: string): kind is Kind {
   return (FEED_KINDS as readonly string[]).includes(kind);
 }
-
-// The label of each is `feed.nudgeLabel.<kind>`.
-export const NUDGE_KINDS: readonly { kind: NudgeKind; emoji: string }[] = [
-  { kind: "thinking_of_you", emoji: "👋" },
-  { kind: "you_got_this", emoji: "💪" },
-  { kind: "gentle_reminder", emoji: "⏰" },
-];
 
 const SCHEDULE_KEY: Record<PeriodUnit, string> = { day: "schedule.daily", week: "schedule.weekly", month: "schedule.monthly" };
 
@@ -132,7 +127,7 @@ export function feedCopy(t: T, locale: Locale, n: FeedItem): { title: string; bo
       const level = Number(n.payload.level ?? 1);
       return { ...copy.levelUp(t, level, levelName(level)), href: "/profile" };
     }
-    case "badge_unlocked": return { ...copy.badgeUnlocked(t, String(n.payload.name ?? t("push.fallback.badge"))), href: "/profile/achievements" };
+    case "badge_unlocked": return { ...copy.badgeUnlocked(t, badgeName(t, String(n.payload.code ?? ""), String(n.payload.name ?? t("push.fallback.badge")))), href: "/profile/achievements" };
     case "streak_milestone":
       return { ...copy.streakMilestone(t, habit, streak, asPeriod(n.payload.period, "day"), n.payload.back === true), href: habitHref };
     case "rest_day_used": return { ...copy.restDayUsed(t, habit, streak, n.payload.period === "week" ? "week" : "day"), href: habitHref };
