@@ -1,10 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale } from "next-intl/server";
+import { Direction } from "radix-ui"; // Radix reads its own provider, not <html dir>
 import { MovedNotice } from "@/components/moved/moved-notice";
 import { Faro } from "@/components/observability/faro";
 import { ServiceWorker } from "@/components/pwa/service-worker";
 import "./globals.css";
 import { siteUrl as siteUrlFor } from "@/lib/site-url";
+import { isRtl } from "@/supabase/functions/_shared/i18n";
 
 // Self-hosted (no build-time fetch from Google). Nunito: one variable file (v3.602, the version Google
 // serves), subset to Google's latin + latin-ext ranges, so names like Łukasz or Gülşen stay in one font.
@@ -14,6 +18,27 @@ const nunito = localFont({
   variable: "--font-nunito",
   src: [{ path: "./fonts/nunito-latin-ext.woff2", weight: "400 800", style: "normal" }],
   display: "swap",
+});
+
+// Cyrillic (Russian) from the same Nunito family (@fontsource-variable/nunito 5.3.0, nunito-cyrillic-wght-normal.woff2);
+// Hebrew from Rubik (@fontsource-variable/rubik 5.3.0, rubik-hebrew-wght-normal.woff2; rounded, close to Nunito):
+// Nunito has no Hebrew. Not preloaded; unicode-range (from fontsource) makes the browser fetch them only
+// when a page uses those letters.
+const nunitoCyrillic = localFont({
+  variable: "--font-nunito-cyr",
+  src: [{ path: "./fonts/nunito-cyrillic.woff2", weight: "400 800", style: "normal" }],
+  display: "swap",
+  preload: false,
+  declarations: [{ prop: "unicode-range", value: "U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116" }],
+  adjustFontFallback: false, // the Arial fallback face would catch Cyrillic/Hebrew before these files
+});
+const rubikHebrew = localFont({
+  variable: "--font-rubik-he",
+  src: [{ path: "./fonts/rubik-hebrew.woff2", weight: "300 900", style: "normal" }],
+  display: "swap",
+  preload: false,
+  declarations: [{ prop: "unicode-range", value: "U+0307-0308,U+0590-05FF,U+200C-2010,U+20AA,U+25CC,U+FB1D-FB4F" }],
+  adjustFontFallback: false, // the Arial fallback face would catch Cyrillic/Hebrew before these files
 });
 
 const geistMono = localFont({
@@ -46,17 +71,24 @@ export const viewport: Viewport = {
   themeColor: "#FFF8F0",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
+  const dir = isRtl(locale) ? "rtl" : "ltr";
   return (
     <html
-      lang="en"
-      className={`${nunito.variable} ${geistMono.variable} h-full antialiased`}
+      lang={locale}
+      dir={dir}
+      className={`${nunito.variable} ${nunitoCyrillic.variable} ${rubikHebrew.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <MovedNotice />
-        {children}
-        <ServiceWorker version={process.env.APP_COMMIT_SHA || "dev"} />
-        <Faro />
+        <Direction.Provider dir={dir}>
+          <NextIntlClientProvider>
+            <MovedNotice />
+            {children}
+            <ServiceWorker version={process.env.APP_COMMIT_SHA || "dev"} />
+            <Faro />
+          </NextIntlClientProvider>
+        </Direction.Provider>
       </body>
     </html>
   );

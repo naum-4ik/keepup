@@ -7,10 +7,10 @@ import type { Database } from "@/lib/database.types";
 
 export type Profile = Pick<
   Database["public"]["Tables"]["profiles"]["Row"],
-  "id" | "display_name" | "timezone" | "reminder_hour" | "week_start" | "onboarded_at" | "purpose" | "avatar_emoji" | "avatar_color" | "is_demo"
+  "id" | "display_name" | "timezone" | "reminder_hour" | "week_start" | "onboarded_at" | "purpose" | "avatar_emoji" | "avatar_color" | "is_demo" | "locale"
 >;
 
-const BASE = "id, display_name, timezone, reminder_hour, week_start, onboarded_at, purpose, is_demo";
+const BASE = "id, display_name, timezone, reminder_hour, week_start, onboarded_at, purpose, is_demo, locale";
 
 // Once per request: a page's loaders each call this, and getClaims (with its JWT check) needn't run
 // a dozen times for one render.
@@ -32,6 +32,14 @@ export const getProfile = cache(async () => {
     .select(`${BASE}, avatar_emoji, avatar_color`)
     .eq("id", userId)
     .single<Profile>();
+  // locale arrives with the languages migration; until then, read without it (the phone's language applies).
+  if (error?.message.includes("locale")) {
+    ({ data, error } = await supabase
+      .from("profiles")
+      .select(`${BASE.replace(", locale", "")}, avatar_emoji, avatar_color`)
+      .eq("id", userId)
+      .single<Profile>());
+  }
   if (error?.message.includes("avatar_")) {
     ({ data, error } = await supabase.from("profiles").select(BASE).eq("id", userId).single<Profile>());
   }
