@@ -488,5 +488,110 @@
     "home": "Home",
     "work_money": "Work & money",
     "break_habit": "Break a habit"
+  },
+  "badges": {
+    "planted": {
+      "name": "Planted",
+      "description": "Create your first habit."
+    },
+    "first_step": {
+      "name": "First step",
+      "description": "Check in for the first time."
+    },
+    "full_day": {
+      "name": "Full day",
+      "description": "Finish every habit due today, at least two."
+    },
+    "first_week": {
+      "name": "First week",
+      "description": "Keep any habit going 7 times in a row."
+    },
+    "two_weeks_strong": {
+      "name": "Two weeks strong",
+      "description": "14 days in a row."
+    },
+    "unstoppable": {
+      "name": "Unstoppable",
+      "description": "30 days in a row."
+    },
+    "century": {
+      "name": "Century",
+      "description": "100 days in a row."
+    },
+    "year_round": {
+      "name": "Year-round",
+      "description": "365 days in a row."
+    },
+    "perfect_week": {
+      "name": "Perfect week",
+      "description": "Every habit, every time, for a whole week. At least two habits."
+    },
+    "steady_month": {
+      "name": "Steady month",
+      "description": "Four weeks of a weekly habit in one month, or a monthly habit three months running."
+    },
+    "hydrated": {
+      "name": "Hydrated",
+      "description": "A Health habit of 8 or more a day, 7 days in a row."
+    },
+    "mover": {
+      "name": "Mover",
+      "description": "50 check-ins in Fitness."
+    },
+    "calm_mind": {
+      "name": "Calm mind",
+      "description": "30 times done in Mind."
+    },
+    "bookworm": {
+      "name": "Bookworm",
+      "description": "30 times done in Learning."
+    },
+    "good_company": {
+      "name": "Good company",
+      "description": "10 times done in People."
+    },
+    "home_keeper": {
+      "name": "Home keeper",
+      "description": "50 check-ins in Home."
+    },
+    "go_getter": {
+      "name": "Go-getter",
+      "description": "6 times done in Work & money."
+    },
+    "free": {
+      "name": "Free",
+      "description": "30 days in a row on a Break a habit habit."
+    },
+    "back_on_track": {
+      "name": "Back on track",
+      "description": "Build a 7 in a row again after a streak ended."
+    },
+    "rest_well": {
+      "name": "Rest well",
+      "description": "Use your first rest day."
+    },
+    "all_together": {
+      "name": "All together",
+      "description": "Your group's first \"Everyone did it\"."
+    },
+    "team_player": {
+      "name": "Team player",
+      "description": "10 group habits done together."
+    },
+    "cheerleader": {
+      "name": "Cheerleader",
+      "description": "Cheer 20 check-ins."
+    },
+    "fair_judge": {
+      "name": "Fair judge",
+      "description": "Approve 20 check-ins."
+    }
+  },
+  "badgeGroups": {
+    "getting_started": "Getting started",
+    "consistency": "Consistency",
+    "categories": "Categories",
+    "comeback": "Comeback",
+    "family": "Family"
   }
 }
