@@ -11,6 +11,8 @@ vi.mock("next/cache", () => ({ revalidatePath: (p: string) => revalidatePath(p) 
 // after() runs its callback once the response is out; here, when the test says so.
 const afterTasks: (() => Promise<void>)[] = [];
 vi.mock("next/server", async (original) => ({ ...(await original<typeof import("next/server")>()), after: (task: () => Promise<void>) => afterTasks.push(task) }));
+// The request has no locale cookie here: English.
+vi.mock("@/lib/i18n/server", async () => ({ getT: async () => ({ t: (await import("@/lib/i18n/test-t")).tEn, locale: "en" }) }));
 const logEvent = vi.fn();
 vi.mock("@/lib/telemetry", async (original) => ({ userAttributes: (await original<typeof import("@/lib/telemetry")>()).userAttributes, tagUser: () => {}, logEvent: (...args: unknown[]) => logEvent(...args), flushLogs: async () => {} }));
 

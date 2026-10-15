@@ -17,7 +17,7 @@ import { NudgeButton } from "@/components/habits/nudge-button";
 import { PauseMeForm } from "@/components/habits/pause-me-form";
 import { RenderedTaps } from "@/components/offline/offline-queue-provider";
 import { getProfile } from "@/lib/auth";
-import { CATEGORIES } from "@/lib/categories";
+import { CATEGORIES, categoryLabel } from "@/lib/categories";
 import { todayIn } from "@/lib/dates";
 import { isUuid, type HabitPeriod } from "@/lib/habit-schema";
 import { getGroupDetail } from "@/lib/groups";
@@ -29,6 +29,7 @@ import { RestoreHabitButton } from "@/components/habits/restore-habit-button";
 import { EndControl } from "@/components/habits/end-control";
 import { endLabel, endProgress, hasEnded } from "@/lib/habit-end";
 import { formatLocalDate } from "@/lib/dates";
+import { getT } from "@/lib/i18n/server";
 import { describeProgress, describeSchedule } from "@/lib/schedule";
 import { everyoneDidIt, memberStatus, membersOf, openChildrenOf } from "@/lib/today-sections";
 import { stateOf } from "@/lib/today";
@@ -72,6 +73,7 @@ const shownFreeze = (freezes: HabitFreeze[], today: string, pausedNow: boolean) 
 export default async function HabitPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
+  const { t, locale } = await getT();
   // The end needs only the id, so it loads with the habit.
   const childIdsP = getMyChildren().then((cs) => cs.map((c) => c.child_id));
   const [{ profile, userId }, detail, ends, tapRows, childIds] = await Promise.all([
@@ -117,7 +119,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const endsOn = ends.get(h.habit_id) ?? null;
   const endNow = endsOn ? endProgress(h.starts_on, endsOn, today, h.period) : null;
   const restorable = archived && canManage && !finishedIds?.has(h.habit_id);
-  const progress = describeProgress({
+  const progress = describeProgress(t, locale, {
     targetCount: h.target_count,
     period: h.period,
     doneCount: h.done_count,
@@ -161,8 +163,8 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
           <h1 className="truncate text-xl font-bold">{h.title}</h1>
           <p className="text-sm text-muted-foreground">
             {h.group_id
-              ? `${h.group_name} · ${describeSchedule(h.target_count, h.period)}${h.requires_approval ? " · needs approval" : ""}`
-              : `${describeSchedule(h.target_count, h.period)}${h.category ? ` · ${CATEGORIES[h.category].label}` : ""}`}
+              ? `${h.group_name} · ${describeSchedule(t, h.target_count, h.period)}${h.requires_approval ? " · needs approval" : ""}`
+              : `${describeSchedule(t, h.target_count, h.period)}${h.category ? ` · ${categoryLabel(t, h.category)}` : ""}`}
             {archived && " · Archived"}
           </p>
         </div>
@@ -254,7 +256,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
       </section>
 
       <Card title="History">
-        <HistoryGrid cells={history} period={h.period} />
+        <HistoryGrid t={t} locale={locale} cells={history} period={h.period} />
       </Card>
 
       {!archived && (
@@ -278,11 +280,11 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                 title="Ends"
                 hint={
                   endNow
-                    ? endLabel(endNow, h.period)
+                    ? endLabel(t, endNow, h.period)
                     : hasEnded(endsOn, today)
                       ? "Reached its end. Keep going or finish"
                       : endsOn
-                        ? `Last day ${formatLocalDate(endsOn)}`
+                        ? `Last day ${formatLocalDate(endsOn, locale)}`
                         : "No end yet"
                 }
               >

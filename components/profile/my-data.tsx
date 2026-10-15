@@ -9,20 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { downloadJson } from "@/lib/download-json";
-import { GENERIC_ERROR } from "@/lib/habit-errors";
+import { useT } from "@/lib/i18n/client";
 import {
-  DELETE_BODY,
-  DELETE_TITLE,
-  DELETE_WORD,
   deletePreviewLines,
-  EXPORT_FIRST,
-  EXPORT_HINT,
   isDeleteWord,
   myDataFileName,
-  PREVIEW_RETRY,
   runDelete,
 } from "@/lib/my-data";
-import { NEEDS_CONNECTION } from "@/lib/offline-copy";
 import { clearOfflineCaches, markPagesOwnerDeleted } from "@/lib/offline-pages";
 import { browserSubscription, signOutCleanup } from "@/lib/push-support";
 
@@ -59,10 +52,11 @@ function ExportMyDataButton() {
 // are sent, the phone is cleared the way sign-out clears it, and the account is deleted.
 // A demo login has no Delete account at all (the demo deletes itself after 24 hours); Export stays.
 export function MyData({ isDemo = false }: { isDemo?: boolean }) {
+  const { t } = useT();
   return (
     <section aria-labelledby="my-data-title" className="flex flex-col gap-3 rounded-2xl bg-card p-6 shadow-soft">
       <h2 id="my-data-title" className="text-base font-bold">Your data</h2>
-      <p className="text-sm text-muted-foreground">{EXPORT_HINT}</p>
+      <p className="text-sm text-muted-foreground">{t("myData.exportHint")}</p>
       <ExportMyDataButton />
       {!isDemo && <DeleteAccount />}
     </section>
@@ -70,6 +64,7 @@ export function MyData({ isDemo = false }: { isDemo?: boolean }) {
 }
 
 function DeleteAccount() {
+  const { t, locale } = useT();
   const [open, setOpen] = useState(false);
   const [word, setWord] = useState("");
   const [lines, setLines] = useState<string[] | null>(null);
@@ -90,9 +85,9 @@ function DeleteAccount() {
     let next: { lines: string[] } | { error: string };
     try {
       const preview = await deleteAccountPreview();
-      next = preview ? { lines: deletePreviewLines(preview) } : { error: GENERIC_ERROR };
+      next = preview ? { lines: deletePreviewLines(t, locale, preview) } : { error: t("errors.generic") };
     } catch {
-      next = { error: navigator.onLine ? GENERIC_ERROR : NEEDS_CONNECTION };
+      next = { error: navigator.onLine ? t("errors.generic") : t("offline.needsConnection") };
     }
     if (id !== request.current) return;
     if ("lines" in next) setLines(next.lines);
@@ -109,12 +104,12 @@ function DeleteAccount() {
   function remove() {
     setError(null);
     if (!navigator.onLine) {
-      setError(NEEDS_CONNECTION);
+      setError(t("offline.needsConnection"));
       return;
     }
     startTransition(async () => {
       // A successful delete redirects to the landing page: runDelete passes that on, never DELETE_FAILED.
-      const message = await runDelete({
+      const message = await runDelete(t, {
         flush: queue.flushQueue,
         // Saved pages, the queue and this phone's push subscription, as at sign-out.
         clearPhone: async () => {
@@ -148,8 +143,8 @@ function DeleteAccount() {
       <Dialog open={open} onOpenChange={(next) => !pending && !next && close()}>
         <DialogContent>
           <div className="flex flex-col gap-1 pr-10">
-            <DialogTitle>{DELETE_TITLE}</DialogTitle>
-            <DialogDescription>{DELETE_BODY}</DialogDescription>
+            <DialogTitle>{t("myData.deleteTitle")}</DialogTitle>
+            <DialogDescription>{t("myData.deleteBody")}</DialogDescription>
           </div>
           {lines && lines.length > 0 && (
             <ul className="flex flex-col gap-1 text-sm">
@@ -162,21 +157,21 @@ function DeleteAccount() {
             <div className="flex items-center justify-between gap-2">
               <p role="alert" className="text-sm text-destructive">{previewError}</p>
               <Button type="button" variant="outline" className="h-11 shrink-0" onClick={() => void loadPreview()}>
-                {PREVIEW_RETRY}
+                {t("myData.tryAgain")}
               </Button>
             </div>
           )}
-          <p className="text-sm text-muted-foreground">{EXPORT_FIRST}</p>
+          <p className="text-sm text-muted-foreground">{t("myData.exportFirst")}</p>
           <ExportMyDataButton />
           <form
             className="flex flex-col gap-3"
             onSubmit={(e) => {
               e.preventDefault();
-              if (ready && isDeleteWord(word) && !pending) remove();
+              if (ready && isDeleteWord(t, word) && !pending) remove();
             }}
           >
             <label htmlFor={inputId} className="text-sm font-semibold">
-              Type &ldquo;{DELETE_WORD}&rdquo; to confirm
+              Type &ldquo;{t("myData.deleteWord")}&rdquo; to confirm
             </label>
             <Input
               id={inputId}
@@ -192,7 +187,7 @@ function DeleteAccount() {
               <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={close}>
                 Cancel
               </Button>
-              <Button type="submit" variant="destructive" className="h-11 flex-1" disabled={pending || !ready || !isDeleteWord(word)}>
+              <Button type="submit" variant="destructive" className="h-11 flex-1" disabled={pending || !ready || !isDeleteWord(t, word)}>
                 {pending ? "Deleting…" : "Delete"}
               </Button>
             </div>

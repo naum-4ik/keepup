@@ -86,3 +86,13 @@ Deno.test("nothing to show: marked done without sending", async () => {
   assertEquals(sent, []);
   assertEquals(done, [["n1", []]]);
 });
+
+Deno.test("the push is rendered in the recipient's language (an unknown one reads as English)", async () => {
+  const bodies: string[] = [];
+  const { d } = deps({
+    loadJob: async () => ({ ...job, locale: "fr", subscriptions: [job.subscriptions[0]] }),
+    send: async (_sub, payload) => void bodies.push(JSON.parse(payload).body),
+  });
+  await handle(post({ id: "n1" }), d);
+  assertEquals(bodies, ["\u2068Anna\u2069: You've got this: \u2068Run\u2069"]);
+});

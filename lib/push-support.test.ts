@@ -1,7 +1,8 @@
 // lib/push-support.test.ts
+import { tEn } from "@/lib/i18n/test-t";
 import { describe, expect, it, vi } from "vitest";
 import {
-  deviceLabel, iosVersion, pushSupport, removeDevice, resaveOncePerLoad, signOutCleanup, signOutWithQueue, subscribeAndSave, urlBase64ToUint8Array, withTimeout,
+  deviceLabel, iosVersion, pushSupport, pushSupportText, removeDevice, resaveOncePerLoad, signOutCleanup, signOutWithQueue, subscribeAndSave, urlBase64ToUint8Array, withTimeout,
   type PushEnv,
 } from "./push-support";
 
@@ -51,11 +52,21 @@ describe("pushSupport", () => {
   });
 });
 
+describe("pushSupportText", () => {
+  it("says why this device can't get reminders", () => {
+    expect(pushSupportText(tEn, "needs-install")).toBe("On iPhone, reminders work once Keepup is on your Home Screen.");
+    expect(pushSupportText(tEn, "ios-too-old")).toBe("Reminders need iOS 16.4 or later. You can update in Settings → General → Software Update.");
+    expect(pushSupportText(tEn, "unsupported")).toBe("This browser can't show notifications. Try Chrome, or Safari on iPhone.");
+    expect(pushSupportText(tEn, "blocked")).toBe("Notifications are turned off for Keepup. You can allow them in your browser or phone settings.");
+    expect(pushSupportText(tEn, "not-configured")).toBe("Notifications aren't set up here yet.");
+  });
+});
+
 describe("deviceLabel", () => {
   it("names the phone and browser", () => {
-    expect(deviceLabel(IPHONE_17)).toBe("iPhone · Safari");
-    expect(deviceLabel(ANDROID)).toBe("Android · Chrome");
-    expect(deviceLabel(null)).toBe("A device");
+    expect(deviceLabel(tEn, IPHONE_17)).toBe("iPhone · Safari");
+    expect(deviceLabel(tEn, ANDROID)).toBe("Android · Chrome");
+    expect(deviceLabel(tEn, null)).toBe("A device");
   });
 });
 

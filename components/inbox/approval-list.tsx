@@ -5,6 +5,7 @@ import { approveAll, review } from "@/app/(app)/inbox/actions";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { alreadyReviewedNote } from "@/lib/habit-errors";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 export type ApprovalRow = {
@@ -19,6 +20,7 @@ export type ApprovalRow = {
 };
 
 export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState<string | null>(null);
   // Per-row notes (e.g. someone else reviewed it first); the row leaves on the next refresh.
@@ -39,7 +41,7 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
       const r = await review(id, approve);
       if (r.ok) return;
       if (r.code === "already_reviewed" || r.code === "review_closed") {
-        setNotes((n) => ({ ...n, [id]: r.code === "already_reviewed" ? alreadyReviewedNote(r.reviewer) : r.message }));
+        setNotes((n) => ({ ...n, [id]: r.code === "already_reviewed" ? alreadyReviewedNote(t, r.reviewer) : r.message }));
       } else setError(r.message);
     });
 

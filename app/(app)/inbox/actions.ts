@@ -2,8 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
-import { NUDGE_KINDS } from "@/lib/feed-copy";
+import { NUDGE_KINDS } from "@/lib/nudge-kinds";
 import { errorCode, habitErrorMessage, reviewerOf } from "@/lib/habit-errors";
+import { getT } from "@/lib/i18n/server";
 import { isUuid } from "@/lib/habit-schema";
 import { getPendingApprovals } from "@/lib/inbox";
 import { logError, track } from "@/lib/log";
@@ -17,12 +18,13 @@ function refresh() {
 }
 
 export async function review(checkInId: string, approve: boolean): Promise<ReviewResult> {
+  const { t } = await getT();
   if (!isUuid(checkInId)) return { ok: false, message: "That check-in isn't available." };
   const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("review_check_in", { p_check_in_id: checkInId, p_approve: approve });
   // Refresh only after a review that happened: a refresh on "already reviewed" re-rendered the Inbox
   // and took the row away with its note ("Dan already reviewed this."). The row leaves on the next visit.
-  if (error) return { ok: false, message: habitErrorMessage(error), code: errorCode(error), reviewer: reviewerOf(error) };
+  if (error) return { ok: false, message: habitErrorMessage(t, error), code: errorCode(error), reviewer: reviewerOf(error) };
   track("check_in_reviewed", who, { "check_in.id": checkInId, "review.decision": approve ? "approve" : "reject", "review.count": 1 });
   refresh();
   return { ok: true, reviewed: 1 };
@@ -34,6 +36,7 @@ const MAX_BATCH = 100;
 // which would make review_check_ins abort the whole batch). Ids the client sent that aren't there
 // are dropped; ones that closed or were reviewed meanwhile are skipped by review_check_ins.
 export async function approveAll(checkInIds: string[]): Promise<ReviewResult> {
+  const { t } = await getT();
   const pending = new Set((await getPendingApprovals()).map((a) => a.check_in_id));
   const ids = [...new Set(checkInIds)].filter((id) => isUuid(id) && pending.has(id)).slice(0, MAX_BATCH);
   if (ids.length === 0) {
@@ -43,7 +46,7 @@ export async function approveAll(checkInIds: string[]): Promise<ReviewResult> {
   const { supabase, who } = await requireUser();
   const { data, error } = await supabase.rpc("review_check_ins", { p_check_in_ids: ids, p_approve: true });
   refresh();
-  if (error) return { ok: false, message: habitErrorMessage(error) };
+  if (error) return { ok: false, message: habitErrorMessage(t, error) };
   track("check_in_reviewed", who, { "review.decision": "approve", "review.count": data ?? 0 });
   return { ok: true, reviewed: data ?? 0 };
 }
@@ -59,21 +62,23 @@ export async function markRead(ids: string[]): Promise<void> {
 }
 
 export async function nudge(habitId: string, recipientId: string, kind: string): Promise<SendResult> {
+  const { t } = await getT();
   if (!isUuid(habitId) || !isUuid(recipientId)) return { ok: false, message: "That habit isn't available." };
   if (!NUDGE_KINDS.some((k) => k.kind === kind)) return { ok: false, message: "Pick one of the messages." };
   const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("nudge", { p_habit_id: habitId, p_recipient_id: recipientId, p_kind: kind });
-  if (error) return { ok: false, message: habitErrorMessage(error), code: errorCode(error) };
+  if (error) return { ok: false, message: habitErrorMessage(t, error), code: errorCode(error) };
   track("nudge_sent", who, { "habit.id": habitId, "target.user.id": recipientId, "nudge.kind": kind });
   revalidatePath(`/habits/${habitId}`);
   return { ok: true };
 }
 
 export async function cheer(checkInId: string, habitId: string): Promise<SendResult> {
+  const { t } = await getT();
   if (!isUuid(checkInId) || !isUuid(habitId)) return { ok: false, message: "That check-in isn't available." };
   const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("cheer", { p_check_in_id: checkInId });
-  if (error) return { ok: false, message: habitErrorMessage(error) };
+  if (error) return { ok: false, message: habitErrorMessage(t, error) };
   track("cheer_sent", who, { "habit.id": habitId, "check_in.id": checkInId });
   revalidatePath(`/habits/${habitId}`);
   return { ok: true };

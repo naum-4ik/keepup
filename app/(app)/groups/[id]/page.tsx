@@ -12,12 +12,12 @@ import { MemberRow } from "@/components/groups/member-row";
 import { RenameGroupForm } from "@/components/groups/rename-group-form";
 import { addButtonClass } from "@/components/ui/add-button";
 import { getProfile } from "@/lib/auth";
-import { DEMO_OFF } from "@/lib/demo-copy";
 import { GROUP_AVATAR_EMOJI } from "@/lib/avatars";
 import { childrenDeletionNotice, inviteUrl } from "@/lib/group-schema";
 import { getGroupDetail, getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
 import { getHabitSummaries } from "@/lib/habits";
+import { getT } from "@/lib/i18n/server";
 import { requestOrigin } from "@/lib/request-origin";
 import { describeSchedule } from "@/lib/schedule";
 import { listTimezones } from "@/lib/timezones";
@@ -42,6 +42,7 @@ export default async function GroupPage({
 }) {
   const [{ id }, { invite }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
+  const { t, locale } = await getT();
   const [{ profile, userId }, group, summaries, myGroups] = await Promise.all([
     getProfile(),
     getGroupDetail(id),
@@ -60,7 +61,7 @@ export default async function GroupPage({
   const validUntil = group.invite
     ? new Date(group.invite.expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: profile.timezone })
     : null;
-  const childrenNotice = childrenDeletionNotice(group.children.map((c) => c.name));
+  const childrenNotice = childrenDeletionNotice(t, locale, group.children.map((c) => c.name));
   const alone = group.members.length === 1;
   // Leave/Delete's children step: each child can be exported, or moved to another group I admin.
   const children = group.children.map((c) => ({ id: c.id, name: c.name }));
@@ -93,7 +94,7 @@ export default async function GroupPage({
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <RenameGroupForm name={group.name} canRename={isAdmin} action={renameGroup.bind(null, group.id)} />
           <div>
-            <KindChip kind={group.kind} />
+            <KindChip kind={group.kind} t={t} />
           </div>
         </div>
       </header>
@@ -144,7 +145,7 @@ export default async function GroupPage({
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate font-semibold">{h.title}</span>
                     <span className="text-xs text-muted-foreground">
-                      {describeSchedule(h.target_count, h.period)}
+                      {describeSchedule(t, h.target_count, h.period)}
                       {h.requires_approval && " · needs approval"}
                     </span>
                   </span>
@@ -172,7 +173,7 @@ export default async function GroupPage({
         <Card title="Invite">
           {/* A demo login can't invite anyone (the database refuses it). */}
           {profile.is_demo ? (
-            <p className="text-sm text-muted-foreground">{DEMO_OFF}</p>
+            <p className="text-sm text-muted-foreground">{t("demo.off")}</p>
           ) : (
             <InviteLink groupId={group.id} groupName={group.name} url={url} validUntil={validUntil} autoFocus={invite === "1"} />
           )}

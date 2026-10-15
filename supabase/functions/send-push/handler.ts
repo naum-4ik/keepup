@@ -2,6 +2,7 @@
 // The webhook body: {"id": "<notification id>"}. One push per device; 404/410 = the device is gone.
 import { timingSafeEqual } from "node:crypto";
 import { buildPush, type PushJob } from "./build.ts";
+import { translatorFor } from "./i18n.ts";
 
 export type Subscription = PushJob["subscriptions"][number];
 export type Deps = {
@@ -40,7 +41,8 @@ export async function handle(req: Request, deps: Deps): Promise<Response> {
   const job = await deps.loadJob(id);
   if (!job || job.pushed) return Response.json({ skipped: true });
 
-  const payload = buildPush(job);
+  const { t, locale } = translatorFor(job.locale);
+  const payload = buildPush(job, t, locale);
   const dead: string[] = [];
   let sent = 0;
   if (payload) {

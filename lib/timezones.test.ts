@@ -41,23 +41,23 @@ describe("describeZone", () => {
   const winter = new Date("2026-01-15T12:00:00Z");
 
   it("gives the city, region, offset and local time at that instant", () => {
-    expect(describeZone("Asia/Tokyo", summer)).toEqual({
+    expect(describeZone("Asia/Tokyo", summer, "en")).toEqual({
       id: "Asia/Tokyo", city: "Tokyo", region: "Asia", offset: "GMT+9", offsetMinutes: 540, time: "21:00",
     });
   });
 
   it("follows daylight saving time", () => {
-    expect(describeZone("Europe/London", winter)).toMatchObject({ offset: "GMT", offsetMinutes: 0, time: "12:00" });
-    expect(describeZone("Europe/London", summer)).toMatchObject({ offset: "GMT+1", offsetMinutes: 60, time: "13:00" });
+    expect(describeZone("Europe/London", winter, "en")).toMatchObject({ offset: "GMT", offsetMinutes: 0, time: "12:00" });
+    expect(describeZone("Europe/London", summer, "en")).toMatchObject({ offset: "GMT+1", offsetMinutes: 60, time: "13:00" });
   });
 
   it("handles half-hour and negative offsets", () => {
-    expect(describeZone("Asia/Kolkata", winter)).toMatchObject({ offset: "GMT+5:30", offsetMinutes: 330, time: "17:30" });
-    expect(describeZone("America/New_York", winter)).toMatchObject({ offset: "GMT-5", offsetMinutes: -300, time: "07:00" });
+    expect(describeZone("Asia/Kolkata", winter, "en")).toMatchObject({ offset: "GMT+5:30", offsetMinutes: 330, time: "17:30" });
+    expect(describeZone("America/New_York", winter, "en")).toMatchObject({ offset: "GMT-5", offsetMinutes: -300, time: "07:00" });
   });
 
   it("describes UTC without a region", () => {
-    expect(describeZone("UTC", winter)).toMatchObject({ city: "UTC", region: "", offset: "GMT", time: "12:00" });
+    expect(describeZone("UTC", winter, "en")).toMatchObject({ city: "UTC", region: "", offset: "GMT", time: "12:00" });
   });
 });
 
@@ -69,7 +69,7 @@ describe("timeChoices", () => {
     "Asia/Seoul", "Asia/Tokyo", "Asia/Calcutta", "Pacific/Chatham",
   ];
   const rows = (now: Date, preferred: string[] = []) =>
-    timeChoices(zones, now, preferred).map((c) => `${c.time} ${c.city}`);
+    timeChoices(zones, now, preferred, "en").map((c) => `${c.time} ${c.city}`);
 
   it("gives one row per local time now, sorted, each with a well-known city", () => {
     expect(rows(summer)).toEqual([
@@ -90,6 +90,6 @@ describe("timeChoices", () => {
   });
 
   it("returns the zone id to save for each row", () => {
-    expect(timeChoices(zones, summer, []).find((c) => c.time === "21:00")?.id).toBe("Asia/Tokyo");
+    expect(timeChoices(zones, summer, [], "en").find((c) => c.time === "21:00")?.id).toBe("Asia/Tokyo");
   });
 });

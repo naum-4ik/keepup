@@ -8,13 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GROUP_AVATAR_EMOJI } from "@/lib/avatars";
-import { GROUP_KIND_LABEL, GROUP_KINDS, type GroupKind } from "@/lib/group-schema";
+import { groupKindLabel, GROUP_KINDS, type GroupKind } from "@/lib/group-schema";
+import { useT } from "@/lib/i18n/client";
 import { keepFormValues } from "@/lib/keep-form-values";
 
 const initialState: GroupActionState = { status: "idle" };
-const KIND_LABELS = new Set<string>(Object.values(GROUP_KIND_LABEL));
 
 export function NewGroupForm({ city }: { city: string }) {
+  const { t } = useT();
   const [state, formAction, pending] = useActionState(createGroup, initialState);
   const [name, setName] = useState("");
   const [kind, setKind] = useState<GroupKind | "">("");
@@ -22,7 +23,7 @@ export function NewGroupForm({ city }: { city: string }) {
   const pick = (k: GroupKind) => {
     setKind(k);
     // Pre-fill only a name the person hasn't typed (empty, or another chip's label).
-    if (name.trim() === "" || KIND_LABELS.has(name.trim())) setName(GROUP_KIND_LABEL[k]);
+    if (name.trim() === "" || GROUP_KINDS.some((g) => groupKindLabel(t, g) === name.trim())) setName(groupKindLabel(t, k));
   };
 
   return (
@@ -43,7 +44,7 @@ export function NewGroupForm({ city }: { city: string }) {
                 onChange={() => pick(k)}
                 className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0"
               />
-              {GROUP_KIND_LABEL[k]}
+              {groupKindLabel(t, k)}
             </label>
           ))}
         </div>

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { errorText } from "@/lib/field-error";
+import { tEn } from "@/lib/i18n/test-t";
 import { exportFileName, parseChildName, parseGoal } from "@/lib/kid-schema";
 
 describe("kid schema", () => {
@@ -6,6 +8,15 @@ describe("kid schema", () => {
     expect(parseChildName("  Mary ")).toEqual({ ok: true, value: "Mary" });
     expect(parseChildName(" ").ok).toBe(false);
     expect(parseChildName("x".repeat(41)).ok).toBe(false);
+  });
+  it("says what is wrong, in the catalog's English", () => {
+    const say = (r: { ok: boolean; error?: Parameters<typeof errorText>[1] }) => (r.error ? errorText(tEn, r.error) : null);
+    expect(say(parseChildName(" "))).toBe("Enter a nickname.");
+    expect(say(parseChildName("x".repeat(41)))).toBe("Keep it to 40 characters.");
+    expect(say(parseGoal({ title: "", emoji: "🦁", target: "3" }))).toBe("Name the treat.");
+    expect(say(parseGoal({ title: "x".repeat(41), emoji: "🦁", target: "3" }))).toBe("Keep it to 40 characters.");
+    expect(say(parseGoal({ title: "Zoo", emoji: "ab", target: "3" }))).toBe("Pick one emoji.");
+    expect(say(parseGoal({ title: "Zoo", emoji: "🦁", target: "201" }))).toBe("Pick 1–200 stars.");
   });
   it("takes a goal of 1–200 stars with a title and one emoji", () => {
     expect(parseGoal({ title: " Ice cream ", emoji: "🍦", target: "20" })).toEqual({ ok: true, value: { title: "Ice cream", emoji: "🍦", target: 20 } });

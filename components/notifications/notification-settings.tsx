@@ -7,10 +7,9 @@ import { forgetPushSubscription, pauseAll, setDelivery, setReminderHour } from "
 import { currentEndpoint, TurnOnReminders } from "@/components/notifications/turn-on-reminders";
 import { InfoHint } from "@/components/info-hint";
 import { Button } from "@/components/ui/button";
-import { DEMO_OFF } from "@/lib/demo-copy";
-import { GENERIC_ERROR } from "@/lib/habit-errors";
+import { useT } from "@/lib/i18n/client";
 import {
-  APPROVALS_OFF_NOTE, DELIVERIES, IPHONE_SOUND_HINT, NOTIFICATION_CATEGORIES, PAUSE_CHOICES, reminderHourHint, reminderStatus,
+  DELIVERIES, NOTIFICATION_CATEGORIES, PAUSE_CHOICES, reminderHourHint, reminderStatus,
   type CategoryKey, type Delivery,
 } from "@/lib/notification-categories";
 import type { NotificationSettings } from "@/lib/notification-settings";
@@ -31,6 +30,7 @@ function pausedUntil(until: string, timeZone: string): string {
 
 // isDemo: a demo login can't save a push device, so it never sees the browser's permission prompt.
 export function NotificationSettingsCard({ settings, isDemo = false }: { settings: NotificationSettings; isDemo?: boolean }) {
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [here, setHere] = useState<string | null>(null);
@@ -72,7 +72,7 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
       <div className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-1">
           <label htmlFor="reminderHour" className="text-sm font-semibold">Daily reminder</label>
-          <InfoHint text={reminderHourHint(settings.devices.length > 0)} />
+          <InfoHint text={reminderHourHint(t, settings.devices.length > 0)} />
         </div>
         <select id="reminderHour" className={selectClass} defaultValue={settings.reminderHour} key={settings.reminderHour}
           disabled={pending} onChange={(e) => run(() => setReminderHour(Number(e.target.value)))}>
@@ -80,14 +80,14 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
         </select>
         {thisDeviceOn ? (
           <p ref={confirmation} tabIndex={-1} role="status" className="text-sm text-muted-foreground outline-none">
-            {reminderStatus({
+            {reminderStatus(t, {
               pausedUntil: paused ? pausedUntil(settings.mutedUntil!, settings.timezone) : null,
               delivery: settings.delivery.reminders,
               arrivesAt: justOn ? hourLabel(settings.reminderHour) : null,
             })}
           </p>
         ) : isDemo ? (
-          <p className="text-sm text-muted-foreground">{DEMO_OFF}</p>
+          <p className="text-sm text-muted-foreground">{t("demo.off")}</p>
         ) : (
           <TurnOnReminders
             hour={settings.reminderHour}
@@ -110,7 +110,7 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
           <div className="flex flex-wrap gap-2">
             {PAUSE_CHOICES.map((c) => (
               <Button key={c.choice} type="button" variant="outline" className="h-11" disabled={pending} onClick={() => run(() => pauseAll(c.choice))}>
-                {c.label}
+                {t(`notificationSettings.pauseChoice.${c.choice}`)}
               </Button>
             ))}
           </div>
@@ -120,9 +120,9 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
       <fieldset className="flex flex-col gap-4">
         <legend className="mb-1 text-sm font-semibold">What to send</legend>
         {NOTIFICATION_CATEGORIES.map((c) => (
-          <DeliveryChoice key={c.key} category={c.key} label={c.label} hint={c.hint} saved={settings.delivery[c.key]} onError={setError} />
+          <DeliveryChoice key={c.key} category={c.key} label={t(`notificationCategories.${c.key}.label`)} hint={t(`notificationCategories.${c.key}.hint`)} saved={settings.delivery[c.key]} onError={setError} />
         ))}
-        {iphone && <p className="text-sm text-muted-foreground">{IPHONE_SOUND_HINT}</p>}
+        {iphone && <p className="text-sm text-muted-foreground">{t("notificationSettings.iphoneSoundHint")}</p>}
       </fieldset>
 
       {settings.devices.length > 0 && (
@@ -172,6 +172,7 @@ function DeliveryChoice({ category, label, hint, saved, onError }: {
   saved: Delivery;
   onError: (message: string | null) => void;
 }) {
+  const { t } = useT();
   const [value, setValue] = useState<Delivery>(saved);
   const [saving, setSaving] = useState(false);
   // Another category's save refreshes the page: follow what is saved, unless a change here is waiting.
@@ -207,7 +208,7 @@ function DeliveryChoice({ category, label, hint, saved, onError }: {
       timer.current = null;
       waiting.current = null;
       const n = ++latest.current;
-      const r = await setDelivery(category, next).catch(() => ({ ok: false as const, message: GENERIC_ERROR }));
+      const r = await setDelivery(category, next).catch(() => ({ ok: false as const, message: t("errors.generic") }));
       // A newer change took over: its own save decides.
       if (n !== latest.current || timer.current !== null) return;
       if (!r.ok) {
@@ -223,7 +224,7 @@ function DeliveryChoice({ category, label, hint, saved, onError }: {
       <legend className="font-semibold">{label}</legend>
       <div className="flex items-start gap-2">
         <p id={`delivery-${category}-hint`} className="flex-1 text-xs text-muted-foreground">
-          {category === "approvals" && value === "inbox" ? APPROVALS_OFF_NOTE : hint}
+          {category === "approvals" && value === "inbox" ? t("notificationCategories.approvalsOffNote") : hint}
         </p>
         {/* Seen while the change waits or is being saved (screen readers get aria-busy). */}
         {saving && (
@@ -239,7 +240,7 @@ function DeliveryChoice({ category, label, hint, saved, onError }: {
             <input type="radio" name={`delivery-${category}`} value={d.delivery} checked={value === d.delivery}
               className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0"
               onChange={() => choose(d.delivery)} />
-            {d.label}
+            {t(`notificationSettings.delivery.${d.delivery}`)}
           </label>
         ))}
       </div>

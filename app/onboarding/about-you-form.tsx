@@ -7,6 +7,8 @@ import { SaveButton } from "@/components/save-button";
 import { TimezonePicker } from "@/components/timezone-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { errorTexts } from "@/lib/field-error";
+import { useT } from "@/lib/i18n/client";
 import { purposeForGroupKind, type GroupKind } from "@/lib/group-schema";
 import type { OnboardingFormState, OnboardingFormValues, Purpose } from "@/lib/profile-schema";
 import { cityOf, pickTimezone } from "@/lib/timezones";
@@ -41,6 +43,7 @@ function detectWeekStart(): "0" | "1" | null {
 }
 
 export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) {
+  const { t } = useT();
   const [state, formAction, pending] = useActionState(action, initialState);
   const [timezone, setTimezone] = useState(defaults.timezone);
   const [weekStart, setWeekStart] = useState(defaults.weekStart);
@@ -51,7 +54,7 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
   const detailsId = useId();
 
   const values = state.status === "error" && state.values ? state.values : defaults;
-  const errors = state.status === "error" ? (state.errors ?? {}) : {};
+  const errors = state.status === "error" ? errorTexts(t, state.errors) : {};
   const showDetails = expanded || Boolean(errors.timezone || errors.weekStart);
 
   // Time zone and week start come from the browser once, on mount (the server can't know them).

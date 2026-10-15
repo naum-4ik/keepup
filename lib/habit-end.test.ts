@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { tEn } from "@/lib/i18n/test-t";
 import { END_PRESETS, endLabel, endOptions, endProgress, endsOnFor, extendEnd, hasEnded, presetLabel, withoutEnded } from "./habit-end";
 
 describe("END_PRESETS", () => {
@@ -12,7 +13,7 @@ describe("END_PRESETS", () => {
 describe("endsOnFor", () => {
   it("is the last day of the n-th period, counting the start", () => {
     expect(endsOnFor("2026-10-01", "day", 7)).toBe("2026-10-07");
-    expect(presetLabel(7, "day")).toBe("7 days");
+    expect(presetLabel(tEn, 7, "day")).toBe("7 days");
     expect(endsOnFor("2026-10-01", "day", 30)).toBe("2026-10-30");
     expect(endsOnFor("2026-10-01", "week", 4)).toBe("2026-10-28");
     expect(endsOnFor("2026-10-01", "month", 3)).toBe("2026-12-31");
@@ -38,10 +39,10 @@ describe("endProgress", () => {
 
 describe("endLabel", () => {
   it("reads naturally", () => {
-    expect(endLabel({ n: 12, total: 30, almost: false }, "day")).toBe("Day 12 of 30");
-    expect(endLabel({ n: 28, total: 30, almost: true }, "day")).toBe("Almost there · Day 28 of 30");
-    expect(endLabel({ n: 3, total: 8, almost: false }, "week")).toBe("Week 3 of 8");
-    expect(endLabel({ n: 2, total: 6, almost: false }, "month")).toBe("Month 2 of 6");
+    expect(endLabel(tEn, { n: 12, total: 30, almost: false }, "day")).toBe("Day 12 of 30");
+    expect(endLabel(tEn, { n: 28, total: 30, almost: true }, "day")).toBe("Almost there · Day 28 of 30");
+    expect(endLabel(tEn, { n: 3, total: 8, almost: false }, "week")).toBe("Week 3 of 8");
+    expect(endLabel(tEn, { n: 2, total: 6, almost: false }, "month")).toBe("Month 2 of 6");
   });
 });
 
@@ -55,9 +56,9 @@ describe("extendEnd", () => {
 
 describe("endOptions", () => {
   it("offers the lengths that still end today or later, then +n after an end", () => {
-    expect(endOptions("2026-10-01", null, "2026-10-01", "day")?.map((o) => o.label)).toEqual(["7 days", "30 days", "60 days", "90 days"]);
-    expect(endOptions("2026-10-01", null, "2026-10-10", "day")?.map((o) => o.label)).toEqual(["30 days", "60 days", "90 days"]);
-    expect(endOptions("2026-10-01", "2026-10-07", "2026-10-03", "day")?.map((o) => [o.label, o.date])).toEqual([
+    expect(endOptions(tEn, "2026-10-01", null, "2026-10-01", "day")?.map((o) => o.label)).toEqual(["7 days", "30 days", "60 days", "90 days"]);
+    expect(endOptions(tEn, "2026-10-01", null, "2026-10-10", "day")?.map((o) => o.label)).toEqual(["30 days", "60 days", "90 days"]);
+    expect(endOptions(tEn, "2026-10-01", "2026-10-07", "2026-10-03", "day")?.map((o) => [o.label, o.date])).toEqual([
       ["+7 days", "2026-10-14"],
       ["+30 days", "2026-11-06"],
       ["+60 days", "2026-12-06"],
@@ -65,8 +66,8 @@ describe("endOptions", () => {
     ]);
   });
   it("still offers them on the last day, and none once today is past the end", () => {
-    expect(endOptions("2026-10-01", "2026-10-07", "2026-10-07", "day")).not.toBeNull();
-    expect(endOptions("2026-10-01", "2026-10-07", "2026-10-08", "day")).toBeNull();
+    expect(endOptions(tEn, "2026-10-01", "2026-10-07", "2026-10-07", "day")).not.toBeNull();
+    expect(endOptions(tEn, "2026-10-01", "2026-10-07", "2026-10-08", "day")).toBeNull();
   });
 });
 

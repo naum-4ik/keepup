@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { getProfile, requireUser } from "@/lib/auth";
 import { insertHabits } from "@/lib/habit-create";
 import { habitErrorMessage } from "@/lib/habit-errors";
+import { getT } from "@/lib/i18n/server";
 import { isUuid, parseHabit, type HabitInput } from "@/lib/habit-schema";
-import { MAX_STARTER_HABITS, onboardingTemplates } from "@/lib/habit-templates";
+import { MAX_STARTER_HABITS, onboardingTemplates, templateTitle } from "@/lib/habit-templates";
 import { parseOnboarding, parsePurpose, readOnboardingForm, type OnboardingFormState } from "@/lib/profile-schema";
 import { saveProfile } from "@/lib/profile-update";
 import { listTimezones } from "@/lib/timezones";
@@ -36,6 +37,7 @@ export async function completeOnboarding(_prev: OnboardingFormState, formData: F
 }
 
 export async function startWithHabits(_prev: PickHabitsState, formData: FormData): Promise<PickHabitsState> {
+  const { t } = await getT();
   const { supabase, userId, who, profile } = await getProfile();
   if (!profile.onboarded_at) redirect("/onboarding");
   const joined = readJoined(formData);
@@ -61,14 +63,14 @@ export async function startWithHabits(_prev: PickHabitsState, formData: FormData
   // Same validation as the new-habit screen. No start date: the database starts each today in the
   // user's time zone.
   const habits: HabitInput[] = [];
-  for (const t of picked) {
-    const parsed = parseHabit({ title: t.title, emoji: t.emoji, category: t.category, targetCount: String(t.targetCount), period: t.period, startsOn: "" });
+  for (const tpl of picked) {
+    const parsed = parseHabit({ title: templateTitle(t, tpl.id), emoji: tpl.emoji, category: tpl.category, targetCount: String(tpl.targetCount), period: tpl.period, startsOn: "" });
     if (!parsed.ok) return { status: "error", message: "Couldn't add your habits. Try again." };
     habits.push(parsed.value);
   }
 
   const { error, ids: created } = await insertHabits(supabase, habits);
-  if (error) return { status: "error", message: habitErrorMessage(error) };
+  if (error) return { status: "error", message: habitErrorMessage(t, error) };
   habits.forEach((h, i) =>
     track("habit_created", who, { "habit.scope": "private", "habit.id": created[i], "habit.title": h.title, "habit.category": h.category, "habit.period": h.period, "habit.target_count": h.targetCount }),
   );

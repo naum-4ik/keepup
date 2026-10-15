@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ExportChildButton, MoveChildForm, type MoveTarget } from "@/components/kids/child-danger-zone";
 import { childrenDeletionNotice } from "@/lib/group-schema";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 const initialState: GroupActionState = { status: "idle" };
@@ -68,6 +69,7 @@ function ConfirmDialog({
   groupChildren = [],
   moveTargets = [],
 }: Copy & { open: boolean; onOpenChange: (open: boolean) => void; action: Action }) {
+  const { t, locale } = useT();
   // Children moved out from this step; the dialog isn't remounted by the refresh, so track them here.
   const [moved, setMoved] = useState<Set<string>>(() => new Set());
   const remaining = groupChildren.filter((c) => !moved.has(c.id));
@@ -88,7 +90,7 @@ function ConfirmDialog({
           <div className="flex flex-col gap-3">
             {remaining.length > 0 || groupChildren.length === 0 ? (
               <p role="alert" className="text-sm font-semibold text-destructive">
-                {groupChildren.length > 0 ? childrenDeletionNotice(remaining.map((c) => c.name)) : childrenNotice}
+                {groupChildren.length > 0 ? childrenDeletionNotice(t, locale, remaining.map((c) => c.name)) : childrenNotice}
               </p>
             ) : (
               <p role="status" className="text-sm font-semibold">All children were moved.</p>

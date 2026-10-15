@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { isOneEmoji, isUuid, parseDetailsEdit, parseHabit, parseHabitDetails, readHabitForm, type HabitFormValues } from "./habit-schema";
+import { errorTexts, type FieldError } from "@/lib/field-error";
+import { tEn } from "@/lib/i18n/test-t";
+
+// The validators return catalog keys; these tests keep the English they have always shown.
+const english = <R extends { ok: boolean }>(r: R): R =>
+  (r as { ok: boolean; errors?: Record<string, FieldError> }).ok === false && "errors" in r
+    ? ({ ...r, errors: errorTexts(tEn, (r as unknown as { errors: Record<string, FieldError> }).errors) } as R)
+    : r;
 
 const valid: HabitFormValues = { title: "  Read  ", emoji: "📖", category: "mind", targetCount: "1", period: "day", startsOn: "2026-10-05" };
 
@@ -19,25 +27,25 @@ describe("parseHabit", () => {
   });
 
   it("rejects a malformed start date", () => {
-    expect(parseHabit({ ...valid, startsOn: "5 Oct" })).toEqual({ ok: false, errors: { startsOn: "Pick a start date." } });
+    expect(english(parseHabit({ ...valid, startsOn: "5 Oct" }))).toEqual({ ok: false, errors: { startsOn: "Pick a start date." } });
   });
 
   it("rejects a blank title", () => {
-    expect(parseHabit({ ...valid, title: "   " })).toEqual({ ok: false, errors: { title: "Enter a title." } });
+    expect(english(parseHabit({ ...valid, title: "   " }))).toEqual({ ok: false, errors: { title: "Enter a title." } });
   });
 
   it("allows 60 characters and rejects 61, counting like Postgres", () => {
     expect(parseHabit({ ...valid, title: "x".repeat(60) }).ok).toBe(true);
     expect(parseHabit({ ...valid, title: "😀".repeat(60) }).ok).toBe(true);
-    expect(parseHabit({ ...valid, title: "x".repeat(61) })).toEqual({
+    expect(english(parseHabit({ ...valid, title: "x".repeat(61) }))).toEqual({
       ok: false,
       errors: { title: "Keep it to 60 characters." },
     });
   });
 
   it("rejects unknown categories and periods", () => {
-    expect(parseHabit({ ...valid, category: "sport" })).toEqual({ ok: false, errors: { category: "Pick a category." } });
-    expect(parseHabit({ ...valid, period: "year" })).toEqual({ ok: false, errors: { period: "Pick how often." } });
+    expect(english(parseHabit({ ...valid, category: "sport" }))).toEqual({ ok: false, errors: { category: "Pick a category." } });
+    expect(english(parseHabit({ ...valid, period: "year" }))).toEqual({ ok: false, errors: { period: "Pick how often." } });
   });
 
   it.each([
@@ -51,7 +59,7 @@ describe("parseHabit", () => {
     ["day", "0x5", "Pick 1–50 times a day."],
     ["day", "-1", "Pick 1–50 times a day."],
   ])("rejects %s × %s", (period, count, message) => {
-    expect(parseHabit({ ...valid, period, targetCount: count })).toEqual({ ok: false, errors: { targetCount: message } });
+    expect(english(parseHabit({ ...valid, period, targetCount: count }))).toEqual({ ok: false, errors: { targetCount: message } });
   });
 
   it("accepts the limits", () => {
@@ -67,7 +75,7 @@ describe("parseHabitDetails", () => {
       ok: true,
       value: { title: "Walk", emoji: "🚶", category: "fitness" },
     });
-    expect(parseHabitDetails({ title: "", emoji: "ab", category: "x" })).toEqual({
+    expect(english(parseHabitDetails({ title: "", emoji: "ab", category: "x" }))).toEqual({
       ok: false,
       errors: { title: "Enter a title.", emoji: "Pick one emoji.", category: "Pick a category." },
     });
@@ -94,7 +102,7 @@ describe("emoji", () => {
 
   it("rejects one grapheme longer than the database allows (16 code points)", () => {
     expect(isOneEmoji("😀" + "\u0301".repeat(16))).toBe(false);
-    expect(parseHabit({ ...valid, emoji: "🙂🙂" })).toEqual({ ok: false, errors: { emoji: "Pick one emoji." } });
+    expect(english(parseHabit({ ...valid, emoji: "🙂🙂" }))).toEqual({ ok: false, errors: { emoji: "Pick one emoji." } });
   });
 });
 
@@ -128,7 +136,7 @@ describe("parseDetailsEdit", () => {
     expect(parseDetailsEdit({ title: "Tidy", emoji: "", category: "" })).toEqual({ ok: true, value: { title: "Tidy", emoji: "⭐", category: null } });
   });
   it("still refuses a bad title or an unknown category", () => {
-    expect(parseDetailsEdit({ title: " ", emoji: "", category: "" })).toEqual({ ok: false, errors: { title: "Enter a title." } });
-    expect(parseDetailsEdit({ title: "Tidy", emoji: "", category: "nope" })).toEqual({ ok: false, errors: { category: "Pick a category." } });
+    expect(english(parseDetailsEdit({ title: " ", emoji: "", category: "" }))).toEqual({ ok: false, errors: { title: "Enter a title." } });
+    expect(english(parseDetailsEdit({ title: "Tidy", emoji: "", category: "nope" }))).toEqual({ ok: false, errors: { category: "Pick a category." } });
   });
 });

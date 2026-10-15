@@ -5,7 +5,7 @@ import { HabitEmoji } from "@/components/habits/category-icon";
 import { StreakBadge } from "@/components/habits/streak-badge";
 import { HabitDots, WeekCard } from "@/components/overview/week-overview";
 import { Button } from "@/components/ui/button";
-import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
+import { categoryLabel, CATEGORY_ORDER } from "@/lib/categories";
 import { dayDetail } from "@/lib/day-detail";
 import { getProfile } from "@/lib/auth";
 import { todayIn } from "@/lib/dates";
@@ -14,15 +14,15 @@ import { getFinishedIds, getGroupTimezones, getHabitEnds, getHabitSummaries, get
 import { inProgressTab, type ProgressTab } from "@/lib/progress-lists";
 import { RestoreHabitButton } from "@/components/habits/restore-habit-button";
 import { StartAgainButton } from "@/components/habits/start-again-button";
-import type { HabitPeriod } from "@/lib/habit-schema";
+import { getT } from "@/lib/i18n/server";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
-import { hasWeekData } from "@/lib/week-overview";
+import { hasWeekData, streakSpan } from "@/lib/week-overview";
 
-const UNIT: Record<HabitPeriod, [string, string]> = { day: ["day", "days"], week: ["week", "weeks"], month: ["month", "months"] };
 
 export default async function ProgressPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const { view } = await searchParams;
+  const { t } = await getT();
   const showFinished = view === "finished";
   const showArchived = view === "archived" || showFinished;
   const tab: ProgressTab = showFinished ? "finished" : showArchived ? "archived" : "active";
@@ -52,7 +52,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
         <h1 className="text-xl font-bold">Progress</h1>
         <Link href="/progress/recaps" className="flex h-11 items-center rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted">Recaps</Link>
       </div>
-      {!showArchived && overview && hasWeekData(overview) && <WeekCard overview={overview} days={days} />}
+      {!showArchived && overview && hasWeekData(overview) && <WeekCard t={t} overview={overview} days={days} />}
 
       {/* The same segmented look as Inbox's tabs: filled pills read as primary buttons. */}
       <nav aria-label="Habit list" className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
@@ -91,7 +91,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
       ) : (
         categories.map((c) => (
           <section key={c} aria-labelledby={`cat-${c}-title`} className="flex flex-col gap-2">
-            <h2 id={`cat-${c}-title`} className="text-sm font-bold text-muted-foreground">{CATEGORIES[c].label}</h2>
+            <h2 id={`cat-${c}-title`} className="text-sm font-bold text-muted-foreground">{categoryLabel(t, c)}</h2>
             <ul className="flex flex-col gap-2">
               {habits
                 .filter((h) => h.category === c)
@@ -110,12 +110,12 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                         </span>
                         <span className="text-sm text-muted-foreground">
                           {!h.archived_at && ended(h) && "Ended · decide on Today · "}
-                          {describeSchedule(h.target_count, h.period)}
-                          {h.best_streak > 0 && ` · best ${h.best_streak} ${UNIT[h.period][h.best_streak === 1 ? 0 : 1]}`}
+                          {describeSchedule(t, h.target_count, h.period)}
+                          {h.best_streak > 0 && ` · best ${streakSpan(t, h.best_streak, h.period)}`}
                         </span>
                         {cellsFor.has(h.habit_id) && (
                           <span className="pt-1.5">
-                            <HabitDots cells={cellsFor.get(h.habit_id)!} category={h.category} period={h.period} />
+                            <HabitDots t={t} cells={cellsFor.get(h.habit_id)!} category={h.category} period={h.period} />
                           </span>
                         )}
                       </span>

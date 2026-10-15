@@ -7,8 +7,7 @@ import { useForgetOfflineHabits } from "@/components/offline/offline-queue-provi
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { GENERIC_ERROR } from "@/lib/habit-errors";
-import { NEEDS_CONNECTION } from "@/lib/offline-copy";
+import { useT } from "@/lib/i18n/client";
 import { isResetWord, RESET_CLEARS, RESET_KEEPS, RESET_WORD, runReset } from "@/lib/reset-my-data";
 
 // Settings → Reset my data (owner 2026-10-06): a fresh start that keeps the account and the family.
@@ -18,6 +17,7 @@ import { isResetWord, RESET_CLEARS, RESET_KEEPS, RESET_WORD, runReset } from "@/
 export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) {
   const [open, setOpen] = useState(false);
   const [word, setWord] = useState("");
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const forgetOffline = useForgetOfflineHabits();
@@ -27,7 +27,7 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
   function reset() {
     setError(null);
     if (!navigator.onLine) {
-      setError(NEEDS_CONNECTION);
+      setError(t("offline.needsConnection"));
       return;
     }
     startTransition(async () => {
@@ -39,7 +39,7 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
         });
         if (message) setError(message);
       } catch {
-        setError(navigator.onLine ? GENERIC_ERROR : NEEDS_CONNECTION);
+        setError(navigator.onLine ? t("errors.generic") : t("offline.needsConnection"));
       }
     });
   }

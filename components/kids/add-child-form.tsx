@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CHILD_NAME_MAX } from "@/lib/kid-schema";
-import { DEFAULT_KID_TEMPLATE_IDS, KID_TEMPLATES, kidTemplatesByGroup, type KidTemplate } from "@/lib/kid-templates";
+import { DEFAULT_KID_TEMPLATE_IDS, KID_TEMPLATES, kidGroupLabel, kidTemplatesByGroup, kidTemplateTitle, type KidTemplate } from "@/lib/kid-templates";
+import { useT } from "@/lib/i18n/client";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { keepFormValues } from "@/lib/keep-form-values";
@@ -19,14 +20,15 @@ const initialState: KidFormState = { status: "idle" };
 
 // A kid template as a big tappable card: the emoji large in a pastel circle, the title, how often.
 export function KidTemplateTile({ template, selected }: { template: KidTemplate; selected?: boolean }) {
+  const { t: tr } = useT();
   return (
     <>
       <span aria-hidden className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent text-3xl leading-none select-none">
         {template.emoji}
       </span>
       <span className="flex min-w-0 flex-1 flex-col text-left">
-        <span className="font-bold leading-tight">{template.title}</span>
-        <span className="text-xs text-muted-foreground">{describeSchedule(template.targetCount, template.period)}</span>
+        <span className="font-bold leading-tight">{kidTemplateTitle(tr, template.id)}</span>
+        <span className="text-xs text-muted-foreground">{describeSchedule(tr, template.targetCount, template.period)}</span>
       </span>
       {selected !== undefined && (
         <span
@@ -45,11 +47,12 @@ export function KidTemplateTile({ template, selected }: { template: KidTemplate;
 
 // The kid templates by group ("Morning", "Home", …): shared by Add a child and the kid "Add a habit" dialog.
 export function KidTemplateGroups({ templates, item }: { templates: readonly KidTemplate[]; item: (t: KidTemplate) => ReactNode }) {
+  const { t: tr } = useT();
   return (
     <>
       {kidTemplatesByGroup(templates).map((g) => (
-        <section key={g.group} aria-label={g.group} className="flex flex-col gap-2">
-          <h3 className="text-xs font-bold tracking-wide text-muted-foreground uppercase">{g.group}</h3>
+        <section key={g.group} aria-label={kidGroupLabel(tr, g.group)} className="flex flex-col gap-2">
+          <h3 className="text-xs font-bold tracking-wide text-muted-foreground uppercase">{kidGroupLabel(tr, g.group)}</h3>
           {g.templates.map((t) => (
             <div key={t.id}>{item(t)}</div>
           ))}
@@ -62,6 +65,7 @@ export function KidTemplateGroups({ templates, item }: { templates: readonly Kid
 // Add a child (ideas/design-review-backlog.md): nickname, avatar and the guardian box first, the
 // starter habits as short rows, "Choose more habits" for the rest, and the button always in reach.
 export function AddChildForm({ groupId }: { groupId: string }) {
+  const { t: tr } = useT();
   const [state, formAction, pending] = useActionState(addChild, initialState);
   const [name, setName] = useState("");
   const [picked, setPicked] = useState<Set<string>>(() => new Set(DEFAULT_KID_TEMPLATE_IDS));
@@ -129,13 +133,13 @@ export function AddChildForm({ groupId }: { groupId: string }) {
                   {t.emoji}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate font-bold leading-tight">{t.title}</span>
-                  <span className="text-xs text-muted-foreground">{describeSchedule(t.targetCount, t.period)}</span>
+                  <span className="truncate font-bold leading-tight">{kidTemplateTitle(tr, t.id)}</span>
+                  <span className="text-xs text-muted-foreground">{describeSchedule(tr, t.targetCount, t.period)}</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => toggle(t.id)}
-                  aria-label={`Remove ${t.title}`}
+                  aria-label={`Remove ${kidTemplateTitle(tr, t.id)}`}
                   className="flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
                 >
                   <X aria-hidden className="size-4" />

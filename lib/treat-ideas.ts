@@ -1,21 +1,26 @@
+import type { T } from "@/supabase/functions/_shared/i18n";
+
 // Treat goal suggestions (ideas/achievements-and-rewards.md §8): tap one to fill the form, or write your own.
 export const TREAT_IDEAS = [
-  { emoji: "🍦", title: "Ice cream at the park" },
-  { emoji: "🛝", title: "Trip to the playground" },
-  { emoji: "🎬", title: "Family movie night" },
-  { emoji: "🍕", title: "Pizza night" },
-  { emoji: "🧁", title: "Bake cupcakes together" },
-  { emoji: "🥞", title: "Pancake breakfast" },
-  { emoji: "🦁", title: "Trip to the zoo" },
-  { emoji: "🏊", title: "Swimming at the pool" },
-  { emoji: "🚲", title: "Bike ride together" },
-  { emoji: "🧺", title: "Picnic in the park" },
-  { emoji: "📚", title: "A new book" },
-  { emoji: "🎨", title: "New art supplies" },
-  { emoji: "🦖", title: "A small new toy" },
-  { emoji: "🎮", title: "Extra game time" },
-  { emoji: "🎡", title: "A day at the fair" },
-  { emoji: "🌙", title: "Stay up late on Friday" },
+  { id: "ice-cream", emoji: "🍦" },
+  { id: "playground", emoji: "🛝" },
+  { id: "movie-night", emoji: "🎬" },
+  { id: "pizza-night", emoji: "🍕" },
+  { id: "cupcakes", emoji: "🧁" },
+  { id: "pancakes", emoji: "🥞" },
+  { id: "zoo", emoji: "🦁" },
+  { id: "swimming", emoji: "🏊" },
+  { id: "bike-ride", emoji: "🚲" },
+  { id: "picnic", emoji: "🧺" },
+  { id: "new-book", emoji: "📚" },
+  { id: "art-supplies", emoji: "🎨" },
+  { id: "small-toy", emoji: "🦖" },
+  { id: "game-time", emoji: "🎮" },
+  { id: "fair", emoji: "🎡" },
+  { id: "late-friday", emoji: "🌙" },
 ] as const;
+
+// The idea's title, in the reader's language (templates.treat.<id>).
+export const treatTitle = (t: T, id: string): string => t(`templates.treat.${id}`);
 
 export const TREAT_EMOJI = ["🎁", ...new Set(TREAT_IDEAS.map((i) => i.emoji)), "🎈", "⭐"] as const;

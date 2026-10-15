@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HABIT_TITLE_MAX, type HabitPeriod } from "@/lib/habit-schema";
-import { KID_TEMPLATES } from "@/lib/kid-templates";
+import { useT } from "@/lib/i18n/client";
+import { KID_TEMPLATES, kidTemplateTitle } from "@/lib/kid-templates";
 import { keepFormValues } from "@/lib/keep-form-values";
 
 const initialState: KidFormState = { status: "idle" };
@@ -62,10 +63,11 @@ function TemplatePicker({
   existingTitles: string[];
   onCustom: () => void;
 }) {
+  const { t: tr } = useT();
   const [state, formAction, pending] = useActionState(addChildHabit.bind(null, childId), initialState);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
   const have = new Set(existingTitles);
-  const left = KID_TEMPLATES.filter((t) => !have.has(t.title));
+  const left = KID_TEMPLATES.filter((t) => !have.has(kidTemplateTitle(tr, t.id)));
 
   return (
     <>
@@ -90,8 +92,8 @@ function TemplatePicker({
               name="templateId"
               value={t.id}
               disabled={pending}
-              onClick={() => setLastAdded(t.title)}
-              aria-label={`Add ${t.title}`}
+              onClick={() => setLastAdded(kidTemplateTitle(tr, t.id))}
+              aria-label={`Add ${kidTemplateTitle(tr, t.id)}`}
               className="flex min-h-16 w-full items-center gap-3 rounded-2xl border-2 border-transparent bg-muted/60 p-3 hover:border-primary/30"
             >
               <KidTemplateTile template={t} />

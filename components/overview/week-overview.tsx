@@ -2,7 +2,8 @@ import Link from "next/link";
 import { CalendarDays, Check, ChevronRight, Flame, ListChecks } from "lucide-react";
 import { CATEGORIES } from "@/lib/categories";
 import type { HabitCategory, HabitPeriod } from "@/lib/habit-schema";
-import { STATUS_WORD, comparisonLine, goalsMet, ringDash, streakUnit, type HabitCells, type WeekOverview } from "@/lib/week-overview";
+import { comparisonLine, goalsMet, ringDash, statusWord, streakSpan, type HabitCells, type WeekOverview } from "@/lib/week-overview";
+import type { T } from "@/supabase/functions/_shared/i18n";
 import { cn } from "@/lib/utils";
 import type { DayRow } from "@/lib/day-detail";
 import { WeekDays } from "@/components/overview/week-days";
@@ -13,12 +14,12 @@ export function ProgressRing({
   done,
   possible,
   size = 20,
-  label = `${goalsMet(done, possible)} this week`,
+  label,
 }: {
   done: number;
   possible: number;
   size?: number;
-  label?: string;
+  label: string;
 }) {
   const stroke = Math.max(2.5, size / 8);
   const r = (size - stroke) / 2;
@@ -54,7 +55,7 @@ export function ProgressRing({
 }
 
 // Today: "This week · ◔ 18 of 22 · 🔥 12", linking to Progress.
-export function WeekStrip({ overview: o }: { overview: WeekOverview }) {
+export function WeekStrip({ t, overview: o }: { t: T; overview: WeekOverview }) {
   return (
     <Link
       href="/progress"
@@ -62,7 +63,7 @@ export function WeekStrip({ overview: o }: { overview: WeekOverview }) {
     >
       <span className="font-semibold text-muted-foreground">This week</span>
       <span aria-hidden className="text-muted-foreground">·</span>
-      <ProgressRing done={o.done} possible={o.possible} />
+      <ProgressRing done={o.done} possible={o.possible} label={t("weekOverview.ringLabel", { goals: goalsMet(t, o.done, o.possible) })} />
       {/* The ring's label says the same for screen readers. */}
       <span aria-hidden className="font-bold tabular-nums">
         {o.done} of {o.possible}
@@ -84,18 +85,18 @@ export function WeekStrip({ overview: o }: { overview: WeekOverview }) {
 
 // Progress: "Your week" card.
 // `days`: each past or current day's list for "tap a day" (Progress); without it the days aren't tappable.
-export function WeekCard({ overview: o, days }: { overview: WeekOverview; days?: Record<string, DayRow[]> }) {
+export function WeekCard({ t, overview: o, days }: { t: T; overview: WeekOverview; days?: Record<string, DayRow[]> }) {
   const streak = o.best_current_streak;
-  const line = comparisonLine(o);
+  const line = comparisonLine(t, o);
   return (
     <section aria-labelledby="your-week" className="flex flex-col gap-4 rounded-2xl bg-card p-4 shadow-soft">
       <div className="flex items-center gap-3">
-        <ProgressRing done={o.done} possible={o.possible} size={52} />
+        <ProgressRing done={o.done} possible={o.possible} size={52} label={t("weekOverview.ringLabel", { goals: goalsMet(t, o.done, o.possible) })} />
         <div className="flex min-w-0 flex-col">
           <h2 id="your-week" className="text-sm font-semibold text-muted-foreground">
             Your week
           </h2>
-          <p className="text-lg font-bold tabular-nums">{goalsMet(o.done, o.possible)}</p>
+          <p className="text-lg font-bold tabular-nums">{goalsMet(t, o.done, o.possible)}</p>
           {line && <p className="text-sm text-muted-foreground">{line}</p>}
         </div>
         {days && (
@@ -112,7 +113,7 @@ export function WeekCard({ overview: o, days }: { overview: WeekOverview; days?:
         <li className="flex min-w-0 flex-col items-center gap-0.5 text-center">
           <span className={cn("flex items-center gap-1 font-bold tabular-nums", streak > 0 ? STREAK : "text-muted-foreground")}>
             <Flame className={cn("size-4", streak > 0 && "fill-current")} aria-hidden />
-            {streak > 0 ? `${streak} ${streakUnit(streak, o.best_current_streak_period)}` : "No streak yet"}
+            {streak > 0 ? streakSpan(t, streak, o.best_current_streak_period) : "No streak yet"}
           </span>
           {streak > 0 && o.best_current_streak_title && (
             <span className="w-full truncate text-xs text-muted-foreground">{o.best_current_streak_title}</span>
@@ -145,15 +146,16 @@ const DOT: Record<HabitCells["cells"][number]["status"], string> = {
   open: "border border-input",
   rested: "bg-done/40",
 };
-const DOT_WORD = STATUS_WORD;
-const SPAN: Record<HabitPeriod, [string, string]> = { day: ["day", "days"], week: ["week", "weeks"], month: ["month", "months"] };
 
 // Progress rows: the last 7 days (or up to 7 weeks / months), oldest first.
-export function HabitDots({ cells, category, period }: { cells: HabitCells["cells"]; category: HabitCategory; period: HabitPeriod }) {
+export function HabitDots({ t, cells, category, period }: { t: T; cells: HabitCells["cells"]; category: HabitCategory; period: HabitPeriod }) {
   if (cells.length === 0) return null;
   const counts = new Map<string, number>();
-  for (const c of cells) counts.set(DOT_WORD[c.status], (counts.get(DOT_WORD[c.status]) ?? 0) + 1);
-  const label = `Last ${cells.length} ${SPAN[period][cells.length === 1 ? 0 : 1]}: ${[...counts].map(([w, n]) => `${n} ${w}`).join(", ")}`;
+  for (const c of cells) counts.set(statusWord(t, c.status), (counts.get(statusWord(t, c.status)) ?? 0) + 1);
+  const label = t("weekOverview.dotsLabel", {
+    span: t(`units.${period}`, { n: cells.length }),
+    counts: [...counts].map(([word, n]) => t("weekOverview.dotCount", { n, word })).join(", "),
+  });
   return (
     <span role="img" aria-label={label} className={cn("flex gap-1", CATEGORIES[category].iconClass)}>
       {cells.map((c) => (

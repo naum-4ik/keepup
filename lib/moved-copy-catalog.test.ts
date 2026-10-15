@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest";
-import * as copy from "./moved-copy";
 import { BANNED_PATTERNS, BANNED_WORDS } from "@/lib/notification-copy";
+import en from "@/supabase/functions/_shared/messages/en.json";
 
+// The "Keepup moved" notice and the /install page: the catalog's `moved` section. Voice: short, warm, no hype.
 describe("moved copy", () => {
-  const strings: [string, string][] = Object.entries(copy);
+  const strings: [string, string][] = Object.entries(en.moved);
 
   it("tells people to install again and turn reminders back on", () => {
-    expect(copy.MOVED_NOTICE).toMatch(/new address/);
-    expect(copy.MOVED_NOTICE).toMatch(/reminders/);
-    expect(copy.INSTALL_REMINDERS).toMatch(/Turn on reminders/);
+    expect(en.moved.notice).toMatch(/new address/);
+    expect(en.moved.notice).toMatch(/reminders/);
+    expect(en.moved.installReminders).toMatch(/Turn on reminders/);
   });
 
   it.each(strings)("%s is short and warm", (_, text) => {

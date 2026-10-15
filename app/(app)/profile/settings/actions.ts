@@ -6,7 +6,8 @@ import { redirect } from "next/navigation";
 import { LOCALE_COOKIE, asLocale, enabledLocales } from "@/i18n/config";
 import { requireUser } from "@/lib/auth";
 import { isCelebrationMode } from "@/lib/celebrations";
-import { GENERIC_ERROR } from "@/lib/habit-errors";
+import { genericError } from "@/lib/habit-errors";
+import { getT } from "@/lib/i18n/server";
 import type { DeletePreview } from "@/lib/my-data";
 import { parseProfile, readProfileForm, type ProfileFormState } from "@/lib/profile-schema";
 import { saveProfile } from "@/lib/profile-update";
@@ -31,10 +32,11 @@ export async function updateProfile(_prev: ProfileFormState, formData: FormData)
 
 // Settings → Celebrations (§9): Full or Subtle.
 export async function setCelebrations(mode: string): Promise<{ ok: true } | { ok: false; message: string }> {
-  if (!isCelebrationMode(mode)) return { ok: false, message: GENERIC_ERROR };
+  const { t } = await getT();
+  if (!isCelebrationMode(mode)) return { ok: false, message: genericError(t) };
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("set_celebrations", { p_mode: mode });
-  if (error) return { ok: false, message: GENERIC_ERROR };
+  if (error) return { ok: false, message: genericError(t) };
   revalidatePath("/profile/settings");
   return { ok: true };
 }
@@ -83,11 +85,12 @@ export async function syncLocale(save: string | null, cookie: string | null): Pr
 // their history, XP, levels, badges and Inbox (public.reset_my_data). The page then clears what waits
 // on the phone and opens Today, which says so calmly.
 export async function resetMyData(): Promise<{ ok: true } | { ok: false; message: string }> {
+  const { t } = await getT();
   const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("reset_my_data");
   if (error) {
     logError("reset my data", error.message);
-    return { ok: false, message: GENERIC_ERROR };
+    return { ok: false, message: genericError(t) };
   }
   track("data_reset", who);
   revalidatePath("/", "layout");
@@ -97,11 +100,12 @@ export async function resetMyData(): Promise<{ ok: true } | { ok: false; message
 // Settings → Your data (M6): everything Keepup keeps about this person, as one JSON object
 // (public.export_my_data). The page saves it as a file.
 export async function exportMyData(): Promise<{ ok: true; data: unknown } | { ok: false; message: string }> {
+  const { t } = await getT();
   const { supabase, who } = await requireUser();
   const { data, error } = await supabase.rpc("export_my_data");
   if (error) {
     logError("export my data", error.message);
-    return { ok: false, message: GENERIC_ERROR };
+    return { ok: false, message: genericError(t) };
   }
   track("data_exported", who);
   return { ok: true, data };
@@ -123,11 +127,12 @@ export async function deleteAccountPreview(): Promise<DeletePreview | null> {
 // session's token still verifies until it expires, but its user is gone: drop the cookies here and
 // leave for the landing page, which says so.
 export async function deleteMyAccount(): Promise<{ ok: false; message: string }> {
+  const { t } = await getT();
   const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("delete_my_account");
   if (error) {
     logError("delete my account", error.message);
-    return { ok: false, message: GENERIC_ERROR };
+    return { ok: false, message: genericError(t) };
   }
   track("account_deleted", who);
   await supabase.auth.signOut({ scope: "local" });

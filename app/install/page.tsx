@@ -10,7 +10,7 @@ import iphoneAdd from "@/docs/install/iphone-2-add.svg";
 import iphoneConfirm from "@/docs/install/iphone-3-confirm.svg";
 import iphoneIcon from "@/docs/install/iphone-4-icon.svg";
 import iphoneShare from "@/docs/install/iphone-1-share.svg";
-import { INSTALL_INTRO, INSTALL_REMINDERS, INSTALL_TITLE } from "@/lib/moved-copy";
+import { getT } from "@/lib/i18n/server";
 
 export const metadata: Metadata = { title: "How to install · Keepup" };
 export const dynamic = "force-static";
@@ -63,15 +63,16 @@ const SECTIONS: { heading: string; steps: string[]; pictures: Picture[] }[] = [
 
 // Public (lib/paths.ts): linked from Profile and from the "moved" notice (components/moved), and
 // saved by the service worker so it opens offline. The README's "How to install" says the same.
-export default function InstallPage() {
+export default async function InstallPage() {
+  const { t } = await getT();
   return (
     <main className="mx-auto w-full max-w-md px-4 py-6">
       <Link href="/" className="-ml-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
         <ChevronLeft aria-hidden className="size-4" />
         Keepup
       </Link>
-      <h1 className="mt-2 text-2xl font-bold">{INSTALL_TITLE}</h1>
-      <p className="mt-2 text-muted-foreground">{INSTALL_INTRO}</p>
+      <h1 className="mt-2 text-2xl font-bold">{t("moved.installTitle")}</h1>
+      <p className="mt-2 text-muted-foreground">{t("moved.installIntro")}</p>
       {SECTIONS.map(({ heading, steps, pictures }) => (
         <section key={heading} className="mt-6">
           <h2 className="text-lg font-bold">{heading}</h2>
@@ -87,7 +88,7 @@ export default function InstallPage() {
           </div>
         </section>
       ))}
-      <p className="mt-6 rounded-xl bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground">{INSTALL_REMINDERS}</p>
+      <p className="mt-6 rounded-xl bg-muted px-4 py-3 text-sm font-semibold text-muted-foreground">{t("moved.installReminders")}</p>
     </main>
   );
 }

@@ -3,6 +3,7 @@
 import { MapPin } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { InfoHint } from "@/components/info-hint";
+import { useT } from "@/lib/i18n/client";
 import { cityOf, timeChoices } from "@/lib/timezones";
 
 type Props = {
@@ -34,14 +35,15 @@ function useBrowserClock(): { now: Date | null; deviceZone: string | null } {
 
 // Pick the time zone by what the clock says now: one row per local time, each with a familiar city.
 export function TimezonePicker({ name, value, onChange, timezones, error, showChangeNote = false }: Props) {
+  const { locale } = useT();
   const [initial] = useState(value);
   const { now, deviceZone } = useBrowserClock();
   const device = deviceZone && timezones.includes(deviceZone) ? deviceZone : null;
   const selectRef = useRef<HTMLSelectElement>(null);
 
   const choices = useMemo(
-    () => (now ? timeChoices(timezones, now, device ? [value, device] : [value]) : []),
-    [now, timezones, value, device],
+    () => (now ? timeChoices(timezones, now, device ? [value, device] : [value], locale) : []),
+    [now, timezones, value, device, locale],
   );
 
   // The browser resets <form> fields after a server action runs; a <select> doesn't re-sync from its

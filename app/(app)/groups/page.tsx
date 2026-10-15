@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { Plus, Users } from "lucide-react";
+import { getT } from "@/lib/i18n/server";
 import { GroupCard } from "@/components/groups/group-card";
 import { addButtonClass } from "@/components/ui/add-button";
 import { Button } from "@/components/ui/button";
 import { getMyGroups } from "@/lib/groups";
 
 export default async function GroupsPage() {
+  const { t } = await getT();
   const groups = await getMyGroups();
 
   return (
@@ -28,7 +30,7 @@ export default async function GroupsPage() {
           <ul className="flex flex-col gap-3">
             {groups.map((g) => (
               <li key={g.group_id}>
-                <GroupCard group={g} />
+                <GroupCard group={g} t={t} />
               </li>
             ))}
           </ul>

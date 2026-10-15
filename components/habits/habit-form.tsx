@@ -14,15 +14,17 @@ import { addButtonClass } from "@/components/ui/add-button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
+import { categoryLabel, CATEGORY_ORDER } from "@/lib/categories";
 import { formatLocalDate } from "@/lib/dates";
 import type { GroupKind } from "@/lib/group-schema";
 import { groupTemplatesFor } from "@/lib/group-templates";
-import { HABIT_TEMPLATES, type HabitTemplate } from "@/lib/habit-templates";
+import { HABIT_TEMPLATES, templateTitle, type HabitTemplate } from "@/lib/habit-templates";
 import { startAfterSwitch, todayForGroup } from "@/lib/habit-start";
 import {
   HABIT_TITLE_MAX, isHabitCategory, TARGET_LIMITS, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod,
 } from "@/lib/habit-schema";
+import { errorTexts } from "@/lib/field-error";
+import { useT } from "@/lib/i18n/client";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +62,7 @@ export function HabitForm({
   // ?group=<id>: the group page's "Add a group habit" link.
   initialGroupId?: string;
 }) {
+  const { t: tr } = useT();
   // Together is offered only when adding from a group (?group=<id> of a group the user admins).
   const showTogether = Boolean(initialGroupId);
   const [tab, setTab] = useState<Tab>(initialGroupId ? "together" : "popular");
@@ -83,7 +86,7 @@ export function HabitForm({
   const pickTemplate = (t: HabitTemplate) =>
     open(
       false,
-      { title: t.title, emoji: t.emoji, category: t.category, targetCount: String(t.targetCount), period: t.period },
+      { title: templateTitle(tr, t.id), emoji: t.emoji, category: t.category, targetCount: String(t.targetCount), period: t.period },
       // A Together template pre-selects a group (the one from the link, else the first).
       tab === "together" ? (initialGroupId ?? groups[0].id) : undefined,
       // Together templates are for groups only: no "Just me".
@@ -114,7 +117,7 @@ export function HabitForm({
             ) : (
               <CategoryIcon category={key} size="xs" />
             )}
-            {key === "popular" ? "Popular" : key === "together" ? "Together" : CATEGORIES[key].label}
+            {key === "popular" ? "Popular" : key === "together" ? "Together" : categoryLabel(tr, key)}
           </button>
         ))}
       </div>
@@ -131,8 +134,8 @@ export function HabitForm({
           >
             <HabitEmoji category={t.category} emoji={t.emoji} size="xs" />
             <span className="flex min-w-0 flex-col">
-              <span className="line-clamp-2 text-[0.9375rem] leading-snug font-bold">{t.title}</span>
-              <span className="text-xs text-muted-foreground">{describeSchedule(t.targetCount, t.period)}</span>
+              <span className="line-clamp-2 text-[0.9375rem] leading-snug font-bold">{templateTitle(tr, t.id)}</span>
+              <span className="text-xs text-muted-foreground">{describeSchedule(tr, t.targetCount, t.period)}</span>
             </span>
           </button>
         ))}
@@ -202,6 +205,7 @@ function HabitFields({
   weekStart: 0 | 1;
   onPendingChange: (pending: boolean) => void;
 }) {
+  const { t: tr, locale } = useT();
   const [state, formAction, pending] = useActionState(submitHabit, initialState);
   const [groupId, setGroupId] = useState(initialGroupId);
   const group = groups.find((g) => g.id === groupId) ?? null;
@@ -212,7 +216,7 @@ function HabitFields({
   const [values, setValues] = useState(initial);
   const categoryRef = useRef<HTMLSelectElement>(null);
   const periodRef = useRef<HTMLSelectElement>(null);
-  const errors = state.status === "error" ? (state.errors ?? {}) : {};
+  const errors = state.status === "error" ? errorTexts(tr, state.errors) : {};
   const set = (key: keyof HabitFormValues) => (e: { target: { value: string } }) =>
     setValues((v) => ({ ...v, [key]: e.target.value }));
 
@@ -263,7 +267,7 @@ function HabitFields({
           {/* Not `required`: the browser would block the submit and hide the other fields' messages. */}
           <option value="" disabled>Pick a category</option>
           {CATEGORY_ORDER.map((c) => (
-            <option key={c} value={c}>{CATEGORIES[c].label}</option>
+            <option key={c} value={c}>{categoryLabel(tr, c)}</option>
           ))}
         </select>
         {errors.category && <p id="category-error" className="text-sm text-destructive">{errors.category}</p>}
@@ -346,7 +350,7 @@ function HabitFields({
           errorId={errors.startsOn ? "startsOn-error" : undefined}
         />
         <p className="text-xs text-muted-foreground">
-          {formatLocalDate(values.startsOn)}. Nothing before this day counts.
+          {formatLocalDate(values.startsOn, locale)}. Nothing before this day counts.
         </p>
         {errors.startsOn && <p id="startsOn-error" className="text-sm text-destructive">{errors.startsOn}</p>}
       </fieldset>
@@ -358,7 +362,7 @@ function HabitFields({
         <p role="alert" className="text-sm text-destructive">{state.message}</p>
       )}
       <Button type="submit" disabled={pending} className="h-11 text-base">
-        {pending ? "Adding…" : validCount ? `Add habit · ${describeSchedule(count, period)}` : "Add habit"}
+        {pending ? "Adding…" : validCount ? `Add habit · ${describeSchedule(tr, count, period)}` : "Add habit"}
       </Button>
     </form>
   );

@@ -6,9 +6,11 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { isAvatarColor, isAvatarEmoji } from "@/lib/avatars";
 import { errorCode, habitErrorMessage } from "@/lib/habit-errors";
+import { errorText } from "@/lib/field-error";
+import { getT } from "@/lib/i18n/server";
 import { isOneEmoji, isUuid, parseHabit } from "@/lib/habit-schema";
 import { isKidTheme } from "@/lib/garden";
-import { isKidTemplateId, KID_TEMPLATES } from "@/lib/kid-templates";
+import { isKidTemplateId, KID_TEMPLATES, kidTemplateTitle } from "@/lib/kid-templates";
 import { parseChildName, parseGoal } from "@/lib/kid-schema";
 import { logError, track } from "@/lib/log";
 
@@ -41,11 +43,12 @@ async function call(
   run: () => PromiseLike<{ error: { message: string } | null }>,
   event?: { name: string; who: Attributes; fields?: Attributes },
 ): Promise<KidActionResult> {
+  const { t } = await getT();
   const { error } = await run();
   if (error) {
     const code = errorCode(error);
     if (event && code) track(event.name, event.who, { ...event.fields, "refusal.code": code }, "WARN");
-    return { ok: false, message: habitErrorMessage(error), ...codeOf(error) };
+    return { ok: false, message: habitErrorMessage(t, error), ...codeOf(error) };
   }
   if (event) track(event.name, event.who, event.fields);
   refresh(childId);
@@ -60,11 +63,12 @@ function readAvatar(formData: FormData) {
 
 // Add a child (admins; the RPC enforces it) with the picked kid templates, then open her page.
 export async function addChild(_prev: KidFormState, formData: FormData): Promise<KidFormState> {
+  const { t } = await getT();
   const groupId = String(formData.get("groupId") ?? "");
   if (!isUuid(groupId)) return { status: "error", message: "Pick a group." };
   const name = parseChildName(String(formData.get("name") ?? ""));
-  if (!name.ok) return { status: "error", message: name.error };
-  if (formData.get("guardian") !== "on") return { status: "error", message: habitErrorMessage({ message: "keepup:guardian_required" }) };
+  if (!name.ok) return { status: "error", message: errorText(t, name.error) };
+  if (formData.get("guardian") !== "on") return { status: "error", message: habitErrorMessage(t, { message: "keepup:guardian_required" }) };
   const avatar = readAvatar(formData);
   const picked = new Set(formData.getAll("templates").map(String).filter(isKidTemplateId));
 
@@ -77,24 +81,25 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
     p_avatar_color: avatar.color as unknown as string,
     p_guardian_confirmed: true,
   });
-  if (error || !childId) return { status: "error", message: habitErrorMessage(error) };
+  if (error || !childId) return { status: "error", message: habitErrorMessage(t, error) };
   track("child_added", who, { "child.id": childId, "child.nickname": name.value, "group.id": groupId });
 
   let habitsFailed = false;
   // In template order, so her habit list reads like the picker.
-  for (const t of KID_TEMPLATES.filter((t) => picked.has(t.id))) {
+  for (const tpl of KID_TEMPLATES.filter((x) => picked.has(x.id))) {
+    const title = kidTemplateTitle(t, tpl.id);
     const { error: habitError } = await supabase.rpc("create_child_habit", {
       p_child_id: childId,
-      p_title: t.title,
-      p_emoji: t.emoji,
-      p_target_count: t.targetCount,
-      p_period: t.period,
+      p_title: title,
+      p_emoji: tpl.emoji,
+      p_target_count: tpl.targetCount,
+      p_period: tpl.period,
     });
     if (habitError) {
       logError("create_child_habit failed", habitError.message);
       habitsFailed = true;
     } else {
-      track("child_habit_added", who, { "child.id": childId, "child.nickname": name.value, "habit.title": t.title, "habit.period": t.period, "habit.target_count": t.targetCount });
+      track("child_habit_added", who, { "child.id": childId, "child.nickname": name.value, "habit.title": title, "habit.period": tpl.period, "habit.target_count": tpl.targetCount });
     }
   }
   refresh(childId);
@@ -103,9 +108,10 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
 }
 
 export async function updateChild(childId: string, _prev: KidFormState, formData: FormData): Promise<KidFormState> {
+  const { t } = await getT();
   if (!isUuid(childId)) return { status: "error", message: NO_CHILD };
   const name = parseChildName(String(formData.get("name") ?? ""));
-  if (!name.ok) return { status: "error", message: name.error };
+  if (!name.ok) return { status: "error", message: errorText(t, name.error) };
   const avatar = readAvatar(formData);
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("update_child", {
@@ -114,20 +120,21 @@ export async function updateChild(childId: string, _prev: KidFormState, formData
     ...(avatar.emoji ? { p_avatar_emoji: avatar.emoji } : {}),
     ...(avatar.color ? { p_avatar_color: avatar.color } : {}),
   });
-  if (error) return { status: "error", message: habitErrorMessage(error) };
+  if (error) return { status: "error", message: habitErrorMessage(t, error) };
   refresh(childId);
   return { status: "saved" };
 }
 
 // A kid template (templateId) or "Create your own" (title, emoji, targetCount, period).
 export async function addChildHabit(childId: string, _prev: KidFormState, formData: FormData): Promise<KidFormState> {
+  const { t } = await getT();
   if (!isUuid(childId)) return { status: "error", message: NO_CHILD };
   const templateId = String(formData.get("templateId") ?? "");
   let habit: { title: string; emoji: string; targetCount: number; period: "day" | "week" | "month" };
   if (templateId) {
-    const t = KID_TEMPLATES.find((x) => x.id === templateId);
-    if (!t) return { status: "error", message: "Pick a habit." };
-    habit = { title: t.title, emoji: t.emoji, targetCount: t.targetCount, period: t.period };
+    const tpl = KID_TEMPLATES.find((x) => x.id === templateId);
+    if (!tpl) return { status: "error", message: "Pick a habit." };
+    habit = { title: kidTemplateTitle(t, tpl.id), emoji: tpl.emoji, targetCount: tpl.targetCount, period: tpl.period };
   } else {
     const emoji = String(formData.get("emoji") ?? "").trim();
     if (emoji !== "" && !isOneEmoji(emoji)) return { status: "error", message: "Pick one emoji." };
@@ -142,7 +149,8 @@ export async function addChildHabit(childId: string, _prev: KidFormState, formDa
     });
     if (!parsed.ok) {
       const e = parsed.errors;
-      return { status: "error", message: e.title ?? e.emoji ?? e.targetCount ?? e.period ?? "Check the details." };
+      const first = e.title ?? e.emoji ?? e.targetCount ?? e.period;
+      return { status: "error", message: first ? errorText(t, first) : t("errors.checkDetails") };
     }
     habit = { title: parsed.value.title, emoji: emoji || "⭐", targetCount: parsed.value.targetCount, period: parsed.value.period };
   }
@@ -154,7 +162,7 @@ export async function addChildHabit(childId: string, _prev: KidFormState, formDa
     p_target_count: habit.targetCount,
     p_period: habit.period,
   });
-  if (error) return { status: "error", message: habitErrorMessage(error) };
+  if (error) return { status: "error", message: habitErrorMessage(t, error) };
   track("child_habit_added", who, { "child.id": childId, "habit.title": habit.title, "habit.period": habit.period, "habit.target_count": habit.targetCount });
   refresh(childId);
   return { status: "saved" };
@@ -173,13 +181,14 @@ export async function undoForChild(checkInId: string, habitId: string, childId: 
 }
 
 export async function setGoal(childId: string, _prev: KidFormState, formData: FormData): Promise<KidFormState> {
+  const { t } = await getT();
   if (!isUuid(childId)) return { status: "error", message: NO_CHILD };
   const goal = parseGoal({
     title: String(formData.get("title") ?? ""),
     emoji: String(formData.get("emoji") ?? ""),
     target: String(formData.get("target") ?? ""),
   });
-  if (!goal.ok) return { status: "error", message: goal.error };
+  if (!goal.ok) return { status: "error", message: errorText(t, goal.error) };
   const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("set_treat_goal", {
     p_child_id: childId,
@@ -187,7 +196,7 @@ export async function setGoal(childId: string, _prev: KidFormState, formData: Fo
     p_emoji: goal.value.emoji,
     p_target: goal.value.target,
   });
-  if (error) return { status: "error", message: habitErrorMessage(error) };
+  if (error) return { status: "error", message: habitErrorMessage(t, error) };
   track("treat_goal_set", who, { "child.id": childId, "goal.target": goal.value.target });
   refresh(childId);
   return { status: "saved" };
@@ -235,10 +244,11 @@ export async function resetChild(childId: string): Promise<KidActionResult> {
 
 // The JSON for "Export {Mary}'s data"; the client saves it as a file.
 export async function exportChild(childId: string): Promise<{ ok: true; data: unknown } | { ok: false; message: string }> {
+  const { t } = await getT();
   if (!isUuid(childId)) return { ok: false, message: NO_CHILD };
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("export_child", { p_child_id: childId });
-  if (error) return { ok: false, message: habitErrorMessage(error) };
+  if (error) return { ok: false, message: habitErrorMessage(t, error) };
   return { ok: true, data };
 }
 

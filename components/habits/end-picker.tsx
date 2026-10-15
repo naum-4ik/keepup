@@ -6,6 +6,7 @@ import { dateChipClass } from "@/components/habits/start-date-picker";
 import { END_PRESETS, endsOnFor, presetLabel } from "@/lib/habit-end";
 import type { HabitPeriod } from "@/lib/habit-schema";
 import { formatLocalDate } from "@/lib/dates";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 type Choice = "none" | number | "date";
@@ -14,6 +15,7 @@ type Choice = "none" | number | "date";
 // "Pick a date": the start picker already has a button with that name). Posts
 // `endsOn` (the last day that counts) or "" for no end.
 export function EndPicker({ period, startsOn, name = "endsOn" }: { period: HabitPeriod; startsOn: string; name?: string }) {
+  const { t, locale } = useT();
   const [choice, setChoice] = useState<Choice>("none");
   const [date, setDate] = useState("");
   const endsOn = choice === "none" ? "" : choice === "date" ? date : endsOnFor(startsOn, period, choice);
@@ -27,7 +29,7 @@ export function EndPicker({ period, startsOn, name = "endsOn" }: { period: Habit
         </button>
         {END_PRESETS[period].map((n) => (
           <button key={n} type="button" aria-pressed={choice === n} onClick={() => setChoice(n)} className={dateChipClass}>
-            {presetLabel(n, period)}
+            {presetLabel(t, n, period)}
           </button>
         ))}
         <button type="button" aria-pressed={choice === "date"} onClick={() => setChoice("date")} className={dateChipClass}>
@@ -45,7 +47,7 @@ export function EndPicker({ period, startsOn, name = "endsOn" }: { period: Habit
         />
       )}
       <p className={cn("text-xs text-muted-foreground")}>
-        {endsOn ? `Last day: ${formatLocalDate(endsOn)}. Then you choose to keep going or finish.` : "Keeps going until you stop it."}
+        {endsOn ? `Last day: ${formatLocalDate(endsOn, locale)}. Then you choose to keep going or finish.` : "Keeps going until you stop it."}
       </p>
     </fieldset>
   );

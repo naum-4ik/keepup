@@ -5,8 +5,9 @@ import Link from "next/link";
 import { Check } from "lucide-react";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { Button } from "@/components/ui/button";
-import { CATEGORIES } from "@/lib/categories";
-import { MAX_STARTER_HABITS, type HabitTemplate } from "@/lib/habit-templates";
+import { categoryLabel } from "@/lib/categories";
+import { MAX_STARTER_HABITS, templateTitle, type HabitTemplate } from "@/lib/habit-templates";
+import { useT } from "@/lib/i18n/client";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { startWithHabits, type PickHabitsState } from "./actions";
@@ -15,6 +16,7 @@ const initialState: PickHabitsState = { status: "idle" };
 
 // `joined`: the group an invited user just joined; skipping is the expected path, so Skip is a real button.
 export function PickHabits({ templates, joined }: { templates: HabitTemplate[]; joined?: string }) {
+  const { t: tr } = useT();
   const [state, formAction, pending] = useActionState(startWithHabits, initialState);
   const [picked, setPicked] = useState<string[]>([]);
   const [atLimit, setAtLimit] = useState(false);
@@ -34,7 +36,7 @@ export function PickHabits({ templates, joined }: { templates: HabitTemplate[]; 
   const groups: { title: string; items: HabitTemplate[] }[] = [
     { title: "Popular", items: templates.filter((t) => t.popular) },
     ...(["people", "home"] as const).map((c) => ({
-      title: CATEGORIES[c].label,
+      title: categoryLabel(tr, c),
       items: templates.filter((t) => !t.popular && t.category === c),
     })),
   ].filter((g) => g.items.length > 0);
@@ -66,8 +68,8 @@ export function PickHabits({ templates, joined }: { templates: HabitTemplate[]; 
                 >
                   <HabitEmoji category={t.category} emoji={t.emoji} size="xs" />
                   <span className="flex min-w-0 flex-col">
-                    <span className="line-clamp-3 text-[0.9375rem] leading-snug font-bold">{t.title}</span>
-                    <span className="text-xs text-muted-foreground">{describeSchedule(t.targetCount, t.period)}</span>
+                    <span className="line-clamp-3 text-[0.9375rem] leading-snug font-bold">{templateTitle(tr, t.id)}</span>
+                    <span className="text-xs text-muted-foreground">{describeSchedule(tr, t.targetCount, t.period)}</span>
                   </span>
                   <span
                     aria-hidden
