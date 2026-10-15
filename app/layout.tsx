@@ -54,21 +54,22 @@ const siteUrl = siteUrlFor({
   deployEnv: process.env.NEXT_PUBLIC_DEPLOY_ENV,
   vercelProductionUrl: process.env.VERCEL_PROJECT_PRODUCTION_URL,
 });
-// Words in the visitor's language (meta.*, common.tagline); "Keepup" is the name and stays. The image
-// (app/opengraph-image.png and its alt text) stays English.
+// Words in the visitor's language (meta.*, common.tagline). The image (app/opengraph-image.png and its
+// alt text) stays English.
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations();
   const shareTitle = t("meta.shareTitle");
   const shareText = t("meta.shareText");
+  const appName = t("meta.appName");
   return {
     metadataBase: new URL(siteUrl),
-    title: "Keepup",
+    title: appName,
     description: t("common.tagline"),
     applicationName: "Keepup",
     openGraph: { type: "website", siteName: "Keepup", title: shareTitle, description: shareText, url: "/" },
     twitter: { card: "summary_large_image", title: shareTitle, description: shareText },
     // iPhone "Add to Home Screen": full screen, named Keepup (the icon is app/apple-icon.png).
-    appleWebApp: { capable: true, title: "Keepup", statusBarStyle: "default" },
+    appleWebApp: { capable: true, title: appName, statusBarStyle: "default" },
   };
 }
 
