@@ -1,5 +1,6 @@
+import { formatMonth } from "@/lib/dates";
 import { recapCopy } from "@/lib/notification-copy";
-import type { Locale, T } from "@/supabase/functions/_shared/i18n";
+import { INTL_LOCALE, isolate, type Locale, type T } from "@/supabase/functions/_shared/i18n";
 
 // Progress → Recaps (ideas/achievements-and-rewards.md §6): the shape of private.recap_impl.
 export type Streak = { title: string; emoji: string; length: number; period: "day" | "week" | "month" };
@@ -34,20 +35,23 @@ export function parseRecap(v: unknown): Recap | null {
   };
 }
 
-const utc = (iso: string) => new Date(`${iso}T00:00:00Z`);
-// Fixed abbreviations: newer ICU data spells September "Sept" in en-GB.
+// English keeps fixed abbreviations: newer ICU data spells September "Sept" in en-GB.
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-export function recapTitle(r: Recap): string {
+const shortMonth = (locale: Locale, start: string): string =>
+  locale === "en"
+    ? MON[Number(start.slice(5, 7)) - 1]
+    : new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: "UTC", month: "short" }).format(new Date(`${start}T00:00:00Z`));
+export function recapTitle(t: T, locale: Locale, r: Recap): string {
   return r.kind === "week"
-    ? `Week of ${Number(r.start.slice(8))} ${MON[Number(r.start.slice(5, 7)) - 1]}`
-    : new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", month: "long", year: "numeric" }).format(utc(r.start));
+    ? t("recaps.weekOf", { day: String(Number(r.start.slice(8))), month: shortMonth(locale, r.start) })
+    : formatMonth(r.start.slice(0, 7), locale);
 }
 
 // Wins only (owner 2026-10-04): never "0 of N".
 // `context`: "history" drops the Inbox row's "last week" (the card is dated already).
 export function recapLine(t: T, locale: Locale, r: Recap, context: "inbox" | "history" = "inbox"): string {
-  if (r.possible > 0 && r.done === 0) return r.kind === "week" ? "A quiet week." : "A quiet month.";
-  return recapCopy(t, locale, r as unknown as Record<string, unknown>, context)?.body ?? "Nothing was due.";
+  if (r.possible > 0 && r.done === 0) return t(r.kind === "week" ? "recaps.quietWeek" : "recaps.quietMonth");
+  return recapCopy(t, locale, r as unknown as Record<string, unknown>, context)?.body ?? t("recaps.nothingDue");
 }
 
 // 0 = nothing due that day; 1–4 = a share of it done (1 is a soft tint, never red).
@@ -60,5 +64,4 @@ export function heatLevel(done: number, possible: number): 0 | 1 | 2 | 3 | 4 {
   return 1;
 }
 
-const UNIT = { day: ["day", "days"], week: ["week", "weeks"], month: ["month", "months"] } as const;
-export const streakLabel = (s: Streak): string => `${s.title} 🔥 ${s.length} ${UNIT[s.period][s.length === 1 ? 0 : 1]}`;
+export const streakLabel = (t: T, s: Streak): string => t("recaps.streak", { title: isolate(s.title), span: t(`units.${s.period}`, { n: s.length }) });

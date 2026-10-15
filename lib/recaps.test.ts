@@ -16,8 +16,8 @@ describe("recaps", () => {
     expect(r.days.map((d) => d.rested)).toEqual([1, 0]);
   });
   it("titles a week by its first day and a month by name", () => {
-    expect(recapTitle(parseRecap(week)!)).toBe("Week of 28 Sep");
-    expect(recapTitle(parseRecap({ ...week, kind: "month", start: "2026-09-01", end: "2026-10-01" })!)).toBe("September 2026");
+    expect(recapTitle(tEn, "en", parseRecap(week)!)).toBe("Week of 28 Sep");
+    expect(recapTitle(tEn, "en", parseRecap({ ...week, kind: "month", start: "2026-09-01", end: "2026-10-01" })!)).toBe("September 2026");
   });
   it("uses the Inbox words, and stays gentle when nothing was due", () => {
     expect(recapLine(tEn, "en", parseRecap(week)!)).toBe("10 of 11 check-ins last week. Longest streak: \u2068Read\u2069 🔥 7 days");
@@ -34,6 +34,6 @@ describe("recaps", () => {
     expect([heatLevel(0, 0), heatLevel(0, 3), heatLevel(1, 3), heatLevel(2, 3), heatLevel(3, 3)]).toEqual([0, 1, 2, 3, 4]);
   });
   it("names a streak with its unit", () => {
-    expect(streakLabel({ title: "Gym", emoji: "🏋️", length: 1, period: "week" })).toBe("Gym 🔥 1 week");
+    expect(streakLabel(tEn, { title: "Gym", emoji: "🏋️", length: 1, period: "week" })).toBe("\u2068Gym\u2069 🔥 1 week");
   });
 });

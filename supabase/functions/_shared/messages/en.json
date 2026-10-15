@@ -225,5 +225,12 @@
     "freshStart": "A fresh start this week",
     "dotsLabel": "Last {span}: {counts}",
     "dotCount": "{n} {word}"
+  },
+  "recaps": {
+    "weekOf": "Week of {day} {month}",
+    "quietWeek": "A quiet week.",
+    "quietMonth": "A quiet month.",
+    "nothingDue": "Nothing was due.",
+    "streak": "{title} 🔥 {span}"
   }
 }

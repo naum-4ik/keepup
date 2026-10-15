@@ -31,7 +31,7 @@ export default async function RecapsPage() {
           <ul className="flex flex-col gap-2">
             {weeks.map((r) => (
               <li key={r.start} className="flex flex-col gap-1 rounded-2xl bg-card p-4 shadow-soft">
-                <p className="text-xs font-semibold text-muted-foreground">{recapTitle(r)}</p>
+                <p className="text-xs font-semibold text-muted-foreground">{recapTitle(t, locale, r)}</p>
                 <p className="font-semibold">{recapLine(t, locale, r, "history")}</p>
               </li>
             ))}
@@ -48,14 +48,14 @@ export default async function RecapsPage() {
               return (
                 <li key={r.start} className="flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-soft">
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground">{recapTitle(r)}</p>
+                    <p className="text-xs font-semibold text-muted-foreground">{recapTitle(t, locale, r)}</p>
                     <p className="font-semibold">{recapLine(t, locale, r, "history")}</p>
                   </div>
                   <MonthHeatmap recap={r} weekStart={weekStart} />
                   {rested > 0 && <p className="text-sm text-muted-foreground">Rest days: {rested} (dashed)</p>}
                   {r.top.length > 0 && (
                     <ul aria-label="Top streaks" className="flex flex-col gap-1 text-sm">
-                      {r.top.map((s) => <li key={s.title}>{s.emoji} {streakLabel(s)}</li>)}
+                      {r.top.map((s) => <li key={s.title}>{s.emoji} {streakLabel(t, s)}</li>)}
                     </ul>
                   )}
                   {r.badges.length > 0 && (
