@@ -34,7 +34,7 @@ export function PickHabits({ templates, joined }: { templates: HabitTemplate[]; 
 
   // Popular first; with a family/friends purpose the People and Home extras follow in their own groups.
   const groups: { title: string; items: HabitTemplate[] }[] = [
-    { title: "Popular", items: templates.filter((t) => t.popular) },
+    { title: tr("habits.form.popular"), items: templates.filter((t) => t.popular) },
     ...(["people", "home"] as const).map((c) => ({
       title: categoryLabel(tr, c),
       items: templates.filter((t) => !t.popular && t.category === c),
@@ -90,7 +90,7 @@ export function PickHabits({ templates, joined }: { templates: HabitTemplate[]; 
       {/* Stays in reach under a long list (family/friends adds 12 more cards). */}
       <div className="sticky bottom-0 -mx-4 flex flex-col gap-2 bg-background/95 px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur">
         <p role="status" className="min-h-5 text-center text-sm font-semibold text-muted-foreground">
-          {atLimit ? `Pick up to ${MAX_STARTER_HABITS}` : n > 0 ? `${n} of ${MAX_STARTER_HABITS} picked` : ""}
+          {atLimit ? tr("onboarding.habits.atLimit", { max: MAX_STARTER_HABITS }) : n > 0 ? tr("onboarding.habits.picked", { n, max: MAX_STARTER_HABITS }) : ""}
         </p>
         {state.status === "error" && (
           <p role="alert" className="text-center text-sm text-destructive">
@@ -98,15 +98,15 @@ export function PickHabits({ templates, joined }: { templates: HabitTemplate[]; 
           </p>
         )}
         <Button type="submit" disabled={n === 0 || pending} className="h-11 text-base">
-          {pending ? "Adding…" : n === 0 ? "Pick a habit to start" : `Start with ${n} ${n === 1 ? "habit" : "habits"}`}
+          {pending ? tr("habits.form.adding") : n === 0 ? tr("onboarding.habits.pickToStart") : tr("onboarding.habits.startWith", { n })}
         </Button>
         {joined ? (
           <Button asChild variant="secondary" className="h-11 w-full text-base">
-            <Link href={`/today?joined=${joined}`}>Skip</Link>
+            <Link href={`/today?joined=${joined}`}>{tr("onboarding.habits.skip")}</Link>
           </Button>
         ) : (
           <Button asChild variant="ghost" className="h-11 text-base text-muted-foreground">
-            <Link href="/today">Skip for now</Link>
+            <Link href="/today">{tr("onboarding.habits.skipForNow")}</Link>
           </Button>
         )}
       </div>

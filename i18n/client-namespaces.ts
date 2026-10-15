@@ -6,6 +6,7 @@ import type { Messages } from "next-intl";
 // helpers they hand a translator to (kidTemplateTitle(t, …), <Garden t={t}>), plus validation keys that
 // server actions return untranslated (FieldError). lib/i18n/client-namespaces.test.ts keeps this list in step.
 export const CLIENT_NAMESPACES = [
+  "auth",
   "avatars",
   "categories",
   "celebrations",
@@ -30,6 +31,7 @@ export const CLIENT_NAMESPACES = [
   "notificationSettings",
   "notifications",
   "offline",
+  "onboarding",
   "overview",
   "profile",
   "pushSupport",

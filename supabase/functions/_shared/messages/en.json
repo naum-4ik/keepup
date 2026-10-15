@@ -505,7 +505,91 @@
     "invalidCredentials": "That email and password don't match. Try again.",
     "accountExists": "That email already has an account.",
     "samePassword": "That's the password you have now. Choose a new one.",
-    "rateLimited": "Too many tries. Wait a minute and try again."
+    "rateLimited": "Too many tries. Wait a minute and try again.",
+    "signIn": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "emailPlaceholder": "you@example.com",
+    "or": "OR",
+    "continueGoogle": "Continue with Google",
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Keep up your habits, and do the ones that matter with your family.",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "forgot": "Forgot password?",
+      "sending": "Sending…",
+      "needEmail": "Type your email above, then tap Forgot password? again.",
+      "orGoogle": "Or sign in with Google using the same email.",
+      "signingIn": "Signing in…",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password"
+    },
+    "signup": {
+      "title": "Create your account",
+      "subtitle": "Track your habits on your own, or together with your family.",
+      "haveAccount": "Already have an account?",
+      "passwordRule": "At least {min} characters.",
+      "signInInstead": "Sign in instead",
+      "creating": "Creating your account…",
+      "create": "Create account"
+    },
+    "newPassword": {
+      "title": "Choose a new password",
+      "subtitle": "You'll sign in with it from now on.",
+      "label": "New password",
+      "save": "Save new password"
+    },
+    "error": {
+      "linkTitle": "That link didn't work",
+      "linkBody": "Email links work once, for an hour. Sign in, or ask for a new reset link from the sign-in screen.",
+      "title": "Sign-in didn't work",
+      "expired": "This link was already used or has expired. Sign in again.",
+      "denied": "Sign-in was cancelled or not allowed. Try again.",
+      "unknown": "Something went wrong while signing you in. Try again in a moment.",
+      "expiry": "Links expire after an hour and must be opened in the same browser you requested them from.",
+      "back": "Back to sign in"
+    }
+  },
+  "onboarding": {
+    "title": "Welcome to Keepup",
+    "subtitle": "A little about you, then your first habits.",
+    "subtitleInvited": "You're joining <bdi>{group}</bdi>. A little about you first.",
+    "weeksStart": "weeks start {day}",
+    "purposeLabel": "Keepup is for… <muted>(optional)</muted>",
+    "purpose": {
+      "me": "Me",
+      "family": "My family",
+      "friends": "Friends"
+    },
+    "habits": {
+      "title": "Pick 1–{max} habits to start",
+      "subtitle": "Each starts today. You can change them any time.",
+      "joinedEmpty": "Add a few habits of your own?",
+      "joinedTogether": "<bdi>{group}</bdi> already has {n, plural, one {# habit} other {# habits}} together. Add your own too?",
+      "joinedSubtitle": "Pick up to {max}. Each starts today.",
+      "atLimit": "Pick up to {max}",
+      "picked": "{n} of {max} picked",
+      "pickToStart": "Pick a habit to start",
+      "startWith": "Start with {n, plural, one {# habit} other {# habits}}",
+      "skip": "Skip",
+      "skipForNow": "Skip for now",
+      "addFailed": "Couldn't add your habits. Try again.",
+      "pickRange": "Pick 1–{max} habits."
+    }
+  },
+  "invite": {
+    "invalidTitle": "This invite link doesn't work anymore",
+    "invalidBody": "Ask the person who sent it for a new one.",
+    "goToKeepup": "Go to Keepup",
+    "invitedYou": "<bdi>{inviter}</bdi> invited you to <bdi>{group}</bdi>",
+    "members": "{n, plural, one {# person is already in <bdi>{group}</bdi>.} other {# people are already in <bdi>{group}</bdi>.}}",
+    "open": "Open {group}",
+    "join": "Join {group}",
+    "joining": "Joining…",
+    "joinGoogle": "Join with Google",
+    "useEmail": "Use email instead",
+    "continueEmail": "Continue with email"
   },
   "templates": {
     "water": "Drink water",
@@ -1332,7 +1416,9 @@
     "reset": "Reset",
     "delete": "Delete",
     "addHabit": "Add a habit",
-    "noHabits": "No habits yet."
+    "noHabits": "No habits yet.",
+    "change": "Change",
+    "continue": "Continue"
   },
   "inbox": {
     "title": "Inbox",
@@ -1432,6 +1518,10 @@
     },
     "level": {
       "xpLabel": "XP to Level {next}"
+    },
+    "errors": {
+      "timezoneUnsupported": "That time zone isn't supported. Pick a nearby city.",
+      "saveFailed": "Couldn't save. Try again."
     }
   },
   "kidView": {

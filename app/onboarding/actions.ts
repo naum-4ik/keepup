@@ -22,13 +22,14 @@ function readJoined(formData: FormData): string | null {
 }
 
 export async function completeOnboarding(_prev: OnboardingFormState, formData: FormData): Promise<OnboardingFormState> {
+  const { t } = await getT();
   const values = readOnboardingForm(formData);
   const parsed = parseOnboarding(values, new Set(listTimezones()));
   if (!parsed.ok) return { status: "error", errors: parsed.errors, values };
 
   const { supabase, userId, who } = await requireUser();
   // Marking onboarded also records terms_accepted_at (server-set, see the migration).
-  const message = await saveProfile(supabase, userId, parsed.value, { markOnboarded: true });
+  const message = await saveProfile(t, supabase, userId, parsed.value, { markOnboarded: true });
   if (message) return { status: "error", message, values };
 
   track("onboarding_completed", who);
@@ -49,7 +50,7 @@ export async function startWithHabits(_prev: PickHabitsState, formData: FormData
     .from("habits")
     .select("id", { count: "exact", head: true })
     .eq("owner_id", userId);
-  if (countError) return { status: "error", message: "Couldn't add your habits. Try again." };
+  if (countError) return { status: "error", message: t("onboarding.habits.addFailed") };
   if ((count ?? 0) > 0) redirect(today);
 
   const purpose = parsePurpose(profile.purpose ?? "");
@@ -57,7 +58,7 @@ export async function startWithHabits(_prev: PickHabitsState, formData: FormData
   const ids = [...new Set(formData.getAll("templateId").map(String))];
   const picked = offered.filter((t) => ids.includes(t.id));
   if (picked.length === 0 || picked.length !== ids.length || picked.length > MAX_STARTER_HABITS) {
-    return { status: "error", message: `Pick 1–${MAX_STARTER_HABITS} habits.` };
+    return { status: "error", message: t("onboarding.habits.pickRange", { max: MAX_STARTER_HABITS }) };
   }
 
   // Same validation as the new-habit screen. No start date: the database starts each today in the
@@ -65,7 +66,7 @@ export async function startWithHabits(_prev: PickHabitsState, formData: FormData
   const habits: HabitInput[] = [];
   for (const tpl of picked) {
     const parsed = parseHabit({ title: templateTitle(t, tpl.id), emoji: tpl.emoji, category: tpl.category, targetCount: String(tpl.targetCount), period: tpl.period, startsOn: "" });
-    if (!parsed.ok) return { status: "error", message: "Couldn't add your habits. Try again." };
+    if (!parsed.ok) return { status: "error", message: t("onboarding.habits.addFailed") };
     habits.push(parsed.value);
   }
 

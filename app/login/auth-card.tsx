@@ -4,6 +4,7 @@ import { GoogleIcon } from "@/components/google-icon";
 import { TryDemoButton } from "@/components/demo/try-demo-button";
 import { PrivacyConsent } from "@/components/privacy-consent";
 import { Button } from "@/components/ui/button";
+import { getT } from "@/lib/i18n/server";
 import { signInWithGoogle } from "./actions";
 
 type Props = {
@@ -17,7 +18,8 @@ type Props = {
 
 // The sign-in and sign-up screens share this card: title, the email form, then Google, then the
 // link to the other screen, then Try the demo. The consent line sits under the card, once per screen.
-export function AuthCard({ title, subtitle, next, googleEnabled, footer, children }: Props) {
+export async function AuthCard({ title, subtitle, next, googleEnabled, footer, children }: Props) {
+  const { t } = await getT();
   return (
     <main className="mx-auto flex w-full min-h-dvh max-w-sm flex-col justify-center px-4 py-10">
       <div className="flex flex-col gap-5 rounded-2xl bg-card p-6 shadow-soft">
@@ -33,14 +35,14 @@ export function AuthCard({ title, subtitle, next, googleEnabled, footer, childre
           <>
             <div className="flex items-center gap-3">
               <div aria-hidden="true" className="h-px flex-1 bg-border" />
-              <span className="text-xs font-semibold text-muted-foreground">OR</span>
+              <span className="text-xs font-semibold text-muted-foreground">{t("auth.or")}</span>
               <div aria-hidden="true" className="h-px flex-1 bg-border" />
             </div>
             <form action={signInWithGoogle}>
               <input type="hidden" name="next" value={next} />
               <Button type="submit" variant="outline" className="h-12 w-full justify-center gap-3 bg-card hover:bg-muted">
                 <GoogleIcon className="size-5" />
-                Continue with Google
+                {t("auth.continueGoogle")}
               </Button>
             </form>
           </>

@@ -18,12 +18,13 @@ import { LOCALES } from "@/supabase/functions/_shared/i18n";
 const COOKIE_OPTIONS = { maxAge: 60 * 60 * 24 * 365, path: "/", sameSite: "lax" } as const;
 
 export async function updateProfile(_prev: ProfileFormState, formData: FormData): Promise<ProfileFormState> {
+  const { t } = await getT();
   const values = readProfileForm(formData);
   const parsed = parseProfile(values, new Set(listTimezones()));
   if (!parsed.ok) return { status: "error", errors: parsed.errors, values };
 
   const { supabase, userId } = await requireUser();
-  const message = await saveProfile(supabase, userId, parsed.value, { markOnboarded: false });
+  const message = await saveProfile(t, supabase, userId, parsed.value, { markOnboarded: false });
   if (message) return { status: "error", message, values };
 
   revalidatePath("/", "layout");

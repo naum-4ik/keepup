@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/auth";
-import { onboardingTemplates } from "@/lib/habit-templates";
+import { getT } from "@/lib/i18n/server";
+import { MAX_STARTER_HABITS, onboardingTemplates } from "@/lib/habit-templates";
 import { isUuid } from "@/lib/habit-schema";
 import { getHabitSummaries } from "@/lib/habits";
 import { getMyGroups } from "@/lib/groups";
@@ -9,6 +10,7 @@ import { PickHabits } from "../pick-habits";
 import { logError } from "@/lib/log";
 
 export default async function PickHabitsPage({ searchParams }: { searchParams: Promise<{ joined?: string }> }) {
+  const { t, rich } = await getT();
   const { supabase, userId, profile } = await getProfile();
   if (!profile.onboarded_at) redirect("/onboarding");
   const { joined } = await searchParams;
@@ -33,11 +35,9 @@ export default async function PickHabitsPage({ searchParams }: { searchParams: P
     return (
       <main className="mx-auto max-w-md px-4 pt-10">
         <h1 className="text-2xl font-bold">
-          {together > 0
-            ? `${group.name} already has ${together} ${together === 1 ? "habit" : "habits"} together. Add your own too?`
-            : "Add a few habits of your own?"}
+          {together > 0 ? rich("onboarding.habits.joinedTogether", { group: group.name, n: together }) : t("onboarding.habits.joinedEmpty")}
         </h1>
-        <p className="mb-5 text-sm text-muted-foreground">Pick up to 3. Each starts today.</p>
+        <p className="mb-5 text-sm text-muted-foreground">{t("onboarding.habits.joinedSubtitle", { max: MAX_STARTER_HABITS })}</p>
         <PickHabits templates={templates} joined={group.group_id} />
       </main>
     );
@@ -45,8 +45,8 @@ export default async function PickHabitsPage({ searchParams }: { searchParams: P
 
   return (
     <main className="mx-auto max-w-md px-4 pt-10">
-      <h1 className="text-2xl font-bold">Pick 1–3 habits to start</h1>
-      <p className="mb-5 text-sm text-muted-foreground">Each starts today. You can change them any time.</p>
+      <h1 className="text-2xl font-bold">{t("onboarding.habits.title", { max: MAX_STARTER_HABITS })}</h1>
+      <p className="mb-5 text-sm text-muted-foreground">{t("onboarding.habits.subtitle")}</p>
       <PickHabits templates={templates} />
     </main>
   );
