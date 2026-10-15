@@ -691,7 +691,8 @@
     "couldntSave": "A check-in couldn't be saved. Please add it again.",
     "unsavedSignOut": "{n, plural, one {{count} check-in hasn't been saved yet. Sign out anyway? It'll be removed from this phone.} other {{count} check-ins haven't been saved yet. Sign out anyway? They'll be removed from this phone.}}",
     "signOutAnyway": "Sign out anyway",
-    "staySignedIn": "Stay signed in"
+    "staySignedIn": "Stay signed in",
+    "dismiss": "Dismiss"
   },
   "pushSupport": {
     "needsInstall": "On iPhone, reminders work once Keepup is on your Home Screen.",
@@ -702,5 +703,83 @@
   },
   "devices": {
     "generic": "A device"
+  },
+  "today": {
+    "title": "Today",
+    "resetDone": "Your data is reset. A fresh start 🌱",
+    "progressLabel": "Today's progress",
+    "ringLabel": "{done} of {total} done today",
+    "doneOfTotal": "{done} of {total} done",
+    "habitsLabel": "Today's habits: {list}",
+    "itemDone": "{title} done",
+    "itemTodo": "{title} to do",
+    "thisWeek": "This week",
+    "weekCount": "{done} of {possible}",
+    "bestStreak": "Best streak:",
+    "line": {
+      "allDone": "Today's all done 🎉",
+      "toGoToday": "{n} to go today",
+      "oneMore": "One more to go!",
+      "halfway": "Halfway there 💪",
+      "toGo": "{n} to go"
+    },
+    "welcome": {
+      "title": "Welcome to <bdi>{name}</bdi> 👋",
+      "people": "{n, plural, one {# person} other {# people}}",
+      "habitsBelow": "your group habits are below",
+      "noGroupHabits": "no group habits yet",
+      "open": "Open",
+      "openLabel": "Open {name}"
+    },
+    "approvalsWaiting": "{n, plural, one {# check-in waiting for you} other {# check-ins waiting for you}}",
+    "habitFallback": "A habit",
+    "empty": {
+      "text": "Nothing to do yet. Add a habit to get started.",
+      "action": "Add your first habit"
+    },
+    "sections": {
+      "mine": "Mine",
+      "groupFallback": "Group",
+      "allCheckedOff": "All checked off. Nice work.",
+      "doneForToday": "Done for today",
+      "later": "Later"
+    },
+    "finish": {
+      "label": "{title} is finished",
+      "reachedEnd": "<bdi>{title}</bdi> reached its end{celebrate, select, yes { 🎉} other {}}",
+      "finish": "Finish",
+      "keepGoing": "Keep going",
+      "adminChooses": "An admin of the group chooses what's next."
+    },
+    "gentle": {
+      "inviteFamily": {
+        "title": "Invite your family",
+        "body": "Share habits like family dinner. Done when everyone's done.",
+        "cta": "Invite"
+      },
+      "inviteFriend": {
+        "title": "Invite a friend",
+        "body": "Do a habit together and cheer each other on.",
+        "cta": "Invite"
+      },
+      "addChild": {
+        "title": "Add a child? 🐼",
+        "body": "Track brushing teeth, reading together and more.",
+        "cta": "Add a child"
+      },
+      "notNow": "Not now"
+    }
+  },
+  "nav": {
+    "main": "Main",
+    "today": "Today",
+    "progress": "Progress",
+    "newHabit": "New habit",
+    "groups": "Groups",
+    "profile": "Profile",
+    "inbox": "Inbox",
+    "inboxUnread": "Inbox, {n} unread",
+    "profileLevel": "Profile, level {level}",
+    "profileLevelProgress": "Profile, level {level}, {percent}% to level {next}"
   }
 }

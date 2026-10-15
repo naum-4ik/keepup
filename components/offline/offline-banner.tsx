@@ -34,7 +34,7 @@ export function OfflineBanner({ placement }: { placement: "header" | "bottom" })
             {!online && <CloudOff aria-hidden className="size-4 shrink-0" />}
             <span>{text}</span>
             {online && (
-              <button type="button" onClick={dismiss} aria-label="Dismiss" className="-my-2 flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-background/60">
+              <button type="button" onClick={dismiss} aria-label={t("offline.dismiss")} className="-my-2 flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-background/60">
                 <X aria-hidden className="size-4" />
               </button>
             )}

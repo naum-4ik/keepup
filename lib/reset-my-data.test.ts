@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { isResetWord, RESET_CLEARS, RESET_DONE, RESET_KEEPS, runReset } from "./reset-my-data";
+import { tEn } from "@/lib/i18n/test-t";
+import { isResetWord, RESET_CLEARS, RESET_KEEPS, runReset } from "./reset-my-data";
 
 describe("Reset my data", () => {
   it("asks for the word reset, in any case", () => {
@@ -11,7 +12,7 @@ describe("Reset my data", () => {
   });
 
   it("says what goes and what stays, calmly: no guilt words, at most one emoji per line", () => {
-    for (const line of [RESET_CLEARS, RESET_KEEPS, RESET_DONE]) {
+    for (const line of [RESET_CLEARS, RESET_KEEPS, tEn("today.resetDone")]) {
       const lower = line.toLowerCase();
       for (const w of ["failed", "missed out", "don't lose", "hurry", "last chance", "only", "lazy", "you missed"]) expect(lower).not.toContain(w);
       expect(line.match(/\p{Extended_Pictographic}/gu)?.length ?? 0).toBeLessThanOrEqual(1);

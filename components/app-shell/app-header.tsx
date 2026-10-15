@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Bell } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 // Your avatar lives on the bottom nav's Profile tab (the header had the same link twice).
-export function AppHeader({
+export async function AppHeader({
   unread = 0,
   children,
 }: {
@@ -10,6 +11,7 @@ export function AppHeader({
   // Under the logo row, sticky with it (the offline banner).
   children?: React.ReactNode;
 }) {
+  const t = await getTranslations("nav");
   return (
     <header
       className="sticky top-0 z-10 bg-background/95 pb-3 backdrop-blur"
@@ -23,7 +25,7 @@ export function AppHeader({
         </Link>
         <Link
           href="/inbox"
-          aria-label={unread > 0 ? `Inbox, ${unread} unread` : "Inbox"}
+          aria-label={unread > 0 ? t("inboxUnread", { n: unread }) : t("inbox")}
           className="relative flex size-11 items-center justify-center rounded-full text-foreground hover:bg-muted"
         >
           <Bell aria-hidden className="size-5.5" />

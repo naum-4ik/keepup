@@ -14,10 +14,10 @@ test("the Today card counts today's habits, cheers you on, and celebrates the la
   await expect(card.getByRole("status")).toHaveText("3 to go today");
   await expect(card.getByRole("img", { name: "0 of 3 done today" })).toBeVisible();
   const row = card.getByRole("img", { name: /^Today's habits:/ });
-  await expect(row).toHaveAccessibleName("Today's habits: Walk to do, Read to do, Stretch to do");
+  await expect(row).toHaveAccessibleName("Today's habits: \u2068Walk\u2069 to do, \u2068Read\u2069 to do, \u2068Stretch\u2069 to do");
 
   await page.getByRole("button", { name: "Check in: Walk" }).click();
-  await expect(row).toHaveAccessibleName("Today's habits: Walk done, Read to do, Stretch to do");
+  await expect(row).toHaveAccessibleName("Today's habits: \u2068Walk\u2069 done, \u2068Read\u2069 to do, \u2068Stretch\u2069 to do");
   await expect(card.getByRole("status")).toHaveText("2 to go");
 
   await page.getByRole("button", { name: "Check in: Read" }).click();
