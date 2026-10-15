@@ -8,6 +8,10 @@ describe("web app manifest", () => {
     expect(m).toMatchObject({ name: "Keepup", short_name: "Keepup", display: "standalone", start_url: "/today", scope: "/", id: "/" });
   });
 
+  it("describes Keepup with the tagline (English: the file is static)", () => {
+    expect(m.description).toBe("Habits, together.");
+  });
+
   it("uses the app-icon colours (ideas/app-icon.md)", () => {
     expect(m.theme_color).toBe("#FFF8F0");
     expect(m.background_color).toBe("#FFF8F0");

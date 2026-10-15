@@ -29,18 +29,19 @@ export default async function Home({
           <span className="text-foreground">Keep</span>
           <span className="text-primary">up</span>
         </h1>
-        <p className="mt-2 text-muted-foreground">Habits, together.</p>
-        <p className="mt-3">Keep up your habits, and do the ones that matter with your family.</p>
+        <p className="mt-2 text-muted-foreground">{t("common.tagline")}</p>
+        {/* The same pitch as the sign-in card. */}
+        <p className="mt-3">{t("auth.login.subtitle")}</p>
       </div>
       <div className="flex flex-col gap-3">
         {params.deleted === "1" && <p role="status" className="text-sm text-muted-foreground">{t("myData.deletedNote")}</p>}
         <Button asChild size="lg" className="h-12 w-full">
-          <Link href="/signup">Get started</Link>
+          <Link href="/signup">{t("landing.getStarted")}</Link>
         </Button>
         <p className="text-sm text-muted-foreground">
-          Already have an account?{" "}
+          {t("auth.signup.haveAccount")}{" "}
           <Link href="/login" className="font-semibold text-primary hover:underline">
-            Sign in
+            {t("auth.signIn")}
           </Link>
         </p>
         {/* A seeded demo account, no sign-up (M6 PR 3): a quiet way to look around first. */}

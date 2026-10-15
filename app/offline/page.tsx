@@ -1,23 +1,35 @@
-import { CloudOff } from "lucide-react";
+import { createTranslator } from "next-intl";
+import { enabledLocales } from "@/i18n/config";
+import { deepMerge } from "@/i18n/merge-messages";
+import type { OfflinePageCopy } from "@/lib/offline-copy";
+import en from "@/supabase/functions/_shared/messages/en.json";
+import type { Locale } from "@/supabase/functions/_shared/i18n";
+import { OfflineMessage } from "./offline-message";
 
 export const dynamic = "force-static";
 
+// A language's catalog over English (as i18n/request.ts), or null while its file doesn't exist yet.
+async function catalog(locale: Locale): Promise<typeof en | null> {
+  if (locale === "en") return en;
+  try {
+    return deepMerge(en, (await import(`../../supabase/functions/_shared/messages/${locale}.json`)).default);
+  } catch {
+    return null;
+  }
+}
+
+async function copyFor(locale: Locale): Promise<OfflinePageCopy | null> {
+  const messages = await catalog(locale);
+  if (!messages) return null;
+  const t = createTranslator({ locale, messages, namespace: "offline.page" });
+  return { title: t("title"), text: t("text"), openToday: t("openToday") };
+}
+
 // What the service worker shows for a page that isn't saved on this phone (ideas/offline.md §3).
-export default function OfflinePage() {
-  return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center gap-3 p-6 text-center">
-      <div className="flex size-12 items-center justify-center rounded-full bg-accent text-primary">
-        <CloudOff aria-hidden className="size-6" />
-      </div>
-      <h1 className="text-xl font-bold">You&apos;re offline</h1>
-      <p className="text-sm text-muted-foreground">
-        This page needs a connection. Today and the kid view work offline, and check-ins you make there wait on this phone until
-        you&apos;re back.
-      </p>
-      {/* A plain link, not next/link: a full page load is what the worker answers from its saved copy. */}
-      <a href="/today" className="flex min-h-11 items-center font-semibold text-primary underline-offset-4 hover:underline">
-        Open Today
-      </a>
-    </main>
-  );
+// Built once, so it can't read the visitor's language: it carries the words of every enabled language
+// (KEEPUP_LOCALES at build time) that has a catalog, and OfflineMessage picks one in the browser.
+export default async function OfflinePage() {
+  const found = await Promise.all(enabledLocales().map(async (l) => [l, await copyFor(l)] as const));
+  const copies = Object.fromEntries(found.filter(([, c]) => c)) as { en: OfflinePageCopy } & Partial<Record<Locale, OfflinePageCopy>>;
+  return <OfflineMessage copies={copies} />;
 }

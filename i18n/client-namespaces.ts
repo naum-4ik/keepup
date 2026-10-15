@@ -14,6 +14,7 @@ export const CLIENT_NAMESPACES = [
   "dates",
   "demo",
   "devices",
+  "errorPage",
   "errors",
   "feed",
   "garden",

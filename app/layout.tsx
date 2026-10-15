@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { Direction } from "radix-ui"; // Radix reads its own provider, not <html dir>
 import { MovedNotice } from "@/components/moved/moved-notice";
 import { Faro } from "@/components/observability/faro";
@@ -54,18 +54,23 @@ const siteUrl = siteUrlFor({
   deployEnv: process.env.NEXT_PUBLIC_DEPLOY_ENV,
   vercelProductionUrl: process.env.VERCEL_PROJECT_PRODUCTION_URL,
 });
-const shareText = "A habit tracker for one person or a whole family, kids included.";
-
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: "Keepup",
-  description: "Habits, together.",
-  applicationName: "Keepup",
-  openGraph: { type: "website", siteName: "Keepup", title: "Keepup: Habits, together", description: shareText, url: "/" },
-  twitter: { card: "summary_large_image", title: "Keepup: Habits, together", description: shareText },
-  // iPhone "Add to Home Screen": full screen, named Keepup (the icon is app/apple-icon.png).
-  appleWebApp: { capable: true, title: "Keepup", statusBarStyle: "default" },
-};
+// Words in the visitor's language (meta.*, common.tagline); "Keepup" is the name and stays. The image
+// (app/opengraph-image.png and its alt text) stays English.
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations();
+  const shareTitle = t("meta.shareTitle");
+  const shareText = t("meta.shareText");
+  return {
+    metadataBase: new URL(siteUrl),
+    title: "Keepup",
+    description: t("common.tagline"),
+    applicationName: "Keepup",
+    openGraph: { type: "website", siteName: "Keepup", title: shareTitle, description: shareText, url: "/" },
+    twitter: { card: "summary_large_image", title: shareTitle, description: shareText },
+    // iPhone "Add to Home Screen": full screen, named Keepup (the icon is app/apple-icon.png).
+    appleWebApp: { capable: true, title: "Keepup", statusBarStyle: "default" },
+  };
+}
 
 export const viewport: Viewport = {
   viewportFit: "cover",

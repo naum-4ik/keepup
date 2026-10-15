@@ -1013,7 +1013,12 @@
     "couldntSave": "A check-in couldn't be saved. Please add it again.",
     "unsavedSignOut": "{n, plural, one {{count} check-in hasn't been saved yet. Sign out anyway? It'll be removed from this phone.} other {{count} check-ins haven't been saved yet. Sign out anyway? They'll be removed from this phone.}}",
     "signOutAnyway": "Sign out anyway",
-    "staySignedIn": "Stay signed in"
+    "staySignedIn": "Stay signed in",
+    "page": {
+      "title": "You're offline",
+      "text": "This page needs a connection. Today and the kid view work offline, and check-ins you make there wait on this phone until you're back.",
+      "openToday": "Open Today"
+    }
   },
   "pushSupport": {
     "needsInstall": "On iPhone, reminders work once Keepup is on your Home Screen.",
@@ -1418,7 +1423,8 @@
     "addHabit": "Add a habit",
     "noHabits": "No habits yet.",
     "change": "Change",
-    "continue": "Continue"
+    "continue": "Continue",
+    "tagline": "Habits, together."
   },
   "inbox": {
     "title": "Inbox",
@@ -1545,5 +1551,54 @@
     "lockedLabel": "{name}, locked: {hint}",
     "earnedNote": "Earned {date}",
     "unavailable": "Badges can't be shown right now. Try again later."
+  },
+  "landing": {
+    "getStarted": "Get started"
+  },
+  "meta": {
+    "pageTitle": "{page} · Keepup",
+    "shareTitle": "Keepup: Habits, together",
+    "shareText": "A habit tracker for one person or a whole family, kids included."
+  },
+  "install": {
+    "iphone": {
+      "heading": "iPhone and iPad",
+      "step1": "Open Keepup in Safari.",
+      "step2": "Tap Share (or ⋯, then Share).",
+      "step3": "Tap Add to Home Screen.",
+      "step4": "Check the name is Keepup, then tap Add.",
+      "step5": "Open Keepup from the new icon and sign in.",
+      "step6": "Profile → Settings → Turn on reminders.",
+      "step7": "Had the old icon? Press and hold it and remove it.",
+      "pic1": "Step 1: in Safari, tap the Share button in the toolbar, or ⋯ and then Share",
+      "pic2": "Step 2: in the share sheet, tap Add to Home Screen",
+      "pic3": "Step 3: the Keepup icon and name, with Add at the top right",
+      "pic4": "Step 4: the Keepup icon on the Home Screen"
+    },
+    "android": {
+      "heading": "Android",
+      "step1": "Open Keepup in Chrome.",
+      "step2": "Tap ⋮, then Install app (or Add to Home screen).",
+      "step3": "Open Keepup from the new icon, then turn reminders on in Profile → Settings.",
+      "pic1": "Step 1: in Chrome, tap the ⋮ menu at the right of the address bar",
+      "pic2": "Step 2: in the menu, tap Install app",
+      "pic3": "Step 3: the Keepup icon on the home screen"
+    },
+    "computer": {
+      "heading": "Computer",
+      "step1": "In Chrome or Edge, click the install icon at the right of the address bar, then Install.",
+      "step2": "Then turn reminders on in Profile → Settings.",
+      "pic1": "The install icon at the right of the address bar, and Install Keepup with an Install button"
+    }
+  },
+  "errorPage": {
+    "title": "Something went wrong",
+    "text": "We hit a snag loading this page. Try again, or head back to Today.",
+    "backToToday": "Back to Today"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "text": "The page you're looking for doesn't exist or has moved.",
+    "backHome": "Back home"
   }
 }
