@@ -38,7 +38,7 @@ test("Settings → Delete account: the other member becomes admin, the login is 
   await page.goto("/profile/settings");
   await page.getByRole("region", { name: "Your data" }).getByRole("button", { name: "Delete account" }).click();
   const dialog = page.getByRole("dialog", { name: "Delete your account?" });
-  await expect(dialog).toContainText("Ben becomes the admin of Delete family.");
+  await expect(dialog).toContainText("\u2068Ben\u2069 becomes the admin of \u2068Delete family\u2069.");
   const confirm = dialog.getByRole("button", { name: "Delete", exact: true });
   await expect(confirm).toBeDisabled();
   await dialog.getByLabel("Type “delete” to confirm").fill("delete");

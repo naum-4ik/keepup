@@ -200,7 +200,7 @@ test("another adult in the group sees and logs for the child", async ({ page, br
   await expect(guest.getByRole("region", { name: /Mary/ })).toContainText("⭐ 1");
   await page.goto("/inbox");
   await page.getByRole("tab", { name: "Activity" }).click();
-  await expect(page.getByText(/Dan logged Tidy my toys for Mary/)).toBeVisible();
+  await expect(page.getByText(/Dan\u2069 logged \u2068Tidy my toys\u2069 for \u2068Mary/)).toBeVisible();
 });
 
 test("add a habit for a child from the dialog: a suggestion, then your own", async ({ page }) => {
