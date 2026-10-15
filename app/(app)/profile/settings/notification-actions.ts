@@ -27,7 +27,7 @@ function result(t: T, error: { message: string; code?: string } | null, event?: 
 
 export async function setReminderHour(hour: number): Promise<NotifyResult> {
   const { t } = await getT();
-  if (!Number.isInteger(hour) || hour < 0 || hour > 23) return { ok: false, message: "Pick an hour." };
+  if (!Number.isInteger(hour) || hour < 0 || hour > 23) return { ok: false, message: t("errors.pickHour") };
   const { supabase, userId, who } = await requireUser();
   const { error } = await supabase.from("profiles").update({ reminder_hour: hour }).eq("id", userId);
   return result(t, error, { name: "reminder_set", who, fields: { "reminder.hour": hour } });

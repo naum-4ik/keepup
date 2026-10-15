@@ -6,6 +6,27 @@
       "en": "English",
       "ru": "Русский",
       "he": "עברית"
+    },
+    "title": "Settings",
+    "typeToConfirm": "Type “{word}” to confirm",
+    "celebrations": {
+      "label": "Celebrations settings",
+      "title": "Celebrations",
+      "hint": "How level-ups and new badges appear.",
+      "full": "Full",
+      "subtle": "Subtle",
+      "fullHint": "A short full-screen moment with confetti.",
+      "subtleHint": "A small card at the bottom, no confetti."
+    },
+    "reset": {
+      "title": "Reset my data",
+      "clears": "This clears your own habits and their check-ins, your XP and level, your badges, recaps and your Inbox.",
+      "keeps": "Your account, settings, devices, groups and children stay, and so do your check-ins in group habits.",
+      "dialogTitle": "Reset your data?",
+      "dialogBody": "{clears} {keeps} This can't be undone.",
+      "word": "reset",
+      "confirm": "Reset",
+      "resetting": "Resetting…"
     }
   },
   "push": {
@@ -274,7 +295,13 @@
     "groupDeleted": "{group} will be deleted.",
     "groupDeletedWithProfiles": "{group} will be deleted, with {names} {n, plural, one {profile} other {profiles}}.",
     "possessive": "{name}'s",
-    "becomesAdmin": "{admin} becomes the admin of {group}."
+    "becomesAdmin": "{admin} becomes the admin of {group}.",
+    "title": "Your data",
+    "export": "Export my data",
+    "exporting": "Exporting…",
+    "deleteAccount": "Delete account",
+    "delete": "Delete",
+    "deleting": "Deleting…"
   },
   "errors": {
     "group_not_found": "That group isn't available.",
@@ -340,7 +367,8 @@
     "checkDetails": "Check the details.",
     "pickFamilyOrFriends": "Pick family or friends.",
     "groupCreateFailed": "Couldn't create the group. Try again.",
-    "childUnavailable": "That child isn't available."
+    "childUnavailable": "That child isn't available.",
+    "pickHour": "Pick an hour."
   },
   "demo": {
     "off": "That's off in the demo.",
@@ -1377,7 +1405,8 @@
       "rose": "Rose"
     },
     "pickEmoji": "Pick one of these avatars.",
-    "pickColor": "Pick a color."
+    "pickColor": "Pick a color.",
+    "saveFailed": "Couldn't save your avatar. Try again."
   },
   "profile": {
     "form": {
@@ -1393,6 +1422,22 @@
       "hint": "Pick the time it is where you are now. Your days start at midnight there.",
       "useDevice": "Use this device's time zone ({city})",
       "changeNote": "Changes apply from your next day and week."
+    },
+    "accountNav": "Account",
+    "links": {
+      "whatsNew": "What's new"
+    },
+    "avatar": {
+      "title": "Change your avatar",
+      "description": "Shown to your groups."
+    },
+    "summary": "{city} · weeks start {day}",
+    "footer": {
+      "privacy": "Privacy Policy",
+      "install": "How to install"
+    },
+    "level": {
+      "xpLabel": "XP to Level {next}"
     }
   },
   "kidView": {
@@ -1408,5 +1453,13 @@
       "album": "See the album",
       "gotIt": "Got it"
     }
+  },
+  "achievements": {
+    "title": "Achievements",
+    "earnedCount": "{earned} of {total} earned",
+    "earnedLabel": "{name}, earned {date}",
+    "lockedLabel": "{name}, locked: {hint}",
+    "earnedNote": "Earned {date}",
+    "unavailable": "Badges can't be shown right now. Try again later."
   }
 }

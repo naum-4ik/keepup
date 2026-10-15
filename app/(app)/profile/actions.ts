@@ -14,7 +14,7 @@ export async function saveAvatar(_prev: AvatarFormState, formData: FormData): Pr
     .from("profiles")
     .update({ avatar_emoji: avatar.emoji, avatar_color: avatar.color })
     .eq("id", userId);
-  if (error) return { status: "error", message: "Couldn't save your avatar. Try again." };
+  if (error) return { status: "error", message: t("avatars.saveFailed") };
   revalidatePath("/", "layout");
   return { status: "saved" };
 }

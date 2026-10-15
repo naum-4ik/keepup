@@ -12,7 +12,7 @@ export async function LevelCard({ xp }: { xp: number }) {
       <h2 id="level-title" className="text-base font-bold">{line.title}</h2>
       <div
         role="progressbar"
-        aria-label={`XP to Level ${p.level + 1}`}
+        aria-label={t("profile.level.xpLabel", { next: p.level + 1 })}
         aria-valuemin={0}
         aria-valuemax={p.span}
         aria-valuenow={p.into}

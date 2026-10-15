@@ -21,6 +21,7 @@ import { browserSubscription, signOutCleanup } from "@/lib/push-support";
 
 // Saves everything Keepup keeps about this person as keepup-my-data-{date}.json.
 function ExportMyDataButton() {
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
@@ -39,7 +40,7 @@ function ExportMyDataButton() {
           })
         }
       >
-        {pending ? "Exporting…" : "Export my data"}
+        {pending ? t("myData.exporting") : t("myData.export")}
       </Button>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </div>
@@ -55,7 +56,7 @@ export function MyData({ isDemo = false }: { isDemo?: boolean }) {
   const { t } = useT();
   return (
     <section aria-labelledby="my-data-title" className="flex flex-col gap-3 rounded-2xl bg-card p-6 shadow-soft">
-      <h2 id="my-data-title" className="text-base font-bold">Your data</h2>
+      <h2 id="my-data-title" className="text-base font-bold">{t("myData.title")}</h2>
       <p className="text-sm text-muted-foreground">{t("myData.exportHint")}</p>
       <ExportMyDataButton />
       {!isDemo && <DeleteAccount />}
@@ -138,7 +139,7 @@ function DeleteAccount() {
   return (
     <>
       <Button type="button" variant="outline" className="h-11 text-destructive hover:text-destructive" onClick={openDialog}>
-        Delete account
+        {t("myData.deleteAccount")}
       </Button>
       <Dialog open={open} onOpenChange={(next) => !pending && !next && close()}>
         <DialogContent>
@@ -171,7 +172,7 @@ function DeleteAccount() {
             }}
           >
             <label htmlFor={inputId} className="text-sm font-semibold">
-              Type &ldquo;{t("myData.deleteWord")}&rdquo; to confirm
+              {t("settings.typeToConfirm", { word: t("myData.deleteWord") })}
             </label>
             <Input
               id={inputId}
@@ -185,10 +186,10 @@ function DeleteAccount() {
             {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2">
               <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={close}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button type="submit" variant="destructive" className="h-11 flex-1" disabled={pending || !ready || !isDeleteWord(t, word)}>
-                {pending ? "Deleting…" : "Delete"}
+                {pending ? t("myData.deleting") : t("myData.delete")}
               </Button>
             </div>
           </form>
