@@ -6,7 +6,7 @@ import { checkInWith } from "@/app/(app)/habits/actions";
 import { dismissFirstCheckinTip } from "@/components/first-checkin-tip";
 import { floatXp, useXpFloat } from "@/components/habits/xp-float";
 import { useOfflineQueue, useSubmitTap, useUndoQueuedTap } from "@/components/offline/offline-queue-provider";
-import { GENERIC_ERROR } from "@/lib/habit-errors";
+import { useT } from "@/lib/i18n/client";
 import { NEEDS_CONNECTION, SAVING, UNDO, undoLabel } from "@/lib/offline-copy";
 import { queueKey } from "@/lib/offline-queue";
 import { ringOf, type RingInput } from "@/lib/today";
@@ -47,6 +47,7 @@ export function CheckInButton({
   // this phone floats no XP then (lib/xp.ts tapXp).
   needsApproval?: boolean;
 }) {
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [celebrating, setCelebrating] = useState(false);
@@ -100,7 +101,7 @@ export function CheckInButton({
           if (!result.ok) setError(result.message);
           else celebrate();
         } catch {
-          setError(navigator.onLine ? GENERIC_ERROR : NEEDS_CONNECTION);
+          setError(navigator.onLine ? t("errors.generic") : NEEDS_CONNECTION);
         }
         return;
       }

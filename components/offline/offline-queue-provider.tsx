@@ -3,7 +3,8 @@
 import { createContext, startTransition, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createOfflineClient, type Channel, type Counts, type TapResult } from "@/lib/offline-client";
-import { GENERIC_ERROR } from "@/lib/habit-errors";
+import { genericError } from "@/lib/habit-errors";
+import { useT } from "@/lib/i18n/client";
 import { claimSavedPages, clearSavedPages, savePageOffline } from "@/lib/offline-pages";
 import { queuedDelta, type ShownPeriods } from "@/lib/offline-queue";
 import { deleteOfflineQueue, indexedDbStorage, offlineDbName, type Locks } from "@/lib/offline-queue-store";
@@ -204,16 +205,16 @@ export function useForgetOfflineHabits() {
   );
 }
 
-const sendTap = tapSender();
-
 // A check-in tap: saved on this phone first, then tried online (lib/offline-client.ts submitTap,
 // app/api/check-ins/tap). Once it lands, the saved Today / kid view is refreshed so the offline copy
 // isn't stale. subjectId: a child's tap; byChild: made in the kid view.
 export function useSubmitTap() {
   const { client } = useContext(OfflineQueueContext);
+  const { t } = useT();
   return useCallback(
     async (tap: { habitId: string; subjectId?: string | null; byChild?: boolean }): Promise<TapResult> => {
-      if (!client) return { ok: false, message: GENERIC_ERROR };
+      if (!client) return { ok: false, message: genericError(t) };
+      const sendTap = tapSender(t);
       try {
         const r = await client.submitTap(tap, ({ clientId }, signal) =>
           sendTap({ clientId, habitId: tap.habitId, subjectId: tap.subjectId ?? null, ...(tap.byChild ? { byChild: true } : {}) }, signal),
@@ -222,9 +223,9 @@ export function useSubmitTap() {
         return r;
       } catch (e) {
         console.error("check-in tap", e);
-        return { ok: false, message: GENERIC_ERROR };
+        return { ok: false, message: genericError(t) };
       }
     },
-    [client],
+    [client, t],
   );
 }

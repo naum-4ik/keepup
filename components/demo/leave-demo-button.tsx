@@ -7,7 +7,7 @@ import { leaveDemo } from "@/app/demo/actions";
 import { forgetPushSubscription } from "@/app/(app)/profile/settings/notification-actions";
 import { useOfflineSignOut } from "@/components/offline/offline-queue-provider";
 import { DEMO_SIGN_IN } from "@/lib/demo-copy";
-import { GENERIC_ERROR } from "@/lib/habit-errors";
+import { useT } from "@/lib/i18n/client";
 import { NEEDS_CONNECTION } from "@/lib/offline-copy";
 import { clearOfflineCaches, markPagesOwnerDeleted } from "@/lib/offline-pages";
 import { browserSubscription, signOutCleanup } from "@/lib/push-support";
@@ -18,6 +18,7 @@ import { runLeaveDemo } from "@/lib/try-demo";
 // OfflineQueueProvider (the invite page, onboarding) there is no queue to delete: useOfflineSignOut's
 // deleteQueue does nothing there; saved pages, push and the pages-owner sentinel are still cleared.
 export function LeaveDemoButton({ next }: { next?: string }) {
+  const { t } = useT();
   const queue = useOfflineSignOut();
   const [error, setError] = useState<string | null>(null);
 
@@ -38,7 +39,7 @@ export function LeaveDemoButton({ next }: { next?: string }) {
       leave: () => leaveDemo(next),
       rethrow: unstable_rethrow,
     });
-    if (result === "failed") setError(GENERIC_ERROR);
+    if (result === "failed") setError(t("errors.generic"));
   }
 
   return (

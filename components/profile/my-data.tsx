@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { downloadJson } from "@/lib/download-json";
-import { GENERIC_ERROR } from "@/lib/habit-errors";
 import { useT } from "@/lib/i18n/client";
 import {
   deletePreviewLines,
@@ -87,9 +86,9 @@ function DeleteAccount() {
     let next: { lines: string[] } | { error: string };
     try {
       const preview = await deleteAccountPreview();
-      next = preview ? { lines: deletePreviewLines(t, locale, preview) } : { error: GENERIC_ERROR };
+      next = preview ? { lines: deletePreviewLines(t, locale, preview) } : { error: t("errors.generic") };
     } catch {
-      next = { error: navigator.onLine ? GENERIC_ERROR : NEEDS_CONNECTION };
+      next = { error: navigator.onLine ? t("errors.generic") : NEEDS_CONNECTION };
     }
     if (id !== request.current) return;
     if ("lines" in next) setLines(next.lines);

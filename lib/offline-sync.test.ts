@@ -1,5 +1,6 @@
 // lib/offline-sync.test.ts
 import { describe, expect, it, vi } from "vitest";
+import { tEn } from "@/lib/i18n/test-t";
 import { httpSender, newTap, outcomeFor, parseEntry, parseTap, tapAnswer, tapSender, withQueuedTaps } from "./offline-sync";
 
 const H = "00000000-0000-0000-0000-0000000000d1";
@@ -169,19 +170,19 @@ describe("an online tap (app/api/check-ins/tap)", () => {
   });
 
   it("reads the answer: counted with its XP, a rule's refusal (final), or something that keeps it queued", () => {
-    expect(tapAnswer(200, { xp: 12 })).toEqual({ ok: true, xp: 12 });
-    expect(tapAnswer(200, { xp: null })).toEqual({ ok: true, xp: null });
-    expect(tapAnswer(409, { code: "habit_frozen", message: "This habit is paused." })).toEqual({ ok: false, message: "This habit is paused.", code: "habit_frozen" });
-    expect(tapAnswer(401, { code: "not_authenticated" })).toMatchObject({ ok: false, code: "not_authenticated" });
+    expect(tapAnswer(tEn, 200, { xp: 12 })).toEqual({ ok: true, xp: 12 });
+    expect(tapAnswer(tEn, 200, { xp: null })).toEqual({ ok: true, xp: null });
+    expect(tapAnswer(tEn, 409, { code: "habit_frozen", message: "This habit is paused." })).toEqual({ ok: false, message: "This habit is paused.", code: "habit_frozen" });
+    expect(tapAnswer(tEn, 401, { code: "not_authenticated" })).toMatchObject({ ok: false, code: "not_authenticated" });
     // A captive portal's 200 page, a server problem: no code.
-    expect(tapAnswer(200, null)).toEqual({ ok: false, message: expect.any(String) });
-    expect(tapAnswer(503, { message: "Something went wrong. Try again." })).toEqual({ ok: false, message: "Something went wrong. Try again." });
+    expect(tapAnswer(tEn, 200, null)).toEqual({ ok: false, message: expect.any(String) });
+    expect(tapAnswer(tEn, 503, { message: "Something went wrong. Try again." })).toEqual({ ok: false, message: "Something went wrong. Try again." });
   });
 
   it("posts the tap without a time, and passes the abort signal on", async () => {
     const fetchImpl = vi.fn(async () => new Response(JSON.stringify({ xp: 10 }), { status: 200 }));
     const abort = new AbortController();
-    expect(await tapSender(fetchImpl as unknown as typeof fetch)({ clientId: C, habitId: H, subjectId: null }, abort.signal)).toEqual({ ok: true, xp: 10 });
+    expect(await tapSender(tEn, fetchImpl as unknown as typeof fetch)({ clientId: C, habitId: H, subjectId: null }, abort.signal)).toEqual({ ok: true, xp: 10 });
     const [url, init] = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("/api/check-ins/tap");
     expect(JSON.parse(init.body as string)).toEqual({ clientId: C, habitId: H, subjectId: null });

@@ -7,7 +7,7 @@ import { useForgetOfflineHabits } from "@/components/offline/offline-queue-provi
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { GENERIC_ERROR } from "@/lib/habit-errors";
+import { useT } from "@/lib/i18n/client";
 import { NEEDS_CONNECTION } from "@/lib/offline-copy";
 import { isResetWord, RESET_CLEARS, RESET_KEEPS, RESET_WORD, runReset } from "@/lib/reset-my-data";
 
@@ -18,6 +18,7 @@ import { isResetWord, RESET_CLEARS, RESET_KEEPS, RESET_WORD, runReset } from "@/
 export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) {
   const [open, setOpen] = useState(false);
   const [word, setWord] = useState("");
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const forgetOffline = useForgetOfflineHabits();
@@ -39,7 +40,7 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
         });
         if (message) setError(message);
       } catch {
-        setError(navigator.onLine ? GENERIC_ERROR : NEEDS_CONNECTION);
+        setError(navigator.onLine ? t("errors.generic") : NEEDS_CONNECTION);
       }
     });
   }

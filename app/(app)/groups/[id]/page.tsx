@@ -43,7 +43,7 @@ export default async function GroupPage({
 }) {
   const [{ id }, { invite }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
-  const { t } = await getT();
+  const { t, locale } = await getT();
   const [{ profile, userId }, group, summaries, myGroups] = await Promise.all([
     getProfile(),
     getGroupDetail(id),
@@ -62,7 +62,7 @@ export default async function GroupPage({
   const validUntil = group.invite
     ? new Date(group.invite.expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: profile.timezone })
     : null;
-  const childrenNotice = childrenDeletionNotice(group.children.map((c) => c.name));
+  const childrenNotice = childrenDeletionNotice(t, locale, group.children.map((c) => c.name));
   const alone = group.members.length === 1;
   // Leave/Delete's children step: each child can be exported, or moved to another group I admin.
   const children = group.children.map((c) => ({ id: c.id, name: c.name }));
@@ -95,7 +95,7 @@ export default async function GroupPage({
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <RenameGroupForm name={group.name} canRename={isAdmin} action={renameGroup.bind(null, group.id)} />
           <div>
-            <KindChip kind={group.kind} />
+            <KindChip kind={group.kind} t={t} />
           </div>
         </div>
       </header>

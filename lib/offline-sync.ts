@@ -1,9 +1,10 @@
 // lib/offline-sync.ts
 // The page's side of the offline queue: what the sync route accepts, and what its answers mean.
-import { GENERIC_ERROR } from "@/lib/habit-errors";
+import { genericError } from "@/lib/habit-errors";
 import { isUuid } from "@/lib/habit-schema";
 import { queueKey, type QueueEntry, type Sender, type SendOutcome } from "@/lib/offline-queue";
 import type { TapXp } from "@/lib/xp";
+import type { T } from "@/supabase/functions/_shared/i18n";
 
 export function parseEntry(body: unknown): QueueEntry | null {
   if (!body || typeof body !== "object") return null;
@@ -117,19 +118,19 @@ export function parseTap(body: unknown): OnlineTap | null {
 // The tap route's answer, as submitTap reads it. A refusal carries its rule's code (final); an expired
 // session carries not_authenticated (kept queued: the next signed-in flush sends it); anything else,
 // a 200 without its JSON (a captive portal) included, has no code and keeps the tap queued.
-export function tapAnswer(status: number, body: unknown): OnlineAnswer {
+export function tapAnswer(t: T, status: number, body: unknown): OnlineAnswer {
   const b = (body ?? {}) as { xp?: unknown; code?: unknown; message?: unknown };
   if (status === 200 && body && typeof body === "object" && "xp" in b) {
     return { ok: true, xp: typeof b.xp === "number" || b.xp === null ? b.xp : 0 };
   }
-  const message = typeof b.message === "string" ? b.message : GENERIC_ERROR;
+  const message = typeof b.message === "string" ? b.message : genericError(t);
   if ((status === 409 || status === 401) && typeof b.code === "string") return { ok: false, message, code: b.code };
   return { ok: false, message };
 }
 
 // Sends one online tap; `signal` aborts it (submitTap's timeout), so a late answer never arrives.
 // No network, or aborted: thrown (submitTap keeps the tap queued).
-export function tapSender(fetchImpl: typeof fetch = (input, init) => fetch(input, init)) {
+export function tapSender(t: T, fetchImpl: typeof fetch = (input, init) => fetch(input, init)) {
   return async (tap: OnlineTap, signal?: AbortSignal): Promise<OnlineAnswer> => {
     const res = await fetchImpl("/api/check-ins/tap", {
       method: "POST",
@@ -138,6 +139,6 @@ export function tapSender(fetchImpl: typeof fetch = (input, init) => fetch(input
       body: JSON.stringify(tap),
       signal,
     });
-    return tapAnswer(res.status, await res.json().catch(() => null));
+    return tapAnswer(t, res.status, await res.json().catch(() => null));
   };
 }

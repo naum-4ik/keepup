@@ -6,6 +6,8 @@ import { SaveButton } from "@/components/save-button";
 import { TimezonePicker } from "@/components/timezone-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { errorTexts } from "@/lib/field-error";
+import { useT } from "@/lib/i18n/client";
 import type { ProfileFormState, ProfileFormValues } from "@/lib/profile-schema";
 
 type Props = {
@@ -19,12 +21,13 @@ const selectClass = "h-11 rounded-xl border border-input bg-transparent px-3 tex
 const initialState: ProfileFormState = { status: "idle" };
 
 export function ProfileForm({ action, timezones, defaults, submitLabel }: Props) {
+  const { t } = useT();
   const [state, formAction, pending] = useActionState(action, initialState);
   // React resets uncontrolled fields to their defaultValue after an action. Inputs re-sync fine because
   // React updates defaultValue on every render; <select> doesn't, so each select is keyed by its own
   // value below to force a remount (with the fresh defaultValue baked in) instead of remounting the form.
   const values = state.status === "error" && state.values ? state.values : defaults;
-  const errors = state.status === "error" ? (state.errors ?? {}) : {};
+  const errors = state.status === "error" ? errorTexts(t, state.errors) : {};
   const [timezone, setTimezone] = useState(defaults.timezone);
 
   return (

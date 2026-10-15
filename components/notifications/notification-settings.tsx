@@ -9,7 +9,6 @@ import { InfoHint } from "@/components/info-hint";
 import { Button } from "@/components/ui/button";
 import { DEMO_OFF } from "@/lib/demo-copy";
 import { useT } from "@/lib/i18n/client";
-import { GENERIC_ERROR } from "@/lib/habit-errors";
 import {
   DELIVERIES, NOTIFICATION_CATEGORIES, PAUSE_CHOICES, reminderHourHint, reminderStatus,
   type CategoryKey, type Delivery,
@@ -210,7 +209,7 @@ function DeliveryChoice({ category, label, hint, saved, onError }: {
       timer.current = null;
       waiting.current = null;
       const n = ++latest.current;
-      const r = await setDelivery(category, next).catch(() => ({ ok: false as const, message: GENERIC_ERROR }));
+      const r = await setDelivery(category, next).catch(() => ({ ok: false as const, message: t("errors.generic") }));
       // A newer change took over: its own save decides.
       if (n !== latest.current || timer.current !== null) return;
       if (!r.ok) {

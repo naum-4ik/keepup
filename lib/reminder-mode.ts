@@ -1,4 +1,5 @@
 import { habitErrorMessage } from "@/lib/habit-errors";
+import type { T } from "@/supabase/functions/_shared/i18n";
 
 export type ReminderMode = "summary" | "time" | "off";
 
@@ -23,8 +24,8 @@ export const QUARTER_HOURS: readonly string[] = Array.from({ length: 96 }, (_, i
 const QUARTER_HOUR = /^([01]\d|2[0-3]):(00|15|30|45)$/;
 
 // null = fine. Checked before the RPC so a bad time never reaches the database.
-export function reminderError(mode: string, remindAt: string | null): string | null {
-  if (mode !== "summary" && mode !== "time" && mode !== "off") return habitErrorMessage({ message: "keepup:invalid_choice" });
-  if (mode === "time" && !QUARTER_HOUR.test(remindAt ?? "")) return habitErrorMessage({ message: "keepup:invalid_time" });
+export function reminderError(t: T, mode: string, remindAt: string | null): string | null {
+  if (mode !== "summary" && mode !== "time" && mode !== "off") return habitErrorMessage(t, { message: "keepup:invalid_choice" });
+  if (mode === "time" && !QUARTER_HOUR.test(remindAt ?? "")) return habitErrorMessage(t, { message: "keepup:invalid_time" });
   return null;
 }

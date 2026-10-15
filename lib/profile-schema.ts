@@ -1,3 +1,5 @@
+import type { FieldError } from "@/lib/field-error";
+
 export const DISPLAY_NAME_MAX = 40;
 
 export const PURPOSES = ["me", "family", "friends"] as const;
@@ -12,7 +14,7 @@ export type ProfileInput = BaseInput;
 export type OnboardingFormValues = BaseValues & { purpose: string };
 export type OnboardingInput = BaseInput & { purpose: Purpose | null };
 
-export type ProfileErrors = Partial<Record<keyof ProfileInput | "purpose", string>>;
+export type ProfileErrors = Partial<Record<keyof ProfileInput | "purpose", FieldError>>;
 type FormState<V> =
   | { status: "idle" }
   | { status: "saved" }
@@ -42,12 +44,12 @@ function parseBase(values: BaseValues, timezones: ReadonlySet<string>, errors: P
   const displayName = values.displayName.trim();
   const nameLength = [...displayName].length; // code points, like Postgres char_length
 
-  if (nameLength === 0) errors.displayName = "Enter a name.";
-  else if (nameLength > DISPLAY_NAME_MAX) errors.displayName = `Keep it to ${DISPLAY_NAME_MAX} characters.`;
+  if (nameLength === 0) errors.displayName = { key: "validation.nameRequired" };
+  else if (nameLength > DISPLAY_NAME_MAX) errors.displayName = { key: "validation.maxChars", values: { max: DISPLAY_NAME_MAX } };
 
-  if (!timezones.has(values.timezone)) errors.timezone = "Pick a time zone from the list.";
+  if (!timezones.has(values.timezone)) errors.timezone = { key: "validation.timezone" };
 
-  if (values.weekStart !== "0" && values.weekStart !== "1") errors.weekStart = "Pick Sunday or Monday.";
+  if (values.weekStart !== "0" && values.weekStart !== "1") errors.weekStart = { key: "validation.weekStart" };
 
   return { displayName, timezone: values.timezone, weekStart: Number(values.weekStart) as 0 | 1 };
 }
@@ -69,7 +71,7 @@ export function parseOnboarding(values: OnboardingFormValues, timezones: Readonl
   const errors: ProfileErrors = {};
   const base = parseBase(values, timezones, errors);
   const purpose = parsePurpose(values.purpose);
-  if (!purpose.ok) errors.purpose = "Pick one of the options, or none.";
+  if (!purpose.ok) errors.purpose = { key: "validation.purpose" };
   if (!purpose.ok || Object.keys(errors).length > 0) return { ok: false, errors };
   return { ok: true, value: { ...base, purpose: purpose.value } };
 }

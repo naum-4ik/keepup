@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { tEn } from "@/lib/i18n/test-t";
 import { QUARTER_HOURS, reminderError, reminderHint, reminderMode } from "./reminder-mode";
 
 describe("reminderMode", () => {
@@ -24,19 +25,19 @@ describe("reminderHint", () => {
 
 describe("reminderError", () => {
   it("accepts quarter hours only, and only for a time", () => {
-    expect(reminderError("time", "08:00")).toBeNull();
-    expect(reminderError("time", "23:45")).toBeNull();
-    expect(reminderError("summary", null)).toBeNull();
-    expect(reminderError("off", null)).toBeNull();
-    expect(reminderError("time", "08:05")).toBe("Pick a time on the quarter hour.");
-    expect(reminderError("time", "24:00")).toBe("Pick a time on the quarter hour.");
-    expect(reminderError("time", null)).toBe("Pick a time on the quarter hour.");
-    expect(reminderError("loud", null)).toBe("Pick one of the options.");
+    expect(reminderError(tEn, "time", "08:00")).toBeNull();
+    expect(reminderError(tEn, "time", "23:45")).toBeNull();
+    expect(reminderError(tEn, "summary", null)).toBeNull();
+    expect(reminderError(tEn, "off", null)).toBeNull();
+    expect(reminderError(tEn, "time", "08:05")).toBe("Pick a time on the quarter hour.");
+    expect(reminderError(tEn, "time", "24:00")).toBe("Pick a time on the quarter hour.");
+    expect(reminderError(tEn, "time", null)).toBe("Pick a time on the quarter hour.");
+    expect(reminderError(tEn, "loud", null)).toBe("Pick one of the options.");
   });
   it("offers 96 slots, all valid", () => {
     expect(QUARTER_HOURS).toHaveLength(96);
     expect(QUARTER_HOURS[0]).toBe("00:00");
     expect(QUARTER_HOURS[95]).toBe("23:45");
-    expect(QUARTER_HOURS.every((q) => reminderError("time", q) === null)).toBe(true);
+    expect(QUARTER_HOURS.every((q) => reminderError(tEn, "time", q) === null)).toBe(true);
   });
 });

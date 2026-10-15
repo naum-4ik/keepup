@@ -23,6 +23,7 @@ import { startAfterSwitch, todayForGroup } from "@/lib/habit-start";
 import {
   HABIT_TITLE_MAX, isHabitCategory, TARGET_LIMITS, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod,
 } from "@/lib/habit-schema";
+import { errorTexts } from "@/lib/field-error";
 import { useT } from "@/lib/i18n/client";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
@@ -215,7 +216,7 @@ function HabitFields({
   const [values, setValues] = useState(initial);
   const categoryRef = useRef<HTMLSelectElement>(null);
   const periodRef = useRef<HTMLSelectElement>(null);
-  const errors = state.status === "error" ? (state.errors ?? {}) : {};
+  const errors = state.status === "error" ? errorTexts(tr, state.errors) : {};
   const set = (key: keyof HabitFormValues) => (e: { target: { value: string } }) =>
     setValues((v) => ({ ...v, [key]: e.target.value }));
 
