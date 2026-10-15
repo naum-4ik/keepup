@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useState, useSyncExternalStore, useTransition, type ReactNode } from "react";
 import { Check, Copy, Share2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { createInvite, revokeInvites, type GroupActionState } from "@/app/(app)/groups/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 
 const noSubscribe = () => () => {};
 const canShare = () => typeof navigator !== "undefined" && typeof navigator.share === "function";
@@ -23,6 +25,8 @@ export function InviteLink({
   validUntil: string | null;
   autoFocus?: boolean;
 }) {
+  const t = useTranslations("groups.invite");
+  const bdi = (c: ReactNode) => <bdi>{c}</bdi>;
   const share = useSyncExternalStore(noSubscribe, canShare, () => false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -30,8 +34,8 @@ export function InviteLink({
 
   useEffect(() => {
     if (!copied) return;
-    const t = setTimeout(() => setCopied(false), 2000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timer);
   }, [copied]);
 
   const run = (call: () => Promise<GroupActionState>) =>
@@ -46,16 +50,16 @@ export function InviteLink({
       await navigator.clipboard.writeText(url);
       setCopied(true);
     } catch {
-      setError("Couldn't copy. Select the link and copy it.");
+      setError(t("copyFailed"));
     }
   };
 
   if (!url) {
     return (
       <div className="flex flex-col gap-3">
-        <p className="text-sm text-muted-foreground">Anyone with the link can join {groupName} for 7 days.</p>
+        <p className="text-sm text-muted-foreground">{t.rich("helpNone", { group: groupName, bdi })}</p>
         <Button type="button" className="h-11" disabled={pending} autoFocus={autoFocus} onClick={() => run(() => createInvite(groupId))}>
-          {pending ? "Creating…" : "Create invite link"}
+          {pending ? t("creating") : t("create")}
         </Button>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       </div>
@@ -64,14 +68,14 @@ export function InviteLink({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-muted-foreground">Anyone with this link can join {groupName} for 7 days.</p>
+      <p className="text-sm text-muted-foreground">{t.rich("helpActive", { group: groupName, bdi })}</p>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="invite-link" className="text-sm font-semibold">
-          Invite link <span className="font-normal text-muted-foreground">· valid until {validUntil}</span>
+          {t.rich("label", { date: validUntil ?? "", muted: (c) => <span className="font-normal text-muted-foreground">{c}</span> })}
         </label>
         <Input
           id="invite-link"
-          aria-label="Invite link"
+          aria-label={t("linkAria")}
           readOnly
           value={url}
           onFocus={(e) => e.currentTarget.select()}
@@ -84,9 +88,9 @@ export function InviteLink({
             type="button"
             className="h-11 flex-1 gap-1.5"
             autoFocus={autoFocus}
-            onClick={() => navigator.share({ title: `Join ${groupName} on Keepup`, url }).catch(() => {})}
+            onClick={() => navigator.share({ title: t("shareTitle", { group: isolate(groupName) }), url }).catch(() => {})}
           >
-            <Share2 aria-hidden className="size-4" /> Share
+            <Share2 aria-hidden className="size-4" /> {t("share")}
           </Button>
         )}
         <Button
@@ -97,9 +101,9 @@ export function InviteLink({
           onClick={copy}
         >
           {copied ? <Check aria-hidden className="size-4" /> : <Copy aria-hidden className="size-4" />}
-          {copied ? "Copied" : "Copy link"}
+          {copied ? t("copied") : t("copy")}
         </Button>
-        <span role="status" className="sr-only">{copied ? "Copied" : ""}</span>
+        <span role="status" className="sr-only">{copied ? t("copied") : ""}</span>
       </div>
       <button
         type="button"
@@ -107,7 +111,7 @@ export function InviteLink({
         onClick={() => run(() => revokeInvites(groupId))}
         className="-ml-2 flex min-h-11 items-center self-start rounded-lg px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
       >
-        {pending ? "Turning off…" : "Turn off link"}
+        {pending ? t("turningOff") : t("turnOff")}
       </button>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </div>

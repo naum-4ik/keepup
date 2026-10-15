@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Pencil } from "lucide-react";
 import type { GroupActionState } from "@/app/(app)/groups/actions";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,8 @@ export function RenameGroupForm({
   canRename: boolean;
   action: (prev: GroupActionState, formData: FormData) => Promise<GroupActionState>;
 }) {
+  const t = useTranslations("groups.rename");
+  const tc = useTranslations("common");
   const [editing, setEditing] = useState(false);
   const [state, formAction, pending] = useActionState(action, initialState);
   const [seen, setSeen] = useState(state);
@@ -37,7 +40,7 @@ export function RenameGroupForm({
         <h1 className="min-w-0 flex-1 text-2xl font-bold break-words">{name}</h1>
         {canRename && (
           <Button type="button" variant="ghost" className="h-11 gap-1.5 px-3 text-muted-foreground" onClick={() => setEditing(true)}>
-            <Pencil aria-hidden className="size-4" /> Rename
+            <Pencil aria-hidden className="size-4" /> {t("action")}
           </Button>
         )}
       </div>
@@ -46,7 +49,7 @@ export function RenameGroupForm({
 
   return (
     <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-2">
-      <Label htmlFor="group-name" className="font-semibold">Group name</Label>
+      <Label htmlFor="group-name" className="font-semibold">{t("label")}</Label>
       <Input
         id="group-name"
         name="name"
@@ -64,10 +67,10 @@ export function RenameGroupForm({
       )}
       <div className="flex gap-2">
         <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => setEditing(false)}>
-          Cancel
+          {tc("cancel")}
         </Button>
         <Button type="submit" className="h-11 flex-1" disabled={pending}>
-          {pending ? "Saving…" : "Save"}
+          {pending ? tc("saving") : tc("save")}
         </Button>
       </div>
     </form>

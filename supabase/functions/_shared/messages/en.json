@@ -383,7 +383,98 @@
     },
     "defaultFamily": "Family",
     "defaultFriends": "Friends",
-    "childrenDeletion": "{n, plural, =0 {The children's profiles and history will be deleted.} one {{names}'s profile and history will be deleted.} other {{names}'s profiles and history will be deleted.}}"
+    "childrenDeletion": "{n, plural, =0 {The children's profiles and history will be deleted.} one {{names}'s profile and history will be deleted.} other {{names}'s profiles and history will be deleted.}}",
+    "title": "Groups",
+    "newGroup": "New group",
+    "list": {
+      "empty": "Share habits with the people you live and hang out with.",
+      "create": "Create a group"
+    },
+    "card": {
+      "counts": "{members, plural, one {# member} other {# members}}{withChildren, select, yes { · {children, plural, one {# child} other {# children}}} other {}}"
+    },
+    "new": {
+      "whoFor": "Who is it for?",
+      "name": "Name",
+      "namePlaceholder": "The Levis, Book club…",
+      "avatar": "Avatar <muted>(optional)</muted>",
+      "avatarHint": "Until you pick one, the group shows its first letter.",
+      "timezoneHelp": "Your time zone ({city}) and week start are used for the group's habits. Admins can change them later.",
+      "create": "Create group",
+      "creating": "Creating…"
+    },
+    "detail": {
+      "avatarTitle": "Change the group avatar",
+      "avatarDescription": "Everyone in the group sees it.",
+      "people": "People",
+      "child": "Child",
+      "addChild": "Add a child",
+      "habits": "Group habits",
+      "noHabits": "No group habits yet.",
+      "addHabit": "Add a group habit",
+      "habitLine": "{schedule}{approval, select, yes { · needs approval} other {}}",
+      "invite": "Invite",
+      "settings": "Group settings",
+      "settingsHint": "Time zone and week start",
+      "leave": {
+        "trigger": "Leave group",
+        "title": "Leave <bdi>{name}</bdi>?",
+        "descriptionAlone": "You're the only member, so leaving deletes the group.",
+        "description": "You stop seeing its habits. Your own habits stay with you.",
+        "confirm": "Leave group",
+        "pending": "Leaving…"
+      },
+      "delete": {
+        "trigger": "Delete group",
+        "title": "Delete <bdi>{name}</bdi>?",
+        "description": "This removes the group and its shared habits for everyone. It can't be undone.",
+        "confirm": "Delete group",
+        "pending": "Deleting…"
+      }
+    },
+    "confirm": {
+      "allMoved": "All children were moved.",
+      "exportFirst": "Export first",
+      "deleteAnyway": "Delete anyway"
+    },
+    "rename": {
+      "action": "Rename",
+      "label": "Group name"
+    },
+    "settingsForm": {
+      "note": "Applies to new weekly habits."
+    },
+    "member": {
+      "you": "You",
+      "admin": "Admin",
+      "options": "Options for {name}",
+      "makeMember": "Make member",
+      "makeAdmin": "Make admin",
+      "remove": "Remove from group",
+      "removeTitle": "Remove <bdi>{name}</bdi>?",
+      "removeDescription": "They leave <bdi>{group}</bdi> and stop seeing its habits. Their own habits stay with them.",
+      "confirmRemove": "Remove",
+      "removing": "Removing…"
+    },
+    "invite": {
+      "helpNone": "Anyone with the link can join <bdi>{group}</bdi> for 7 days.",
+      "helpActive": "Anyone with this link can join <bdi>{group}</bdi> for 7 days.",
+      "create": "Create invite link",
+      "creating": "Creating…",
+      "copyFailed": "Couldn't copy. Select the link and copy it.",
+      "label": "Invite link <muted>· valid until {date}</muted>",
+      "linkAria": "Invite link",
+      "shareTitle": "Join {group} on Keepup",
+      "share": "Share",
+      "copy": "Copy link",
+      "copied": "Copied",
+      "turnOff": "Turn off link",
+      "turningOff": "Turning off…"
+    },
+    "errors": {
+      "timezone": "Pick a time zone.",
+      "weekStart": "Pick Monday or Sunday."
+    }
   },
   "auth": {
     "emailInvalid": "Enter a valid email address.",
@@ -1116,7 +1207,8 @@
     "firstCheckinTip": {
       "dismiss": "Dismiss tip: ",
       "text": "Tap when you've done it"
-    }
+    },
+    "cancel": "Cancel"
   },
   "inbox": {
     "title": "Inbox",

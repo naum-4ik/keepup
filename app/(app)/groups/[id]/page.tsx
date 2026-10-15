@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { ChevronDown, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { AvatarEdit } from "@/components/avatar-edit";
@@ -18,6 +19,7 @@ import { getGroupDetail, getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
 import { getHabitSummaries } from "@/lib/habits";
 import { getT } from "@/lib/i18n/server";
+import { INTL_LOCALE } from "@/supabase/functions/_shared/i18n";
 import { requestOrigin } from "@/lib/request-origin";
 import { describeSchedule } from "@/lib/schedule";
 import { listTimezones } from "@/lib/timezones";
@@ -42,7 +44,9 @@ export default async function GroupPage({
 }) {
   const [{ id }, { invite }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
-  const { t, locale } = await getT();
+  const { t: tg, locale } = await getT();
+  const t = await getTranslations("groups.detail");
+  const bdi = (c: React.ReactNode) => <bdi>{c}</bdi>;
   const [{ profile, userId }, group, summaries, myGroups] = await Promise.all([
     getProfile(),
     getGroupDetail(id),
@@ -59,9 +63,9 @@ export default async function GroupPage({
   const isAdmin = group.my_role === "admin";
   const url = group.invite ? inviteUrl(await requestOrigin(), group.invite.token) : null;
   const validUntil = group.invite
-    ? new Date(group.invite.expires_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: profile.timezone })
+    ? new Intl.DateTimeFormat(INTL_LOCALE[locale], { day: "numeric", month: "short", timeZone: profile.timezone }).format(new Date(group.invite.expires_at))
     : null;
-  const childrenNotice = childrenDeletionNotice(t, locale, group.children.map((c) => c.name));
+  const childrenNotice = childrenDeletionNotice(tg, locale, group.children.map((c) => c.name));
   const alone = group.members.length === 1;
   // Leave/Delete's children step: each child can be exported, or moved to another group I admin.
   const children = group.children.map((c) => ({ id: c.id, name: c.name }));
@@ -73,7 +77,7 @@ export default async function GroupPage({
     <section className="flex flex-col gap-4 pt-2 pb-6">
       <Link href="/groups" className="-ml-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
         <ChevronLeft aria-hidden className="size-4" />
-        Groups
+        {tg("groups.title")}
       </Link>
 
       <header className="flex items-center gap-4">
@@ -84,8 +88,8 @@ export default async function GroupPage({
             color={group.avatar_color}
             action={saveGroupAvatar.bind(null, group.id)}
             options={GROUP_AVATAR_EMOJI}
-            title="Change the group avatar"
-            description="Everyone in the group sees it."
+            title={t("avatarTitle")}
+            description={t("avatarDescription")}
             className="size-16 text-3xl"
           />
         ) : (
@@ -94,12 +98,12 @@ export default async function GroupPage({
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <RenameGroupForm name={group.name} canRename={isAdmin} action={renameGroup.bind(null, group.id)} />
           <div>
-            <KindChip kind={group.kind} t={t} />
+            <KindChip kind={group.kind} t={tg} />
           </div>
         </div>
       </header>
 
-      <Card title="People">
+      <Card title={t("people")}>
         <ul className="flex flex-col gap-2">
           {group.members.map((m) => (
             <MemberRow
@@ -117,7 +121,7 @@ export default async function GroupPage({
                 <Avatar name={c.name} emoji={c.avatar_emoji} color={c.avatar_color} size="md" />
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate font-semibold">{c.name}</span>
-                  <span className="text-xs text-muted-foreground">Child</span>
+                  <span className="text-xs text-muted-foreground">{t("child")}</span>
                 </span>
                 <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
               </Link>
@@ -130,12 +134,12 @@ export default async function GroupPage({
             className={addButtonClass}
           >
             <Plus aria-hidden className="size-4" />
-            Add a child
+            {t("addChild")}
           </Link>
         )}
       </Card>
 
-      <Card title="Group habits">
+      <Card title={t("habits")}>
         {habits.length > 0 ? (
           <ul className="flex flex-col gap-1">
             {habits.map((h) => (
@@ -145,8 +149,7 @@ export default async function GroupPage({
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate font-semibold">{h.title}</span>
                     <span className="text-xs text-muted-foreground">
-                      {describeSchedule(t, h.target_count, h.period)}
-                      {h.requires_approval && " · needs approval"}
+                      {t("habitLine", { schedule: describeSchedule(tg, h.target_count, h.period), approval: h.requires_approval ? "yes" : "no" })}
                     </span>
                   </span>
                 </Link>
@@ -154,7 +157,7 @@ export default async function GroupPage({
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">No group habits yet.</p>
+          <p className="text-sm text-muted-foreground">{t("noHabits")}</p>
         )}
         {isAdmin && (
           <Link
@@ -162,7 +165,7 @@ export default async function GroupPage({
             className={addButtonClass}
           >
             <Plus aria-hidden className="size-4" />
-            Add a group habit
+            {t("addHabit")}
           </Link>
         )}
       </Card>
@@ -170,10 +173,10 @@ export default async function GroupPage({
       {/* People, then what they do together, then bringing someone new (owner's order). ?invite=1
           still focuses the link (autoFocus scrolls it into view). */}
       {isAdmin && (
-        <Card title="Invite">
+        <Card title={t("invite")}>
           {/* A demo login can't invite anyone (the database refuses it). */}
           {profile.is_demo ? (
-            <p className="text-sm text-muted-foreground">{t("demo.off")}</p>
+            <p className="text-sm text-muted-foreground">{tg("demo.off")}</p>
           ) : (
             <InviteLink groupId={group.id} groupName={group.name} url={url} validUntil={validUntil} autoFocus={invite === "1"} />
           )}
@@ -184,8 +187,8 @@ export default async function GroupPage({
         <details className="group rounded-2xl bg-card shadow-soft">
           <summary className="flex min-h-14 list-none items-center gap-3 rounded-2xl px-5 py-3 hover:bg-muted/60 [&::-webkit-details-marker]:hidden">
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className="font-bold">Group settings</span>
-              <span className="text-xs text-muted-foreground">Time zone and week start</span>
+              <span className="font-bold">{t("settings")}</span>
+              <span className="text-xs text-muted-foreground">{t("settingsHint")}</span>
             </span>
             <ChevronDown aria-hidden className="size-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
           </summary>
@@ -202,15 +205,11 @@ export default async function GroupPage({
 
       <div className="flex flex-col gap-2 pt-2">
         <ConfirmGroupAction
-          triggerLabel="Leave group"
-          title={`Leave ${group.name}?`}
-          description={
-            alone
-              ? "You're the only member, so leaving deletes the group."
-              : "You stop seeing its habits. Your own habits stay with you."
-          }
-          confirmLabel="Leave group"
-          pendingLabel="Leaving…"
+          triggerLabel={t("leave.trigger")}
+          title={t.rich("leave.title", { name: group.name, bdi })}
+          description={alone ? t("leave.descriptionAlone") : t("leave.description")}
+          confirmLabel={t("leave.confirm")}
+          pendingLabel={t("leave.pending")}
           childrenNotice={childrenNotice}
           groupChildren={children}
           moveTargets={moveTargets}
@@ -218,11 +217,11 @@ export default async function GroupPage({
         />
         {isAdmin && (
           <ConfirmGroupAction
-            triggerLabel="Delete group"
-            title={`Delete ${group.name}?`}
-            description="This removes the group and its shared habits for everyone. It can't be undone."
-            confirmLabel="Delete group"
-            pendingLabel="Deleting…"
+            triggerLabel={t("delete.trigger")}
+            title={t.rich("delete.title", { name: group.name, bdi })}
+            description={t("delete.description")}
+            confirmLabel={t("delete.confirm")}
+            pendingLabel={t("delete.pending")}
             childrenNotice={childrenNotice}
             groupChildren={children}
             moveTargets={moveTargets}

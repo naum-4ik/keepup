@@ -116,7 +116,7 @@ test("the member menu closes on Escape and on a tap outside", async ({ page, bro
   await joinByLink(guest, url, "Dan");
   await page.reload();
   // A real button for assistive tech (a flex <summary> loses its role in some engines), with its state.
-  const summary = page.getByRole("button", { name: /Options for Dan/ });
+  const summary = page.getByRole("button", { name: /Options for \u2068Dan\u2069/ });
   const makeAdmin = page.getByRole("button", { name: "Make admin" });
   await expect(summary).toHaveAttribute("aria-expanded", "false");
   await summary.click();

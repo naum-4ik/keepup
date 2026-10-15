@@ -16,8 +16,12 @@ import type { T } from "@/supabase/functions/_shared/i18n";
 
 export type GroupActionState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string; code?: string };
 
-const NOT_FOUND: GroupActionState = { status: "error", message: "That group isn't available." };
-const NO_MEMBER: GroupActionState = { status: "error", message: "That person isn't in this group." };
+const fail = async (key: string): Promise<GroupActionState> => {
+  const { t } = await getT();
+  return { status: "error", message: t(key) };
+};
+const notFound = () => fail("errors.group_not_found");
+const noMember = () => fail("errors.member_not_found");
 
 // A name the database rejects arrives as a raw check violation, not a keepup: code.
 const nameErrorMessage = (t: T, error: { code?: string; message?: string }) =>
@@ -51,7 +55,7 @@ export async function createGroup(_prev: GroupActionState, formData: FormData): 
 
 export async function renameGroup(groupId: string, _prev: GroupActionState, formData: FormData): Promise<GroupActionState> {
   const { t } = await getT();
-  if (!isUuid(groupId)) return NOT_FOUND;
+  if (!isUuid(groupId)) return notFound();
   const name = parseGroupName(String(formData.get("name") ?? ""));
   if (!name.ok) return { status: "error", message: errorText(t, name.error) };
   const { supabase } = await requireUser();
@@ -63,11 +67,11 @@ export async function renameGroup(groupId: string, _prev: GroupActionState, form
 
 export async function updateGroupSettings(groupId: string, _prev: GroupActionState, formData: FormData): Promise<GroupActionState> {
   const { t } = await getT();
-  if (!isUuid(groupId)) return NOT_FOUND;
+  if (!isUuid(groupId)) return notFound();
   const timezone = String(formData.get("timezone") ?? "");
   const weekStart = String(formData.get("weekStart") ?? "");
-  if (!listTimezones().includes(timezone)) return { status: "error", message: "Pick a time zone." };
-  if (weekStart !== "0" && weekStart !== "1") return { status: "error", message: "Pick Monday or Sunday." };
+  if (!listTimezones().includes(timezone)) return { status: "error", message: t("groups.errors.timezone") };
+  if (weekStart !== "0" && weekStart !== "1") return { status: "error", message: t("groups.errors.weekStart") };
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("update_group", { p_group_id: groupId, p_timezone: timezone, p_week_start: Number(weekStart) });
   if (error) return { status: "error", message: habitErrorMessage(t, error) };
@@ -94,27 +98,27 @@ async function run(
 }
 
 export async function createInvite(groupId: string): Promise<GroupActionState> {
-  if (!isUuid(groupId)) return NOT_FOUND;
+  if (!isUuid(groupId)) return notFound();
   const { supabase, who } = await requireUser();
   return run(groupId, () => supabase.rpc("create_invite", { p_group_id: groupId }), { name: "invite_created", who });
 }
 
 export async function revokeInvites(groupId: string): Promise<GroupActionState> {
-  if (!isUuid(groupId)) return NOT_FOUND;
+  if (!isUuid(groupId)) return notFound();
   const { supabase } = await requireUser();
   return run(groupId, () => supabase.rpc("revoke_invites", { p_group_id: groupId }));
 }
 
 export async function setMemberRole(groupId: string, userId: string, role: "admin" | "member"): Promise<GroupActionState> {
-  if (!isUuid(groupId) || !isUuid(userId)) return NO_MEMBER;
+  if (!isUuid(groupId) || !isUuid(userId)) return noMember();
   // Server actions take any value from the client, whatever the type says.
-  if (role !== "admin" && role !== "member") return { status: "error", message: "Pick admin or member." };
+  if (role !== "admin" && role !== "member") return fail("errors.invalid_role");
   const { supabase } = await requireUser();
   return run(groupId, () => supabase.rpc("set_member_role", { p_group_id: groupId, p_user_id: userId, p_role: role }));
 }
 
 export async function removeMember(groupId: string, userId: string): Promise<GroupActionState> {
-  if (!isUuid(groupId) || !isUuid(userId)) return NO_MEMBER;
+  if (!isUuid(groupId) || !isUuid(userId)) return noMember();
   const { supabase, who } = await requireUser();
   return run(groupId, () => supabase.rpc("remove_member", { p_group_id: groupId, p_user_id: userId }), {
     name: "member_removed",
@@ -127,7 +131,7 @@ export async function removeMember(groupId: string, userId: string): Promise<Gro
 // (Task 10 adds Export and Move there).
 export async function leaveGroup(groupId: string, confirmChildren: boolean): Promise<GroupActionState> {
   const { t } = await getT();
-  if (!isUuid(groupId)) return NOT_FOUND;
+  if (!isUuid(groupId)) return notFound();
   const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("leave_group", { p_group_id: groupId, p_confirm_children: confirmChildren });
   if (error) return { status: "error", message: habitErrorMessage(t, error), code: errorCode(error) };
@@ -138,7 +142,7 @@ export async function leaveGroup(groupId: string, confirmChildren: boolean): Pro
 
 export async function deleteGroup(groupId: string, confirmChildren: boolean): Promise<GroupActionState> {
   const { t } = await getT();
-  if (!isUuid(groupId)) return NOT_FOUND;
+  if (!isUuid(groupId)) return notFound();
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("delete_group", { p_group_id: groupId, p_confirm_children: confirmChildren });
   if (error) return { status: "error", message: habitErrorMessage(t, error), code: errorCode(error) };
@@ -148,7 +152,7 @@ export async function deleteGroup(groupId: string, confirmChildren: boolean): Pr
 
 export async function saveGroupAvatar(groupId: string, _prev: AvatarFormState, formData: FormData): Promise<AvatarFormState> {
   const { t } = await getT();
-  if (!isUuid(groupId)) return { status: "error", message: "That group isn't available." };
+  if (!isUuid(groupId)) return notFound();
   const avatar = parseAvatar(t, formData, isGroupAvatarEmoji);
   if (!avatar.ok) return { status: "error", message: avatar.message };
   const { supabase } = await requireUser();
