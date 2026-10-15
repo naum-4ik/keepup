@@ -70,13 +70,13 @@ test("picking 2 habits lands on Today with both, and a check-in clears the tip",
 
   await page.getByRole("button", { name: "Start with 2 habits" }).click();
   await expect(page).toHaveURL(/\/today$/);
-  await expect(page.getByRole("button", { name: "Check in: Meditate" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Check in: Read 20 min" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check in: \u2068Meditate\u2069" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check in: \u2068Read 20 min\u2069" })).toBeVisible();
   await expect(page.getByText("Work out")).toHaveCount(0);
 
   await expect(page.getByText("Tap when you've done it")).toBeVisible();
-  await page.getByRole("button", { name: "Check in: Meditate" }).click();
-  await expect(page.getByRole("button", { name: "Done: Meditate" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: \u2068Meditate\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Done: \u2068Meditate\u2069" })).toBeVisible();
   await expect(page.getByText("Tap when you've done it")).toHaveCount(0);
 
   // Step 2 is only for starting out.
@@ -97,7 +97,7 @@ test("the first check-in tip shows once and not after a reload", async ({ page }
   await expect(tip).toHaveCount(0);
 
   await page.reload();
-  await expect(page.getByRole("button", { name: "Check in: Walk 10,000 steps" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check in: \u2068Walk 10,000 steps\u2069" })).toBeVisible();
   await expect(page.getByText("Tap when you've done it")).toHaveCount(0);
 });
 

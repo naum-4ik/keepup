@@ -71,8 +71,8 @@ test("an admin of a family group with no children sees Add a child?, which opens
   const groupId = page.url().match(/\/groups\/([0-9a-f-]{36})/)![1];
   await createGroupHabitVia(page, "Family", "Walk");
   await expect(page.getByText("Add a child? 🐼")).toBeHidden(); // not before the first check-in
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
   await page.reload();
   await expect(page.getByText("Add a child? 🐼")).toBeVisible();
   await expect(page.getByText("Track brushing teeth, reading together and more.")).toBeVisible();
@@ -144,7 +144,7 @@ test("Me + Mary checks in both in one tap", async ({ page }) => {
   await dialog.getByRole("radio", { name: "Family" }).check();
   await dialog.getByRole("switch", { name: "Include Mary" }).click();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
-  await page.getByRole("button", { name: "Check in: Walk the dog" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Walk the dog\u2069" }).click();
   await page.getByRole("button", { name: "Me + Mary" }).click();
   await expect(page.getByText("Everyone did it ✓")).toBeVisible();
 });
@@ -163,7 +163,7 @@ test("Me + Mary from the group habit's page checks in both", async ({ page }) =>
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
   await page.getByRole("link", { name: /Walk the dog/ }).click();
   await expect(page).toHaveURL(/\/habits\/[0-9a-f-]{36}$/);
-  await page.getByRole("button", { name: "Check in: Walk the dog" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Walk the dog\u2069" }).click();
   await page.getByRole("button", { name: "Me + Mary" }).click();
   await expect(page.getByText("Everyone did it ✓")).toBeVisible();
   const together = page.getByRole("region", { name: "Together" });
@@ -340,7 +340,7 @@ test("a group habit with a child that ended leaves the kid views, and Start agai
 
   endHabitYesterday(id);
   await page.reload();
-  await expect(page.getByRole("region", { name: "Walk the dog is finished" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "\u2068Walk the dog\u2069 is finished" })).toBeVisible();
   await expect(mary).not.toContainText("Walk the dog");
   await page.goto(kidPage);
   await expect(page.getByRole("region", { name: "Habits" })).toContainText("Tidy my toys");
@@ -350,10 +350,10 @@ test("a group habit with a child that ended leaves the kid views, and Start agai
   await expect(page.getByText("Walk the dog")).toHaveCount(0);
 
   await page.goto("/today");
-  await page.getByRole("region", { name: "Walk the dog is finished" }).getByRole("button", { name: "Finish" }).click();
-  await expect(page.getByRole("region", { name: "Walk the dog is finished" })).toBeHidden();
+  await page.getByRole("region", { name: "\u2068Walk the dog\u2069 is finished" }).getByRole("button", { name: "Finish" }).click();
+  await expect(page.getByRole("region", { name: "\u2068Walk the dog\u2069 is finished" })).toBeHidden();
   await page.goto("/progress?view=finished");
-  await page.getByRole("button", { name: "Start Walk the dog again" }).click();
+  await page.getByRole("button", { name: "Start \u2068Walk the dog\u2069 again" }).click();
   await expect(page).toHaveURL(/\/today$/);
   await expect(page.getByRole("region", { name: "Mary", exact: true })).toContainText("Walk the dog");
 });
@@ -808,7 +808,7 @@ test("a guardian restores a child's archived habit from the child page", async (
   // Archived habits stay reachable from the child's page, and restore back into the list.
   await page.getByRole("region", { name: "Archived" }).getByRole("link", { name: /Tidy my toys/ }).click();
   await expect(page.getByRole("heading", { name: "Tidy my toys" })).toBeVisible();
-  await page.getByRole("button", { name: "Restore Tidy my toys" }).click();
+  await page.getByRole("button", { name: "Restore \u2068Tidy my toys\u2069" }).click();
   await expect(page).toHaveURL(kidUrl);
   await expect(list.getByRole("listitem")).toHaveCount(3);
   await expect(list).toContainText("Tidy my toys");

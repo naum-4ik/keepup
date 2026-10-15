@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { tEn } from "@/lib/i18n/test-t";
-import { comparisonLine, goalsMet, hasWeekData, outcomeLabel, ringDash, ringFraction, statusWord, streakSpan, withTodayPending, type WeekOverview } from "./week-overview";
+import { comparisonLine, goalsMet, hasWeekData, outcomeLabel, ringDash, ringFraction, streakSpan, withTodayPending, type WeekOverview } from "./week-overview";
 
 const week = (done: number, possible: number, prev_done: number, prev_possible: number) => ({ done, possible, prev_done, prev_possible });
 
@@ -8,6 +8,7 @@ describe("comparisonLine", () => {
   it("counts how many more than last week", () => {
     expect(comparisonLine(tEn, week(18, 22, 15, 21))).toBe("3 more than last week");
     expect(comparisonLine(tEn, week(1, 1, 0, 3))).toBe("1 more than last week");
+    expect(comparisonLine(tEn, week(5, 5, 3, 3))).toBe("2 more than last week");
   });
 
   it("only compares with last week when there was one", () => {
@@ -98,7 +99,6 @@ describe("withTodayPending", () => {
 
 describe("rest days (M5)", () => {
   it("a rested period reads as a rest day, never as missed", () => {
-    expect(statusWord(tEn, "rested")).toBe("rest day");
     expect(outcomeLabel(tEn, "rested")).toBe("Rest day");
     expect(outcomeLabel(tEn, "missed")).toBe("Missed");
   });

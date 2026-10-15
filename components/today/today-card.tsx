@@ -10,6 +10,7 @@ import { ProgressRing } from "@/components/overview/week-overview";
 import { useT } from "@/lib/i18n/client";
 import { goalsMet } from "@/lib/week-overview";
 import { takeBurstTurn } from "@/lib/burst-turns";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 import { todayLine, todayProgress, withQueuedProgress, type ProgressHabit } from "@/lib/today-progress";
 import { cn } from "@/lib/utils";
 
@@ -75,7 +76,7 @@ export function TodayCard({
 
   return (
     <section
-      aria-label="Today's progress"
+      aria-label={t("today.progressLabel")}
       className={cn(
         "relative flex flex-col gap-3 overflow-hidden rounded-2xl p-4 shadow-soft transition-colors",
         allDone ? "bg-done-soft" : "bg-card",
@@ -86,7 +87,7 @@ export function TodayCard({
       {total > 0 && (
       <div className="flex items-center gap-4">
           <span className="relative flex shrink-0 items-center justify-center">
-            <ProgressRing done={done} possible={total} size={64} label={`${done} of ${total} done today`} />
+            <ProgressRing done={done} possible={total} size={64} label={t("today.ringLabel", { done, total })} />
             {!allDone && total > 0 && (
               <span aria-hidden className="absolute text-sm font-bold tabular-nums">
                 {Math.round((done / total) * 100)}%
@@ -96,10 +97,10 @@ export function TodayCard({
           <div className="flex min-w-0 flex-col">
             <p className="text-sm font-semibold text-muted-foreground">{date}</p>
             <p className="text-lg font-bold tabular-nums">
-              {done} of {total} done
+              {t("today.doneOfTotal", { done, total })}
             </p>
             <p role="status" className={cn("text-sm font-semibold", allDone ? "text-done" : "text-primary")}>
-              {todayLine(done, total)}
+              {todayLine(t, done, total)}
             </p>
           </div>
         </div>
@@ -109,7 +110,7 @@ export function TodayCard({
         // One picture with one label: the habit cards below are the interactive part.
         <div
           role="img"
-          aria-label={`Today's habits: ${items.map((i) => `${i.title} ${i.done ? "done" : "to do"}`).join(", ")}`}
+          aria-label={t("today.habitsLabel", { list: items.map((i) => t(i.done ? "today.itemDone" : "today.itemTodo", { title: isolate(i.title) })).join(", ") })}
           className="flex flex-wrap gap-1.5"
         >
           {items.map((i) => (
@@ -130,19 +131,19 @@ export function TodayCard({
           href="/progress"
           className="-mx-2 -mb-2 flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm text-muted-foreground hover:bg-muted/60"
         >
-          <span className="font-semibold">This week</span>
+          <span className="font-semibold">{t("today.thisWeek")}</span>
           <span aria-hidden>·</span>
           <ProgressRing done={week.done} possible={week.possible} label={t("weekOverview.ringLabel", { goals: goalsMet(t, week.done, week.possible) })} />
           {/* The ring's label says the same for screen readers. */}
           <span aria-hidden className="font-bold text-foreground tabular-nums">
-            {week.done} of {week.possible}
+            {t("today.weekCount", { done: week.done, possible: week.possible })}
           </span>
           {week.streak > 0 && (
             <>
               <span aria-hidden>·</span>
               <span className="flex items-center gap-1 font-bold text-flame tabular-nums">
                 <Flame className="size-4 fill-current" aria-hidden />
-                <span className="sr-only">Best streak:</span>
+                <span className="sr-only">{t("today.bestStreak")}</span>
                 {week.streak}
               </span>
             </>

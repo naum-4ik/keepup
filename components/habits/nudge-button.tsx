@@ -6,6 +6,7 @@ import { nudge } from "@/app/(app)/inbox/actions";
 import { Button } from "@/components/ui/button";
 import { NUDGE_KINDS } from "@/lib/nudge-kinds";
 import { useT } from "@/lib/i18n/client";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 
 // Three preset messages, no free text (ideas/notifications-tone.md). One per person, habit and day.
 export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: string; recipientId: string; name: string; sent: boolean }) {
@@ -19,7 +20,7 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
   if (done) {
     return (
       <Button type="button" variant="outline" className="h-11 rounded-full px-4" disabled>
-        Nudged ✓<span className="sr-only"> {name}</span>
+        {t("habits.nudge.done")}<span className="sr-only"> <bdi>{name}</bdi></span>
       </Button>
     );
   }
@@ -29,14 +30,14 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
           <Button type="button" variant="outline" className="h-11 rounded-full px-4" disabled={pending || closed}>
-            Nudge<span className="sr-only"> {name}</span>
+            {t("habits.nudge.cta")}<span className="sr-only"> <bdi>{name}</bdi></span>
           </Button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
           <DropdownMenu.Content
             align="end"
             sideOffset={6}
-            aria-label={`Nudge ${name}`}
+            aria-label={t("habits.nudge.menuLabel", { name: isolate(name) })}
             className="z-50 min-w-52 rounded-2xl bg-card p-1.5 shadow-[0_4px_24px_rgb(61_44_34_/_0.16)]"
           >
             {NUDGE_KINDS.map((k) => (

@@ -19,7 +19,7 @@ function refresh() {
 
 export async function review(checkInId: string, approve: boolean): Promise<ReviewResult> {
   const { t } = await getT();
-  if (!isUuid(checkInId)) return { ok: false, message: "That check-in isn't available." };
+  if (!isUuid(checkInId)) return { ok: false, message: t("errors.check_in_not_found") };
   const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("review_check_in", { p_check_in_id: checkInId, p_approve: approve });
   // Refresh only after a review that happened: a refresh on "already reviewed" re-rendered the Inbox
@@ -63,8 +63,8 @@ export async function markRead(ids: string[]): Promise<void> {
 
 export async function nudge(habitId: string, recipientId: string, kind: string): Promise<SendResult> {
   const { t } = await getT();
-  if (!isUuid(habitId) || !isUuid(recipientId)) return { ok: false, message: "That habit isn't available." };
-  if (!NUDGE_KINDS.some((k) => k.kind === kind)) return { ok: false, message: "Pick one of the messages." };
+  if (!isUuid(habitId) || !isUuid(recipientId)) return { ok: false, message: t("errors.habit_not_found") };
+  if (!NUDGE_KINDS.some((k) => k.kind === kind)) return { ok: false, message: t("inbox.errors.pickMessage") };
   const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("nudge", { p_habit_id: habitId, p_recipient_id: recipientId, p_kind: kind });
   if (error) return { ok: false, message: habitErrorMessage(t, error), code: errorCode(error) };
@@ -75,7 +75,7 @@ export async function nudge(habitId: string, recipientId: string, kind: string):
 
 export async function cheer(checkInId: string, habitId: string): Promise<SendResult> {
   const { t } = await getT();
-  if (!isUuid(checkInId) || !isUuid(habitId)) return { ok: false, message: "That check-in isn't available." };
+  if (!isUuid(checkInId) || !isUuid(habitId)) return { ok: false, message: t("errors.check_in_not_found") };
   const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("cheer", { p_check_in_id: checkInId });
   if (error) return { ok: false, message: habitErrorMessage(t, error) };

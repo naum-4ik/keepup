@@ -1,19 +1,14 @@
 import { Check, Clock, Snowflake } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Avatar } from "@/components/avatar";
 import { memberStatus, type Member, type MemberStatus } from "@/lib/today-sections";
 import { cn } from "@/lib/utils";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 
 const MAX_SHOWN = 6;
 
-// Accessible names and the habit page's status text. Copy stays neutral: only the avatars carry
-// who is where (design rule: never name who hasn't done it).
-export const MEMBER_STATUS_LABEL: Record<MemberStatus, string> = {
-  done: "Done",
-  pending: "Waiting for approval",
-  paused: "Paused",
-  open: "Not yet",
-  not_required: "Joins next period",
-};
+// Accessible names (habits.memberStatus.avatar.*) and the habit page's status text (habits.memberStatus.*).
+// Copy stays neutral: only the avatars carry who is where (design rule: never name who hasn't done it).
 
 // docs/design.md status colours, each with an icon (colour is never the only signal).
 const BADGE: Partial<Record<MemberStatus, { Icon: typeof Check; className: string }>> = {
@@ -23,6 +18,7 @@ const BADGE: Partial<Record<MemberStatus, { Icon: typeof Check; className: strin
 };
 
 export function MemberAvatar({ member, status, size = "sm" }: { member: Member; status: MemberStatus; size?: "sm" | "md" }) {
+  const t = useTranslations("habits.memberStatus.avatar");
   const badge = BADGE[status];
   return (
     <Avatar
@@ -30,7 +26,7 @@ export function MemberAvatar({ member, status, size = "sm" }: { member: Member; 
       emoji={member.avatar_emoji}
       color={member.avatar_color}
       size={size}
-      label={`${member.name}: ${MEMBER_STATUS_LABEL[status].toLowerCase()}`}
+      label={t(status, { name: isolate(member.name) })}
       className={cn("relative ring-2 ring-card", status === "not_required" && "opacity-50")}
     >
       {badge && (

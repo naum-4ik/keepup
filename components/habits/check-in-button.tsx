@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { Check, Clock, Plus, Snowflake } from "lucide-react";
 import { checkInWith } from "@/app/(app)/habits/actions";
 import { dismissFirstCheckinTip } from "@/components/first-checkin-tip";
 import { floatXp, useXpFloat } from "@/components/habits/xp-float";
 import { useOfflineQueue, useSubmitTap, useUndoQueuedTap } from "@/components/offline/offline-queue-provider";
 import { useT } from "@/lib/i18n/client";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 import { undoLabel } from "@/lib/offline-copy";
 import { queueKey } from "@/lib/offline-queue";
 import { ringOf, type RingInput } from "@/lib/today";
@@ -14,15 +16,6 @@ import { ringDash } from "@/lib/week-overview";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { tapXp, xpLabel, type TapXp } from "@/lib/xp";
-
-const LABEL: Record<CheckInState, string> = {
-  open: "Check in",
-  done: "Done",
-  pending: "Waiting for approval",
-  "checked-today": "Checked in today",
-  frozen: "Paused",
-  "not-started": "Starts later",
-};
 
 export function CheckInButton({
   habitId,
@@ -48,6 +41,7 @@ export function CheckInButton({
   needsApproval?: boolean;
 }) {
   const { t } = useT();
+  const tr = useTranslations("habits.checkIn");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [celebrating, setCelebrating] = useState(false);
@@ -128,7 +122,11 @@ export function CheckInButton({
         key={burst}
         ref={buttonRef}
         type="button"
-        aria-label={`${LABEL[shown]}: ${title}${shownRing ? `, ${shownRing.done} of ${shownRing.target}` : ""}`}
+        aria-label={
+          shownRing
+            ? tr("labelRing", { state: tr(`state.${shown}`), title: isolate(title), done: shownRing.done, target: shownRing.target })
+            : tr("label", { state: tr(`state.${shown}`), title: isolate(title) })
+        }
         aria-describedby={savingShown ? savingId : undefined}
         // Disabled while the request runs, so a double tap sends one check-in.
         disabled={shown !== "open" || pending}
@@ -165,17 +163,17 @@ export function CheckInButton({
       {choosing && shown === "open" && (
         <div
           role="group"
-          aria-label={`Who did ${title}?`}
+          aria-label={tr("whoDid", { title: isolate(title) })}
           className="flex max-w-56 flex-wrap justify-end gap-1.5"
           onKeyDown={(e) => e.key === "Escape" && setChoosing(false)}
         >
-          <ChoiceButton onClick={() => run([])}>Just me</ChoiceButton>
+          <ChoiceButton onClick={() => run([])}>{t("habits.form.justMe")}</ChoiceButton>
           {withChildren.map((c) => (
             <ChoiceButton key={c.id} onClick={() => run([c.id])}>
-              Me + {c.name}
+              {tr.rich("meAndChild", { name: c.name, bdi: (x) => <bdi>{x}</bdi> })}
             </ChoiceButton>
           ))}
-          {withChildren.length > 1 && <ChoiceButton onClick={() => run(withChildren.map((c) => c.id))}>Me + everyone</ChoiceButton>}
+          {withChildren.length > 1 && <ChoiceButton onClick={() => run(withChildren.map((c) => c.id))}>{tr("meAndEveryone")}</ChoiceButton>}
         </div>
       )}
       {error && (

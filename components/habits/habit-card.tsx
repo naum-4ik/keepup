@@ -71,7 +71,7 @@ export async function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; 
                 everyone ? "font-semibold text-done" : "text-muted-foreground",
               )}
             >
-              {everyone ? "Everyone did it ✓" : progress.text}
+              {everyone ? t("habits.common.everyoneDidIt") : progress.text}
             </span>
             {endLine && (
               <span className={cn("text-xs font-semibold", endLine.almost ? "text-primary" : "text-muted-foreground")}>

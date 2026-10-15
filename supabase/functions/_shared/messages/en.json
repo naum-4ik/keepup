@@ -2,7 +2,11 @@
   "settings": {
     "language": "Language",
     "languageHint": "Keepup and its notifications use this language.",
-    "languageNames": { "en": "English", "ru": "Русский", "he": "עברית" }
+    "languageNames": {
+      "en": "English",
+      "ru": "Русский",
+      "he": "עברית"
+    }
   },
   "push": {
     "today": "Today",
@@ -92,7 +96,11 @@
     "weekly": "weekly",
     "monthly": "monthly",
     "timesPer": "{n}× a {unit, select, day {day} week {week} other {month}}",
-    "once": { "day": "Daily", "week": "Weekly", "month": "Monthly" },
+    "once": {
+      "day": "Daily",
+      "week": "Weekly",
+      "month": "Monthly"
+    },
     "progress": {
       "starts": "Starts {date}",
       "paused": "Paused",
@@ -124,8 +132,8 @@
     "today": "Today",
     "yesterday": "Yesterday",
     "justNow": "just now",
-    "minutesAgo": "{n} min ago",
-    "hoursAgo": "{n} h ago",
+    "minutesAgo": "{n, plural, other {# min ago}}",
+    "hoursAgo": "{n, plural, other {# h ago}}",
     "reviewBy": "Review by {time}"
   },
   "feed": {
@@ -203,14 +211,6 @@
     "activity": "Activity"
   },
   "weekOverview": {
-    "status": {
-      "done": "done",
-      "missed": "missed",
-      "paused": "paused",
-      "not_started": "not started",
-      "open": "in progress",
-      "rested": "rest day"
-    },
     "outcome": {
       "done": "Done",
       "missed": "Missed",
@@ -220,18 +220,33 @@
     },
     "goalsMet": "{done} of {possible, plural, one {# goal} other {# goals}} met",
     "ringLabel": "{goals} this week",
-    "moreThanLastWeek": "{n} more than last week",
+    "moreThanLastWeek": "{n, plural, other {# more than last week}}",
     "bestWeekYet": "Your best week yet",
     "freshStart": "A fresh start this week",
     "dotsLabel": "Last {span}: {counts}",
-    "dotCount": "{n} {word}"
+    "dotCount": "{status, select, done {{n, plural, other {# done}}} missed {{n, plural, other {# missed}}} paused {{n, plural, other {# paused}}} not_started {{n, plural, other {# not started}}} open {{n, plural, other {# in progress}}} rested {{n, plural, other {# rest day}}} other {{n, plural, other {#}}}}"
   },
   "recaps": {
     "weekOf": "Week of {day} {month}",
     "quietWeek": "A quiet week.",
     "quietMonth": "A quiet month.",
     "nothingDue": "Nothing was due.",
-    "streak": "{title} 🔥 {span}"
+    "streak": "{title} 🔥 {span}",
+    "page": {
+      "title": "Recaps",
+      "weeks": "Weeks",
+      "months": "Months",
+      "firstWeekly": "Your first weekly recap arrives on the first day of next week.",
+      "restDays": "{n, plural, other {Rest days: # (dashed)}}",
+      "topStreaks": "Top streaks",
+      "badges": "Badges: {list}"
+    },
+    "heatmap": {
+      "fullDays": "{n, plural, one {# day} other {# days}} with everything done",
+      "dayCounts": "{date}: {done} of {possible}{rested, select, yes {, Rest day} other {}}",
+      "dayRest": "{date}: Rest day",
+      "dayNothingDue": "{date}: nothing due"
+    }
   },
   "habitEnd": {
     "progress": {
@@ -677,7 +692,6 @@
   "moved": {
     "notice": "Keepup has a new address. Add it to your Home Screen from here, then delete the old icon and turn reminders on again.",
     "how": "How?",
-    "dismiss": "Dismiss",
     "installTitle": "Install Keepup",
     "installIntro": "Keepup works best from your Home Screen: full screen, with reminders.",
     "installReminders": "Reinstalled? Reminders don't move with the app. Turn them on again: Profile → Settings → Turn on reminders."
@@ -702,5 +716,480 @@
   },
   "devices": {
     "generic": "A device"
+  },
+  "today": {
+    "title": "Today",
+    "resetDone": "Your data is reset. A fresh start 🌱",
+    "progressLabel": "Today's progress",
+    "ringLabel": "{done} of {total} done today",
+    "doneOfTotal": "{done} of {total} done",
+    "habitsLabel": "Today's habits: {list}",
+    "itemDone": "{title} done",
+    "itemTodo": "{title} to do",
+    "thisWeek": "This week",
+    "weekCount": "{done} of {possible}",
+    "bestStreak": "Best streak:",
+    "line": {
+      "allDone": "Today's all done 🎉",
+      "toGoToday": "{n, plural, other {# to go today}}",
+      "oneMore": "One more to go!",
+      "halfway": "Halfway there 💪",
+      "toGo": "{n, plural, other {# to go}}"
+    },
+    "welcome": {
+      "title": "Welcome to <bdi>{name}</bdi> 👋",
+      "people": "{n, plural, one {# person} other {# people}}",
+      "habitsBelow": "your group habits are below",
+      "noGroupHabits": "no group habits yet",
+      "open": "Open",
+      "openLabel": "Open {name}"
+    },
+    "approvalsWaiting": "{n, plural, one {# check-in waiting for you} other {# check-ins waiting for you}}",
+    "habitFallback": "A habit",
+    "empty": {
+      "text": "Nothing to do yet. Add a habit to get started.",
+      "action": "Add your first habit"
+    },
+    "sections": {
+      "mine": "Mine",
+      "groupFallback": "Group",
+      "allCheckedOff": "All checked off. Nice work.",
+      "doneForToday": "Done for today",
+      "later": "Later"
+    },
+    "finish": {
+      "label": "{title} is finished",
+      "reachedEnd": "<bdi>{title}</bdi> reached its end{celebrate, select, yes { 🎉} other {}}",
+      "finish": "Finish",
+      "keepGoing": "Keep going",
+      "adminChooses": "An admin of the group chooses what's next."
+    },
+    "gentle": {
+      "inviteFamily": {
+        "title": "Invite your family",
+        "body": "Share habits like family dinner. Done when everyone's done.",
+        "cta": "Invite"
+      },
+      "inviteFriend": {
+        "title": "Invite a friend",
+        "body": "Do a habit together and cheer each other on.",
+        "cta": "Invite"
+      },
+      "addChild": {
+        "title": "Add a child? 🐼",
+        "body": "Track brushing teeth, reading together and more.",
+        "cta": "Add a child"
+      },
+      "notNow": "Not now"
+    }
+  },
+  "nav": {
+    "main": "Main",
+    "today": "Today",
+    "progress": "Progress",
+    "newHabit": "New habit",
+    "groups": "Groups",
+    "profile": "Profile",
+    "inbox": "Inbox",
+    "inboxUnread": "{n, plural, other {Inbox, {n, number, ::group-off} unread}}",
+    "profileLevel": "Profile, level {level}",
+    "profileLevelProgress": "Profile, level {level}, {percent}% to level {next}"
+  },
+  "habits": {
+    "new": {
+      "title": "New habit"
+    },
+    "common": {
+      "everyoneDidIt": "Everyone did it ✓"
+    },
+    "form": {
+      "tabsLabel": "Template categories",
+      "popular": "Popular",
+      "together": "Together",
+      "createOwn": "Create your own",
+      "addHabit": "Add habit",
+      "adding": "Adding…",
+      "addHabitSchedule": "Add habit · {schedule}",
+      "titleLabel": "Title",
+      "categoryLabel": "Category",
+      "pickCategory": "Pick a category",
+      "howOften": "How often",
+      "times": "Times",
+      "per": "Per",
+      "frequencyOption": "{n, plural, one {time} other {times}} a {period, select, day {day} week {week} other {month}}",
+      "whoFor": "Who's it for",
+      "justMe": "Just me",
+      "groupNote": "Everyone in <bdi>{group}</bdi> does this together. It's done when everyone's checked in.",
+      "needsApproval": "Needs approval",
+      "needsApprovalHint": "Someone else in <bdi>{group}</bdi> confirms each check-in.",
+      "include": "Include <bdi>{name}</bdi>",
+      "starts": "Starts",
+      "startsNote": "{date}. Nothing before this day counts."
+    },
+    "checkIn": {
+      "state": {
+        "open": "Check in",
+        "done": "Done",
+        "pending": "Waiting for approval",
+        "checked-today": "Checked in today",
+        "frozen": "Paused",
+        "not-started": "Starts later"
+      },
+      "label": "{state}: {title}",
+      "labelRing": "{state}: {title}, {done} of {target}",
+      "whoDid": "Who did {title}?",
+      "meAndChild": "Me + <bdi>{name}</bdi>",
+      "meAndEveryone": "Me + everyone"
+    },
+    "checkIns": {
+      "empty": "No check-ins this period yet.",
+      "count": "{n, plural, one {{count} check-in this period} other {{count} check-ins this period}}",
+      "undoAt": "Undo check-in at {time}"
+    },
+    "streak": {
+      "label": "Streak:"
+    },
+    "memberStatus": {
+      "done": "Done",
+      "pending": "Waiting for approval",
+      "paused": "Paused",
+      "open": "Not yet",
+      "not_required": "Joins next period",
+      "avatar": {
+        "done": "{name}: done",
+        "pending": "{name}: waiting for approval",
+        "paused": "{name}: paused",
+        "open": "{name}: not yet",
+        "not_required": "{name}: joins next period"
+      }
+    },
+    "history": {
+      "empty": "Nothing here yet. Each {period, select, day {day} week {week} other {month}} you finish fills a square."
+    },
+    "countStepper": {
+      "decrease": "Decrease",
+      "increase": "Increase"
+    },
+    "cheer": {
+      "done": "Cheered",
+      "cta": "Cheer ❤️"
+    },
+    "nudge": {
+      "done": "Nudged ✓",
+      "cta": "Nudge",
+      "menuLabel": "Nudge {name}"
+    },
+    "confirm": {
+      "cancel": "Cancel"
+    },
+    "archive": {
+      "trigger": "Archive habit",
+      "title": "Archive \"<bdi>{title}</bdi>\"?",
+      "description": "It leaves Today and keeps its history in Progress → Archived.",
+      "confirm": "Archive",
+      "pending": "Archiving…"
+    },
+    "delete": {
+      "trigger": "Delete habit",
+      "title": "Delete \"<bdi>{title}</bdi>\"?",
+      "description": "This can't be undone.",
+      "confirm": "Delete",
+      "pending": "Deleting…"
+    },
+    "restore": {
+      "label": "Restore",
+      "aria": "Restore {title}",
+      "pending": "Restoring…"
+    },
+    "startAgain": {
+      "label": "Start again",
+      "aria": "Start {title} again",
+      "pending": "Starting…",
+      "openNew": "Open the new <bdi>{title}</bdi>"
+    },
+    "reminders": {
+      "group": "Reminders",
+      "legend": "When to remind you",
+      "summary": "In my daily summary",
+      "time": "At a time",
+      "off": "No reminders",
+      "timeLabel": "Reminder time",
+      "saved": "Saved ✓",
+      "mute": "Mute this habit",
+      "muteHint": "No notifications about it, not even from your group. It stays in your Inbox.",
+      "turnOn": "Turn on reminders on this device",
+      "hintMuted": "Muted: no reminders for this habit",
+      "hintOff": "No reminders",
+      "hintTime": "At {time}",
+      "hintSummary": "In your daily summary at {time}"
+    },
+    "freeze": {
+      "pauseHabit": "Pause habit",
+      "pause": "Pause",
+      "resume": "Resume",
+      "resumeMe": "Resume me",
+      "meNote": "You won't be counted while paused. Everyone else carries on.",
+      "starts": "Pause starts {date}",
+      "pausedFrom": "Paused from {from}",
+      "pausedFromUntil": "Paused from {from} until {until}",
+      "cancel": "Cancel pause",
+      "pauseFrom": "Pause from",
+      "addReturn": "Add a return date",
+      "until": "Until",
+      "removeEnd": "Remove end date",
+      "pausing": "Pausing…"
+    },
+    "end": {
+      "lastDay": "Last day: {date}.",
+      "noEnd": "No end: it keeps going until you stop it.",
+      "reached": "It reached its end. Keep going removes the end; Finish moves it to Finished.",
+      "removeEnd": "Remove end"
+    },
+    "endPicker": {
+      "legend": "Ends",
+      "noEnd": "No end",
+      "untilDate": "Until a date",
+      "dateLabel": "End date",
+      "lastDay": "Last day: {date}. Then you choose to keep going or finish.",
+      "keepsGoing": "Keeps going until you stop it."
+    },
+    "emoji": {
+      "choose": "Choose emoji (now {emoji})",
+      "suggested": "Suggested emoji",
+      "another": "Another emoji",
+      "help": "Tap the box, then the 😀 key on your keyboard.",
+      "notEmoji": "That's text, not an emoji. Pick one above or use your emoji keyboard.",
+      "justOne": "Just one emoji, please."
+    },
+    "details": {
+      "none": "None"
+    },
+    "datePicker": {
+      "tomorrow": "Tomorrow",
+      "next": "Next {weekday}",
+      "date": "Date",
+      "pick": "Pick a date",
+      "pickWith": "Pick a date, {date}",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month"
+    },
+    "detail": {
+      "groupLine": "<bdi>{group}</bdi> · {schedule}{approval, select, yes { · needs approval} other {}}",
+      "categoryLine": "{schedule} · {category}",
+      "archivedSuffix": " · Archived",
+      "archived": {
+        "title": "Archived",
+        "note": "{who, select, child {Restore it to put it back on <bdi>{name}</bdi>'s list. The days it was archived don't count against <bdi>{name}</bdi>.} other {Restore it to put it back on Today. The days it was archived don't count against you.}}"
+      },
+      "periodTitle": {
+        "day": "Today",
+        "week": "This week",
+        "month": "This month"
+      },
+      "you": "(you)",
+      "streaksLabel": "Streaks",
+      "childStreak": "<bdi>{name}</bdi>'s streak",
+      "yourStreak": "Your streak",
+      "bestStreak": "Best streak",
+      "streakUnit": {
+        "day": "{n, plural, one {day} other {days}}",
+        "week": "{n, plural, one {week} other {weeks}}",
+        "month": "{n, plural, one {month} other {months}}"
+      },
+      "history": "History",
+      "manage": {
+        "label": "Manage habit",
+        "reminders": "Reminders",
+        "pauseMe": {
+          "title": "Pause just me",
+          "hintPaused": "You're paused. Resume any time",
+          "hintScheduled": "Your pause is scheduled",
+          "hintIdle": "Away for a while? The others carry on"
+        },
+        "ends": {
+          "title": "Ends",
+          "hintReached": "Reached its end. Keep going or finish",
+          "hintLastDay": "Last day {date}",
+          "hintNone": "No end yet"
+        },
+        "pause": {
+          "everyone": "Pause for everyone",
+          "paused": "Paused",
+          "scheduled": "Pause scheduled",
+          "title": "Pause",
+          "hintResume": "Resume or cancel the pause",
+          "hintGroup": "Going away together? Pausing keeps the group's streak safe",
+          "hintChild": "Going away? <bdi>{name}</bdi>'s streak waits",
+          "hintOwn": "Going away? Your streak waits for you"
+        },
+        "edit": {
+          "title": "Edit details",
+          "hintWithStart": "Title, emoji, category and start date",
+          "hintNoStart": "Title, emoji and category"
+        },
+        "archive": {
+          "title": "Archive",
+          "hint": "Keeps its history, leaves Today"
+        },
+        "delete": {
+          "title": "Delete",
+          "hint": "It has no check-ins yet, so nothing is lost"
+        }
+      }
+    },
+    "actions": {
+      "pickValidDates": "Pick valid dates.",
+      "pickGroup": "Pick a group.",
+      "pickDate": "Pick a date.",
+      "startedAgainNoEnd": "Started again, but the end couldn't be set. Set it on the habit page."
+    }
+  },
+  "progress": {
+    "title": "Progress",
+    "recaps": "Recaps",
+    "back": "Back to Progress",
+    "listLabel": "Habit list",
+    "tabs": {
+      "active": "Active",
+      "finished": "Finished",
+      "archived": "Archived"
+    },
+    "addHabit": "Add a habit",
+    "empty": {
+      "finished": "No finished habits yet. Give a habit an end, like 30 days.",
+      "archived": "No archived habits.",
+      "active": "No habits yet."
+    },
+    "endedDecide": "Ended · decide on Today",
+    "best": "best {span}",
+    "calendar": {
+      "title": "Calendar",
+      "monthLabel": "Month",
+      "previousMonth": "Previous month, {month}",
+      "nextMonth": "Next month, {month}"
+    }
+  },
+  "overview": {
+    "yourWeek": "Your week",
+    "calendar": "Calendar",
+    "noStreak": "No streak yet",
+    "checkIns": "{n, plural, one {check-in} other {check-ins}}",
+    "activeHabits": "{n, plural, one {active habit} other {active habits}}",
+    "byDayLabel": "This week by day",
+    "tapDay": "Tap a day to see what you did.",
+    "day": {
+      "future": "{name}: still to come",
+      "nothingDue": "{name}: nothing due",
+      "counts": "{name}: {done} of {possible} done"
+    },
+    "dailyDone": "{done} of {possible} daily done",
+    "noCheckIns": "No check-ins this day.",
+    "waiting": "{n, plural, other {# waiting}}",
+    "status": {
+      "done": "Done",
+      "checked_in": "Checked in",
+      "open": "Not done yet",
+      "missed": "Not done",
+      "paused": "Paused",
+      "rested": "Rest day"
+    }
+  },
+  "common": {
+    "close": "Close",
+    "save": "Save",
+    "saved": "Saved",
+    "saving": "Saving…",
+    "dismiss": "Dismiss",
+    "whatIsThis": "What is this?",
+    "signOut": "Sign out",
+    "signOutTitle": "Sign out?",
+    "privacyConsent": "By continuing, you agree to the <link>Privacy Policy</link>",
+    "firstCheckinTip": {
+      "dismiss": "Dismiss tip: ",
+      "text": "Tap when you've done it"
+    }
+  },
+  "inbox": {
+    "title": "Inbox",
+    "approvals": {
+      "empty": "Nothing waiting for you.",
+      "approveAll": "Approve all ({n})",
+      "rowLabel": "{name} did {habit}",
+      "did": "<bdi>{name}</bdi> did <bdi>{habit}</bdi>",
+      "approve": "Approve",
+      "notApproved": "Not approved"
+    },
+    "feed": {
+      "empty": "Nothing yet. Activity from your groups shows up here.",
+      "unread": "Unread: "
+    },
+    "errors": {
+      "pickMessage": "Pick one of the messages."
+    }
+  },
+  "notifications": {
+    "card": {
+      "title": "Notifications",
+      "dailyReminder": "Daily reminder",
+      "pauseAll": "Pause all",
+      "pausedUntil": "Paused until {until}",
+      "untilTurnedOn": "you turn them back on",
+      "resume": "Resume",
+      "whatToSend": "What to send",
+      "devices": "Devices",
+      "thisDevice": "this device",
+      "remove": "Remove",
+      "removeLabel": "Remove {label}",
+      "removeThisLabel": "Remove {label} (this device)"
+    },
+    "turnOn": {
+      "label": "Turn on reminders",
+      "addToHomeScreen": "Add Keepup to your Home Screen",
+      "title": "Reminders",
+      "stepShare": "In Safari, tap Share (the square with an arrow).",
+      "stepAdd": "Choose Add to Home Screen, then Add.",
+      "stepOpen": "Open Keepup from your Home Screen and turn on reminders there.",
+      "intro": "One summary a day of what's still to do. You can pause or change it any time.",
+      "summaryAt": "Daily summary at",
+      "allow": "Allow notifications",
+      "failed": "This device couldn't be set up for notifications. Try again."
+    }
+  },
+  "celebrations": {
+    "label": "Celebration",
+    "dismissHint": "Tap or press Esc",
+    "everyoneDidIt": "Everyone did it!",
+    "everyoneDidItHabit": "<bdi>{habit}</bdi> ✓"
+  },
+  "avatars": {
+    "hint": "Pick an animal or a friendly thing. No photos, ever.",
+    "avatarGroup": "Avatar",
+    "backgroundGroup": "Background color",
+    "colors": {
+      "peach": "Peach",
+      "sage": "Sage",
+      "sky": "Sky",
+      "lilac": "Lilac",
+      "butter": "Butter",
+      "rose": "Rose"
+    },
+    "pickEmoji": "Pick one of these avatars.",
+    "pickColor": "Pick a color."
+  },
+  "profile": {
+    "form": {
+      "displayName": "Display name",
+      "weekStart": "Week starts on",
+      "weekStartHint": "Weekly habits reset on this day.",
+      "monday": "Monday",
+      "sunday": "Sunday",
+      "weekStartNote": "Applies to weekly habits you create from now on."
+    },
+    "timezone": {
+      "label": "Time zone",
+      "hint": "Pick the time it is where you are now. Your days start at midnight there.",
+      "useDevice": "Use this device's time zone ({city})",
+      "changeNote": "Changes apply from your next day and week."
+    }
   }
 }

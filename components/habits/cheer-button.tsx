@@ -35,8 +35,8 @@ export function CheerButton({ checkInId, habitId, name, cheered }: { checkInId: 
           })
         }
       >
-        {done ? "Cheered" : "Cheer ❤️"}
-        <span className="sr-only"> {name}</span>
+        {done ? t("habits.cheer.done") : t("habits.cheer.cta")}
+        <span className="sr-only"> <bdi>{name}</bdi></span>
       </Button>
       {error && (
         <p role="alert" className="max-w-48 text-right text-xs text-destructive">

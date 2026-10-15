@@ -4,31 +4,34 @@ import { Check, Clock, Pause } from "lucide-react";
 import { useId, useState } from "react";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import type { DayRow } from "@/lib/day-detail";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { ringFraction, type WeekDay } from "@/lib/week-overview";
+import { INTL_LOCALE, type Locale, type T } from "@/supabase/functions/_shared/i18n";
 
-const weekdayName = (localDate: string, style: "long" | "narrow") => {
+const weekdayName = (localDate: string, style: "long" | "narrow", locale: Locale) => {
   const [y, m, d] = localDate.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: style }).format(new Date(Date.UTC(y, m - 1, d)));
+  return new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: "UTC", weekday: style }).format(new Date(Date.UTC(y, m - 1, d)));
 };
 
-const longDate = (localDate: string) => {
+const longDate = (localDate: string, locale: Locale) => {
   const [y, m, d] = localDate.split("-").map(Number);
-  return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", weekday: "long", day: "numeric", month: "short" }).format(
+  return new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: "UTC", weekday: "long", day: "numeric", month: "short" }).format(
     new Date(Date.UTC(y, m - 1, d)),
   );
 };
 
-function dayLabel(day: WeekDay, today: string): string {
-  const name = weekdayName(day.local_date, "long");
-  if (day.local_date > today) return `${name}: still to come`;
-  if (day.daily_possible === 0) return `${name}: nothing due`;
-  return `${name}: ${day.daily_done} of ${day.daily_possible} done`;
+function dayLabel(t: T, locale: Locale, day: WeekDay, today: string): string {
+  const name = weekdayName(day.local_date, "long", locale);
+  if (day.local_date > today) return t("overview.day.future", { name });
+  if (day.daily_possible === 0) return t("overview.day.nothingDue", { name });
+  return t("overview.day.counts", { name, done: String(day.daily_done), possible: String(day.daily_possible) });
 }
 
 // A circle that fills from the bottom with the share of the day's daily habits done.
 // The label under it: the weekday letter on the week strip, the day number on the calendar.
 export function DayCircle({ day, today, selected, label }: { day: WeekDay; today: string; selected: boolean; label?: string }) {
+  const { locale } = useT();
   const size = 32;
   const r = 13;
   const isToday = day.local_date === today;
@@ -61,29 +64,29 @@ export function DayCircle({ day, today, selected, label }: { day: WeekDay; today
         )}
       </svg>
       <span className={cn("text-xs", isToday || selected ? "font-bold text-foreground" : "text-muted-foreground")}>
-        {label ?? weekdayName(day.local_date, "narrow")}
+        {label ?? weekdayName(day.local_date, "narrow", locale)}
       </span>
     </>
   );
 }
 
-const STATUS: Record<DayRow["status"], { text: string; className: string }> = {
-  done: { text: "Done", className: "text-done" },
-  checked_in: { text: "Checked in", className: "text-done" },
-  open: { text: "Not done yet", className: "text-muted-foreground" },
-  missed: { text: "Not done", className: "text-muted-foreground" },
-  paused: { text: "Paused", className: "text-frozen" },
-  rested: { text: "Rest day", className: "text-done" },
+const STATUS: Record<DayRow["status"], string> = {
+  done: "text-done",
+  checked_in: "text-done",
+  open: "text-muted-foreground",
+  missed: "text-muted-foreground",
+  paused: "text-frozen",
+  rested: "text-done",
 };
 
 function RowStatus({ row }: { row: DayRow }) {
-  const s = STATUS[row.status];
+  const { t } = useT();
   const done = row.status === "done" || row.status === "checked_in";
   return (
-    <span className={cn("flex shrink-0 items-center gap-1 text-sm font-semibold", s.className)}>
+    <span className={cn("flex shrink-0 items-center gap-1 text-sm font-semibold", STATUS[row.status])}>
       {done && <Check aria-hidden className="size-4" strokeWidth={3} />}
       {row.status === "paused" && <Pause aria-hidden className="size-4" />}
-      {s.text}
+      {t(`overview.status.${row.status}`)}
       {done && row.count > 1 && <span className="tabular-nums">× {row.count}</span>}
     </span>
   );
@@ -91,6 +94,7 @@ function RowStatus({ row }: { row: DayRow }) {
 
 // Progress: the week's days; tapping a past day (or today) shows what you did that day.
 export function WeekDays({ days, today, details }: { days: WeekDay[]; today: string; details?: Record<string, DayRow[]> }) {
+  const { t, locale } = useT();
   const [selected, setSelected] = useState<string | null>(null);
   const panelId = useId();
   const rows = selected && details ? (details[selected] ?? []) : null;
@@ -98,7 +102,7 @@ export function WeekDays({ days, today, details }: { days: WeekDay[]; today: str
 
   return (
     <div className="flex flex-col gap-3">
-      <ol aria-label="This week by day" className="flex justify-between">
+      <ol aria-label={t("overview.byDayLabel")} className="flex justify-between">
         {days.map((d) => {
           const tappable = Boolean(details) && d.local_date <= today;
           return (
@@ -106,7 +110,7 @@ export function WeekDays({ days, today, details }: { days: WeekDay[]; today: str
               {tappable ? (
                 <button
                   type="button"
-                  aria-label={dayLabel(d, today)}
+                  aria-label={dayLabel(t, locale, d, today)}
                   aria-expanded={selected === d.local_date}
                   aria-controls={panelId}
                   onClick={() => setSelected((s) => (s === d.local_date ? null : d.local_date))}
@@ -115,7 +119,7 @@ export function WeekDays({ days, today, details }: { days: WeekDay[]; today: str
                   <DayCircle day={d} today={today} selected={selected === d.local_date} />
                 </button>
               ) : (
-                <span role="img" aria-label={dayLabel(d, today)} className="flex min-h-11 flex-col items-center gap-1">
+                <span role="img" aria-label={dayLabel(t, locale, d, today)} className="flex min-h-11 flex-col items-center gap-1">
                   <DayCircle day={d} today={today} selected={false} />
                 </span>
               )}
@@ -123,7 +127,7 @@ export function WeekDays({ days, today, details }: { days: WeekDay[]; today: str
           );
         })}
       </ol>
-      {details && !selected && <p className="text-center text-xs text-muted-foreground">Tap a day to see what you did.</p>}
+      {details && !selected && <p className="text-center text-xs text-muted-foreground">{t("overview.tapDay")}</p>}
 
       <DayPanel id={panelId} date={selected} today={today} day={day} rows={rows} />
     </div>
@@ -132,20 +136,21 @@ export function WeekDays({ days, today, details }: { days: WeekDay[]; today: str
 
 // What you did on one day: shared by the week strip and the calendar.
 export function DayPanel({ id, date, today, day, rows }: { id: string; date: string | null; today: string; day?: WeekDay; rows: DayRow[] | null }) {
+  const { t, locale } = useT();
   return (
-    <div id={id} hidden={!rows} role="region" aria-label={date ? longDate(date) : undefined}>
+    <div id={id} hidden={!rows} role="region" aria-label={date ? longDate(date, locale) : undefined}>
       {rows && date && (
         <div className="flex flex-col gap-2 rounded-xl bg-muted/50 p-3">
           <p className="flex items-baseline justify-between gap-2">
-            <span className="font-bold">{date === today ? "Today" : longDate(date)}</span>
+            <span className="font-bold">{date === today ? t("dates.today") : longDate(date, locale)}</span>
             {day && day.daily_possible > 0 && (
               <span className="text-sm text-muted-foreground tabular-nums">
-                {day.daily_done} of {day.daily_possible} daily done
+                {t("overview.dailyDone", { done: String(day.daily_done), possible: String(day.daily_possible) })}
               </span>
             )}
           </p>
           {rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No check-ins this day.</p>
+            <p className="text-sm text-muted-foreground">{t("overview.noCheckIns")}</p>
           ) : (
             <ul className="flex flex-col gap-1.5">
               {rows.map((r) => (
@@ -155,7 +160,7 @@ export function DayPanel({ id, date, today, day, rows }: { id: string; date: str
                   {r.pending > 0 && (
                     <span className="flex items-center gap-1 text-xs font-semibold text-pending">
                       <Clock aria-hidden className="size-3.5" />
-                      {r.pending} waiting
+                      {t("overview.waiting", { n: r.pending })}
                     </span>
                   )}
                   <RowStatus row={r} />

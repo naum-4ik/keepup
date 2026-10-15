@@ -60,7 +60,7 @@ export function MovedNotice() {
           write("dismissed");
           setShow(false);
         }}
-        aria-label={t("moved.dismiss")}
+        aria-label={t("common.dismiss")}
         className="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-background/60"
       >
         <X aria-hidden className="size-4" />

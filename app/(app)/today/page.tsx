@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { ChevronRight, Clock } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { EveryoneDidIt, type CardMember } from "@/components/celebrations/everyone-did-it";
@@ -33,10 +34,12 @@ import { chooseGentleCard } from "@/lib/today-cards";
 import { getCelebrations, getDismissedCards, hasCheckedIn } from "@/lib/today-cards-data";
 import { membersOf, sectionsForToday } from "@/lib/today-sections";
 import { hasWeekData } from "@/lib/week-overview";
+import { INTL_LOCALE, isolate, type T } from "@/supabase/functions/_shared/i18n";
 
 export default async function TodayPage({ searchParams }: { searchParams: Promise<{ joined?: string; reset?: string }> }) {
   const { joined, reset } = await searchParams;
-  const { t } = await getT();
+  const { t, locale } = await getT();
+  const tt = await getTranslations("today");
   const childrenP = getMyChildren();
   const [summaries, overview, groups, approvals, children, { profile }, celebrations, dismissed, checkedIn, tapRows] = await Promise.all([
     getHabitSummaries(),
@@ -94,7 +97,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     ...tapPeriods(summaries, (h) => zoneOf(h.group_id)),
     ...Object.assign({}, ...kids.map((k) => tapPeriods(k.habits, () => zoneOf(k.child.group_id)))),
   };
-  const sections = sectionsForToday(habits, groups);
+  const sections = sectionsForToday(t, habits, groups);
   // A solo user's Today looks as before: the "Mine" heading shows only next to a group section.
   const withHeadings = sections.some((s) => s.key !== "mine") || kids.length > 0;
   // Check-ins by other members (and other adults logging for a child) refresh these cards.
@@ -112,7 +115,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   }));
   const progress = todayProgress(progressHabits);
   const now = new Date();
-  const date = new Intl.DateTimeFormat("en-GB", { timeZone: profile.timezone, weekday: "long", day: "numeric", month: "long" }).format(now);
+  const date = new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: profile.timezone, weekday: "long", day: "numeric", month: "long" }).format(now);
   const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: profile.timezone }).format(now);
   // "Day 12 of 30" for habits with an end.
   const endLines = new Map<string, EndLine>();
@@ -135,7 +138,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     return [...seen.values()];
   };
   const everyone = celebrations.filter((n) => n.kind === "everyone_done" && !n.seen_at);
-  const everyoneHabits = [...new Map(everyone.map((n) => [n.habit_id ?? n.id, n.habit_title ?? "A habit"])).entries()];
+  const everyoneHabits = [...new Map(everyone.map((n) => [n.habit_id ?? n.id, n.habit_title ?? t("today.habitFallback")])).entries()];
   // Dismissals couldn't be read: show no dismissible cards rather than bring back closed ones.
   const purpose = parsePurpose(profile.purpose ?? "");
   const gentle = dismissed && chooseGentleCard({
@@ -153,7 +156,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   return (
     <section className="flex flex-col gap-4 py-6">
       <RenderedTaps ids={renderedTaps} periods={shownPeriods} />
-      <h1 className="text-xl font-bold">Today</h1>
+      <h1 className="text-xl font-bold">{tt("title")}</h1>
       {/* Right after Settings → Reset my data. */}
       {reset === "1" && <ResetNote />}
       {progress.total > 0 && (
@@ -172,18 +175,18 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
             <Avatar name={joinedGroup.name} emoji={joinedGroup.avatar_emoji} color={joinedGroup.avatar_color} size="md" />
           </span>
           <span className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate font-bold">Welcome to {joinedGroup.name} 👋</span>
+            <span className="truncate font-bold">{tt.rich("welcome.title", { name: joinedGroup.name, bdi: (c) => <bdi>{c}</bdi> })}</span>
             <span className="text-sm text-muted-foreground">
-              {joinedGroup.member_count === 1 ? "1 person" : `${joinedGroup.member_count} people`} ·{" "}
-              {habits.some((h) => h.group_id === joinedGroup.group_id) ? "your group habits are below" : "no group habits yet"}
+              {tt("welcome.people", { n: joinedGroup.member_count })} ·{" "}
+              {habits.some((h) => h.group_id === joinedGroup.group_id) ? tt("welcome.habitsBelow") : tt("welcome.noGroupHabits")}
             </span>
           </span>
           <Link
             href={`/groups/${joinedGroup.group_id}`}
-            aria-label={`Open ${joinedGroup.name}`}
+            aria-label={tt("welcome.openLabel", { name: isolate(joinedGroup.name) })}
             className="flex h-11 shrink-0 items-center rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted"
           >
-            Open
+            {tt("welcome.open")}
           </Link>
         </div>
       )}
@@ -193,7 +196,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
             <Clock className="size-5" />
           </span>
           <span className="flex-1 font-semibold">
-            {approvals.length} {approvals.length === 1 ? "check-in" : "check-ins"} waiting for you
+            {tt("approvalsWaiting", { n: approvals.length })}
           </span>
           <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
         </Link>
@@ -206,12 +209,12 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       />
       {/* Offline (the saved page), cards whose buttons need the server say so (ideas/offline.md §3). */}
       {gentle && (
-        <NeedsConnection key={gentle.key} label={gentle.key.startsWith("add_child") ? "Add a child" : "Invite"}>
+        <NeedsConnection key={gentle.key} label={tt(gentle.key.startsWith("add_child") ? "gentle.addChild.cta" : "gentle.inviteFamily.cta")}>
           <GentleCard card={gentle} />
         </NeedsConnection>
       )}
       {finishes.map(({ h, summary }) => (
-        <NeedsConnection key={h.habit_id} label={`${h.title} is finished`}>
+        <NeedsConnection key={h.habit_id} label={tt("finish.label", { title: isolate(h.title) })}>
           <FinishCard
             habitId={h.habit_id}
             endsOn={ends.get(h.habit_id) ?? ""}
@@ -234,11 +237,11 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           icon={<SproutIcon className="size-6" />}
           action={
             <Button asChild className="h-11">
-              <Link href="/habits/new">Add your first habit</Link>
+              <Link href="/habits/new">{tt("empty.action")}</Link>
             </Button>
           }
         >
-          Nothing to do yet. Add a habit to get started.
+          {tt("empty.text")}
         </EmptyState>
       ) : (
         sections.map((s) =>
@@ -261,10 +264,10 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
                   </Link>
                 )}
               </h2>
-              <TodayLists habits={s.habits} tipFor={isNewUser ? tipFor : undefined} sectionDone={s.key === checkedOffKey} endLines={endLines} />
+              <TodayLists t={t} habits={s.habits} tipFor={isNewUser ? tipFor : undefined} sectionDone={s.key === checkedOffKey} endLines={endLines} />
             </section>
           ) : (
-            <TodayLists key={s.key} habits={s.habits} tipFor={isNewUser ? tipFor : undefined} sectionDone={false} endLines={endLines} />
+            <TodayLists key={s.key} t={t} habits={s.habits} tipFor={isNewUser ? tipFor : undefined} sectionDone={false} endLines={endLines} />
           ),
         )
       )}
@@ -281,11 +284,13 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
 // `sectionDone`: say "All checked off" when this section is finished. Only one section says it
 // (allCheckedOffKey); off for a lone section, where the Today card already says "Today's all done".
 function TodayLists({
+  t,
   habits,
   tipFor,
   sectionDone = true,
   endLines,
 }: {
+  t: T;
   habits: HabitSummary[];
   tipFor?: string;
   sectionDone?: boolean;
@@ -297,10 +302,10 @@ function TodayLists({
       {todo.length > 0 ? (
         <HabitList habits={todo} tipFor={tipFor} endLines={endLines} />
       ) : done.length > 0 && sectionDone ? (
-        <p className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">All checked off. Nice work.</p>
+        <p className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">{t("today.sections.allCheckedOff")}</p>
       ) : null}
-      {done.length > 0 && <HabitList title="Done for today" habits={done} endLines={endLines} />}
-      {later.length > 0 && <HabitList title="Later" habits={later} endLines={endLines} />}
+      {done.length > 0 && <HabitList title={t("today.sections.doneForToday")} habits={done} endLines={endLines} />}
+      {later.length > 0 && <HabitList title={t("today.sections.later")} habits={later} endLines={endLines} />}
     </>
   );
 }

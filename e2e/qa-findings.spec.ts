@@ -136,7 +136,7 @@ test("a member who joins after the others checked in doesn't see Everyone did it
   await createGroup(page, "Family");
   const url = await inviteLink(page);
   await createGroupHabitVia(page, "Family", "Family dinner");
-  await page.getByRole("button", { name: "Check in: Family dinner" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Family dinner\u2069" }).click();
   await expect(page.getByRole("link", { name: /Family dinner/ })).toContainText("Everyone did it ✓");
 
   const guest = await (await browser.newContext()).newPage();
@@ -145,7 +145,7 @@ test("a member who joins after the others checked in doesn't see Everyone did it
   const card = guest.getByRole("link", { name: /Family dinner/ });
   await expect(card).toBeVisible();
   await expect(card).not.toContainText("Everyone did it");
-  await expect(guest.getByRole("button", { name: "Check in: Family dinner" })).toBeVisible();
+  await expect(guest.getByRole("button", { name: "Check in: \u2068Family dinner\u2069" })).toBeVisible();
 });
 
 test("Times takes digits only: 1e1 is refused", async ({ page }) => {
@@ -189,8 +189,8 @@ test("the Inbox badge clears while the Inbox is open", async ({ page, browser })
   const guest = await (await browser.newContext()).newPage();
   await joinByLink(guest, url, "Dan");
   await guest.goto("/today");
-  await guest.getByRole("button", { name: "Check in: Family dinner" }).click();
-  await expect(guest.getByRole("button", { name: "Done: Family dinner" })).toBeVisible();
+  await guest.getByRole("button", { name: "Check in: \u2068Family dinner\u2069" }).click();
+  await expect(guest.getByRole("button", { name: "Done: \u2068Family dinner\u2069" })).toBeVisible();
 
   await page.goto("/today");
   await expect(page.getByRole("link", { name: /^Inbox, \d+ unread$/ })).toBeVisible();

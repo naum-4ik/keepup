@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 // Activity, newest first, under day headings in the viewer's time zone.
 export function FeedList({ items, timeZone, now, t, locale }: { items: FeedItem[]; timeZone: string; now: Date; t: T; locale: Locale }) {
   if (items.length === 0) {
-    return <EmptyState icon={<Bell className="size-6" />}>Nothing yet. Activity from your groups shows up here.</EmptyState>;
+    return <EmptyState icon={<Bell className="size-6" />}>{t("inbox.feed.empty")}</EmptyState>;
   }
 
   const today = todayIn(timeZone, now);
@@ -36,7 +36,7 @@ export function FeedList({ items, timeZone, now, t, locale }: { items: FeedItem[
                     {!n.read_at && (
                       <>
                         <span aria-hidden className="size-2 rounded-full bg-primary" />
-                        <span className="sr-only">Unread: </span>
+                        <span className="sr-only">{t("inbox.feed.unread")}</span>
                       </>
                     )}
                   </span>

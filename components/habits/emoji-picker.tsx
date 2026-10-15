@@ -7,6 +7,7 @@ import { CATEGORIES, habitEmoji } from "@/lib/categories";
 import { isOneEmoji, type HabitCategory } from "@/lib/habit-schema";
 import { emojiSuggestions } from "@/lib/habit-templates";
 import { KID_CHIP, KID_DEFAULT_EMOJI } from "@/components/habits/category-icon";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 // Marks the open panel, so a surrounding Dialog can leave Escape to the picker (see habit-form).
@@ -30,6 +31,7 @@ export function EmojiPicker({
   error?: string;
   children: ReactNode; // the title input, laid out beside the button
 }) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -39,8 +41,8 @@ export function EmojiPicker({
   const draftInvalid = draft.trim() !== "" && !isOneEmoji(draft.trim());
   // Typed words are the common mistake (the field reads like a text box), so name that case.
   const draftHint = /[\p{L}\p{N}]/u.test(draft)
-    ? "That's text, not an emoji. Pick one above or use your emoji keyboard."
-    : "Just one emoji, please.";
+    ? t("habits.emoji.notEmoji")
+    : t("habits.emoji.justOne");
 
   const close = () => {
     setOpen(false);
@@ -59,7 +61,7 @@ export function EmojiPicker({
         <button
           ref={buttonRef}
           type="button"
-          aria-label={`Choose emoji (now ${shown})`}
+          aria-label={t("habits.emoji.choose", { emoji: shown })}
           aria-expanded={open}
           aria-describedby={error ? `${ownId}-error` : undefined}
           aria-controls={open ? panelId : undefined}
@@ -87,7 +89,7 @@ export function EmojiPicker({
             }
           }}
         >
-          <div role="group" aria-label="Suggested emoji" className="grid grid-cols-6 gap-1">
+          <div role="group" aria-label={t("habits.emoji.suggested")} className="grid grid-cols-6 gap-1">
             {emojiSuggestions(category ?? "home").map((e) => (
               <button
                 key={e}
@@ -101,9 +103,9 @@ export function EmojiPicker({
             ))}
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor={ownId} className="text-sm font-semibold">Another emoji</Label>
+            <Label htmlFor={ownId} className="text-sm font-semibold">{t("habits.emoji.another")}</Label>
             <p id={`${ownId}-help`} className="text-sm text-muted-foreground">
-              Tap the box, then the 😀 key on your keyboard.
+              {t("habits.emoji.help")}
             </p>
             <Input
               id={ownId}

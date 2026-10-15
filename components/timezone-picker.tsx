@@ -35,7 +35,7 @@ function useBrowserClock(): { now: Date | null; deviceZone: string | null } {
 
 // Pick the time zone by what the clock says now: one row per local time, each with a familiar city.
 export function TimezonePicker({ name, value, onChange, timezones, error, showChangeNote = false }: Props) {
-  const { locale } = useT();
+  const { t, locale } = useT();
   const [initial] = useState(value);
   const { now, deviceZone } = useBrowserClock();
   const device = deviceZone && timezones.includes(deviceZone) ? deviceZone : null;
@@ -56,9 +56,9 @@ export function TimezonePicker({ name, value, onChange, timezones, error, showCh
     <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center gap-1">
         <label htmlFor={name} className="text-sm font-semibold">
-          Time zone
+          {t("profile.timezone.label")}
         </label>
-        <InfoHint text="Pick the time it is where you are now. Your days start at midnight there." />
+        <InfoHint text={t("profile.timezone.hint")} />
       </div>
       <select
         ref={selectRef}
@@ -88,12 +88,12 @@ export function TimezonePicker({ name, value, onChange, timezones, error, showCh
           className="-ml-2 flex min-h-11 items-center gap-1.5 self-start rounded-lg px-2 text-sm font-semibold text-primary hover:bg-accent"
         >
           <MapPin className="size-4" aria-hidden />
-          Use this device&apos;s time zone ({cityOf(device)})
+          {t("profile.timezone.useDevice", { city: cityOf(device) })}
         </button>
       )}
 
       {showChangeNote && value !== initial && (
-        <p className="text-xs text-muted-foreground">Changes apply from your next day and week.</p>
+        <p className="text-xs text-muted-foreground">{t("profile.timezone.changeNote")}</p>
       )}
       {error && (
         <p id={`${name}-error`} className="text-sm text-destructive">

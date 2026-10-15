@@ -16,7 +16,7 @@ const STYLE: Record<string, string> = {
 export function HistoryGrid({ t, locale, cells, period }: { t: T; locale: Locale; cells: HistoryCell[]; period: HabitPeriod }) {
   // A habit that hasn't started has no periods yet: say how the grid fills instead of an empty box.
   if (cells.length === 0) {
-    return <p className="text-sm text-muted-foreground">Nothing here yet. Each {period} you finish fills a square.</p>;
+    return <p className="text-sm text-muted-foreground">{t("habits.history.empty", { period })}</p>;
   }
   // "Rest day" joins the legend only when there is one to explain.
   const legend = ["done", "missed", "skipped", ...(cells.some((c) => c.outcome === "rested") ? ["rested"] : []), "open"];

@@ -3,10 +3,13 @@
 import Link from "next/link";
 import { RotateCcw } from "lucide-react";
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { startAgain } from "@/app/(app)/habits/actions";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 
 // Finished tab: a fresh copy with the same settings and length, from today (history stays on the old one).
 export function StartAgainButton({ habitId, title }: { habitId: string; title: string }) {
+  const t = useTranslations("habits.startAgain");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   // Started, but without its end: no second copy from here, a link to the new one instead.
@@ -15,12 +18,12 @@ export function StartAgainButton({ habitId, title }: { habitId: string; title: s
     <div className="flex flex-col gap-1">
       {startedId ? (
         <Link href={`/habits/${startedId}`} className="flex h-11 items-center self-start rounded-full px-3 text-sm font-semibold text-primary hover:bg-accent">
-          Open the new {title}
+          {t.rich("openNew", { title, bdi: (c) => <bdi>{c}</bdi> })}
         </Link>
       ) : (
         <button
           type="button"
-          aria-label={`Start ${title} again`}
+          aria-label={t("aria", { title: isolate(title) })}
           disabled={pending}
           onClick={() =>
             startTransition(async () => {
@@ -34,7 +37,7 @@ export function StartAgainButton({ habitId, title }: { habitId: string; title: s
           className="flex h-11 items-center gap-1.5 self-start rounded-full px-3 text-sm font-semibold text-primary hover:bg-accent"
         >
           <RotateCcw aria-hidden className="size-4" />
-          {pending ? "Starting…" : "Start again"}
+          {pending ? t("pending") : t("label")}
         </button>
       )}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}

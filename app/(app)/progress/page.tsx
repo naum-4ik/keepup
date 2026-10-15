@@ -49,28 +49,28 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
   return (
     <section className="flex flex-col gap-5 py-6">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-xl font-bold">Progress</h1>
-        <Link href="/progress/recaps" className="flex h-11 items-center rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted">Recaps</Link>
+        <h1 className="text-xl font-bold">{t("progress.title")}</h1>
+        <Link href="/progress/recaps" className="flex h-11 items-center rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted">{t("progress.recaps")}</Link>
       </div>
       {!showArchived && overview && hasWeekData(overview) && <WeekCard t={t} overview={overview} days={days} />}
 
       {/* The same segmented look as Inbox's tabs: filled pills read as primary buttons. */}
-      <nav aria-label="Habit list" className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
+      <nav aria-label={t("progress.listLabel")} className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
         {[
-          { href: "/progress", label: "Active", current: !showArchived },
-          { href: "/progress?view=finished", label: "Finished", current: showFinished },
-          { href: "/progress?view=archived", label: "Archived", current: showArchived && !showFinished },
-        ].map((t) => (
+          { href: "/progress", label: t("progress.tabs.active"), current: !showArchived },
+          { href: "/progress?view=finished", label: t("progress.tabs.finished"), current: showFinished },
+          { href: "/progress?view=archived", label: t("progress.tabs.archived"), current: showArchived && !showFinished },
+        ].map((tab) => (
           <Link
-            key={t.label}
-            href={t.href}
-            aria-current={t.current ? "page" : undefined}
+            key={tab.href}
+            href={tab.href}
+            aria-current={tab.current ? "page" : undefined}
             className={cn(
               "flex min-h-11 items-center justify-center rounded-lg text-sm font-semibold",
-              t.current ? "bg-card text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground",
+              tab.current ? "bg-card text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {t.label}
+            {tab.label}
           </Link>
         ))}
       </nav>
@@ -81,12 +81,12 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
           action={
             !showArchived && (
               <Button asChild className="h-11">
-                <Link href="/habits/new">Add a habit</Link>
+                <Link href="/habits/new">{t("progress.addHabit")}</Link>
               </Button>
             )
           }
         >
-          {showFinished ? "No finished habits yet. Give a habit an end, like 30 days." : showArchived ? "No archived habits." : "No habits yet."}
+          {showFinished ? t("progress.empty.finished") : showArchived ? t("progress.empty.archived") : t("progress.empty.active")}
         </EmptyState>
       ) : (
         categories.map((c) => (
@@ -109,9 +109,9 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                           )}
                         </span>
                         <span className="text-sm text-muted-foreground">
-                          {!h.archived_at && ended(h) && "Ended · decide on Today · "}
+                          {!h.archived_at && ended(h) && `${t("progress.endedDecide")} · `}
                           {describeSchedule(t, h.target_count, h.period)}
-                          {h.best_streak > 0 && ` · best ${streakSpan(t, h.best_streak, h.period)}`}
+                          {h.best_streak > 0 && ` · ${t("progress.best", { span: streakSpan(t, h.best_streak, h.period) })}`}
                         </span>
                         {cellsFor.has(h.habit_id) && (
                           <span className="pt-1.5">

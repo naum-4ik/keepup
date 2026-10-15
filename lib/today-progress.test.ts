@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { queuedDelta, type QueuedCheckIn } from "./offline-queue";
+import { tEn } from "@/lib/i18n/test-t";
 import { todayLine, todayProgress, withQueuedProgress } from "./today-progress";
 
 const h = (id: string, state: "open" | "done" | "later", period: "day" | "week" = "day") => ({
@@ -28,7 +29,7 @@ describe("todayProgress", () => {
     const p = todayProgress([h("read", "done"), waiting]);
     expect(p).toMatchObject({ done: 1, total: 2 });
     expect(p.items.map((i) => `${i.habitId}:${i.done}`)).toEqual(["read:true", "walk:false"]);
-    expect(todayLine(p.done, p.total)).not.toBe("Today's all done 🎉");
+    expect(todayLine(tEn, p.done, p.total)).not.toBe("Today's all done 🎉");
   });
 
   it("counts a weekly check-in waiting for approval as not done yet", () => {
@@ -51,13 +52,16 @@ describe("todayLine", () => {
     [3, 5, "Halfway there 💪"],
     [4, 5, "One more to go!"],
     [0, 1, "1 to go today"],
+    [0, 2, "2 to go today"],
+    [0, 0, "Today's all done 🎉"],
+    [1, 6, "5 to go"],
     [5, 5, "Today's all done 🎉"],
   ])("%i of %i → %s", (done, total, line) => {
-    expect(todayLine(done, total)).toBe(line);
+    expect(todayLine(tEn, done, total)).toBe(line);
   });
 
   it("never uses guilt words", () => {
-    const lines = [0, 1, 2, 3, 4, 5].map((d) => todayLine(d, 5)).join(" ").toLowerCase();
+    const lines = [0, 1, 2, 3, 4, 5].map((d) => todayLine(tEn, d, 5)).join(" ").toLowerCase();
     for (const w of ["failed", "missed", "don't lose", "hurry", "last chance", "only", "lazy"]) expect(lines).not.toContain(w);
   });
 });

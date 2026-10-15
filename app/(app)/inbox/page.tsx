@@ -35,7 +35,7 @@ export default async function InboxPage() {
 
   return (
     <section className="flex flex-col gap-4 py-6">
-      <h1 className="text-xl font-bold">Inbox</h1>
+      <h1 className="text-xl font-bold">{t("inbox.title")}</h1>
       {/* New rows refresh this page through the app layout's notifications listener. */}
       <InboxTabs
         approvalsCount={rows.length}

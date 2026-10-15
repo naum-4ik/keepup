@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { ChevronDown, ChevronLeft, Flame, Trophy } from "lucide-react";
 import { KidCheckInButton } from "@/components/kids/kid-check-in-button";
 import { ArchiveHabitButton } from "@/components/habits/archive-habit-button";
@@ -12,7 +13,7 @@ import { FreezeForm } from "@/components/habits/freeze-form";
 import { HabitDetailsForm } from "@/components/habits/habit-details-form";
 import { HistoryGrid } from "@/components/habits/history-grid";
 import { LiveRefresh } from "@/components/habits/live-refresh";
-import { MEMBER_STATUS_LABEL, MemberAvatar } from "@/components/habits/member-status-row";
+import { MemberAvatar } from "@/components/habits/member-status-row";
 import { NudgeButton } from "@/components/habits/nudge-button";
 import { PauseMeForm } from "@/components/habits/pause-me-form";
 import { RenderedTaps } from "@/components/offline/offline-queue-provider";
@@ -30,6 +31,7 @@ import { EndControl } from "@/components/habits/end-control";
 import { endLabel, endProgress, hasEnded } from "@/lib/habit-end";
 import { formatLocalDate } from "@/lib/dates";
 import { getT } from "@/lib/i18n/server";
+import type { T } from "@/supabase/functions/_shared/i18n";
 import { describeProgress, describeSchedule } from "@/lib/schedule";
 import { everyoneDidIt, memberStatus, membersOf, openChildrenOf } from "@/lib/today-sections";
 import { stateOf } from "@/lib/today";
@@ -46,7 +48,7 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 }
 
 // Settings the user rarely needs sit behind a row they can open, so the page leads with today.
-function Manage({ title, hint, danger, children }: { title: string; hint: string; danger?: boolean; children: React.ReactNode }) {
+function Manage({ title, hint, danger, children }: { title: string; hint: React.ReactNode; danger?: boolean; children: React.ReactNode }) {
   return (
     <details className="group border-t border-border first:border-t-0">
       <summary className="flex min-h-14 list-none items-center gap-3 px-5 py-3 hover:bg-muted/60 [&::-webkit-details-marker]:hidden">
@@ -61,9 +63,8 @@ function Manage({ title, hint, danger, children }: { title: string; hint: string
   );
 }
 
-const UNIT: Record<HabitPeriod, [string, string]> = { day: ["day", "days"], week: ["week", "weeks"], month: ["month", "months"] };
-const unit = (n: number, period: HabitPeriod) => UNIT[period][n === 1 ? 0 : 1];
-const PERIOD_TITLE: Record<HabitPeriod, string> = { day: "Today", week: "This week", month: "This month" };
+// The unit word beside a big streak number (no "#": the number is drawn apart, so it is never grouped).
+const unit = (t: T, n: number, period: HabitPeriod) => t(`habits.detail.streakUnit.${period}`, { n });
 
 const covers = (f: HabitFreeze, day: string) => f.starts_on <= day && (!f.ends_on || f.ends_on >= day);
 // The pause to show: the current one (when paused now), else the next scheduled one.
@@ -74,6 +75,8 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   if (!isUuid(id)) notFound();
   const { t, locale } = await getT();
+  const tr = await getTranslations();
+  const bdi = (c: React.ReactNode) => <bdi>{c}</bdi>;
   // The end needs only the id, so it loads with the habit.
   const childIdsP = getMyChildren().then((cs) => cs.map((c) => c.child_id));
   const [{ profile, userId }, detail, ends, tapRows, childIds] = await Promise.all([
@@ -154,7 +157,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
         className="-ml-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
       >
         <ChevronLeft aria-hidden className="size-4 shrink-0" />
-        <span className="truncate">{child ? child.name : "Today"}</span>
+        <span className="truncate">{child ? child.name : t("today.title")}</span>
       </Link>
 
       <header className="flex items-center gap-4">
@@ -163,25 +166,27 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
           <h1 className="truncate text-xl font-bold">{h.title}</h1>
           <p className="text-sm text-muted-foreground">
             {h.group_id
-              ? `${h.group_name} · ${describeSchedule(t, h.target_count, h.period)}${h.requires_approval ? " · needs approval" : ""}`
-              : `${describeSchedule(t, h.target_count, h.period)}${h.category ? ` · ${categoryLabel(t, h.category)}` : ""}`}
-            {archived && " · Archived"}
+              ? tr.rich("habits.detail.groupLine", { group: h.group_name, schedule: describeSchedule(t, h.target_count, h.period), approval: h.requires_approval ? "yes" : "no", bdi })
+              : h.category
+                ? t("habits.detail.categoryLine", { schedule: describeSchedule(t, h.target_count, h.period), category: categoryLabel(t, h.category) })
+                : describeSchedule(t, h.target_count, h.period)}
+            {archived && t("habits.detail.archivedSuffix")}
           </p>
         </div>
       </header>
 
       {restorable && (
-        <Card title="Archived">
-          <p className="text-sm text-muted-foreground">Restore it to put it back {child ? `on ${child.name}'s list` : "on Today"}. The days it was archived don&apos;t count against {child ? child.name : "you"}.</p>
+        <Card title={t("habits.detail.archived.title")}>
+          <p className="text-sm text-muted-foreground">{tr.rich("habits.detail.archived.note", { who: child ? "child" : "you", name: child?.name ?? "", bdi })}</p>
           <RestoreHabitButton habitId={h.habit_id} title={h.title} />
         </Card>
       )}
 
       {!archived && (
-        <Card title={PERIOD_TITLE[h.period]}>
+        <Card title={t(`habits.detail.periodTitle.${h.period}`)}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 flex-col gap-1.5">
-              <p className={isDone ? "font-bold text-done" : "font-bold"}>{everyone ? "Everyone did it ✓" : progress.text}</p>
+              <p className={isDone ? "font-bold text-done" : "font-bold"}>{everyone ? t("habits.common.everyoneDidIt") : progress.text}</p>
               {h.target_count > 1 && (
                 <div className="h-2 w-40 overflow-hidden rounded-full bg-muted" aria-hidden>
                   <div className={`h-full rounded-full bg-current ${CATEGORIES[category].iconClass}`} style={{ width: `${Math.min(100, (h.done_count / h.target_count) * 100)}%` }} />
@@ -214,7 +219,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
       )}
 
       {members && !archived && (
-        <Card title="Together">
+        <Card title={t("habits.form.together")}>
           <ul className="flex flex-col gap-2">
             {members.map((m) => {
               const status = memberStatus(m, h.target_count);
@@ -224,9 +229,9 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate font-semibold">
                       {m.name}
-                      {m.profile_id === userId && <span className="font-normal text-muted-foreground"> (you)</span>}
+                      {m.profile_id === userId && <span className="font-normal text-muted-foreground"> {t("habits.detail.you")}</span>}
                     </span>
-                    <span className="text-sm text-muted-foreground">{MEMBER_STATUS_LABEL[status]}</span>
+                    <span className="text-sm text-muted-foreground">{t(`habits.memberStatus.${status}`)}</span>
                   </span>
                   {actionFor(m)}
                 </li>
@@ -236,40 +241,40 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
         </Card>
       )}
 
-      <section aria-label="Streaks" className="grid grid-cols-2 divide-x divide-border rounded-2xl bg-card py-4 shadow-soft">
+      <section aria-label={t("habits.detail.streaksLabel")} className="grid grid-cols-2 divide-x divide-border rounded-2xl bg-card py-4 shadow-soft">
         <div className="flex flex-col items-center gap-0.5">
           <p className="flex items-center gap-1 text-2xl font-extrabold tabular-nums text-flame">
             <Flame aria-hidden className="size-5" />
             {h.current_streak}
-            <span className="text-sm font-bold">{unit(h.current_streak, h.period)}</span>
+            <span className="text-sm font-bold">{unit(t, h.current_streak, h.period)}</span>
           </p>
-          <p className="text-xs font-semibold text-muted-foreground">{members ? "Together" : child ? `${child.name}'s streak` : "Your streak"}</p>
+          <p className="text-xs font-semibold text-muted-foreground">{members ? t("habits.form.together") : child ? tr.rich("habits.detail.childStreak", { name: child.name, bdi }) : t("habits.detail.yourStreak")}</p>
         </div>
         <div className="flex flex-col items-center gap-0.5">
           <p className="flex items-center gap-1 text-2xl font-extrabold tabular-nums">
             <Trophy aria-hidden className="size-5 text-muted-foreground" />
             {h.best_streak}
-            <span className="text-sm font-bold">{unit(h.best_streak, h.period)}</span>
+            <span className="text-sm font-bold">{unit(t, h.best_streak, h.period)}</span>
           </p>
-          <p className="text-xs font-semibold text-muted-foreground">Best streak</p>
+          <p className="text-xs font-semibold text-muted-foreground">{t("habits.detail.bestStreak")}</p>
         </div>
       </section>
 
-      <Card title="History">
+      <Card title={t("habits.detail.history")}>
         <HistoryGrid t={t} locale={locale} cells={history} period={h.period} />
       </Card>
 
       {!archived && (
-        <section aria-label="Manage habit" className="overflow-hidden rounded-2xl bg-card shadow-soft">
+        <section aria-label={t("habits.detail.manage.label")} className="overflow-hidden rounded-2xl bg-card shadow-soft">
           {takesPart && (
-            <Manage title="Reminders" hint={reminderHint(settings)}>
+            <Manage title={t("habits.detail.manage.reminders")} hint={reminderHint(t, settings)}>
               <ReminderControl habitId={h.habit_id} settings={settings} isDemo={profile.is_demo} />
             </Manage>
           )}
           {members && (
             <Manage
-              title="Pause just me"
-              hint={myFreeze ? (me?.paused ? "You're paused. Resume any time" : "Your pause is scheduled") : "Away for a while? The others carry on"}
+              title={t("habits.detail.manage.pauseMe.title")}
+              hint={myFreeze ? (me?.paused ? t("habits.detail.manage.pauseMe.hintPaused") : t("habits.detail.manage.pauseMe.hintScheduled")) : t("habits.detail.manage.pauseMe.hintIdle")}
             >
               <PauseMeForm habitId={h.habit_id} today={today} weekStart={weekStart} activeFreeze={myFreeze} paused={Boolean(me?.paused)} />
             </Manage>
@@ -277,29 +282,37 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
           {canManage && (
             <>
               <Manage
-                title="Ends"
+                title={t("habits.detail.manage.ends.title")}
                 hint={
                   endNow
                     ? endLabel(t, endNow, h.period)
                     : hasEnded(endsOn, today)
-                      ? "Reached its end. Keep going or finish"
+                      ? t("habits.detail.manage.ends.hintReached")
                       : endsOn
-                        ? `Last day ${formatLocalDate(endsOn, locale)}`
-                        : "No end yet"
+                        ? t("habits.detail.manage.ends.hintLastDay", { date: formatLocalDate(endsOn, locale) })
+                        : t("habits.detail.manage.ends.hintNone")
                 }
               >
                 <EndControl habitId={h.habit_id} period={h.period} startsOn={h.starts_on} endsOn={endsOn} today={today} />
               </Manage>
               <Manage
-                title={members ? "Pause for everyone" : wholePaused ? "Paused" : activeFreeze ? "Pause scheduled" : "Pause"}
+                title={
+                  members
+                    ? t("habits.detail.manage.pause.everyone")
+                    : wholePaused
+                      ? t("habits.detail.manage.pause.paused")
+                      : activeFreeze
+                        ? t("habits.detail.manage.pause.scheduled")
+                        : t("habits.detail.manage.pause.title")
+                }
                 hint={
                   activeFreeze
-                    ? "Resume or cancel the pause"
+                    ? t("habits.detail.manage.pause.hintResume")
                     : members
-                      ? "Going away together? Pausing keeps the group's streak safe"
+                      ? t("habits.detail.manage.pause.hintGroup")
                       : child
-                        ? `Going away? ${child.name}'s streak waits`
-                        : "Going away? Your streak waits for you"
+                        ? tr.rich("habits.detail.manage.pause.hintChild", { name: child.name, bdi })
+                        : t("habits.detail.manage.pause.hintOwn")
                 }
               >
                 <FreezeForm
@@ -308,10 +321,13 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                   weekStart={weekStart}
                   activeFreeze={activeFreeze}
                   paused={wholePaused}
-                  submitLabel={members ? "Pause for everyone" : undefined}
+                  submitLabel={members ? t("habits.detail.manage.pause.everyone") : undefined}
                 />
               </Manage>
-              <Manage title="Edit details" hint={totalCheckIns === 0 ? "Title, emoji, category and start date" : "Title, emoji and category"}>
+              <Manage
+                title={t("habits.detail.manage.edit.title")}
+                hint={totalCheckIns === 0 ? t("habits.detail.manage.edit.hintWithStart") : t("habits.detail.manage.edit.hintNoStart")}
+              >
                 <HabitDetailsForm
                   habitId={h.habit_id}
                   title={h.title}
@@ -323,11 +339,11 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                   weekStart={weekStart}
                 />
               </Manage>
-              <Manage title="Archive" hint="Keeps its history, leaves Today">
+              <Manage title={t("habits.detail.manage.archive.title")} hint={t("habits.detail.manage.archive.hint")}>
                 <ArchiveHabitButton habitId={h.habit_id} title={h.title} />
               </Manage>
               {totalCheckIns === 0 && (
-                <Manage title="Delete" hint="It has no check-ins yet, so nothing is lost" danger>
+                <Manage title={t("habits.detail.manage.delete.title")} hint={t("habits.detail.manage.delete.hint")} danger>
                   <DeleteHabitButton habitId={h.habit_id} title={h.title} />
                 </Manage>
               )}

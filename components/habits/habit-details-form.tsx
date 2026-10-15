@@ -54,7 +54,7 @@ export function HabitDetailsForm({
   return (
     <form action={formAction} className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="title">Title</Label>
+        <Label htmlFor="title">{t("habits.form.titleLabel")}</Label>
         <EmojiPicker value={values.emoji} category={isHabitCategory(values.category) ? values.category : null} onChange={(e) => setValues((v) => ({ ...v, emoji: e }))}>
           <Input
             id="title"
@@ -66,7 +66,7 @@ export function HabitDetailsForm({
         </EmojiPicker>
       </div>
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="category">Category</Label>
+        <Label htmlFor="category">{t("habits.form.categoryLabel")}</Label>
         <select
           id="category"
           name="category"
@@ -75,7 +75,7 @@ export function HabitDetailsForm({
           onChange={(e) => setValues((v) => ({ ...v, category: e.target.value }))}
           className={cn(fieldClass, "w-full border border-input bg-transparent")}
         >
-          {offerNone && <option value="">None</option>}
+          {offerNone && <option value="">{t("habits.details.none")}</option>}
           {CATEGORY_ORDER.map((c) => (
             <option key={c} value={c}>
               {categoryLabel(t, c)}
@@ -85,7 +85,7 @@ export function HabitDetailsForm({
       </div>
       {canEditStart && (
         <fieldset className="flex flex-col gap-1.5">
-          <legend className="text-sm font-semibold">Starts</legend>
+          <legend className="text-sm font-semibold">{t("habits.form.starts")}</legend>
           <input type="hidden" name="startsOn" value={values.startsOn} />
           <StartDatePicker
             value={values.startsOn}

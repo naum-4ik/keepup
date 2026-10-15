@@ -6,7 +6,7 @@ import { createHabit } from "./helpers/habits";
 test("a counted check-in floats +10 XP", async ({ page }) => {
   await signUpAndOnboard(page);
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect(page.getByText("+10 XP")).toBeVisible();
 });
 
@@ -25,7 +25,7 @@ test("a streak earns more: yesterday done, today floats +11 XP", async ({ page }
        select h.id, h.user_id, (now() at time zone h.timezone)::date - 1, (now() at time zone h.timezone)::date - 1, 'approved',
               now() - interval '1 day', h.user_id from h;`);
   await page.reload();
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect(page.getByText("+11 XP")).toBeVisible();
 });
 
@@ -44,12 +44,12 @@ test("a tap waiting on the phone floats +XP at once (the amount is set when it l
   });
   const floats = () => page.evaluate(() => (window as unknown as { xpFloats: number }).xpFloats);
   await context.setOffline(true);
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect(page.getByText("+XP", { exact: true })).toBeVisible();
   await expect(page.getByText("+XP", { exact: true })).toHaveCount(0);
   expect(await floats()).toBe(1);
   await context.setOffline(false);
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
   await page.waitForTimeout(1_500); // past a float's 900 ms, should the sync start one
   expect(await floats()).toBe(1);
 });
@@ -58,8 +58,8 @@ test("five counted check-ins reach level 2: on the avatar and on Profile", async
   await signUpAndOnboard(page);
   for (const title of ["Walk", "Read", "Stretch", "Water", "Tidy"]) await createHabit(page, { title, count: 1, period: "day" });
   for (const title of ["Walk", "Read", "Stretch", "Water", "Tidy"]) {
-    await page.getByRole("button", { name: `Check in: ${title}` }).click();
-    await expect(page.getByRole("button", { name: `Done: ${title}` })).toBeVisible();
+    await page.getByRole("button", { name: `Check in: \u2068${title}\u2069` }).click();
+    await expect(page.getByRole("button", { name: `Done: \u2068${title}\u2069` })).toBeVisible();
   }
   await page.goto("/profile");
   await expect(page.getByRole("heading", { name: "Level 2 · Seedling" })).toBeVisible();
@@ -72,8 +72,8 @@ test("five counted check-ins reach level 2: on the avatar and on Profile", async
 test("the Profile tab's ring shows the way to the next level, on every tab", async ({ page }) => {
   await signUpAndOnboard(page);
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
   // 10 XP of the 50 to level 2.
   for (const path of ["/today", "/progress", "/profile"]) {
     await page.goto(path);
@@ -86,8 +86,8 @@ test("the Profile tab's ring shows the way to the next level, on every tab", asy
 test("Profile → Achievements shows earned badges in colour with the date, locked ones with a hint", async ({ page }) => {
   await signUpAndOnboard(page);
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
   await page.goto("/profile");
   await page.getByRole("navigation", { name: "Account" }).getByRole("link", { name: "Achievements" }).click();
   await expect(page).toHaveURL(/\/profile\/achievements$/);
@@ -137,8 +137,8 @@ test("the level-up moment plays once, on the next page, and closes on tap", asyn
   await page.goto("/today");
   await page.keyboard.press("Escape"); // the Planted badge's moment, if it is showing
   for (const title of ["Walk", "Read", "Stretch", "Water", "Tidy"]) {
-    await page.getByRole("button", { name: `Check in: ${title}` }).click();
-    await expect(page.getByRole("button", { name: `Done: ${title}` })).toBeVisible();
+    await page.getByRole("button", { name: `Check in: \u2068${title}\u2069` }).click();
+    await expect(page.getByRole("button", { name: `Done: \u2068${title}\u2069` })).toBeVisible();
   }
   // Nothing interrupts the run of check-ins on Today.
   await expect(page.getByRole("alertdialog", { name: "Celebration" })).toHaveCount(0);

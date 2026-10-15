@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { Plus, Star, Users } from "lucide-react";
 import { createGroupHabit, createHabit } from "@/app/(app)/habits/actions";
 import { Avatar } from "@/components/avatar";
@@ -97,7 +98,7 @@ export function HabitForm({
 
   return (
     <div className="flex flex-col gap-4">
-      <div role="tablist" aria-label="Template categories" className="grid grid-cols-3 gap-2">
+      <div role="tablist" aria-label={tr("habits.form.tabsLabel")} className="grid grid-cols-3 gap-2">
         {([...(showTogether ? ["together"] : []), "popular", ...CATEGORY_ORDER] as Tab[]).map((key) => (
           <button
             key={key}
@@ -117,7 +118,7 @@ export function HabitForm({
             ) : (
               <CategoryIcon category={key} size="xs" />
             )}
-            {key === "popular" ? "Popular" : key === "together" ? "Together" : categoryLabel(tr, key)}
+            {key === "popular" ? tr("habits.form.popular") : key === "together" ? tr("habits.form.together") : categoryLabel(tr, key)}
           </button>
         ))}
       </div>
@@ -147,7 +148,7 @@ export function HabitForm({
         className={addButtonClass}
       >
         <Plus aria-hidden className="size-4" />
-        Create your own
+        {tr("habits.form.createOwn")}
       </button>
 
       <Dialog open={draft !== null} onOpenChange={(isOpen) => !isOpen && !pending && setDraft(null)}>
@@ -168,7 +169,7 @@ export function HabitForm({
           onEscapeKeyDown={(e) => (e.target as Element | null)?.closest?.(`[${EMOJI_PANEL_ATTR}]`) && e.preventDefault()}
         >
           <div className="flex flex-col gap-1 pr-10">
-            <DialogTitle>{draft?.custom ? "Create your own" : "Add habit"}</DialogTitle>
+            <DialogTitle>{draft?.custom ? tr("habits.form.createOwn") : tr("habits.form.addHabit")}</DialogTitle>
           </div>
           {draft && (
             <HabitFields
@@ -206,6 +207,8 @@ function HabitFields({
   onPendingChange: (pending: boolean) => void;
 }) {
   const { t: tr, locale } = useT();
+  const tf = useTranslations("habits.form");
+  const bdi = (c: ReactNode) => <bdi>{c}</bdi>;
   const [state, formAction, pending] = useActionState(submitHabit, initialState);
   const [groupId, setGroupId] = useState(initialGroupId);
   const group = groups.find((g) => g.id === groupId) ?? null;
@@ -239,7 +242,7 @@ function HabitFields({
   return (
     <form ref={formRef} action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="title" className="font-semibold">Title</Label>
+        <Label htmlFor="title" className="font-semibold">{tf("titleLabel")}</Label>
         <EmojiPicker
           value={values.emoji}
           category={isHabitCategory(values.category) ? values.category : null}
@@ -261,11 +264,11 @@ function HabitFields({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="category" className="font-semibold">Category</Label>
+        <Label htmlFor="category" className="font-semibold">{tf("categoryLabel")}</Label>
         <select id="category" name="category" ref={categoryRef} value={values.category} onChange={set("category")} className={selectClass}
           aria-invalid={Boolean(errors.category)} aria-describedby={errors.category ? "category-error" : undefined}>
           {/* Not `required`: the browser would block the submit and hide the other fields' messages. */}
-          <option value="" disabled>Pick a category</option>
+          <option value="" disabled>{tf("pickCategory")}</option>
           {CATEGORY_ORDER.map((c) => (
             <option key={c} value={c}>{categoryLabel(tr, c)}</option>
           ))}
@@ -274,10 +277,10 @@ function HabitFields({
       </div>
 
       <fieldset className="flex flex-col gap-1.5">
-        <legend className="mb-1.5 text-sm font-semibold">How often</legend>
+        <legend className="mb-1.5 text-sm font-semibold">{tf("howOften")}</legend>
         <div className="grid grid-cols-2 gap-2">
           {/* sr-only is absolutely positioned, so the label takes no grid cell. */}
-          <Label htmlFor="targetCount" className="sr-only">Times</Label>
+          <Label htmlFor="targetCount" className="sr-only">{tf("times")}</Label>
           <CountStepper
             id="targetCount"
             value={values.targetCount}
@@ -286,10 +289,10 @@ function HabitFields({
             invalid={Boolean(errors.targetCount)}
             describedBy={errors.targetCount ? "targetCount-error" : undefined}
           />
-          <Label htmlFor="period" className="sr-only">Per</Label>
+          <Label htmlFor="period" className="sr-only">{tf("per")}</Label>
           <select id="period" name="period" ref={periodRef} value={values.period} onChange={set("period")} className={selectClass}>
             {(["day", "week", "month"] as HabitPeriod[]).map((p) => (
-              <option key={p} value={p}>{`${count === 1 ? "time" : "times"} a ${p}`}</option>
+              <option key={p} value={p}>{tf("frequencyOption", { n: count, period: p })}</option>
             ))}
           </select>
         </div>
@@ -299,9 +302,9 @@ function HabitFields({
 
       {groups.length > 0 && (
         <fieldset className="flex flex-col gap-1.5">
-          <legend className="mb-1.5 text-sm font-semibold">Who&apos;s it for</legend>
+          <legend className="mb-1.5 text-sm font-semibold">{tf("whoFor")}</legend>
           <div className="flex flex-wrap gap-2">
-            {(groupOnly ? groups : [{ id: "", name: "Just me" }, ...groups]).map((g) => (
+            {(groupOnly ? groups : [{ id: "", name: tf("justMe") }, ...groups]).map((g) => (
               <label key={g.id || "me"} className={chipClass}>
                 <input
                   type="radio"
@@ -320,16 +323,14 @@ function HabitFields({
           </div>
           {group && (
             <div className="flex flex-col gap-3 pt-2">
-              <p className="text-sm text-muted-foreground">
-                Everyone in {group.name} does this together. It&apos;s done when everyone&apos;s checked in.
-              </p>
-              <Toggle name="requiresApproval" label="Needs approval" hint={`Someone else in ${group.name} confirms each check-in.`} />
+              <p className="text-sm text-muted-foreground">{tf.rich("groupNote", { group: group.name, bdi })}</p>
+              <Toggle name="requiresApproval" label={tf("needsApproval")} hint={tf.rich("needsApprovalHint", { group: group.name, bdi })} />
               {group.children.map((c) => (
                 <Toggle
                   key={c.id}
                   name="children"
                   value={c.id}
-                  label={`Include ${c.name}`}
+                  label={tf.rich("include", { name: c.name, bdi })}
                   icon={<Avatar name={c.name} emoji={c.avatar_emoji} color={c.avatar_color} size="sm" />}
                 />
               ))}
@@ -339,7 +340,7 @@ function HabitFields({
       )}
 
       <fieldset className="flex flex-col gap-1.5">
-        <legend className="mb-1.5 text-sm font-semibold">Starts</legend>
+        <legend className="mb-1.5 text-sm font-semibold">{tf("starts")}</legend>
         {/* Today is sent as empty, so the server uses its own today (this page's may be stale after midnight). */}
         <input type="hidden" name="startsOn" value={values.startsOn === fieldToday ? "" : values.startsOn} />
         <StartDatePicker
@@ -350,7 +351,7 @@ function HabitFields({
           errorId={errors.startsOn ? "startsOn-error" : undefined}
         />
         <p className="text-xs text-muted-foreground">
-          {formatLocalDate(values.startsOn, locale)}. Nothing before this day counts.
+          {tf("startsNote", { date: formatLocalDate(values.startsOn, locale) })}
         </p>
         {errors.startsOn && <p id="startsOn-error" className="text-sm text-destructive">{errors.startsOn}</p>}
       </fieldset>
@@ -362,14 +363,14 @@ function HabitFields({
         <p role="alert" className="text-sm text-destructive">{state.message}</p>
       )}
       <Button type="submit" disabled={pending} className="h-11 text-base">
-        {pending ? "Adding…" : validCount ? `Add habit · ${describeSchedule(tr, count, period)}` : "Add habit"}
+        {pending ? tf("adding") : validCount ? tf("addHabitSchedule", { schedule: describeSchedule(tr, count, period) }) : tf("addHabit")}
       </Button>
     </form>
   );
 }
 
 // An on/off row (a checkbox shown as a switch); off by default, sent as "on" or the value when ticked.
-function Toggle({ name, value, label, hint, icon }: { name: string; value?: string; label: string; hint?: string; icon?: React.ReactNode }) {
+function Toggle({ name, value, label, hint, icon }: { name: string; value?: string; label: ReactNode; hint?: ReactNode; icon?: ReactNode }) {
   return (
     <label className="flex min-h-11 cursor-pointer items-center gap-3">
       {icon}
