@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.0](https://github.com/naum-4ik/keepup/compare/v1.4.0...v1.5.0) (2026-10-15)
+
+
+### Features
+
+* **db:** kid gender in my_children ([#234](https://github.com/naum-4ik/keepup/issues/234)) ([4631a1f](https://github.com/naum-4ik/keepup/commit/4631a1ff6a3194ee7135b9a30d0b75ec63984788))
+* **db:** profile language, kid gender, push language ([#229](https://github.com/naum-4ik/keepup/issues/229)) ([f3d1784](https://github.com/naum-4ik/keepup/commit/f3d1784175b06ea1a32fb5c5c5100563489a6199))
+* **i18n:** groups, kids (boy/girl), profile ([#235](https://github.com/naum-4ik/keepup/issues/235)) ([a6b53da](https://github.com/naum-4ik/keepup/commit/a6b53da271d32c9d181c528fd7bbfa952cc05214))
+* **i18n:** language foundation (next-intl, setting, fonts) ([#231](https://github.com/naum-4ik/keepup/issues/231)) ([6ade13e](https://github.com/naum-4ik/keepup/commit/6ade13e224a84685649fd3213f542dedea6f9732))
+
 ## [1.4.0](https://github.com/naum-4ik/keepup/compare/v1.3.1...v1.4.0) (2026-10-14)
 
 
