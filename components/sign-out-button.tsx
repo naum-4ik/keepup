@@ -55,12 +55,12 @@ export function SignOutButton() {
           })
         }
       >
-        Sign out
+        {t("common.signOut")}
       </Button>
       <Dialog open={unsaved !== null} onOpenChange={(open) => !open && reply(false)}>
         <DialogContent>
           <div className="flex flex-col gap-1 pr-10">
-            <DialogTitle>Sign out?</DialogTitle>
+            <DialogTitle>{t("common.signOutTitle")}</DialogTitle>
             <DialogDescription>{unsaved !== null && unsavedSignOut(t, unsaved)}</DialogDescription>
           </div>
           <div className="flex gap-2">

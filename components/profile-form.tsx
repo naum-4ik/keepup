@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useTranslations } from "next-intl";
 import { InfoHint } from "@/components/info-hint";
 import { SaveButton } from "@/components/save-button";
 import { TimezonePicker } from "@/components/timezone-picker";
@@ -22,6 +23,7 @@ const initialState: ProfileFormState = { status: "idle" };
 
 export function ProfileForm({ action, timezones, defaults, submitLabel }: Props) {
   const { t } = useT();
+  const tp = useTranslations("profile.form");
   const [state, formAction, pending] = useActionState(action, initialState);
   // React resets uncontrolled fields to their defaultValue after an action. Inputs re-sync fine because
   // React updates defaultValue on every render; <select> doesn't, so each select is keyed by its own
@@ -34,7 +36,7 @@ export function ProfileForm({ action, timezones, defaults, submitLabel }: Props)
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="displayName" className="font-semibold">
-          Display name
+          {tp("displayName")}
         </Label>
         <Input
           id="displayName"
@@ -63,9 +65,9 @@ export function ProfileForm({ action, timezones, defaults, submitLabel }: Props)
       <div className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-1">
           <Label htmlFor="weekStart" className="font-semibold">
-            Week starts on
+            {tp("weekStart")}
           </Label>
-          <InfoHint text="Weekly habits reset on this day." />
+          <InfoHint text={tp("weekStartHint")} />
         </div>
         <select
           id="weekStart"
@@ -76,10 +78,10 @@ export function ProfileForm({ action, timezones, defaults, submitLabel }: Props)
           aria-invalid={Boolean(errors.weekStart)}
           aria-describedby={errors.weekStart ? "weekStart-error" : undefined}
         >
-          <option value="1">Monday</option>
-          <option value="0">Sunday</option>
+          <option value="1">{tp("monday")}</option>
+          <option value="0">{tp("sunday")}</option>
         </select>
-        <p className="text-xs text-muted-foreground">Applies to weekly habits you create from now on.</p>
+        <p className="text-xs text-muted-foreground">{tp("weekStartNote")}</p>
         {errors.weekStart && (
           <p id="weekStart-error" className="text-sm text-destructive">
             {errors.weekStart}

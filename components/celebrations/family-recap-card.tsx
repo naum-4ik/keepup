@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { dismissCard } from "@/app/(app)/today/actions";
+import { useT } from "@/lib/i18n/client";
 
 // §7 weekly family recap, on the first day of the group's week: wins only. At the top of the Inbox's
 // Activity tab (owner 2026-10-04: no group cards on Today).
 export function FamilyRecapCard({ cardKey, group, line }: { cardKey: string; group: string; line: string }) {
+  const { t } = useT();
   const [hidden, setHidden] = useState(false);
   if (hidden) return null;
   return (
@@ -17,7 +19,7 @@ export function FamilyRecapCard({ cardKey, group, line }: { cardKey: string; gro
       </div>
       <button
         type="button"
-        aria-label="Dismiss"
+        aria-label={t("common.dismiss")}
         onClick={() => {
           setHidden(true);
           void dismissCard(cardKey);

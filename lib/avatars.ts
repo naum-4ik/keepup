@@ -1,3 +1,5 @@
+import type { T } from "@/supabase/functions/_shared/i18n";
+
 // No photos for anyone (design doc): an emoji from this curated set on a pastel circle.
 export const AVATAR_EMOJI = [
   "🐼", "🦊", "🐨", "🐯", "🐸", "🐵", "🐰", "🐻", "🐱", "🐶", "🦁", "🐧",
@@ -19,15 +21,6 @@ export const AVATAR_COLORS: Record<AvatarColor, string> = {
   rose: "bg-cat-people-soft",
 };
 
-export const AVATAR_COLOR_LABEL: Record<AvatarColor, string> = {
-  peach: "Peach",
-  sage: "Sage",
-  sky: "Sky",
-  lilac: "Lilac",
-  butter: "Butter",
-  rose: "Rose",
-};
-
 export const isAvatarColor = (v: string): v is AvatarColor => Object.hasOwn(AVATAR_COLORS, v);
 export const isAvatarEmoji = (v: string): boolean => (AVATAR_EMOJI as readonly string[]).includes(v);
 export const isGroupAvatarEmoji = (v: string): boolean => (GROUP_AVATAR_EMOJI as readonly string[]).includes(v);
@@ -41,12 +34,13 @@ export function initialOf(name: string): string {
 
 // The database only checks the shape; the curated set is the app's rule (docs/design.md).
 export function parseAvatar(
+  t: T,
   formData: FormData,
   isAllowedEmoji: (v: string) => boolean,
 ): { ok: true; emoji: string | null; color: AvatarColor } | { ok: false; message: string } {
   const emoji = String(formData.get("avatarEmoji") ?? "");
   const color = String(formData.get("avatarColor") ?? "");
-  if (emoji !== "" && !isAllowedEmoji(emoji)) return { ok: false, message: "Pick one of these avatars." };
-  if (!isAvatarColor(color)) return { ok: false, message: "Pick a color." };
+  if (emoji !== "" && !isAllowedEmoji(emoji)) return { ok: false, message: t("avatars.pickEmoji") };
+  if (!isAvatarColor(color)) return { ok: false, message: t("avatars.pickColor") };
   return { ok: true, emoji: emoji || null, color };
 }

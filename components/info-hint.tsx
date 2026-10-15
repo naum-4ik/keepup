@@ -1,10 +1,12 @@
 "use client";
 
 import { Info } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 
 // A small (i) next to a field label: tap to show one short line, tap again (or Esc) to hide it.
 export function InfoHint({ text }: { text: string }) {
+  const t = useTranslations("common");
   const [open, setOpen] = useState(false);
   const id = useId();
 
@@ -12,7 +14,7 @@ export function InfoHint({ text }: { text: string }) {
     <>
       <button
         type="button"
-        aria-label="What is this?"
+        aria-label={t("whatIsThis")}
         aria-expanded={open}
         aria-controls={id}
         onClick={() => setOpen((o) => !o)}

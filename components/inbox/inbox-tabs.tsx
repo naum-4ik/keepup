@@ -36,7 +36,7 @@ export function InboxTabs({
   };
   return (
     <div className="flex flex-col gap-4">
-      <div role="tablist" aria-label="Inbox" className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+      <div role="tablist" aria-label={t("inbox.tabsLabel")} className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
         {tabs.map(([key, label], i) => (
           <button
             key={key}

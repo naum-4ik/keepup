@@ -14,6 +14,7 @@ import {
 } from "@/lib/notification-categories";
 import type { NotificationSettings } from "@/lib/notification-settings";
 import { browserSubscription, iosVersion, removeDevice } from "@/lib/push-support";
+import { INTL_LOCALE, type Locale, type T } from "@/supabase/functions/_shared/i18n";
 import { cn } from "@/lib/utils";
 
 const selectClass = "h-11 rounded-xl border border-input bg-transparent px-3 text-base";
@@ -23,14 +24,14 @@ const pillClass =
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const hourLabel = (h: number) => `${String(h).padStart(2, "0")}:00`;
 
-function pausedUntil(until: string, timeZone: string): string {
-  if (until === "infinity") return "you turn them back on";
-  return new Intl.DateTimeFormat("en-GB", { timeZone, weekday: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(until));
+function pausedUntil(t: T, locale: Locale, until: string, timeZone: string): string {
+  if (until === "infinity") return t("notifications.card.untilTurnedOn");
+  return new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone, weekday: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(until));
 }
 
 // isDemo: a demo login can't save a push device, so it never sees the browser's permission prompt.
 export function NotificationSettingsCard({ settings, isDemo = false }: { settings: NotificationSettings; isDemo?: boolean }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [here, setHere] = useState<string | null>(null);
@@ -66,12 +67,12 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
   }, [justOn, thisDeviceOn]);
 
   return (
-    <section aria-label="Notifications" className="flex flex-col gap-5 rounded-2xl bg-card p-6 shadow-soft">
-      <h2 className="text-base font-bold">Notifications</h2>
+    <section aria-label={t("notifications.card.title")} className="flex flex-col gap-5 rounded-2xl bg-card p-6 shadow-soft">
+      <h2 className="text-base font-bold">{t("notifications.card.title")}</h2>
 
       <div className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-1">
-          <label htmlFor="reminderHour" className="text-sm font-semibold">Daily reminder</label>
+          <label htmlFor="reminderHour" className="text-sm font-semibold">{t("notifications.card.dailyReminder")}</label>
           <InfoHint text={reminderHourHint(t, settings.devices.length > 0)} />
         </div>
         <select id="reminderHour" className={selectClass} defaultValue={settings.reminderHour} key={settings.reminderHour}
@@ -81,7 +82,7 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
         {thisDeviceOn ? (
           <p ref={confirmation} tabIndex={-1} role="status" className="text-sm text-muted-foreground outline-none">
             {reminderStatus(t, {
-              pausedUntil: paused ? pausedUntil(settings.mutedUntil!, settings.timezone) : null,
+              pausedUntil: paused ? pausedUntil(t, locale, settings.mutedUntil!, settings.timezone) : null,
               delivery: settings.delivery.reminders,
               arrivesAt: justOn ? hourLabel(settings.reminderHour) : null,
             })}
@@ -100,11 +101,11 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
       </div>
 
       <div className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold">Pause all</h3>
+        <h3 className="text-sm font-semibold">{t("notifications.card.pauseAll")}</h3>
         {paused ? (
           <div className="flex flex-wrap items-center gap-3">
-            <p className="text-sm">Paused until {pausedUntil(settings.mutedUntil!, settings.timezone)}</p>
-            <Button type="button" variant="outline" className="h-11" disabled={pending} onClick={() => run(() => pauseAll("resume"))}>Resume</Button>
+            <p className="text-sm">{t("notifications.card.pausedUntil", { until: pausedUntil(t, locale, settings.mutedUntil!, settings.timezone) })}</p>
+            <Button type="button" variant="outline" className="h-11" disabled={pending} onClick={() => run(() => pauseAll("resume"))}>{t("notifications.card.resume")}</Button>
           </div>
         ) : (
           <div className="flex flex-wrap gap-2">
@@ -118,7 +119,7 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
       </div>
 
       <fieldset className="flex flex-col gap-4">
-        <legend className="mb-1 text-sm font-semibold">What to send</legend>
+        <legend className="mb-1 text-sm font-semibold">{t("notifications.card.whatToSend")}</legend>
         {NOTIFICATION_CATEGORIES.map((c) => (
           <DeliveryChoice key={c.key} category={c.key} label={t(`notificationCategories.${c.key}.label`)} hint={t(`notificationCategories.${c.key}.hint`)} saved={settings.delivery[c.key]} onError={setError} />
         ))}
@@ -127,25 +128,25 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
 
       {settings.devices.length > 0 && (
         <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold">Devices</h3>
+          <h3 className="text-sm font-semibold">{t("notifications.card.devices")}</h3>
           <ul className="flex flex-col gap-2">
             {settings.devices.map((d) => (
               <li key={d.endpoint} className="flex min-h-11 items-center gap-3">
                 <span className="flex-1 text-sm">
                   {d.label}
-                  {d.endpoint === here && <span className="text-muted-foreground"> · this device</span>}
+                  {d.endpoint === here && <span className="text-muted-foreground"> · {t("notifications.card.thisDevice")}</span>}
                 </span>
                 <Button
                   type="button"
                   variant="outline"
                   className="h-11"
-                  aria-label={`Remove ${d.label}${d.endpoint === here ? " (this device)" : ""}`}
+                  aria-label={t(d.endpoint === here ? "notifications.card.removeThisLabel" : "notifications.card.removeLabel", { label: d.label })}
                   disabled={pending}
                   onClick={() =>
                     run(() => removeDevice({ endpoint: d.endpoint, here, forget: forgetPushSubscription, getSubscription: browserSubscription }))
                   }
                 >
-                  Remove
+                  {t("notifications.card.remove")}
                 </Button>
               </li>
             ))}
@@ -230,7 +231,7 @@ function DeliveryChoice({ category, label, hint, saved, onError }: {
         {saving && (
           <span aria-hidden data-testid={`delivery-${category}-saving`} className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
             <Loader2 className="size-3 animate-spin motion-reduce:animate-none" />
-            Saving…
+            {t("common.saving")}
           </span>
         )}
       </div>

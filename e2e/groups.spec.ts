@@ -448,7 +448,7 @@ test("Everyone did it shows once, with confetti, then not again", async ({ page 
     { timeout: 15_000 },
   );
   await page.getByRole("button", { name: "Check in: \u2068Family dinner\u2069" }).click();
-  const card = page.getByText("Everyone did it! Family dinner ✓");
+  const card = page.getByText("Everyone did it! \u2068Family dinner\u2069 ✓");
   await expect(card).toBeVisible();
   const confetti = page.locator('[aria-hidden] > .animate-confetti');
   await expect(confetti).toHaveCount(24);
@@ -457,7 +457,7 @@ test("Everyone did it shows once, with confetti, then not again", async ({ page 
   // no longer lists it, but the card stays while it's read, burst included, and plays no second one.
   // data-seen says the refresh has landed and the card is the one kept on screen.
   await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
-  await expect(page.locator("[data-seen]")).toContainText("Everyone did it! Family dinner ✓");
+  await expect(page.locator("[data-seen]")).toContainText("Everyone did it! \u2068Family dinner\u2069 ✓");
   await expect(confetti).toHaveCount(24);
   await page.reload();
   await expect(page.getByRole("button", { name: "Done: \u2068Family dinner\u2069" })).toBeVisible();
@@ -515,7 +515,7 @@ test("with reduced motion, Everyone did it shows without confetti", async ({ pag
   await createGroup(page, "Family");
   await createGroupHabitVia(page, "Family", "Family dinner");
   await page.getByRole("button", { name: "Check in: \u2068Family dinner\u2069" }).click();
-  await expect(page.getByText("Everyone did it! Family dinner ✓")).toBeVisible();
+  await expect(page.getByText("Everyone did it! \u2068Family dinner\u2069 ✓")).toBeVisible();
   const confetti = page.locator('[aria-hidden] > .animate-confetti');
   await expect(confetti).toHaveCount(24);
   for (const piece of await confetti.all()) await expect(piece).toBeHidden();
@@ -591,7 +591,7 @@ test("approving a check-in someone just reviewed says who did, and the note stay
   await dan.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(dan.getByText("Nothing waiting for you.")).toBeVisible();
   await eve.getByRole("button", { name: "Approve", exact: true }).click();
-  await expect(eve.getByRole("listitem", { name: "Ana did Gym" }).getByRole("status")).toHaveText("\u2068Dan\u2069 already reviewed this.");
+  await expect(eve.getByRole("listitem", { name: "\u2068Ana\u2069 did \u2068Gym\u2069" }).getByRole("status")).toHaveText("\u2068Dan\u2069 already reviewed this.");
 });
 
 test("an undo by another member shows up live", async ({ page, browser }) => {

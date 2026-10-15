@@ -1061,5 +1061,103 @@
       "paused": "Paused",
       "rested": "Rest day"
     }
+  },
+  "common": {
+    "close": "Close",
+    "save": "Save",
+    "saved": "Saved",
+    "saving": "Saving…",
+    "dismiss": "Dismiss",
+    "whatIsThis": "What is this?",
+    "signOut": "Sign out",
+    "signOutTitle": "Sign out?",
+    "privacyConsent": "By continuing, you agree to the <link>Privacy Policy</link>",
+    "firstCheckinTip": {
+      "dismiss": "Dismiss tip: ",
+      "text": "Tap when you've done it"
+    }
+  },
+  "inbox": {
+    "title": "Inbox",
+    "tabsLabel": "Inbox",
+    "approvals": {
+      "empty": "Nothing waiting for you.",
+      "approveAll": "Approve all ({n})",
+      "rowLabel": "{name} did {habit}",
+      "did": "<bdi>{name}</bdi> did <bdi>{habit}</bdi>",
+      "approve": "Approve",
+      "notApproved": "Not approved"
+    },
+    "feed": {
+      "empty": "Nothing yet. Activity from your groups shows up here.",
+      "unread": "Unread: "
+    },
+    "errors": {
+      "pickMessage": "Pick one of the messages."
+    }
+  },
+  "notifications": {
+    "card": {
+      "title": "Notifications",
+      "dailyReminder": "Daily reminder",
+      "pauseAll": "Pause all",
+      "pausedUntil": "Paused until {until}",
+      "untilTurnedOn": "you turn them back on",
+      "resume": "Resume",
+      "whatToSend": "What to send",
+      "devices": "Devices",
+      "thisDevice": "this device",
+      "remove": "Remove",
+      "removeLabel": "Remove {label}",
+      "removeThisLabel": "Remove {label} (this device)"
+    },
+    "turnOn": {
+      "label": "Turn on reminders",
+      "addToHomeScreen": "Add Keepup to your Home Screen",
+      "title": "Reminders",
+      "stepShare": "In Safari, tap Share (the square with an arrow).",
+      "stepAdd": "Choose Add to Home Screen, then Add.",
+      "stepOpen": "Open Keepup from your Home Screen and turn on reminders there.",
+      "intro": "One summary a day of what's still to do. You can pause or change it any time.",
+      "summaryAt": "Daily summary at",
+      "allow": "Allow notifications",
+      "failed": "This device couldn't be set up for notifications. Try again."
+    }
+  },
+  "celebrations": {
+    "label": "Celebration",
+    "dismissHint": "Tap or press Esc",
+    "everyoneDidIt": "Everyone did it! {habits}"
+  },
+  "avatars": {
+    "hint": "Pick an animal or a friendly thing. No photos, ever.",
+    "avatarGroup": "Avatar",
+    "backgroundGroup": "Background color",
+    "colors": {
+      "peach": "Peach",
+      "sage": "Sage",
+      "sky": "Sky",
+      "lilac": "Lilac",
+      "butter": "Butter",
+      "rose": "Rose"
+    },
+    "pickEmoji": "Pick one of these avatars.",
+    "pickColor": "Pick a color."
+  },
+  "profile": {
+    "form": {
+      "displayName": "Display name",
+      "weekStart": "Week starts on",
+      "weekStartHint": "Weekly habits reset on this day.",
+      "monday": "Monday",
+      "sunday": "Sunday",
+      "weekStartNote": "Applies to weekly habits you create from now on."
+    },
+    "timezone": {
+      "label": "Time zone",
+      "hint": "Pick the time it is where you are now. Your days start at midnight there.",
+      "useDevice": "Use this device's time zone ({city})",
+      "changeNote": "Changes apply from your next day and week."
+    }
   }
 }

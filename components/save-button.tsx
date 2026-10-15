@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +11,7 @@ import { cn } from "@/lib/utils";
 export function SaveButton({
   state,
   pending,
-  label = "Save",
+  label,
   variant = "default",
 }: {
   state: { status: string };
@@ -18,6 +19,7 @@ export function SaveButton({
   label?: string;
   variant?: "default" | "outline";
 }) {
+  const t = useTranslations("common");
   const [seen, setSeen] = useState(state);
   const [flash, setFlash] = useState(false);
   const [saves, setSaves] = useState(0);
@@ -33,15 +35,15 @@ export function SaveButton({
 
   useEffect(() => {
     if (!flash) return;
-    const t = setTimeout(() => setFlash(false), 2000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setFlash(false), 2000);
+    return () => clearTimeout(timer);
   }, [flash, seen]);
 
   return (
     <div className="flex flex-col gap-2">
       {/* Screen readers hear each save; sighted users see the button flash. */}
       <p key={saves} role="status" className="sr-only">
-        {saves > 0 ? "Saved" : ""}
+        {saves > 0 ? t("saved") : ""}
       </p>
       <Button
         type="submit"
@@ -49,7 +51,7 @@ export function SaveButton({
         disabled={pending}
         className={cn("h-11 gap-1.5 transition-colors", flash && "bg-done text-done-foreground hover:brightness-95")}
       >
-        {pending ? "Saving…" : flash ? (<><Check aria-hidden className="size-4" /> Saved</>) : label}
+        {pending ? t("saving") : flash ? (<><Check aria-hidden className="size-4" /> {t("saved")}</>) : (label ?? t("save"))}
       </Button>
     </div>
   );

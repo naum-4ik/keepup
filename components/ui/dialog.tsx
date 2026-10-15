@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { XIcon } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { Dialog as DialogPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
@@ -21,6 +22,7 @@ function DialogContent({
   onCloseAutoFocus,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content>) {
+  const t = useTranslations("common")
   const opener = React.useRef<HTMLElement | null>(null)
   return (
     <DialogPrimitive.Portal>
@@ -50,7 +52,7 @@ function DialogContent({
         {children}
         <DialogPrimitive.Close className="absolute top-3 right-3 flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted">
           <XIcon className="size-5" />
-          <span className="sr-only">Close</span>
+          <span className="sr-only">{t("close")}</span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>

@@ -34,7 +34,7 @@ export async function createGroup(_prev: GroupActionState, formData: FormData): 
   const name = parseGroupName(String(formData.get("name") ?? ""));
   if (!name.ok) return { status: "error", message: errorText(t, name.error) };
   const kind = String(formData.get("kind") ?? "other");
-  const avatar = parseAvatar(formData, isGroupAvatarEmoji);
+  const avatar = parseAvatar(t, formData, isGroupAvatarEmoji);
   if (!avatar.ok) return { status: "error", message: avatar.message };
   const { supabase, who } = await requireUser();
   const { data, error } = await supabase.rpc("create_group", { p_name: name.value, p_kind: isGroupKind(kind) ? kind : "other" });
@@ -149,7 +149,7 @@ export async function deleteGroup(groupId: string, confirmChildren: boolean): Pr
 export async function saveGroupAvatar(groupId: string, _prev: AvatarFormState, formData: FormData): Promise<AvatarFormState> {
   const { t } = await getT();
   if (!isUuid(groupId)) return { status: "error", message: "That group isn't available." };
-  const avatar = parseAvatar(formData, isGroupAvatarEmoji);
+  const avatar = parseAvatar(t, formData, isGroupAvatarEmoji);
   if (!avatar.ok) return { status: "error", message: avatar.message };
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("set_group_avatar", { p_group_id: groupId, p_emoji: avatar.emoji ?? "", p_color: avatar.color });
