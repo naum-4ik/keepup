@@ -289,7 +289,6 @@
     "deleteTitle": "Delete your account?",
     "deleteBody": "Your account, habits, check-ins, XP, badges and Inbox are deleted right away. This can't be undone.",
     "exportHint": "A file with everything Keepup keeps about you.",
-    "tryAgain": "Try again",
     "exportFirst": "Export your data first if you want a copy.",
     "deleteFailed": "Couldn't delete your account. Reload Keepup and try again.",
     "deletedNote": "Your account and data are deleted.",
@@ -384,13 +383,11 @@
     "timezone": "Pick a time zone from the list.",
     "weekStart": "Pick Sunday or Monday.",
     "purpose": "Pick one of the options, or none.",
-    "nickname": "Enter a nickname.",
     "treatName": "Name the treat.",
     "emoji": "Pick one emoji.",
     "stars": "{max, plural, other {Pick 1–# stars.}}",
     "groupName": "Give the group a name.",
     "title": "Enter a title.",
-    "category": "Pick a category.",
     "frequency": "Pick how often.",
     "targetCount": {
       "day": "{limit, plural, other {Pick 1–# times a day.}}",
@@ -1457,7 +1454,8 @@
     "change": "Change",
     "continue": "Continue",
     "tagline": "Habits, together.",
-    "listSeparator": ", "
+    "listSeparator": ", ",
+    "tryAgain": "Try again"
   },
   "inbox": {
     "title": "Inbox",

@@ -74,7 +74,7 @@ export function parseHabitDetails(values: { title: string; emoji: string; catego
   const tError = titleError(title);
   if (tError) errors.title = tError;
   if (emoji !== "" && !isOneEmoji(emoji)) errors.emoji = { key: "validation.emoji" };
-  if (!isHabitCategory(values.category)) errors.category = { key: "validation.category" };
+  if (!isHabitCategory(values.category)) errors.category = { key: "errors.category_required" };
   if (Object.keys(errors).length > 0 || !isHabitCategory(values.category)) return { ok: false, errors };
   return { ok: true, value: { title, emoji: emoji || CATEGORIES[values.category].defaultEmoji, category: values.category } };
 }

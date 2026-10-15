@@ -12,7 +12,7 @@ const noSubscribe = () => () => {};
 export function OfflineMessage({ copies }: { copies: { en: OfflinePageCopy } & Partial<Record<Locale, OfflinePageCopy>> }) {
   const locale = useSyncExternalStore(
     noSubscribe,
-    () => offlinePageLocale(document.cookie, navigator.language, Object.keys(copies) as Locale[]),
+    () => offlinePageLocale(document.cookie, navigator.languages?.join(",") || navigator.language, Object.keys(copies) as Locale[]),
     (): Locale => "en",
   );
   const copy = copies[locale] ?? copies.en;

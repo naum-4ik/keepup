@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { compareVersions, notesFor, RELEASES, releaseLabel, type Release } from "@/app/whats-new/releases";
 import { tEn } from "@/lib/i18n/test-t";
+import { LOCALES } from "@/supabase/functions/_shared/i18n";
 
 describe("What's new releases", () => {
   it("are newest first, with only the newest allowed to be undated", () => {
@@ -9,8 +10,8 @@ describe("What's new releases", () => {
       expect(RELEASES[i].date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     }
   });
-  it("read as notes for people: no PR numbers, hashes or internals", () => {
-    for (const note of RELEASES.flatMap((r) => notesFor(r, "en"))) {
+  it("read as notes for people in every language: no PR numbers, hashes or internals", () => {
+    for (const note of RELEASES.flatMap((r) => LOCALES.flatMap((l) => notesFor(r, l)))) {
       expect(note).not.toMatch(/#\d+|\b[0-9a-f]{7,}\b|\bRLS\b|\bCI\b|passkey|Face ID|https?:/i);
     }
   });

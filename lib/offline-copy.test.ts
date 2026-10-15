@@ -40,6 +40,12 @@ describe("the offline page's language", () => {
     expect(pick("", "HE")).toBe("he");
   });
 
+  it("walks the phone's languages in order, as the server reads Accept-Language", () => {
+    expect(pick("", "fr-FR,ru-RU,en")).toBe("ru");
+    expect(pick("", "de,iw-IL")).toBe("he");
+    expect(pick("", "fr-FR,de")).toBe("en");
+  });
+
   it("skips a cookie this build has no words for", () => {
     expect(pick("locale=fr", "ru")).toBe("ru");
     expect(pick("locale=ru", "he-IL", ["en", "he"])).toBe("he");
