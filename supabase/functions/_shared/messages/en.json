@@ -1556,7 +1556,6 @@
     "getStarted": "Get started"
   },
   "meta": {
-    "appName": "Keepup",
     "pageTitle": "{page} · Keepup",
     "shareTitle": "Keepup: Habits, together",
     "shareText": "A habit tracker for one person or a whole family, kids included."

@@ -240,14 +240,21 @@ self.addEventListener("message", (event) => {
     event.waitUntil(clearAll().then(() => port && port.postMessage("cleared")));
   } else if (data.type === "keepup:clear-pages") {
     // A language change (Settings → Language): the saved pages are in the old language. Saves in
-    // flight finish first, or they'd put an old-language page back.
-    event.waitUntil(Promise.all([...saving]).then(() => caches.delete(PAGES)));
+    // flight finish first, or they'd put an old-language page back. /install (a shell page, in the
+    // visitor's language) goes too: saveShellPages puts it back on the next online page load.
+    // /privacy stays English, and /offline carries every language: both are kept.
+    event.waitUntil(Promise.all([...saving]).then(() => Promise.all([caches.delete(PAGES), dropShellPage("/install")])));
   }
 });
 
 // Sign-out clears every cache (lib/push-support.ts signOutCleanup); put the offline page back.
 const saveOfflinePage = () => saveShellPage(OFFLINE_URL);
 const saveShellPages = () => Promise.all(SHELL_PAGES.map(saveShellPage));
+
+async function dropShellPage(path) {
+  const cache = await caches.open(SHELL);
+  await Promise.all([cache.delete(path), cache.delete(MANIFEST + path)]);
+}
 
 async function saveShellPage(path) {
   try {

@@ -13,7 +13,8 @@ import iphoneShare from "@/docs/install/iphone-1-share.svg";
 import { getT } from "@/lib/i18n/server";
 
 // Renders in the visitor's language (no force-static). The service worker keeps a copy (SHELL_PAGES in
-// public/sw.js): offline, that copy is in the last language this device saw.
+// public/sw.js), saved on the first online page load. Offline, that copy is in the language it was saved
+// in. A language change in Settings drops it (keepup:clear-pages), and the next online page load saves it again.
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getT();
   return { title: t("meta.pageTitle", { page: t("profile.footer.install") }) };
