@@ -2,6 +2,10 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createTranslator } from "use-intl/core";
+import {
+  isDateElement, isLiteralElement, isNumberElement, isPluralElement, isPoundElement,
+  isSelectElement, isTagElement, isTimeElement, parse, type MessageFormatElement,
+} from "@formatjs/icu-messageformat-parser";
 
 const dir = join(process.cwd(), "supabase/functions/_shared/messages");
 const load = (f: string) => JSON.parse(readFileSync(join(dir, f), "utf8")) as Record<string, unknown>;
@@ -14,15 +18,35 @@ function flat(o: Record<string, unknown>, p = ""): Record<string, string> {
     return typeof v === "string" ? { ...acc, [key]: v } : { ...acc, ...flat(v as Record<string, unknown>, key) };
   }, {});
 }
-// Placeholder names and their kinds, e.g. {n, plural, …} → n:plural; {name} → name:text.
-function args(msg: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const m of msg.matchAll(/\{\s*(\w+)\s*(?:,\s*(plural|select|selectordinal|number|date|time))?/g)) out[m[1]] ??= m[2] ?? "text";
-  return out;
+type Info = { args: Record<string, string>; tags: string[]; noOther: string[] };
+// Walks the ICU AST: placeholder names with their kinds (plural/select branch text is not one),
+// tag names, and the plural/select nodes that lack an `other` branch.
+function analyze(msg: string): Info {
+  const info: Info = { args: {}, tags: [], noOther: [] };
+  const walk = (els: MessageFormatElement[]) => {
+    for (const el of els) {
+      if (isLiteralElement(el) || isPoundElement(el)) continue;
+      if (isTagElement(el)) {
+        if (!info.tags.includes(el.value)) info.tags.push(el.value);
+        walk(el.children);
+        continue;
+      }
+      const kind = isPluralElement(el)
+        ? el.pluralType === "ordinal" ? "selectordinal" : "plural"
+        : isSelectElement(el) ? "select" : isNumberElement(el) ? "number" : isDateElement(el) ? "date" : isTimeElement(el) ? "time" : "text";
+      info.args[el.value] ??= kind;
+      if (isPluralElement(el) || isSelectElement(el)) {
+        if (!("other" in el.options)) info.noOther.push(el.value);
+        for (const o of Object.values(el.options)) walk(o.value);
+      }
+    }
+  };
+  walk(parse(msg, { requiresOtherClause: false }));
+  info.tags.sort();
+  return info;
 }
 const sample = (kind: string) =>
   kind === "plural" || kind === "number" || kind === "selectordinal" ? 2 : kind === "date" || kind === "time" ? new Date(0) : kind === "select" ? "other" : "x";
-const tags = (msg: string) => [...new Set([...msg.matchAll(/<(\w+)>/g)].map((m) => m[1]))].sort();
 
 const enFlat = flat(en);
 
@@ -34,17 +58,32 @@ describe.each(["en.json", ...others])("%s", (file) => {
   });
   it("uses the same placeholders and tags as English", () => {
     for (const [k, msg] of Object.entries(cat)) {
-      expect(Object.keys(args(msg)).sort(), k).toEqual(Object.keys(args(enFlat[k] ?? "")).sort());
-      expect(tags(msg), k).toEqual(tags(enFlat[k] ?? ""));
+      const want = analyze(enFlat[k] ?? "");
+      const got = analyze(msg);
+      expect(got.args, k).toEqual(want.args);
+      expect(got.tags, k).toEqual(want.tags);
     }
   });
   it("every message formats, and every plural/select has an other branch", () => {
     const t = createTranslator({ locale, messages: load(file), onError: (e) => { throw e; } });
     for (const [k, msg] of Object.entries(cat)) {
-      if (/(plural|select),/.test(msg)) expect(msg, k).toMatch(/other\s*\{/);
-      const values = Object.fromEntries(Object.entries(args(msg)).map(([a, kind]) => [a, sample(kind)]));
-      const tagFns = Object.fromEntries(tags(msg).map((tag) => [tag, (c: string) => c]));
+      const { args, tags, noOther } = analyze(msg);
+      expect(noOther, `${k}: plural/select without other`).toEqual([]);
+      const values = Object.fromEntries(Object.entries(args).map(([a, kind]) => [a, sample(kind)]));
+      const tagFns = Object.fromEntries(tags.map((tag) => [tag, (c: string) => c]));
       expect(() => t.markup(k as never, { ...values, ...tagFns } as never), k).not.toThrow();
     }
   });
+});
+
+describe("analyze (guard regressions)", () => {
+  const same = (a: string, b: string) => expect(analyze(b).args).toEqual(analyze(a).args);
+  it("ignores plural branch text, so translations are judged by placeholders only", () =>
+    same("{n, plural, one {day} other {days}}", "{n, plural, one {день} few {дня} many {дней} other {дня}}"));
+  it("ignores select branch text", () => same("{g, select, boy {Boy} other {They}}", "{g, select, boy {Мальчик} other {Они}}"));
+  it("still finds placeholders nested in branches and tags", () =>
+    expect(analyze("<b>{n, plural, one {{name} day} other {# days}}</b>")).toMatchObject({ args: { n: "plural", name: "text" }, tags: ["b"] }));
+  it("flags a plural without other", () => expect(analyze("{n, plural, one {x}}").noOther).toEqual(["n"]));
+  it("flags only the node that lacks other", () =>
+    expect(analyze("{a, select, x {1} other {2}} {b, select, y {3}}").noOther).toEqual(["b"]));
 });
