@@ -286,6 +286,7 @@
     "use_leave": "Use Leave group to remove yourself.",
     "guardian_required": "Please confirm you're this child's parent or guardian.",
     "invalid_name": "Enter a nickname.",
+    "invalid_gender": "Pick boy or girl.",
     "same_group": "They're already in that group.",
     "goal_exists": "There's already a goal. Finish or cancel it first.",
     "goal_not_found": "That goal isn't available.",
@@ -679,6 +680,14 @@
         "3": "A street",
         "4": "A little town"
       }
+    }
+  },
+  "kids": {
+    "gender": {
+      "label": "Boy or girl",
+      "boy": "Boy",
+      "girl": "Girl",
+      "hint": "Used for words like ‘well done’ in Russian and Hebrew."
     }
   },
   "garden": {

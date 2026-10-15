@@ -8,6 +8,7 @@ import { queueKey } from "@/lib/offline-queue";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/client";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 
 const LABEL: Record<CheckInState, string> = {
   open: "Check in for",
@@ -61,7 +62,7 @@ export function KidCheckInButton({
       <div className="relative">
         <button
           type="button"
-          aria-label={`${LABEL[shown]} ${childName}: ${title}`}
+          aria-label={`${LABEL[shown]} ${isolate(childName)}: ${isolate(title)}`}
           aria-describedby={savingShown ? savingId : undefined}
           disabled={shown !== "open" || pending}
           onClick={() => {

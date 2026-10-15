@@ -19,7 +19,7 @@ test("Settings → Reset my data: private habits, XP, badges and Inbox go; the g
   await page.getByRole("button", { name: "Add Mia" }).click();
   await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/);
   await page.goto("/today");
-  await page.getByRole("region", { name: /Mia/ }).getByRole("button", { name: "Check in for Mia: Tidy my toys" }).click();
+  await page.getByRole("region", { name: /Mia/ }).getByRole("button", { name: "Check in for \u2068Mia\u2069: \u2068Tidy my toys\u2069" }).click();
   await expect(page.getByRole("region", { name: /Mia/ })).toContainText("⭐ 1");
   await createGroupHabitVia(page, "Reset family", "Family stretch");
   const groupHabit = page.getByRole("link", { name: /Family stretch/ });

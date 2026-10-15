@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { GenderField } from "@/components/kids/gender-field";
 import { CHILD_NAME_MAX } from "@/lib/kid-schema";
 import { DEFAULT_KID_TEMPLATE_IDS, KID_TEMPLATES, kidGroupLabel, kidTemplatesByGroup, kidTemplateTitle, type KidTemplate } from "@/lib/kid-templates";
 import { useT } from "@/lib/i18n/client";
@@ -107,6 +108,7 @@ export function AddChildForm({ groupId }: { groupId: string }) {
             A nickname is enough. No full names, photos or birthdays.
           </p>
         </div>
+        <GenderField />
         <AvatarPicker name={nickname} />
         <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl bg-muted/60 p-3">
           <input

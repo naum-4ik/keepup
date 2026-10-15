@@ -9,7 +9,7 @@ import { NewWeekCard } from "@/components/kids/new-week-card";
 import { HoldToExit } from "@/components/kids/hold-to-exit";
 import { useReducedMotion } from "@/components/kids/use-calm";
 import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
-import { stageFor, themeStages } from "@/lib/garden";
+import { stageFor, themeStages, type Gender } from "@/lib/garden";
 import { useT } from "@/lib/i18n/client";
 import { createTapGuard, inOrder, orderForKid } from "@/lib/kid-order";
 import { createMoments, FLY_AT, LAND_AT, momentsForTap, type Moment, type Moments, type Step } from "@/lib/kid-reveal";
@@ -20,7 +20,7 @@ import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
 type PlayHabit = { id: string; title: string; emoji: string; target: number; done: number; state: CheckInState };
-type Child = { id: string; name: string; emoji: string | null; color: string | null; theme: string };
+type Child = { id: string; name: string; emoji: string | null; color: string | null; theme: string; gender: Gender };
 // Where a big thing in the middle of the screen goes: from the middle to its place, and its size there.
 type Goal = { dx: number; dy: number; scale: number };
 // The big moment playing over the screen (lib/kid-reveal.ts): a reveal (the item this tap adds, at its
@@ -489,7 +489,7 @@ export function KidPlay({
         <HoldToExit href={`/kids/${child.id}`} childName={child.name} />
       </header>
 
-      {weekStart && lastStars ? <NewWeekCard childId={child.id} weekStart={weekStart} lastStars={lastStars} theme={child.theme} /> : null}
+      {weekStart && lastStars ? <NewWeekCard childId={child.id} weekStart={weekStart} lastStars={lastStars} theme={child.theme} gender={child.gender} /> : null}
 
       {/* The app draws under the iPhone status bar: cards scrolling up pass under this strip. */}
       <div aria-hidden className="fixed inset-x-0 top-0 z-20 h-[env(safe-area-inset-top)] bg-background" />

@@ -10,21 +10,24 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { AvatarColor } from "@/lib/avatars";
-import { CHILD_NAME_MAX } from "@/lib/kid-schema";
+import { GenderField } from "@/components/kids/gender-field";
+import { CHILD_NAME_MAX, type KidGender } from "@/lib/kid-schema";
 
 const initialState: KidFormState = { status: "idle" };
 
-// Nickname and avatar only (privacy policy §9). Any adult of the group may edit them.
+// Nickname, avatar and boy or girl only (privacy policy §9). Any adult of the group may edit them.
 export function EditChildButton({
   childId,
   name,
   emoji,
   color,
+  gender,
 }: {
   childId: string;
   name: string;
   emoji: string | null;
   color: AvatarColor | null;
+  gender: KidGender | null;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -39,14 +42,14 @@ export function EditChildButton({
             <DialogTitle>Edit {name}</DialogTitle>
             <DialogDescription>A nickname is enough. No full names, photos or birthdays.</DialogDescription>
           </div>
-          {open && <EditChildForm childId={childId} name={name} emoji={emoji} color={color} />}
+          {open && <EditChildForm childId={childId} name={name} emoji={emoji} color={color} gender={gender} />}
         </DialogContent>
       </Dialog>
     </>
   );
 }
 
-function EditChildForm({ childId, name, emoji, color }: { childId: string; name: string; emoji: string | null; color: AvatarColor | null }) {
+function EditChildForm({ childId, name, emoji, color, gender }: { childId: string; name: string; emoji: string | null; color: AvatarColor | null; gender: KidGender | null }) {
   const [state, formAction, pending] = useActionState(updateChild.bind(null, childId), initialState);
   const [value, setValue] = useState(name);
   return (
@@ -64,6 +67,7 @@ function EditChildForm({ childId, name, emoji, color }: { childId: string; name:
           className="h-11 rounded-xl px-3 text-base"
         />
       </div>
+      <GenderField defaultValue={gender} />
       <AvatarPicker name={value.trim()} emoji={emoji} color={color} />
       {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
       <SaveButton state={state} pending={pending} />

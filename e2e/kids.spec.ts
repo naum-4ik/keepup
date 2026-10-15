@@ -9,10 +9,11 @@ async function openGroup(page: Page, groupName: string) {
   await expect(page).toHaveURL(/\/groups\/[0-9a-f-]{36}$/);
 }
 
-async function addChild(page: Page, groupName: string, name: string) {
+async function addChild(page: Page, groupName: string, name: string, gender?: "Boy" | "Girl") {
   await openGroup(page, groupName);
   await page.getByRole("link", { name: "Add a child" }).click();
   await page.getByLabel("Nickname").fill(name);
+  if (gender) await page.getByRole("group", { name: "Boy or girl" }).getByLabel(gender).check();
   await page.getByRole("group", { name: "Avatar" }).getByRole("button", { name: "🐼" }).click();
   await expect(page.getByRole("button", { name: `Add ${name}` })).toBeDisabled();
   await page.getByLabel("I'm this child's parent or guardian").check();
@@ -27,8 +28,25 @@ test("add a child with the three starter habits, check in for her on Today, and 
   await expect(page.getByRole("region", { name: "Habits" }).getByRole("listitem")).toHaveCount(3);
   await page.goto("/today");
   const mary = page.getByRole("region", { name: /Mary/ });
-  await mary.getByRole("button", { name: "Check in for Mary: Tidy my toys" }).click();
+  await mary.getByRole("button", { name: "Check in for \u2068Mary\u2069: \u2068Tidy my toys\u2069" }).click();
   await expect(mary).toContainText("⭐ 1");
+});
+
+test("a kid's boy or girl is optional, chosen when adding, and changed later", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mia", "Girl");
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  const edit = page.getByRole("dialog");
+  const pick = edit.getByRole("group", { name: "Boy or girl" });
+  await expect(pick.getByLabel("Girl")).toBeChecked();
+  await expect(pick.getByLabel("Boy")).not.toBeChecked();
+  await pick.getByLabel("Boy").check();
+  await edit.getByRole("button", { name: "Save" }).click();
+  await expect(edit.getByRole("button", { name: "Saved" })).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(page.getByRole("dialog").getByLabel("Boy")).toBeChecked();
 });
 
 test("Add a child: the guardian box comes first, remove a starter habit, choose more in the dialog", async ({ page }) => {
@@ -196,7 +214,7 @@ test("another adult in the group sees and logs for the child", async ({ page, br
   const guest = await (await browser.newContext()).newPage();
   await joinByLink(guest, url, "Dan");
   await guest.goto("/today");
-  await guest.getByRole("region", { name: /Mary/ }).getByRole("button", { name: "Check in for Mary: Tidy my toys" }).click();
+  await guest.getByRole("region", { name: /Mary/ }).getByRole("button", { name: "Check in for \u2068Mary\u2069: \u2068Tidy my toys\u2069" }).click();
   await expect(guest.getByRole("region", { name: /Mary/ })).toContainText("⭐ 1");
   await page.goto("/inbox");
   await page.getByRole("tab", { name: "Activity" }).click();
@@ -755,8 +773,8 @@ test("a guardian archives a child's habit that has a check-in, and it leaves the
   await addChild(page, "Family", "Mary");
   const kidUrl = page.url();
   const list = page.getByRole("region", { name: "Habits" });
-  await list.getByRole("button", { name: "Check in for Mary: Tidy my toys" }).click();
-  await expect(list.getByRole("button", { name: "Done for Mary: Tidy my toys" })).toBeVisible();
+  await list.getByRole("button", { name: "Check in for \u2068Mary\u2069: \u2068Tidy my toys\u2069" }).click();
+  await expect(list.getByRole("button", { name: "Done for \u2068Mary\u2069: \u2068Tidy my toys\u2069" })).toBeVisible();
   await list.getByRole("link", { name: /Tidy my toys/ }).click();
   await expect(page).toHaveURL(/\/habits\/[0-9a-f-]{36}$/);
 
@@ -797,8 +815,8 @@ test("a guardian restores a child's archived habit from the child page", async (
   await addChild(page, "Family", "Mary");
   const kidUrl = page.url();
   const list = page.getByRole("region", { name: "Habits" });
-  await list.getByRole("button", { name: "Check in for Mary: Tidy my toys" }).click();
-  await expect(list.getByRole("button", { name: "Done for Mary: Tidy my toys" })).toBeVisible();
+  await list.getByRole("button", { name: "Check in for \u2068Mary\u2069: \u2068Tidy my toys\u2069" }).click();
+  await expect(list.getByRole("button", { name: "Done for \u2068Mary\u2069: \u2068Tidy my toys\u2069" })).toBeVisible();
   await list.getByRole("link", { name: /Tidy my toys/ }).click();
   const manage = page.getByRole("region", { name: "Manage habit" });
   await manage.getByText("Archive", { exact: true }).click();

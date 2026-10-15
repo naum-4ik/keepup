@@ -11,7 +11,7 @@ import { getT } from "@/lib/i18n/server";
 import { isOneEmoji, isUuid, parseHabit } from "@/lib/habit-schema";
 import { isKidTheme } from "@/lib/garden";
 import { isKidTemplateId, KID_TEMPLATES, kidTemplateTitle } from "@/lib/kid-templates";
-import { parseChildName, parseGoal } from "@/lib/kid-schema";
+import { parseChildName, parseGender, parseGoal } from "@/lib/kid-schema";
 import { logError, track } from "@/lib/log";
 
 // code: the database rule that refused it ("keepup:<code>"), when there was one (an offline-queued
@@ -70,6 +70,7 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
   if (!name.ok) return { status: "error", message: errorText(t, name.error) };
   if (formData.get("guardian") !== "on") return { status: "error", message: habitErrorMessage(t, { message: "keepup:guardian_required" }) };
   const avatar = readAvatar(formData);
+  const gender = parseGender(formData.get("gender") as string | null);
   const picked = new Set(formData.getAll("templates").map(String).filter(isKidTemplateId));
 
   const { supabase, who } = await requireUser();
@@ -83,6 +84,12 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
   });
   if (error || !childId) return { status: "error", message: habitErrorMessage(t, error) };
   track("child_added", who, { "child.id": childId, "child.nickname": name.value, "group.id": groupId });
+
+  // Optional. The child exists by now, so a failure here is logged and her page still opens.
+  if (gender) {
+    const { error: genderError } = await supabase.rpc("set_child_gender", { p_child_id: childId, p_gender: gender });
+    if (genderError) logError("set_child_gender failed", genderError.message);
+  }
 
   let habitsFailed = false;
   // In template order, so her habit list reads like the picker.
@@ -113,6 +120,7 @@ export async function updateChild(childId: string, _prev: KidFormState, formData
   const name = parseChildName(String(formData.get("name") ?? ""));
   if (!name.ok) return { status: "error", message: errorText(t, name.error) };
   const avatar = readAvatar(formData);
+  const gender = parseGender(formData.get("gender") as string | null);
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("update_child", {
     p_child_id: childId,
@@ -121,6 +129,11 @@ export async function updateChild(childId: string, _prev: KidFormState, formData
     ...(avatar.color ? { p_avatar_color: avatar.color } : {}),
   });
   if (error) return { status: "error", message: habitErrorMessage(t, error) };
+  // Nothing chosen (an existing kid with none set) leaves it as it was; the form can't clear it.
+  if (gender) {
+    const { error: genderError } = await supabase.rpc("set_child_gender", { p_child_id: childId, p_gender: gender });
+    if (genderError) return { status: "error", message: habitErrorMessage(t, genderError) };
+  }
   refresh(childId);
   return { status: "saved" };
 }

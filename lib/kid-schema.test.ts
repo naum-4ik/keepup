@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { errorText } from "@/lib/field-error";
 import { tEn } from "@/lib/i18n/test-t";
-import { exportFileName, parseChildName, parseGoal } from "@/lib/kid-schema";
+import { exportFileName, parseChildName, parseGender, parseGoal } from "@/lib/kid-schema";
 
 describe("kid schema", () => {
+  it("reads the optional boy/girl choice; anything else is not set", () => {
+    expect(parseGender("boy")).toBe("boy");
+    expect(parseGender("girl")).toBe("girl");
+    expect(parseGender("")).toBeNull();
+    expect(parseGender("x")).toBeNull();
+    expect(parseGender(null)).toBeNull();
+  });
   it("takes a trimmed nickname of 1–40 characters", () => {
     expect(parseChildName("  Mary ")).toEqual({ ok: true, value: "Mary" });
     expect(parseChildName(" ").ok).toBe(false);

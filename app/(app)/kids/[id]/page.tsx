@@ -86,7 +86,7 @@ export default async function KidPage({
           <h1 className="truncate text-xl font-bold">{child.name}</h1>
           <p className="truncate text-sm text-muted-foreground">{child.group_name}</p>
         </div>
-        <EditChildButton childId={id} name={child.name} emoji={child.avatar_emoji} color={child.avatar_color} />
+        <EditChildButton childId={id} name={child.name} emoji={child.avatar_emoji} color={child.avatar_color} gender={child.gender} />
       </header>
 
       {habitsFailed === "1" && (
@@ -108,10 +108,11 @@ export default async function KidPage({
           weekStart={rewards.week_start}
           lastStars={lastWeek(rewards.week_start, rewards.album)!.stars}
           theme={child.kid_theme}
+          gender={child.gender}
           albumHref="#album"
         />
       )}
-      {rewards && <Garden t={t} locale={locale} stars={rewards.stars_this_week} theme={child.kid_theme} weekStart={rewards.week_start} />}
+      {rewards && <Garden t={t} locale={locale} stars={rewards.stars_this_week} theme={child.kid_theme} weekStart={rewards.week_start} gender={child.gender} />}
       <ThemePicker childId={id} childName={child.name} theme={child.kid_theme} />
       {rewards && <GardenAlbum t={t} weeks={rewards.album} theme={child.kid_theme} />}
       {rewards && <TreatGoal childId={id} childName={child.name} goal={rewards.goal} />}
