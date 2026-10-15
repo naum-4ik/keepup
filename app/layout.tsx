@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale } from "next-intl/server";
+import { getLocale, getMessages } from "next-intl/server";
 import { Direction } from "radix-ui"; // Radix reads its own provider, not <html dir>
 import { MovedNotice } from "@/components/moved/moved-notice";
 import { Faro } from "@/components/observability/faro";
@@ -9,6 +9,7 @@ import { ServiceWorker } from "@/components/pwa/service-worker";
 import "./globals.css";
 import { siteUrl as siteUrlFor } from "@/lib/site-url";
 import { isRtl } from "@/supabase/functions/_shared/i18n";
+import { CLIENT_NAMESPACES } from "@/i18n/client-namespaces";
 
 // Self-hosted (no build-time fetch from Google). Nunito: one variable file (v3.602, the version Google
 // serves), subset to Google's latin + latin-ext ranges, so names like Łukasz or Gülşen stay in one font.
@@ -71,9 +72,16 @@ export const viewport: Viewport = {
   themeColor: "#FFF8F0",
 };
 
+// Only the namespaces client code reads go to the browser (the full catalog would ride along on every page).
+function pick<M extends object, K extends keyof M>(messages: M, keys: readonly K[]): Pick<M, K> {
+  return Object.fromEntries(keys.map((k) => [k, messages[k]])) as Pick<M, K>;
+}
+
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const locale = await getLocale();
   const dir = isRtl(locale) ? "rtl" : "ltr";
+  // From getMessages(), so other languages keep English underneath (i18n/request.ts).
+  const messages = pick(await getMessages(), CLIENT_NAMESPACES);
   return (
     <html
       lang={locale}
@@ -82,7 +90,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <Direction.Provider dir={dir}>
-          <NextIntlClientProvider>
+          <NextIntlClientProvider messages={messages}>
             <MovedNotice />
             {children}
             <ServiceWorker version={process.env.APP_COMMIT_SHA || "dev"} />
