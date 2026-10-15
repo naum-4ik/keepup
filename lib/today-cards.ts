@@ -1,3 +1,5 @@
+import { isolate, type T } from "@/supabase/functions/_shared/i18n";
+
 export type GentleCardInput = {
   purpose: "me" | "family" | "friends" | null;
   hasCheckedIn: boolean;
@@ -34,9 +36,6 @@ export type FamilyRecap = {
   best_period: string | null;
 };
 
-const UNIT: Record<string, [string, string]> = { day: ["day", "days"], week: ["week", "weeks"], month: ["month", "months"] };
-const plural = (n: number, [one, many]: [string, string]) => `${n} ${n === 1 ? one : many}`;
-
 export const recapKey = (r: Pick<FamilyRecap, "group_id" | "week_start">) => `family_recap:${r.group_id}:${r.week_start}`;
 
 // Wins only (§7): a week without check-ins shows nothing rather than a zero.
@@ -45,8 +44,8 @@ export function visibleRecaps<R extends FamilyRecap>(recaps: R[], dismissed: Set
 }
 
 // The weekly family recap, at the top of the Inbox's Activity tab on the first day of the group's week.
-export function recapLine(r: FamilyRecap): string {
-  const line = `Together last week: ${plural(r.check_ins, ["check-in", "check-ins"])}`;
-  if (!r.best_title || !r.best_streak) return line;
-  return `${line} · ${r.best_title} ${plural(r.best_streak, UNIT[r.best_period ?? "day"] ?? UNIT.day)} 🔥`;
+export function recapLine(t: T, r: FamilyRecap): string {
+  if (!r.best_title || !r.best_streak) return t("push.familyRecap.plain", { n: r.check_ins });
+  const period = r.best_period === "week" || r.best_period === "month" ? r.best_period : "day";
+  return t("push.familyRecap.best", { n: r.check_ins, habit: isolate(r.best_title), span: t(`units.${period}`, { n: r.best_streak }) });
 }

@@ -44,7 +44,7 @@ export default async function InboxPage() {
         activity={
           <>
             {shownRecaps.map((r) => (
-              <FamilyRecapCard key={recapKey(r)} cardKey={recapKey(r)} group={r.group_name} line={recapLine(r)} />
+              <FamilyRecapCard key={recapKey(r)} cardKey={recapKey(r)} group={r.group_name} line={recapLine(t, r)} />
             ))}
             <FeedList items={feed} timeZone={tz} now={now} t={t} locale={locale} />
             <MarkReadOnView ids={feed.filter((n) => !n.read_at).map((n) => n.id)} />
