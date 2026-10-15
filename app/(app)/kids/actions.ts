@@ -123,6 +123,7 @@ export async function updateChild(childId: string, _prev: KidFormState, formData
   if (!name.ok) return { status: "error", message: errorText(t, name.error) };
   const avatar = readAvatar(formData);
   const gender = parseGender(formData.get("gender") as string | null);
+  const previousGender = parseGender(formData.get("previousGender") as string | null);
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("update_child", {
     p_child_id: childId,
@@ -131,9 +132,9 @@ export async function updateChild(childId: string, _prev: KidFormState, formData
     ...(avatar.color ? { p_avatar_color: avatar.color } : {}),
   });
   if (error) return { status: "error", message: habitErrorMessage(t, error) };
-  // Nothing chosen (an existing kid with none set) leaves it as it was; the form can't clear it.
-  if (gender) {
-    const { error: genderError } = await supabase.rpc("set_child_gender", { p_child_id: childId, p_gender: gender });
+  // "Not set" posts "" (null) and clears it; an unchanged choice skips the call.
+  if (gender !== previousGender) {
+    const { error: genderError } = await supabase.rpc("set_child_gender", { p_child_id: childId, p_gender: gender as unknown as string });
     if (genderError) return { status: "error", message: habitErrorMessage(t, genderError) };
   }
   refresh(childId);

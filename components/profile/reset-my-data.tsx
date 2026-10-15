@@ -94,7 +94,7 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
                 {t("common.cancel")}
               </Button>
               <Button type="submit" variant="destructive" className="h-11 flex-1" disabled={pending || !isResetWord(t, word)}>
-                {pending ? t("settings.reset.resetting") : t("settings.reset.confirm")}
+                {pending ? t("common.resetting") : t("common.reset")}
               </Button>
             </div>
           </form>

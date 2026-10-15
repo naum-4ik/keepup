@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition, type ReactNode } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { deleteAccountPreview, deleteMyAccount, exportMyData } from "@/app/(app)/profile/settings/actions";
 import { forgetPushSubscription } from "@/app/(app)/profile/settings/notification-actions";
@@ -40,7 +40,7 @@ function ExportMyDataButton() {
           })
         }
       >
-        {pending ? t("myData.exporting") : t("myData.export")}
+        {pending ? t("common.exporting") : t("myData.export")}
       </Button>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </div>
@@ -65,10 +65,10 @@ export function MyData({ isDemo = false }: { isDemo?: boolean }) {
 }
 
 function DeleteAccount() {
-  const { t, locale } = useT();
+  const { t, rich, locale } = useT();
   const [open, setOpen] = useState(false);
   const [word, setWord] = useState("");
-  const [lines, setLines] = useState<string[] | null>(null);
+  const [lines, setLines] = useState<ReactNode[] | null>(null);
   // The preview loads outside the transition: Cancel and Escape work meanwhile; only the delete holds
   // the dialog open. Until it's in, Delete stays off.
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -83,10 +83,10 @@ function DeleteAccount() {
     const id = ++request.current;
     setLines(null);
     setPreviewError(null);
-    let next: { lines: string[] } | { error: string };
+    let next: { lines: ReactNode[] } | { error: string };
     try {
       const preview = await deleteAccountPreview();
-      next = preview ? { lines: deletePreviewLines(t, locale, preview) } : { error: t("errors.generic") };
+      next = preview ? { lines: deletePreviewLines(rich, locale, preview) } : { error: t("errors.generic") };
     } catch {
       next = { error: navigator.onLine ? t("errors.generic") : t("offline.needsConnection") };
     }
@@ -149,8 +149,8 @@ function DeleteAccount() {
           </div>
           {lines && lines.length > 0 && (
             <ul className="flex flex-col gap-1 text-sm">
-              {lines.map((line) => (
-                <li key={line}>{line}</li>
+              {lines.map((line, i) => (
+                <li key={i}>{line}</li>
               ))}
             </ul>
           )}
@@ -189,7 +189,7 @@ function DeleteAccount() {
                 {t("common.cancel")}
               </Button>
               <Button type="submit" variant="destructive" className="h-11 flex-1" disabled={pending || !ready || !isDeleteWord(t, word)}>
-                {pending ? t("myData.deleting") : t("myData.delete")}
+                {pending ? t("common.deleting") : t("common.delete")}
               </Button>
             </div>
           </form>

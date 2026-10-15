@@ -44,8 +44,9 @@ export default async function GroupPage({
 }) {
   const [{ id }, { invite }] = await Promise.all([params, searchParams]);
   if (!isUuid(id)) notFound();
-  const { t: tg, locale } = await getT();
+  const { t: tg, rich, locale } = await getT();
   const t = await getTranslations("groups.detail");
+  const tc = await getTranslations("common");
   const bdi = (c: React.ReactNode) => <bdi>{c}</bdi>;
   const [{ profile, userId }, group, summaries, myGroups] = await Promise.all([
     getProfile(),
@@ -65,7 +66,7 @@ export default async function GroupPage({
   const validUntil = group.invite
     ? new Intl.DateTimeFormat(INTL_LOCALE[locale], { day: "numeric", month: "short", timeZone: profile.timezone }).format(new Date(group.invite.expires_at))
     : null;
-  const childrenNotice = childrenDeletionNotice(tg, locale, group.children.map((c) => c.name));
+  const childrenNotice = childrenDeletionNotice(rich, locale, group.children.map((c) => c.name));
   const alone = group.members.length === 1;
   // Leave/Delete's children step: each child can be exported, or moved to another group I admin.
   const children = group.children.map((c) => ({ id: c.id, name: c.name }));
@@ -221,7 +222,7 @@ export default async function GroupPage({
             title={t.rich("delete.title", { name: group.name, bdi })}
             description={t("delete.description")}
             confirmLabel={t("delete.action")}
-            pendingLabel={t("delete.pending")}
+            pendingLabel={tc("deleting")}
             childrenNotice={childrenNotice}
             groupChildren={children}
             moveTargets={moveTargets}

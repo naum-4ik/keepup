@@ -17,7 +17,7 @@ type Copy = {
   description: ReactNode;
   confirmLabel: string;
   pendingLabel: string;
-  childrenNotice: string;
+  childrenNotice: ReactNode;
   // The group's children, for the step's Export first / Move to another group (moveTargets: other
   // groups where I'm admin; empty hides Move).
   groupChildren?: { id: string; name: string }[];
@@ -70,7 +70,7 @@ function ConfirmDialog({
   groupChildren = [],
   moveTargets = [],
 }: Copy & { open: boolean; onOpenChange: (open: boolean) => void; action: Action }) {
-  const { t, locale } = useT();
+  const { rich, locale } = useT();
   const tc = useTranslations("groups.confirm");
   const tm = useTranslations("common");
   // Children moved out from this step; the dialog isn't remounted by the refresh, so track them here.
@@ -93,7 +93,7 @@ function ConfirmDialog({
           <div className="flex flex-col gap-3">
             {remaining.length > 0 || groupChildren.length === 0 ? (
               <p role="alert" className="text-sm font-semibold text-destructive">
-                {groupChildren.length > 0 ? childrenDeletionNotice(t, locale, remaining.map((c) => c.name)) : childrenNotice}
+                {groupChildren.length > 0 ? childrenDeletionNotice(rich, locale, remaining.map((c) => c.name)) : childrenNotice}
               </p>
             ) : (
               <p role="status" className="text-sm font-semibold">{tc("allMoved")}</p>

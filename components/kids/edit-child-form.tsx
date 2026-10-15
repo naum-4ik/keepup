@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { AvatarColor } from "@/lib/avatars";
 import { GenderField } from "@/components/kids/gender-field";
+import { keepFormValues } from "@/lib/keep-form-values";
 import { CHILD_NAME_MAX, type KidGender } from "@/lib/kid-schema";
 
 const initialState: KidFormState = { status: "idle" };
@@ -56,7 +57,7 @@ function EditChildForm({ childId, name, emoji, color, gender }: { childId: strin
   const [state, formAction, pending] = useActionState(updateChild.bind(null, childId), initialState);
   const [value, setValue] = useState(name);
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="child-edit-name" className="font-semibold">{t("nickname")}</Label>
         <Input
@@ -70,6 +71,7 @@ function EditChildForm({ childId, name, emoji, color, gender }: { childId: strin
           className="h-11 rounded-xl px-3 text-base"
         />
       </div>
+      <input type="hidden" name="previousGender" value={gender ?? ""} />
       <GenderField defaultValue={gender} />
       <AvatarPicker name={value.trim()} emoji={emoji} color={color} />
       {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}

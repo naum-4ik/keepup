@@ -38,7 +38,7 @@ test("deleting a group with a child asks again, and Cancel resets that step", as
 
   await page.getByRole("button", { name: "Delete group" }).click();
   await dialog.getByRole("button", { name: "Delete group" }).click();
-  await expect(dialog.getByRole("alert")).toHaveText("\u2068Mary\u2069's profile and history will be deleted.");
+  await expect(dialog.getByRole("alert")).toHaveText("Mary's profile and history will be deleted.");
   await dialog.getByRole("button", { name: "Cancel" }).click();
   await expect(dialog).toBeHidden();
 
@@ -47,7 +47,7 @@ test("deleting a group with a child asks again, and Cancel resets that step", as
   await expect(dialog.getByRole("alert")).toBeHidden();
   await expect(dialog.getByRole("button", { name: "Delete anyway" })).toBeHidden();
   await dialog.getByRole("button", { name: "Delete group" }).click();
-  await expect(dialog.getByRole("alert")).toHaveText("\u2068Mary\u2069's profile and history will be deleted.");
+  await expect(dialog.getByRole("alert")).toHaveText("Mary's profile and history will be deleted.");
   await dialog.getByRole("button", { name: "Delete anyway" }).click();
   await expect(page).toHaveURL(/\/groups$/);
   await expect(page.getByText("Levi family")).toBeHidden();

@@ -15,6 +15,7 @@ const bdi = (c: ReactNode) => <bdi>{c}</bdi>;
 
 export function ExportChildButton({ childId, childName, label, className }: { childId: string; childName: string; label?: ReactNode; className?: string }) {
   const t = useTranslations("kids.danger");
+  const tc = useTranslations("common");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
@@ -34,7 +35,7 @@ export function ExportChildButton({ childId, childName, label, className }: { ch
           })
         }
       >
-        <span className="truncate">{pending ? t("exporting") : (label ?? t("export", { name: isolate(childName) }))}</span>
+        <span className="truncate">{pending ? tc("exporting") : (label ?? t("export", { name: isolate(childName) }))}</span>
       </Button>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </div>
@@ -165,7 +166,7 @@ function ResetChildButton({ childId, childName }: { childId: string; childName: 
                 })
               }
             >
-              {pending ? t("resetting") : t("reset")}
+              {pending ? tc("resetting") : tc("reset")}
             </Button>
           </div>
         </DialogContent>
@@ -177,7 +178,6 @@ function ResetChildButton({ childId, childName }: { childId: string; childName: 
 function DeleteChildButton({ childId, childName }: { childId: string; childName: string }) {
   const t = useTranslations("kids.danger");
   const tc = useTranslations("common");
-  const th = useTranslations("habits.delete");
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -210,7 +210,7 @@ function DeleteChildButton({ childId, childName }: { childId: string; childName:
                 })
               }
             >
-              {pending ? th("pending") : th("confirm")}
+              {pending ? tc("deleting") : tc("delete")}
             </Button>
           </div>
         </DialogContent>

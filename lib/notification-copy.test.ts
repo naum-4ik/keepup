@@ -85,6 +85,7 @@ describe("voice rules over every notification", () => {
       expect(copy.kidStreak(tEn, "Mary", 7, "Brush teeth", g).body).toBe(copy.kidStreak(tEn, "Mary", 7, "Brush teeth").body);
       expect(copy.kidFullGarden(tEn, "Mary", g).body).toBe(copy.kidFullGarden(tEn, "Mary").body);
       expect(copy.kidTreatGoal(tEn, "Mary", "Park", "🛝", g).body).toBe(copy.kidTreatGoal(tEn, "Mary", "Park", "🛝").body);
+      expect(copy.alreadyLogged(tEn, "Mary", null, "Brush teeth", g).body).toBe("\u2068Mary\u2069 already did \u2068Brush teeth\u2069 ✓");
     }
   });
 

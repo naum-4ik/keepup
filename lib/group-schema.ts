@@ -1,5 +1,7 @@
 import type { FieldError } from "@/lib/field-error";
-import { INTL_LOCALE, isolate, type Locale, type T } from "@/supabase/functions/_shared/i18n";
+import type { ReactNode } from "react";
+import { listNodes, type Rich } from "@/lib/list-nodes";
+import type { Locale, T } from "@/supabase/functions/_shared/i18n";
 
 export const GROUP_KINDS = ["family", "friends", "couple", "roommates", "other"] as const;
 export type GroupKind = (typeof GROUP_KINDS)[number];
@@ -32,7 +34,7 @@ export function parseGroupName(raw: string): { ok: true; value: string } | { ok:
 export const inviteUrl = (origin: string, token: string) => `${origin}/invite/${token}`;
 
 // Leaving or deleting a group deletes its children's profiles, so the confirm step names them.
-export function childrenDeletionNotice(t: T, locale: Locale, names: readonly string[]): string {
-  const list = new Intl.ListFormat(INTL_LOCALE[locale], { style: "long", type: "conjunction" }).format(names.map(isolate));
-  return t("groups.childrenDeletion", { n: names.length, names: list });
+// For visible JSX: each name sits in its own <bdi>.
+export function childrenDeletionNotice(rich: Rich, locale: Locale, names: readonly string[]): ReactNode {
+  return rich("groups.childrenDeletion", { n: names.length, names: listNodes(locale, names) });
 }

@@ -49,6 +49,31 @@ test("a kid's boy or girl is optional, chosen when adding, and changed later", a
   await expect(page.getByRole("dialog").getByLabel("Boy")).toBeChecked();
 });
 
+test("a kid's boy or girl can be cleared again with Not set", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mia");
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  let edit = page.getByRole("dialog");
+  let pick = edit.getByRole("group", { name: "Boy or girl" });
+  await expect(pick.getByLabel("Not set")).toBeChecked();
+  await expect(pick).toHaveAccessibleDescription(/Russian and Hebrew/);
+  await pick.getByLabel("Girl").check();
+  await edit.getByRole("button", { name: "Save" }).click();
+  await expect(edit.getByRole("button", { name: "Saved" })).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  edit = page.getByRole("dialog");
+  pick = edit.getByRole("group", { name: "Boy or girl" });
+  await expect(pick.getByLabel("Girl")).toBeChecked();
+  await pick.getByLabel("Not set").check();
+  await edit.getByRole("button", { name: "Save" }).click();
+  await expect(edit.getByRole("button", { name: "Saved" })).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(page.getByRole("dialog").getByRole("group", { name: "Boy or girl" }).getByLabel("Not set")).toBeChecked();
+});
+
 test("Add a child: the guardian box comes first, remove a starter habit, choose more in the dialog", async ({ page }) => {
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
@@ -196,7 +221,7 @@ test("the last adult leaving is warned about the child and can export first", as
   await page.getByRole("button", { name: "Leave group" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Leave group" }).click();
   const warn = page.getByRole("dialog");
-  await expect(warn).toContainText("\u2068Mary\u2069's profile and history will be deleted.");
+  await expect(warn).toContainText("Mary's profile and history will be deleted.");
   const download = page.waitForEvent("download");
   await warn.getByRole("button", { name: "Export first" }).click();
   expect((await download).suggestedFilename()).toMatch(/^keepup-Mary-\d{4}-\d{2}-\d{2}\.json$/);

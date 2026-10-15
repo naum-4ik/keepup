@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { errorText } from "@/lib/field-error";
-import { tEn } from "@/lib/i18n/test-t";
+import { markup, richEn, tEn } from "@/lib/i18n/test-t";
 import { childrenDeletionNotice, inviteUrl, parseGroupName, purposeForGroupKind } from "@/lib/group-schema";
 
 describe("group name", () => {
@@ -23,11 +23,12 @@ describe("invite url", () => {
 });
 
 describe("children deletion notice", () => {
-  it("names the children whose profiles would go", () => {
-    expect(childrenDeletionNotice(tEn, "en", ["Mary"])).toBe("\u2068Mary\u2069's profile and history will be deleted.");
-    expect(childrenDeletionNotice(tEn, "en", ["Mary", "Leo"])).toBe("\u2068Mary\u2069 and \u2068Leo\u2069's profiles and history will be deleted.");
-    expect(childrenDeletionNotice(tEn, "en", ["Mary", "Leo", "Ada"])).toBe("\u2068Mary\u2069, \u2068Leo\u2069 and \u2068Ada\u2069's profiles and history will be deleted.");
-    expect(childrenDeletionNotice(tEn, "en", [])).toBe("The children's profiles and history will be deleted.");
+  const notice = (names: string[]) => markup(childrenDeletionNotice(richEn, "en", names));
+  it("names the children whose profiles would go, each in its own <bdi>, with no isolation marks", () => {
+    expect(notice(["Mary"])).toBe("<bdi>Mary</bdi>'s profile and history will be deleted.");
+    expect(notice(["Mary", "Leo"])).toBe("<bdi>Mary</bdi> and <bdi>Leo</bdi>'s profiles and history will be deleted.");
+    expect(notice(["Mary", "Leo", "Ada"])).toBe("<bdi>Mary</bdi>, <bdi>Leo</bdi> and <bdi>Ada</bdi>'s profiles and history will be deleted.");
+    expect(notice([])).toBe("The children's profiles and history will be deleted.");
   });
 });
 

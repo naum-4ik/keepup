@@ -24,9 +24,7 @@
       "keeps": "Your account, settings, devices, groups and children stay, and so do your check-ins in group habits.",
       "dialogTitle": "Reset your data?",
       "dialogBody": "{clears} {keeps} This can't be undone.",
-      "word": "reset",
-      "confirm": "Reset",
-      "resetting": "Resetting…"
+      "word": "reset"
     }
   },
   "push": {
@@ -88,12 +86,12 @@
       "day2": "Day 2 in a row. Nice start 🌱",
       "back": "Back to {span} of {habit} 🔥"
     },
-    "kidTreatGoal": "{gender, select, other {{kid} reached a goal: {goal} {emoji}}}",
-    "kidFullGarden": "{gender, select, other {{kid}'s garden is in full bloom this week 🌷}}",
-    "kidStreak": "{gender, select, other {{kid}: {span} in a row: {habit} 🔥}}",
+    "kidTreatGoal": "{gender, select, boy {{kid} reached a goal: {goal} {emoji}} girl {{kid} reached a goal: {goal} {emoji}} other {{kid} reached a goal: {goal} {emoji}}}",
+    "kidFullGarden": "{gender, select, boy {{kid}'s garden is in full bloom this week 🌷} girl {{kid}'s garden is in full bloom this week 🌷} other {{kid}'s garden is in full bloom this week 🌷}}",
+    "kidStreak": "{gender, select, boy {{kid}: {span} in a row: {habit} 🔥} girl {{kid}: {span} in a row: {habit} 🔥} other {{kid}: {span} in a row: {habit} 🔥}}",
     "alreadyLogged": {
       "byAdult": "{adult} already logged {habit} for {kid} ✓",
-      "byKid": "{kid} already did {habit} ✓"
+      "byKid": "{gender, select, boy {{kid} already did {habit} ✓} girl {{kid} already did {habit} ✓} other {{kid} already did {habit} ✓}}"
     },
     "syncDropped": "A check-in from {day} couldn't count: it was more than 3 days old when it synced.",
     "undoDropped": {
@@ -168,7 +166,7 @@
     "roleMember": "You're now a member of {group}.",
     "cheer": "{who} cheered your check-in ❤️",
     "kidLoggedBy": "{adult} logged {habit} for {kid} ⭐",
-    "kidDidIt": "{kid} did it: {habit} ⭐",
+    "kidDidIt": "{gender, select, boy {{kid} did it: {habit} ⭐} girl {{kid} did it: {habit} ⭐} other {{kid} did it: {habit} ⭐}}",
     "dayEarlier": "earlier",
     "recapReady": "Your recap is ready.",
     "nudgeLabel": {
@@ -292,16 +290,13 @@
     "exportFirst": "Export your data first if you want a copy.",
     "deleteFailed": "Couldn't delete your account. Reload Keepup and try again.",
     "deletedNote": "Your account and data are deleted.",
-    "groupDeleted": "{group} will be deleted.",
-    "groupDeletedWithProfiles": "{group} will be deleted, with {names} {n, plural, one {profile} other {profiles}}.",
-    "possessive": "{name}'s",
-    "becomesAdmin": "{admin} becomes the admin of {group}.",
+    "groupDeleted": "<bdi>{group}</bdi> will be deleted.",
+    "groupDeletedWithProfiles": "<bdi>{group}</bdi> will be deleted, with {names} {n, plural, one {profile} other {profiles}}.",
+    "possessive": "<bdi>{name}</bdi>'s",
+    "becomesAdmin": "<bdi>{admin}</bdi> becomes the admin of <bdi>{group}</bdi>.",
     "title": "Your data",
     "export": "Export my data",
-    "exporting": "Exporting…",
-    "deleteAccount": "Delete account",
-    "delete": "Delete",
-    "deleting": "Deleting…"
+    "deleteAccount": "Delete account"
   },
   "errors": {
     "group_not_found": "That group isn't available.",
@@ -453,7 +448,6 @@
       "delete": {
         "title": "Delete <bdi>{name}</bdi>?",
         "description": "This removes the group and its shared habits for everyone. It can't be undone.",
-        "pending": "Deleting…",
         "action": "Delete group"
       }
     },
@@ -807,6 +801,7 @@
       "label": "Boy or girl",
       "boy": "Boy",
       "girl": "Girl",
+      "unset": "Not set",
       "hint": "Used for words like ‘well done’ in Russian and Hebrew."
     },
     "errors": {
@@ -862,13 +857,10 @@
       "move": "Move",
       "moving": "Moving…",
       "export": "Export {name}'s data",
-      "exporting": "Exporting…",
       "resetTrigger": "Reset {name}'s profile",
       "resetDone": "<bdi>{name}</bdi>'s profile is reset. A fresh start 🌱",
       "resetTitle": "Reset <bdi>{name}</bdi>'s profile?",
       "resetDescription": "Everything except <bdi>{name}</bdi>'s nickname and avatar is cleared: habits, check-ins, stars, the garden album and treat goals. This can't be undone.",
-      "reset": "Reset",
-      "resetting": "Resetting…",
       "deleteTrigger": "Delete {name}'s profile",
       "deleteTitle": "Delete <bdi>{name}</bdi>'s profile?",
       "deleteDescription": "<bdi>{name}</bdi>'s profile and history will be deleted. This can't be undone."
@@ -1009,8 +1001,7 @@
       },
       "addChild": {
         "title": "Add a child? 🐼",
-        "body": "Track brushing teeth, reading together and more.",
-        "cta": "Add a child"
+        "body": "Track brushing teeth, reading together and more."
       },
       "notNow": "Not now"
     }
@@ -1121,9 +1112,7 @@
     "delete": {
       "trigger": "Delete habit",
       "title": "Delete \"<bdi>{title}</bdi>\"?",
-      "description": "This can't be undone.",
-      "confirm": "Delete",
-      "pending": "Deleting…"
+      "description": "This can't be undone."
     },
     "restore": {
       "label": "Restore",
@@ -1337,6 +1326,11 @@
     },
     "cancel": "Cancel",
     "creating": "Creating…",
+    "exporting": "Exporting…",
+    "deleting": "Deleting…",
+    "resetting": "Resetting…",
+    "reset": "Reset",
+    "delete": "Delete",
     "addHabit": "Add a habit",
     "noHabits": "No habits yet."
   },
