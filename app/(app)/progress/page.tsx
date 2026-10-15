@@ -14,13 +14,11 @@ import { getFinishedIds, getGroupTimezones, getHabitEnds, getHabitSummaries, get
 import { inProgressTab, type ProgressTab } from "@/lib/progress-lists";
 import { RestoreHabitButton } from "@/components/habits/restore-habit-button";
 import { StartAgainButton } from "@/components/habits/start-again-button";
-import type { HabitPeriod } from "@/lib/habit-schema";
 import { getT } from "@/lib/i18n/server";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
-import { hasWeekData } from "@/lib/week-overview";
+import { hasWeekData, streakSpan } from "@/lib/week-overview";
 
-const UNIT: Record<HabitPeriod, [string, string]> = { day: ["day", "days"], week: ["week", "weeks"], month: ["month", "months"] };
 
 export default async function ProgressPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const { view } = await searchParams;
@@ -113,7 +111,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                         <span className="text-sm text-muted-foreground">
                           {!h.archived_at && ended(h) && "Ended · decide on Today · "}
                           {describeSchedule(t, h.target_count, h.period)}
-                          {h.best_streak > 0 && ` · best ${h.best_streak} ${UNIT[h.period][h.best_streak === 1 ? 0 : 1]}`}
+                          {h.best_streak > 0 && ` · best ${streakSpan(t, h.best_streak, h.period)}`}
                         </span>
                         {cellsFor.has(h.habit_id) && (
                           <span className="pt-1.5">
