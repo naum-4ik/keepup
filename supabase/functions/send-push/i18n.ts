@@ -8,14 +8,17 @@ import { LOCALES, type Locale, type T } from "../_shared/i18n.ts";
 const catalogs: Partial<Record<Locale, Record<string, unknown>>> = { en };
 const english = createTranslator({ locale: "en", messages: en });
 
-// Unknown or missing locale → English; a key missing from a translation → its English text.
+// A key the catalog has renders from it; a missing one renders the English text with the same values.
+export function makeTranslator(locale: Locale, messages: Record<string, unknown>): { t: T; locale: Locale } {
+  const tr = createTranslator({ locale, messages });
+  return {
+    locale,
+    t: (k, v) => (tr.has(k as never) ? tr(k as never, v as never) : english(k as never, v as never)),
+  };
+}
+
+// Unknown or missing locale → English.
 export function translatorFor(raw: string | undefined | null): { t: T; locale: Locale } {
   const locale = (LOCALES as readonly string[]).includes(raw ?? "") && catalogs[raw as Locale] ? (raw as Locale) : "en";
-  const tr = createTranslator({
-    locale,
-    messages: catalogs[locale]!,
-    onError: () => {},
-    getMessageFallback: ({ key, namespace }) => english([namespace, key].filter(Boolean).join(".") as never),
-  });
-  return { locale, t: (k, v) => tr(k as never, v as never) };
+  return makeTranslator(locale, catalogs[locale]!);
 }

@@ -1,7 +1,8 @@
 // supabase/functions/send-push/build.test.ts
 import { assertEquals } from "jsr:@std/assert@1";
 import { buildPush, type PushJob } from "./build.ts";
-import { translatorFor } from "./i18n.ts";
+import { makeTranslator, translatorFor } from "./i18n.ts";
+import { isolate } from "../_shared/i18n.ts";
 
 const { t } = translatorFor("en");
 
@@ -138,4 +139,10 @@ Deno.test("catalog words: buttons, fallbacks, schedules and a kid's gender keep 
     assertEquals(buildPush(job({ kind: "kid_garden_full", subject: null, subject_gender }), t)!.body,
       "⁨Your child⁩'s garden is in full bloom this week 🌷");
   }
+});
+
+Deno.test("a key missing from a translation falls back to English, with its values", () => {
+  const { t } = makeTranslator("ru", { push: { today: "Сегодня" } });
+  assertEquals(t("push.everyoneDidIt", { habit: isolate("Read") }), "Everyone did it: \u2068Read\u2069 ✓");
+  assertEquals(t("push.today"), "Сегодня");
 });
