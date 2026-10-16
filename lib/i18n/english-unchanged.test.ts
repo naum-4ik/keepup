@@ -44,10 +44,15 @@ describe("weekdays inside a phrase are a select with the English day words", () 
     for (let day = 0; day < 7; day++) expect(tEn("habits.datePicker.next", { day })).toBe(`Next ${short[day]}`);
   });
 
-  it("city and week start (Profile and onboarding share it)", () => {
+  it("city and week start (Profile and onboarding share it), the city its own element", () => {
     const long = weekdayLabels("en", "long");
-    expect(tEn("profile.summary", { city: "Tokyo", weekStart: "sun" })).toBe(`Tokyo · weeks start ${long[0]}`);
-    expect(tEn("profile.summary", { city: "Rome", weekStart: "mon" })).toBe(`Rome · weeks start ${long[1]}`);
+    const span = (c: ReactNode) => createElement("span", null, c);
+    const plain = { place: span, dot: (c: ReactNode) => c, week: (c: ReactNode) => c };
+    expect(markup(richEn("profile.summary", { city: "Tokyo", weekStart: "sun", ...plain }))).toBe(`<span>Tokyo</span> · weeks start ${long[0]}`);
+    expect(markup(richEn("profile.summary", { city: "Rome", weekStart: "mon", ...plain }))).toBe(`<span>Rome</span> · weeks start ${long[1]}`);
+    const hidden = (c: ReactNode) => createElement("span", { "aria-hidden": true }, c);
+    expect(markup(richEn("profile.summary", { city: "Rome", weekStart: "sun", place: span, dot: hidden, week: span })))
+      .toBe(`<span>Rome</span> <span aria-hidden="true">·</span> <span>weeks start ${long[0]}</span>`);
   });
 });
 
@@ -63,6 +68,8 @@ describe("counts before nouns are plurals (numeric args), English unchanged", ()
     ["auth.signup.passwordRule", { min: 8 }, "At least 8 characters."],
     ["onboarding.habits.title", { max: 3 }, "Pick 1–3 habits to start"],
     ["onboarding.habits.pickRange", { max: 3 }, "Pick 1–3 habits."],
+    ["onboarding.habits.joinedSubtitle", { max: 3 }, "Pick up to 3. Each starts today."],
+    ["onboarding.habits.atLimit", { max: 3 }, "Pick up to 3"],
     ["onboarding.habits.picked", { n: 1, max: 3 }, "1 of 3 picked"],
     ["onboarding.habits.picked", { n: 2, max: 3 }, "2 of 3 picked"],
     ["kids.form.donePicked", { count: 1 }, "Done · 1 picked"],

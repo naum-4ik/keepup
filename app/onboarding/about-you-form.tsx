@@ -43,6 +43,14 @@ function detectWeekStart(): "0" | "1" | null {
   return firstDay === 7 ? "0" : "1";
 }
 
+// profile.summary's parts as separate flex items, as before the shared message: the city, a "·" screen
+// readers skip, and the week start.
+const summaryTags = {
+  place: (c: ReactNode) => <span>{c}</span>,
+  dot: (c: ReactNode) => <span aria-hidden>{c}</span>,
+  week: (c: ReactNode) => <span>{c}</span>,
+};
+
 export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) {
   const { t, rich, locale } = useT();
   const weekdays = weekdayLabels(locale, "long");
@@ -99,7 +107,11 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
 
       {!showDetails && (
         <p className={cn("flex min-h-11 flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground", !detected && "invisible")}>
-          <span>{t("profile.summary", { city: cityOf(timezone), weekStart: weekStart === "0" ? "sun" : "mon" })}</span>
+          {rich("profile.summary", {
+            city: cityOf(timezone),
+            weekStart: weekStart === "0" ? "sun" : "mon",
+            ...summaryTags,
+          })}
           <span aria-hidden>·</span>
           <button
             type="button"

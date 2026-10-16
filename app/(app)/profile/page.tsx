@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Award, ChevronRight, Settings, Sparkles, Users, type LucideIcon } from "lucide-react";
 import { AvatarEdit } from "@/components/avatar-edit";
 import { LevelCard } from "@/components/profile/level-card";
@@ -19,8 +20,15 @@ const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/groups", label: "nav.groups", icon: Users },
 ];
 
+// profile.summary reads as one line here; the city is its own element, as on onboarding.
+const summaryTags = {
+  place: (c: ReactNode) => <span>{c}</span>,
+  dot: (c: ReactNode) => c,
+  week: (c: ReactNode) => c,
+};
+
 export default async function ProfilePage() {
-  const [{ profile }, level, { t }] = await Promise.all([getProfile(), getMyLevel(), getT()]);
+  const [{ profile }, level, { t, rich }] = await Promise.all([getProfile(), getMyLevel(), getT()]);
 
   return (
     <section className="flex flex-col gap-6 py-6">
@@ -36,7 +44,11 @@ export default async function ProfilePage() {
         <div className="min-w-0">
           <h1 className="text-xl font-bold">{profile.display_name}</h1>
           <p className="text-sm text-muted-foreground">
-            {t("profile.summary", { city: cityOf(profile.timezone), weekStart: profile.week_start === 0 ? "sun" : "mon" })}
+            {rich("profile.summary", {
+              city: cityOf(profile.timezone),
+              weekStart: profile.week_start === 0 ? "sun" : "mon",
+              ...summaryTags,
+            })}
           </p>
         </div>
       </div>
