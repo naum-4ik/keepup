@@ -116,6 +116,7 @@ jobs:
         run: npx playwright test e2e/sanity.spec.ts
         env:
           CI: "true"
+          KEEPUP_LOCALES: en,ru
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -163,6 +164,7 @@ jobs:
         run: npm run e2e
         env:
           CI: "true"
+          KEEPUP_LOCALES: en,ru
       - uses: actions/upload-artifact@v4
         if: failure() && github.event_name != 'push'
         with:

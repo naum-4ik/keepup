@@ -2,10 +2,11 @@ import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createTranslator } from "use-intl/core";
 import en from "@/supabase/functions/_shared/messages/en.json";
+import ru from "@/supabase/functions/_shared/messages/ru.json";
 import type { Rich } from "@/lib/list-nodes";
 import type { Locale, T } from "@/supabase/functions/_shared/i18n";
 
-const catalogs: Partial<Record<Locale, Record<string, unknown>>> = { en };
+const catalogs: Partial<Record<Locale, Record<string, unknown>>> = { en, ru };
 // Tests only: a translator that throws on a missing key or a broken message.
 export function tFor(locale: Locale, messages = catalogs[locale]): T {
   if (!messages) throw new Error(`no catalog for ${locale}`);
