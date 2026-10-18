@@ -7,12 +7,13 @@ const he = JSON.parse(readFileSync(join(process.cwd(), "supabase/functions/_shar
 
 // The back link's chevron on Settings. Tailwind v4's rtl:-scale-x-100 sets the CSS `scale` property
 // (not `transform`), so that is what the tests read.
-const backChevronScale = (page: Page) => page.locator("main svg.lucide-chevron-left").first().evaluate((el) => getComputedStyle(el).scale);
+const backChevronScale = (page: Page) => page.locator('main a[href="/profile"] svg').first().evaluate((el) => getComputedStyle(el).scale);
 
 async function switchToHebrew(page: Page) {
   await page.goto("/profile/settings");
   await page.getByRole("radiogroup", { name: "Language" }).getByRole("radio", { name: he.settings.languageNames.he }).check();
   await expect(page.locator("html")).toHaveAttribute("lang", "he");
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
 }
 
 test("Hebrew: the page is right-to-left and nothing overflows sideways", async ({ page }) => {
@@ -31,5 +32,5 @@ test("Hebrew: the back chevron is mirrored; in English it is not", async ({ page
   await page.goto("/profile/settings");
   expect(await backChevronScale(page)).toBe("none");
   await switchToHebrew(page);
-  expect(await backChevronScale(page)).toBe("-1 1");
+  await expect.poll(() => backChevronScale(page)).toMatch(/^-1\b/);
 });

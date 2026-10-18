@@ -72,7 +72,7 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
       {error && (
-        <p role="alert" className="max-w-48 text-right text-xs text-destructive">
+        <p role="alert" className="max-w-48 text-end text-xs text-destructive">
           {error}
         </p>
       )}
