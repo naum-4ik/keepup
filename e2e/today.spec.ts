@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { signUpAndOnboard } from "./helpers/auth";
 import { createGroup, createGroupHabitVia } from "./helpers/groups";
-import { createHabit, endHabitYesterday } from "./helpers/habits";
+import { createHabit, endHabitYesterday, weekIncludesYesterday } from "./helpers/habits";
 
 test("the Today card counts today's habits, cheers you on, and celebrates the last one", async ({ page }) => {
   await signUpAndOnboard(page);
@@ -33,6 +33,8 @@ test("with nothing due today, the card doesn't claim the day is done", async ({ 
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
   const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
   endHabitYesterday(id);
+  // Its days stay in this week on any weekday (on the week's first day there'd be no week to show).
+  weekIncludesYesterday(id);
   await page.reload();
   const card = page.getByRole("region", { name: "Today's progress" });
   await expect(card).not.toContainText("done");
