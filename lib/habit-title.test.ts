@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import en from "@/supabase/functions/_shared/messages/en.json";
 import { habitTitle, namedPayload, templateIdsIn } from "@/supabase/functions/_shared/habit-title";
 import { tEn, tFor } from "@/lib/i18n/test-t";
-import { habitNameFor, isRename, TEMPLATE_IDS, templateKept } from "./habit-title";
+import ru from "@/supabase/functions/_shared/messages/ru.json";
+import he from "@/supabase/functions/_shared/messages/he.json";
+import { habitNameFor, isRename, TEMPLATE_IDS, templateKept, templateTitlesIn } from "./habit-title";
 
 const tRu = tFor("ru");
 const tHe = tFor("he");
@@ -75,9 +77,9 @@ describe("isRename", () => {
     expect(isRename(habitNameFor(tRu), "Пить воду", stored)).toBe(false);
     expect(isRename(habitNameFor(tEn), "Drink water", stored)).toBe(false);
   });
-  it("a different name is a rename (even the stored English title under Russian)", () => {
+  it("a different name is a rename; the stored title is not", () => {
     expect(isRename(habitNameFor(tRu), "Пить воду утром", stored)).toBe(true);
-    expect(isRename(habitNameFor(tRu), "Drink water", stored)).toBe(true);
+    expect(isRename(habitNameFor(tRu), "Drink water", stored)).toBe(false);
   });
   it("a typed habit: the same title is no rename, a new one is", () => {
     const typed = { title: "Мой бег", template_id: null };
@@ -95,5 +97,22 @@ describe("templateKept", () => {
     expect(templateKept(tRu, "water", "Пить воду утром")).toBeUndefined();
     expect(templateKept(tRu, "treat.zoo", "Trip to the zoo")).toBeUndefined();
     expect(templateKept(tRu, undefined, "Пить воду")).toBeUndefined();
+  });
+});
+
+describe("isRename across a language switch", () => {
+  const all = [en, ru, he] as Record<string, unknown>[];
+  it("the template's title in any language is no rename (the form opened before the switch)", () => {
+    const stored = { title: "Drink water", template_id: "water" };
+    const titles = templateTitlesIn(all, stored.template_id);
+    expect(titles).toEqual(["Drink water", "Пить воду", "לשתות מים"]);
+    expect(isRename(habitNameFor(tEn), "Пить воду", stored, titles)).toBe(false);
+    expect(isRename(habitNameFor(tRu), "לשתות מים", stored, titles)).toBe(false);
+    expect(isRename(habitNameFor(tRu), "Вода", stored, titles)).toBe(true);
+  });
+  it("kid templates walk templates.kid; unknown ids have no titles", () => {
+    expect(templateTitlesIn(all, "kid.brush-teeth")).toEqual(["Brush teeth", "Почистить зубы", "לצחצח שיניים"]);
+    expect(templateTitlesIn(all, "treat.zoo")).toEqual([]);
+    expect(templateTitlesIn(all, null)).toEqual([]);
   });
 });

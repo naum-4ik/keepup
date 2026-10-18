@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { getProfile, requireUser } from "@/lib/auth";
 import { GROUP_TEMPLATES } from "@/lib/group-templates";
 import { HABIT_TEMPLATES } from "@/lib/habit-templates";
-import { habitNameFor, isRename, templateKept } from "@/lib/habit-title";
+import { habitNameFor, isRename, templateKept, templateTitlesIn } from "@/lib/habit-title";
+import en from "@/supabase/functions/_shared/messages/en.json";
+import ru from "@/supabase/functions/_shared/messages/ru.json";
+import he from "@/supabase/functions/_shared/messages/he.json";
 import { insertHabits, setHabitEnd } from "@/lib/habit-create";
 import { startAgainEnd } from "@/lib/habit-finish";
 import { todayIn } from "@/lib/dates";
@@ -154,12 +157,13 @@ export async function updateHabitDetails(habitId: string, _prev: FormActionState
   const { data: stored, error: readError } = await supabase.from("habits").select("title, template_id").eq("id", habitId).maybeSingle();
   if (readError || !stored) return { status: "error", message: t("errors.habit_not_found") };
   const { title, ...rest } = parsed.value;
+  const renamed = isRename(habitNameFor(t), title, stored, templateTitlesIn([en, ru, he], stored.template_id));
   const { error } = await supabase
     .from("habits")
-    .update({ ...rest, ...(isRename(habitNameFor(t), title, stored) ? { title } : {}), ...(startsOn ? { starts_on: startsOn } : {}) })
+    .update({ ...rest, ...(renamed ? { title } : {}), ...(startsOn ? { starts_on: startsOn } : {}) })
     .eq("id", habitId);
   if (error) return { status: "error", message: habitErrorMessage(t, error) };
-  track("habit_edited", who, { "habit.id": habitId, "habit.title": parsed.value.title, "habit.category": parsed.value.category ?? undefined });
+  track("habit_edited", who, { "habit.id": habitId, "habit.title": renamed ? title : stored.title, "habit.category": parsed.value.category ?? undefined });
   refresh(habitId);
   return { status: "saved" };
 }
