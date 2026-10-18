@@ -17,6 +17,6 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
     // Languages people can pick besides English (i18n/config.ts enabledLocales).
-    env: { KEEPUP_LOCALES: "en,ru" },
+    env: { KEEPUP_LOCALES: "en,ru,he" },
   },
 });
