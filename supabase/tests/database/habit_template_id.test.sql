@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(33);
+select plan(36);
 
 -- Habits remember the template they came from (task 8.5): backfill by English title, cleared on
 -- rename, stored by the create paths, returned by the reads.
@@ -137,6 +137,26 @@ select is((select string_agg(h.title || '=' || coalesce(h.template_id, '-'), ', 
                                   and p.group_id in (select m.group_id from public.group_members m where m.user_id = '00000000-0000-0000-0000-0000000085c1'))),
   'Brush teeth=kid.brush-teeth, Drink water=water, Family dinner=g-family-dinner, Meditate=meditate, Read=-, Read a story=-, Tidy toys=-, Walk=-, Walk together=-',
   'demo: template habits carry their template');
+
+-- Recaps (live, public.recaps → recap_impl): Sam's last week names Family dinner's template.
+select is((select e ->> 'template'
+             from jsonb_array_elements(private.recap_impl('00000000-0000-0000-0000-0000000085c1', 'week',
+                    private.period_start('week', private.local_date(now(), 'Europe/Berlin'), 1::smallint) - 7, now()) -> 'top') e
+            where e ->> 'title' = 'Family dinner'), 'g-family-dinner', 'recap top items carry the template');
+select ok(private.recap_impl('00000000-0000-0000-0000-0000000085c1', 'week',
+            private.period_start('week', private.local_date(now(), 'Europe/Berlin'), 1::smallint) - 7, now()) -> 'longest' ? 'template',
+  'recap longest carries the template key');
+
+-- The daily summary's items carry the template.
+update public.profiles set timezone = 'UTC', reminder_hour = extract(hour from now() at time zone 'UTC')::int
+ where id = '00000000-0000-0000-0000-0000000085a1';
+insert into public.push_subscriptions (user_id, endpoint, p256dh, auth)
+values ('00000000-0000-0000-0000-0000000085a1', 'https://push.example.com/tpl-anna', 'p256dh', 'auth');
+select private.enqueue_reminders(now());
+select is((select string_agg(distinct e ->> 'template', ',')
+             from public.notifications n cross join jsonb_array_elements(n.payload -> 'todo') e
+            where n.user_id = '00000000-0000-0000-0000-0000000085a1' and n.kind = 'daily_summary' and e ->> 'title' = 'Date night'),
+  'date-night', 'daily summary todo items carry the template');
 
 select * from finish();
 rollback;
