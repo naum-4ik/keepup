@@ -26,6 +26,7 @@ export function releaseLabel(r: Release, appVersion: string, locale: Locale, t: 
 export const RELEASES: Release[] = [
   {
     version: "1.5.0",
+    date: "2026-10-18",
     notes: {
       en: [
         "Keepup speaks Russian and Hebrew too. It follows your phone's language; change it any time in Profile → Settings → Language. Hebrew is laid out right to left.",
