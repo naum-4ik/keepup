@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.6.0](https://github.com/naum-4ik/keepup/compare/v1.5.0...v1.6.0) (2026-10-18)
+
+
+### Features
+
+* **db:** template id in family recaps, kid gender in the feed ([#244](https://github.com/naum-4ik/keepup/issues/244)) ([e78b432](https://github.com/naum-4ik/keepup/commit/e78b43288f68683390612968ca27831102674463))
+* **demo:** looks live on any day, in the visitor's language ([#247](https://github.com/naum-4ik/keepup/issues/247)) ([bafc167](https://github.com/naum-4ik/keepup/commit/bafc1675af81a66d409d121413c2945d66450b9b))
+* **push:** a log of every push attempt ([#248](https://github.com/naum-4ik/keepup/issues/248)) ([450803a](https://github.com/naum-4ik/keepup/commit/450803a0920e4ecad3a0af98075b284c4e06d824))
+
+
+### Bug Fixes
+
+* **i18n:** kid lines by gender, lighter pages, small display leftovers ([#246](https://github.com/naum-4ik/keepup/issues/246)) ([1ddab59](https://github.com/naum-4ik/keepup/commit/1ddab59ee785b5f50a46f55d43a61766a5f706ea))
+
 ## [1.5.0](https://github.com/naum-4ik/keepup/compare/v1.4.0...v1.5.0) (2026-10-18)
 
 
