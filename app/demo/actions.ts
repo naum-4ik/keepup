@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { whereFrom } from "@/lib/geo";
+import { getT } from "@/lib/i18n/server";
 import { track } from "@/lib/log";
 import { safeNextPath, withNext } from "@/lib/paths";
 import { createClient } from "@/lib/supabase/server";
@@ -18,7 +19,15 @@ export async function startDemo(formData: FormData): Promise<void> {
   if (!data.claims.is_anonymous) redirect("/today");
   // The page may post before hydration fills the zone in; the database falls back to UTC for a bad one.
   const timezone = String(formData.get("timezone") || "UTC");
-  const { error } = await supabase.rpc("start_demo", { p_timezone: timezone });
+  // The group and the treat are stored names: seed them in the visitor's language.
+  const { t } = await getT();
+  let { error } = await supabase.rpc("start_demo", {
+    p_timezone: timezone,
+    p_group_name: t("groups.defaultFamily"),
+    p_treat_title: t("templates.treat.playground"),
+  });
+  // Deploy order: a database without the new params yet (PGRST202: no such function) seeds in English.
+  if (error?.code === "PGRST202") ({ error } = await supabase.rpc("start_demo", { p_timezone: timezone }));
   if (error) {
     await supabase.auth.signOut({ scope: "local" });
     redirect("/?demo=failed");

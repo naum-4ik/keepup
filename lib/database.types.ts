@@ -1133,7 +1133,7 @@ isOneToOne: false
         isSetofReturn: false
       } },
 "start_demo":
-{ Args: { "p_timezone": string }; Returns: undefined
+{ Args: { "p_group_name"?: string,"p_timezone": string,"p_treat_title"?: string }; Returns: undefined
                            },
 "undo_check_in":
 { Args: { "p_check_in_id": string }; Returns: undefined

@@ -14,7 +14,7 @@ test("Try it: a full account in under 5 seconds, with a check-in to approve", as
   const signIn = page.waitForRequest((r) => r.method() === "POST" && r.url().includes("/auth/v1/signup"));
   await page.getByRole("button", { name: "Try the demo" }).click();
   await signIn;
-  await expect(page.getByRole("button", { name: "Check in: \u2068Read\u2069", exact: true })).toBeVisible({ timeout: 5000 });
+  await expect(page.getByRole("button", { name: "Check in: \u2068Read 20 min\u2069", exact: true })).toBeVisible({ timeout: 5000 });
   expect(Date.now() - started).toBeLessThan(5000);
   await expect(page).toHaveURL(/\/today/);
 
@@ -89,7 +89,7 @@ test("Try it on a stale landing tab keeps the real login", async ({ page, contex
 
   await stale.getByRole("button", { name: "Try the demo" }).click();
   await expect(stale).toHaveURL(/\/today/);
-  await expect(stale.getByRole("button", { name: "Check in: \u2068Read\u2069", exact: true })).toHaveCount(0);
+  await expect(stale.getByRole("button", { name: "Check in: \u2068Read 20 min\u2069", exact: true })).toHaveCount(0);
   await stale.goto("/profile");
   await expect(stale.getByText("Stale Tab").first()).toBeVisible();
 });
