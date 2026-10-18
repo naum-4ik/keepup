@@ -62,7 +62,7 @@ export default async function ProfilePage() {
                   <Icon className="size-5" />
                 </span>
                 <span className="flex-1 font-semibold">{t(label)}</span>
-                <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
+                <ChevronRight aria-hidden className="size-5 text-muted-foreground rtl:-scale-x-100" />
               </Link>
             </li>
           ))}

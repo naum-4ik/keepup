@@ -34,7 +34,7 @@ export function CountStepper({
         onClick={() => step(-1)}
         disabled={count <= 1}
         aria-label={t("decrease")}
-        className="flex size-11 shrink-0 items-center justify-center rounded-l-xl text-primary enabled:hover:bg-accent disabled:text-muted-foreground/50"
+        className="flex size-11 shrink-0 items-center justify-center rounded-s-xl text-primary enabled:hover:bg-accent disabled:text-muted-foreground/50"
       >
         <Minus aria-hidden className="size-4" />
       </button>
@@ -55,7 +55,7 @@ export function CountStepper({
         onClick={() => step(1)}
         disabled={count >= limit}
         aria-label={t("increase")}
-        className="flex size-11 shrink-0 items-center justify-center rounded-r-xl text-primary enabled:hover:bg-accent disabled:text-muted-foreground/50"
+        className="flex size-11 shrink-0 items-center justify-center rounded-e-xl text-primary enabled:hover:bg-accent disabled:text-muted-foreground/50"
       >
         <Plus aria-hidden className="size-4" />
       </button>

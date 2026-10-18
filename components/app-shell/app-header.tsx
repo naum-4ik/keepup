@@ -32,7 +32,7 @@ export async function AppHeader({
           {unread > 0 && (
             <span
               aria-hidden
-              className="absolute top-1 right-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-primary px-1 text-[0.6875rem] leading-none font-bold text-primary-foreground tabular-nums ring-2 ring-background"
+              className="absolute top-1 end-0.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-primary px-1 text-[0.6875rem] leading-none font-bold text-primary-foreground tabular-nums ring-2 ring-background"
             >
               {unread > 9 ? "9+" : unread}
             </span>

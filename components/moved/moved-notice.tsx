@@ -47,7 +47,7 @@ export function MovedNotice() {
 
   if (!show) return null;
   return (
-    <div className="mx-auto mt-2 flex w-[calc(100%-2rem)] max-w-[calc(28rem-2rem)] items-start gap-2 rounded-xl bg-muted py-2 pl-4 pr-1 text-sm font-semibold text-muted-foreground">
+    <div className="mx-auto mt-2 flex w-[calc(100%-2rem)] max-w-[calc(28rem-2rem)] items-start gap-2 rounded-xl bg-muted py-2 ps-4 pe-1 text-sm font-semibold text-muted-foreground">
       <p className="flex-1 py-1">
         <span role="status">{t("moved.notice")}</span>{" "}
         <Link href="/install" className="text-primary underline underline-offset-4">

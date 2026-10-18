@@ -98,13 +98,13 @@ export function KidCheckInButton({
           <Icon className="size-5" strokeWidth={2.5} aria-hidden />
         </button>
         {star > 0 && (
-          <span key={star} aria-hidden className="pointer-events-none absolute -top-3 -left-3 text-xl leading-none motion-safe:animate-star">
+          <span key={star} aria-hidden className="pointer-events-none absolute -top-3 -start-3 text-xl leading-none motion-safe:animate-star">
             ⭐
           </span>
         )}
       </div>
       {error && (
-        <p role="alert" className="max-w-40 text-right text-xs text-destructive">
+        <p role="alert" className="max-w-40 text-end text-xs text-destructive">
           {error}
         </p>
       )}

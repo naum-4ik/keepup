@@ -76,8 +76,8 @@ export default async function GroupPage({
 
   return (
     <section className="flex flex-col gap-4 pt-2 pb-6">
-      <Link href="/groups" className="-ml-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
-        <ChevronLeft aria-hidden className="size-4" />
+      <Link href="/groups" className="-ms-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
+        <ChevronLeft aria-hidden className="size-4 rtl:-scale-x-100" />
         {tg("nav.groups")}
       </Link>
 
@@ -124,7 +124,7 @@ export default async function GroupPage({
                   <span className="truncate font-semibold">{c.name}</span>
                   <span className="text-xs text-muted-foreground">{t("child")}</span>
                 </span>
-                <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
+                <ChevronRight aria-hidden className="size-5 text-muted-foreground rtl:-scale-x-100" />
               </Link>
             </li>
           ))}

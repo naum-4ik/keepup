@@ -199,7 +199,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           <span className="flex-1 font-semibold">
             {tt("approvalsWaiting", { n: approvals.length })}
           </span>
-          <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
+          <ChevronRight aria-hidden className="size-5 text-muted-foreground rtl:-scale-x-100" />
         </Link>
       )}
       {/* Always rendered, so the card survives a refresh after it was seen (EveryoneDidIt). */}
@@ -261,7 +261,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
                       <Avatar name={s.title} emoji={s.avatar?.emoji} color={s.avatar?.color} size="sm" />
                     </span>
                     <span className="truncate">{s.title}</span>
-                    <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+                    <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground rtl:-scale-x-100" />
                   </Link>
                 )}
               </h2>

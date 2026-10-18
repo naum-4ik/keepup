@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import type { GroupMember } from "@/lib/groups";
 import { isolate } from "@/supabase/functions/_shared/i18n";
 
-const menuItem = "flex min-h-11 w-full items-center rounded-xl px-3 text-left text-sm font-semibold hover:bg-muted disabled:opacity-50";
+const menuItem = "flex min-h-11 w-full items-center rounded-xl px-3 text-start text-sm font-semibold hover:bg-muted disabled:opacity-50";
 
 export function MemberRow({
   groupId,
@@ -88,7 +88,7 @@ export function MemberRow({
             >
               <Ellipsis aria-hidden className="size-5" />
             </summary>
-            <div className="absolute right-0 z-10 mt-1 flex w-52 flex-col rounded-2xl bg-card p-1 shadow-soft ring-1 ring-border">
+            <div className="absolute end-0 z-10 mt-1 flex w-52 flex-col rounded-2xl bg-card p-1 shadow-soft ring-1 ring-border">
               <button
                 type="button"
                 disabled={pending}
@@ -116,7 +116,7 @@ export function MemberRow({
 
       <Dialog open={confirming} onOpenChange={(next) => !pending && setConfirming(next)}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pr-10">
+          <div className="flex flex-col gap-1 pe-10">
             <DialogTitle>{t.rich("removeTitle", { name: member.name, bdi })}</DialogTitle>
             <DialogDescription>
               {t.rich("removeDescription", { group: groupName, bdi })}

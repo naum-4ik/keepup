@@ -62,7 +62,7 @@ export function PickHabits({ templates, joined }: { templates: HabitTemplate[]; 
                   aria-pressed={on}
                   onClick={() => toggle(t.id)}
                   className={cn(
-                    "relative flex min-h-[4.75rem] items-center gap-2.5 rounded-2xl bg-card py-2.5 pr-8 pl-3 text-left shadow-soft transition-colors",
+                    "relative flex min-h-[4.75rem] items-center gap-2.5 rounded-2xl bg-card py-2.5 pe-8 ps-3 text-start shadow-soft transition-colors",
                     on ? "bg-accent ring-2 ring-primary hover:brightness-[0.98]" : "hover:bg-muted",
                   )}
                 >
@@ -74,7 +74,7 @@ export function PickHabits({ templates, joined }: { templates: HabitTemplate[]; 
                   <span
                     aria-hidden
                     className={cn(
-                      "absolute top-2 right-2 flex size-5 items-center justify-center rounded-full border-2",
+                      "absolute top-2 end-2 flex size-5 items-center justify-center rounded-full border-2",
                       on ? "border-primary bg-primary text-primary-foreground" : "border-input",
                     )}
                   >

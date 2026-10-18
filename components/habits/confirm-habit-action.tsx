@@ -39,7 +39,7 @@ export function ConfirmHabitAction({
       </Button>
       <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pr-10">
+          <div className="flex flex-col gap-1 pe-10">
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>
           </div>

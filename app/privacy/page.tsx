@@ -18,8 +18,8 @@ export default async function PrivacyPage() {
 
   return (
     <main className="mx-auto w-full max-w-md px-4 py-6">
-      <Link href="/" className="-ml-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
-        <ChevronLeft aria-hidden className="size-4" />
+      <Link href="/" className="-ms-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
+        <ChevronLeft aria-hidden className="size-4 rtl:-scale-x-100" />
         Keepup
       </Link>
       <article

@@ -63,7 +63,7 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
       </Button>
       <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pr-10">
+          <div className="flex flex-col gap-1 pe-10">
             <DialogTitle>{t("settings.reset.dialogTitle")}</DialogTitle>
             <DialogDescription>
               {t("settings.reset.dialogBody", { clears: t("settings.reset.clears"), keeps: t("settings.reset.keeps") })}

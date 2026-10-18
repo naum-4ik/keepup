@@ -42,7 +42,7 @@ export function AvatarEdit({
         <Avatar name={name} emoji={emoji} color={color} className={cn("size-20 text-4xl font-bold", className)} />
         <span
           aria-hidden
-          className="absolute -right-0.5 -bottom-0.5 flex size-8 items-center justify-center rounded-full border-2 border-background bg-card text-muted-foreground shadow-soft"
+          className="absolute -end-0.5 -bottom-0.5 flex size-8 items-center justify-center rounded-full border-2 border-background bg-card text-muted-foreground shadow-soft"
         >
           <Pencil className="size-3.5" />
         </span>
@@ -55,7 +55,7 @@ export function AvatarEdit({
             trigger.current?.focus();
           }}
         >
-          <div className="flex flex-col gap-1 pr-10">
+          <div className="flex flex-col gap-1 pe-10">
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>
           </div>

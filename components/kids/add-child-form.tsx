@@ -28,7 +28,7 @@ export function KidTemplateTile({ template, selected }: { template: KidTemplate;
       <span aria-hidden className="flex size-14 shrink-0 items-center justify-center rounded-full bg-accent text-3xl leading-none select-none">
         {template.emoji}
       </span>
-      <span className="flex min-w-0 flex-1 flex-col text-left">
+      <span className="flex min-w-0 flex-1 flex-col text-start">
         <span className="font-bold leading-tight">{kidTemplateTitle(tr, template.id)}</span>
         <span className="text-xs text-muted-foreground">{describeSchedule(tr, template.targetCount, template.period)}</span>
       </span>
@@ -132,7 +132,7 @@ export function AddChildForm({ groupId }: { groupId: string }) {
         ) : (
           <ul className="flex flex-col gap-2">
             {chosen.map((t) => (
-              <li key={t.id} className="flex min-h-14 items-center gap-3 rounded-2xl bg-card py-2 pr-1 pl-2 shadow-soft">
+              <li key={t.id} className="flex min-h-14 items-center gap-3 rounded-2xl bg-card py-2 pe-1 ps-2 shadow-soft">
                 <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-2xl leading-none select-none">
                   {t.emoji}
                 </span>
@@ -164,7 +164,7 @@ export function AddChildForm({ groupId }: { groupId: string }) {
 
       <Dialog open={choosing} onOpenChange={setChoosing}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pr-10">
+          <div className="flex flex-col gap-1 pe-10">
             <DialogTitle>{tf("habitsToStart")}</DialogTitle>
             <DialogDescription>{tf("chooseHint")}</DialogDescription>
           </div>

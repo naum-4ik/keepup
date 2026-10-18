@@ -83,9 +83,9 @@ export default async function KidPage({
       <RenderedTaps ids={renderedTaps} periods={tapPeriods(habits, () => group?.timezone ?? profile.timezone)} />
       <Link
         href={`/groups/${child.group_id}`}
-        className="-ml-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+        className="-ms-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
       >
-        <ChevronLeft aria-hidden className="size-4 shrink-0" />
+        <ChevronLeft aria-hidden className="size-4 shrink-0 rtl:-scale-x-100" />
         <span className="truncate">{child.group_name}</span>
       </Link>
 
@@ -158,7 +158,7 @@ export default async function KidPage({
                     />
                   </div>
                   {mine.map((c) => (
-                    <div key={c.id} className="ml-17 flex min-h-11 items-center justify-between gap-2 rounded-xl bg-muted py-1 pr-1 pl-3 text-sm">
+                    <div key={c.id} className="ms-17 flex min-h-11 items-center justify-between gap-2 rounded-xl bg-muted py-1 pe-1 ps-3 text-sm">
                       <span>{logged(c.logged_by, c.created_at)}</span>
                       <UndoForChildButton
                         checkInId={c.id}
@@ -210,7 +210,7 @@ function HabitLinks({ title, habits }: { title: string; habits: HabitSummary[] }
             <Link href={`/habits/${h.habit_id}`} className="-mx-2 flex min-h-11 items-center gap-3 rounded-xl px-2 py-1 hover:bg-muted/60">
               <HabitEmoji category={h.category} emoji={h.emoji} size="xs" />
               <span className="min-w-0 flex-1 truncate font-semibold">{h.title}</span>
-              <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+              <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground rtl:-scale-x-100" />
             </Link>
           </li>
         ))}

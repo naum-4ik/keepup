@@ -82,7 +82,7 @@ export function TurnOnReminders({ hour, label, onDone }: { hour: number; label?:
           ) : support === "needs-install" ? (
             <>
               <DialogDescription>{pushSupportText(t, "needs-install")}</DialogDescription>
-              <ol className="flex list-decimal flex-col gap-2 pl-5 text-sm">
+              <ol className="flex list-decimal flex-col gap-2 ps-5 text-sm">
                 <li>{tx("stepShare")}</li>
                 <li>{tx("stepAdd")}</li>
                 <li>{tx("stepOpen")}</li>

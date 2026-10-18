@@ -11,8 +11,8 @@ export default async function NewGroupPage() {
   const tn = await getTranslations("nav");
   return (
     <section className="flex flex-col gap-3 pt-2 pb-6">
-      <Link href="/groups" className="-ml-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
-        <ChevronLeft aria-hidden className="size-4" />
+      <Link href="/groups" className="-ms-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
+        <ChevronLeft aria-hidden className="size-4 rtl:-scale-x-100" />
         {tn("groups")}
       </Link>
       <h1 className="text-xl font-bold">{t("newGroup")}</h1>

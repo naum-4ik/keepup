@@ -24,7 +24,7 @@ export function FamilyRecapCard({ cardKey, group, line }: { cardKey: string; gro
           setHidden(true);
           void dismissCard(cardKey);
         }}
-        className="-mr-2 flex size-11 shrink-0 items-center justify-center self-start rounded-full text-muted-foreground hover:bg-muted"
+        className="-me-2 flex size-11 shrink-0 items-center justify-center self-start rounded-full text-muted-foreground hover:bg-muted"
       >
         <X aria-hidden className="size-5" />
       </button>

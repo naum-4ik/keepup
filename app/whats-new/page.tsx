@@ -8,8 +8,8 @@ export default async function WhatsNewPage() {
   const { t, locale } = await getT();
   return (
     <main className="mx-auto flex max-w-md flex-col gap-3 px-4 py-6">
-      <Link href="/profile" className="-ml-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
-        <ChevronLeft aria-hidden className="size-4" />
+      <Link href="/profile" className="-ms-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
+        <ChevronLeft aria-hidden className="size-4 rtl:-scale-x-100" />
         {t("nav.profile")}
       </Link>
       <h1 className="text-xl font-bold">{t("profile.links.whatsNew")}</h1>
@@ -21,7 +21,7 @@ export default async function WhatsNewPage() {
             </h2>
             <span className="text-sm text-muted-foreground">{releaseLabel(r, pkg.version, locale, t)}</span>
           </div>
-          <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm">
+          <ul className="flex list-disc flex-col gap-1.5 ps-5 text-sm">
             {notesFor(r, locale).map((n) => (
               <li key={n}>{n}</li>
             ))}
