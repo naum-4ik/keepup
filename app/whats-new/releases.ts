@@ -26,6 +26,7 @@ export function releaseLabel(r: Release, appVersion: string, locale: Locale, t: 
 export const RELEASES: Release[] = [
   {
     version: "1.6.0",
+    date: "2026-10-18",
     notes: {
       en: [
         "The demo (Try the demo) now feels like a real family on any day, and in your language: suggested habits, the family name and the treat goal show in your language, the kid's garden has room to grow, and the Inbox has a cheer and a nudge.",
