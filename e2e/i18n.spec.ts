@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import { completeOnboarding, signIn, signUp, uniqueEmail } from "./helpers/auth";
+import { createHabit } from "./helpers/habits";
 
 // The Russian words come from the catalog, so a wording fix there doesn't break these tests.
 const ru = JSON.parse(readFileSync(join(process.cwd(), "supabase/functions/_shared/messages/ru.json"), "utf8"));
@@ -83,4 +84,48 @@ test("Settings → Language → Русский switches the app, and the profile
   await expect(page2.locator("html")).toHaveAttribute("lang", "ru");
   await expect(page2.getByRole("heading", { name: ru.today.title, exact: true })).toBeVisible();
   await other.close();
+});
+
+test("a template habit shows in the chosen language; a typed or renamed one stays as typed", async ({ page }) => {
+  const en = { water: "Drink water", typed: "Morning swim", renamed: "Water before coffee" };
+  const ruWater: string = ru.templates.water;
+  await signUp(page, uniqueEmail());
+  await completeOnboarding(page);
+  await createHabit(page, { template: en.water });
+  await createHabit(page, { title: en.typed, count: 1, period: "day" });
+  // ru.settings.languageNames.en is "English" too: the radios name each language in itself.
+  const language = async (name: string) => {
+    await page.goto("/profile/settings");
+    await page.getByRole("radio", { name, exact: true }).check();
+    await expect(page.locator("html")).toHaveAttribute("lang", name === "English" ? "en" : "ru");
+  };
+
+  await language(ru.settings.languageNames.ru);
+  await page.goto("/today");
+  await expect(page.getByRole("link", { name: ruWater, exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: en.typed, exact: true })).toBeVisible();
+  await expect(page.getByText(en.water, { exact: true })).toHaveCount(0);
+
+  // Editing something else, with the name left as shown (in Russian), keeps the template.
+  await page.getByRole("link", { name: ruWater, exact: true }).click();
+  await page.locator("summary").filter({ hasText: new RegExp(`^${ru.habits.detail.manage.edit.title}`) }).click();
+  await expect(page.getByLabel(ru.habits.form.titleLabel, { exact: true })).toHaveValue(ruWater);
+  await page.getByLabel(ru.habits.form.categoryLabel, { exact: true }).selectOption("fitness");
+  await page.getByRole("button", { name: ru.common.save, exact: true }).click();
+  await expect(page.getByRole("main").getByRole("status")).toHaveText(ru.common.saved);
+  const habitUrl = page.url();
+  await language("English");
+  await page.goto(habitUrl);
+  await expect(page.getByRole("heading", { name: en.water, exact: true })).toBeVisible();
+
+  // Renamed: the typed name in both languages.
+  await page.locator("summary").filter({ hasText: /^Edit details/ }).click();
+  await page.getByLabel("Title", { exact: true }).fill(en.renamed);
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");
+  await expect(page.getByRole("heading", { name: en.renamed, exact: true })).toBeVisible();
+  await language(ru.settings.languageNames.ru);
+  await page.goto("/today");
+  await expect(page.getByRole("link", { name: en.renamed, exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: ruWater, exact: true })).toHaveCount(0);
 });
