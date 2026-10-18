@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Effective date:** 15 October 2026
+**Effective date:** 18 October 2026
 
 This policy explains what personal data Keepup ("the app", "we") processes, why, for how long, who we share it with, and the rights you have. It applies to the Keepup web app at its published address and to any installed version of it.
 
@@ -174,7 +174,7 @@ No system is perfectly secure. If a personal data breach is likely to put you at
 
 If we change this policy in a meaningful way, we will say so in the app's What's new before the change takes effect. The effective date at the top always shows the current version.
 
-- **15 October 2026:** you can choose the app's language (English, Russian or Hebrew), saved with your profile and in a cookie on your device; a parent or guardian can optionally set boy or girl for a child, used only to choose words in Russian and Hebrew (sections 2, 9 and 10).
+- **18 October 2026:** you can choose the app's language (English, Russian or Hebrew), saved with your profile and in a cookie on your device; a parent or guardian can optionally set boy or girl for a child, used only to choose words in Russian and Hebrew (sections 2, 9 and 10).
 - **12 October 2026:** each sign-up and demo start also sends us an email alert with your email address or demo ID, IP address and its country and city, kept up to 90 days (sections 2, 5 and 6).
 - **11 October 2026:** sign-ups, sign-ins and demo starts also record your IP address and the country, region and city it points to (sections 2 and 5).
 - **8 October 2026:** added the events the app records for each action and the error and speed reports your browser sends (section 2), and what Grafana Labs receives from both (section 5).

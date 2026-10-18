@@ -25,6 +25,29 @@ export function releaseLabel(r: Release, appVersion: string, locale: Locale, t: 
 
 export const RELEASES: Release[] = [
   {
+    version: "1.5.0",
+    notes: {
+      en: [
+        "Keepup speaks Russian and Hebrew too. It follows your phone's language; change it any time in Profile → Settings → Language. Hebrew is laid out right to left.",
+        "Habits added from Keepup's suggestions show their name in your language. Names you typed yourself stay as you wrote them.",
+        "Kids can have boy or girl set (optional), so Russian and Hebrew can say ‘well done’ the right way.",
+        "Privacy: Keepup remembers your language on your profile and in a cookie on your device, and a kid's boy or girl if you set it. The privacy policy says so.",
+      ],
+      ru: [
+        "Keepup теперь говорит по-русски и на иврите. Язык берётся из настроек телефона; сменить его можно в «Профиль → Настройки → Язык». Иврит отображается справа налево.",
+        "Привычки из подсказок Keepup показываются на вашем языке. Названия, которые вы написали сами, остаются как есть.",
+        "Для ребёнка можно указать «мальчик» или «девочка» (по желанию), чтобы по-русски и на иврите хвалить правильно.",
+        "Конфиденциальность: Keepup запоминает ваш язык в профиле и в cookie на устройстве, а также пол ребёнка, если вы его указали. Об этом сказано в политике конфиденциальности.",
+      ],
+      he: [
+        "Keepup מדבר עכשיו גם רוסית ועברית. השפה נלקחת מהטלפון; אפשר לשנות אותה בכל זמן ב„פרופיל ← הגדרות ← שפה”. העברית מוצגת מימין לשמאל.",
+        "הרגלים שנוספו מההצעות של Keepup מוצגים בשפה שלכם. שמות שכתבתם בעצמכם נשארים כפי שכתבתם.",
+        "לילדים אפשר לציין בן או בת (לא חובה), כדי שברוסית ובעברית יגידו להם „כל הכבוד” בצורה הנכונה.",
+        "פרטיות: Keepup שומר את השפה שלכם בפרופיל ובעוגייה במכשיר, וגם בן או בת של ילד אם ציינתם. מדיניות הפרטיות מפרטת זאת.",
+      ],
+    },
+  },
+  {
     version: "1.4.0",
     date: "2026-10-14",
     notes: [
