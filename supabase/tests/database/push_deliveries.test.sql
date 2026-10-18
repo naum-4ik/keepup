@@ -3,7 +3,7 @@
 -- can't be dispatched (empty Vault; daily summary due without a device).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(22);
+select plan(24);
 
 select tests.create_user('00000000-0000-0000-0000-0000000000a1', 'anna@example.com', '{"full_name":"Anna"}');
 select tests.create_user('00000000-0000-0000-0000-0000000000b1', 'dan@example.com', '{"full_name":"Dan"}');
@@ -30,6 +30,9 @@ reset role;
 select is((select count(*)::int from public.push_deliveries where outcome in ('sent', 'gone')), 2, 'the log is unchanged');
 select ok(not has_table_privilege('anon', 'public.push_deliveries', 'select'), 'anonymous visitors read nothing');
 select ok(has_table_privilege('service_role', 'public.push_deliveries', 'insert'), 'the service role (send-push) inserts');
+select ok(not has_table_privilege('service_role', 'public.push_deliveries', 'update')
+          and not has_table_privilege('service_role', 'public.push_deliveries', 'delete'),
+  'append-only: not even the service role updates or deletes');
 
 -- 2. Retention: the daily job deletes log rows after 30 days and still trims the feed at 60.
 insert into public.push_deliveries (created_at, user_id, kind, outcome) values
@@ -57,9 +60,17 @@ insert into t select 'nudge', (select id from public.notifications where user_id
 select ok((select push from public.notifications where id = (select v from t where k = 'nudge')), 'the nudge is flagged for push');
 select results_eq(
   $$select notification_id, kind, outcome, reason, status, endpoint_host from public.push_deliveries
-     where user_id = '00000000-0000-0000-0000-0000000000b1' and outcome = 'skipped'$$,
+     where user_id = '00000000-0000-0000-0000-0000000000b1' and kind = 'nudge' and notification_id is not null$$,
   $$values ((select v from t where k = 'nudge'), 'nudge'::text, 'skipped'::text, 'no_vault_url'::text, null::int, null::text)$$,
   'no Vault URL: one skipped row, pointing at the feed row');
+-- No device: one 'no_device' row (Anna has none), nothing called.
+select private.nudge_impl('00000000-0000-0000-0000-0000000000b1', (select v from t where k = 'gym'), '00000000-0000-0000-0000-0000000000a1', 'you_got_this', now());
+select results_eq(
+  $$select notification_id, kind, outcome, reason from public.push_deliveries
+     where user_id = '00000000-0000-0000-0000-0000000000a1' and kind = 'nudge' and outcome = 'skipped'$$,
+  $$select id, 'nudge'::text, 'skipped'::text, 'no_device'::text from public.notifications
+     where user_id = '00000000-0000-0000-0000-0000000000a1' and kind = 'nudge'$$,
+  'a push to someone without a device: one no_device row for that feed row');
 delete from public.notifications where id = (select v from t where k = 'nudge');
 select is((select count(*)::int from public.push_deliveries where reason = 'no_vault_url' and notification_id is null), 1,
   'the log row outlives its feed row (notification_id set null)');

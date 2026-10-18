@@ -4,7 +4,7 @@
 -- Written by send-push (service role: sent / gone / failed per device, skipped 'no_device') and by the
 -- database where a push can't be dispatched. Redefined from their latest definitions; only the log
 -- insert is added:
---   private.dispatch_push       20261002100000_notification_prefs_push.sql (skipped 'no_vault_url')
+--   private.dispatch_push       20261002100000_notification_prefs_push.sql (skipped 'no_device' / 'no_vault_url')
 --   private.enqueue_reminders   20261024110000_template_id_recaps_reminders.sql (skipped 'no_device')
 --   cron 'keepup-feed-retention' 20260930100300_feed_nudges_cheers.sql (+ 30-day delete of this log)
 -- Privacy: only the push service's host is kept, never the endpoint URL or its keys.
@@ -27,9 +27,12 @@ create policy "push_deliveries: read own" on public.push_deliveries
   for select to authenticated using (user_id = (select auth.uid()));
 revoke all on public.push_deliveries from anon, authenticated;
 grant select on public.push_deliveries to authenticated;
+-- Append-only: the service role (send-push) inserts and reads, never rewrites. Retention runs as postgres.
 grant select, insert on public.push_deliveries to service_role;
+revoke update, delete, truncate on public.push_deliveries from service_role;
 
--- The database webhook. Unchanged except: a missing Vault URL or secret is logged, not silent.
+-- The database webhook. Unchanged except: no device, or a missing Vault URL or secret, is logged, not
+-- silent. The device check moved inside the exception block so its log insert can't break the action.
 create or replace function private.dispatch_push()
 returns trigger
 language plpgsql
@@ -40,10 +43,12 @@ declare
   v_url text;
   v_secret text;
 begin
-  if not exists (select 1 from public.push_subscriptions ps where ps.user_id = new.user_id) then
-    return null;
-  end if;
   begin
+    if not exists (select 1 from public.push_subscriptions ps where ps.user_id = new.user_id) then
+      insert into public.push_deliveries (notification_id, user_id, kind, outcome, reason)
+      values (new.id, new.user_id, new.kind, 'skipped', 'no_device');
+      return null;
+    end if;
     select s.decrypted_secret into v_url from vault.decrypted_secrets s where s.name = 'send_push_url';
     select s.decrypted_secret into v_secret from vault.decrypted_secrets s where s.name = 'send_push_secret';
     if v_url is null or v_secret is null then

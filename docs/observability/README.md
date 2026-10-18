@@ -90,16 +90,22 @@ sum by (habit_title) (count_over_time({service_name="keepup"} | event_name="keep
 From a trace to the database: `user.id` is `auth.users.id` and `profiles.id`; `habit.id` is `habits.id`.
 
 ## Push delivery log
-Production pushes once stopped silently (no device, empty Vault) and nothing showed it. Now every push is logged in `public.push_deliveries`, kept 30 days (the `keepup-feed-retention` cron job):
+Production pushes once stopped silently (no device, empty Vault) and nothing showed it. Now `public.push_deliveries` logs, kept 30 days (the `keepup-feed-retention` cron job):
+- **Every push-flagged feed row** (every notification meant to push): one row per device from `send-push`, or one `skipped` row when it can't be sent.
+- **Daily summary, reminder hour reached but no device:** one `skipped` / `no_device` row per person per local day (`private.enqueue_reminders`; demo visitors excluded). It is written when the hour is due **even if there was nothing to do that day**: it means "can't reach this person", not "a summary was dropped".
+- **Not logged separately:** per-habit reminder pushes ("Remind me at…") to people without a device; the daily `no_device` row covers them.
+
 | Outcome | Reason | Written by |
 |---|---|---|
 | `sent` | – (`status` = the push service's answer, e.g. 201) | `send-push`, one row per device |
 | `gone` | `http_404` / `http_410` (the device is removed) | `send-push` |
 | `failed` | `http_<status>`, or `network` (timeout, no answer) | `send-push` |
-| `skipped` | `no_device` | `send-push` (a row to push, no device), and `private.enqueue_reminders` (daily summary due, no device; once per person per local day; demo visitors excluded) |
+| `skipped` | `no_device` | `private.dispatch_push` (a push-flagged feed row, no device), `private.enqueue_reminders` (daily summary, see above), `send-push` (the device disappeared before sending) |
 | `skipped` | `no_vault_url` | `private.dispatch_push` (`send_push_url` or `send_push_secret` missing from Vault) |
 
-Stored: feed row id, person, kind, outcome, reason, HTTP status and the push service's **host** only (`web.push.apple.com`); never the endpoint URL or its keys. People can read their own rows (RLS); only the service role writes. Logging never blocks a push: a failed insert is a console error (send-push) or a warning (database).
+Not logged: a webhook call that never reaches `send-push` (function down: see `net._http_response`), one it refuses before loading the row (wrong secret, VAPID keys missing: a 403/500 in its function logs), or a row with nothing left to show (e.g. approvals already decided).
+
+Stored: feed row id, person, kind, outcome, reason, HTTP status and the push service's **host** only (`web.push.apple.com`); never the endpoint URL or its keys. People can read their own rows (RLS); only the database and the service role write, and only inserts (append-only; retention deletes). Logging never blocks a push: a failed insert is a console error (send-push) or a warning (database).
 
 Where to look: Supabase → Table Editor → `push_deliveries`; Supabase → Edge Functions → `send-push` → Logs (one JSON line per delivery, `"event":"push_delivery"`).
 ```sql
