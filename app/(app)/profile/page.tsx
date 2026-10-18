@@ -12,14 +12,6 @@ import { appVersion } from "@/lib/version";
 import { getMyLevel } from "@/lib/xp-data";
 import { saveAvatar } from "./actions";
 
-// Where to go from Profile, as one list. Self-contained, so cards can sit above it later.
-const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: "/profile/achievements", label: "achievements.title", icon: Award },
-  { href: "/profile/settings", label: "settings.title", icon: Settings },
-  { href: "/whats-new", label: "profile.links.whatsNew", icon: Sparkles },
-  { href: "/groups", label: "nav.groups", icon: Users },
-];
-
 // profile.summary reads as one line here; the city is its own element, as on onboarding.
 const summaryTags = {
   place: (c: ReactNode) => <span>{c}</span>,
@@ -29,6 +21,14 @@ const summaryTags = {
 
 export default async function ProfilePage() {
   const [{ profile }, level, { t, rich }] = await Promise.all([getProfile(), getMyLevel(), getT()]);
+
+  // Where to go from Profile, as one list. Self-contained, so cards can sit above it later.
+  const links: { href: string; label: string; icon: LucideIcon }[] = [
+    { href: "/profile/achievements", label: t("achievements.title"), icon: Award },
+    { href: "/profile/settings", label: t("settings.title"), icon: Settings },
+    { href: "/whats-new", label: t("profile.links.whatsNew"), icon: Sparkles },
+    { href: "/groups", label: t("nav.groups"), icon: Users },
+  ];
 
   return (
     <section className="flex flex-col gap-6 py-6">
@@ -55,13 +55,13 @@ export default async function ProfilePage() {
       {level && <LevelCard xp={level.xp} />}
       <nav aria-label={t("profile.accountNav")}>
         <ul className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-soft">
-          {LINKS.map(({ href, label, icon: Icon }) => (
+          {links.map(({ href, label, icon: Icon }) => (
             <li key={href} className="border-t border-border first:border-t-0">
               <Link href={href} className="flex min-h-14 items-center gap-3 px-4 hover:bg-muted">
                 <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-primary">
                   <Icon className="size-5" />
                 </span>
-                <span className="flex-1 font-semibold">{t(label)}</span>
+                <span className="flex-1 font-semibold">{label}</span>
                 <ChevronRight aria-hidden className="size-5 text-muted-foreground rtl:-scale-x-100" />
               </Link>
             </li>
