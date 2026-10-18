@@ -91,7 +91,7 @@ function TemplatePicker({
 
   return (
     <>
-      <div className="flex flex-col gap-1 pr-10">
+      <div className="flex flex-col gap-1 pe-10">
         <DialogTitle>{t.rich("title", { name: childName, bdi })}</DialogTitle>
         <DialogDescription>{t("description")}</DialogDescription>
       </div>
@@ -152,7 +152,7 @@ function CustomHabitForm({
 
   return (
     <>
-      <div className="flex flex-col gap-1 pr-10">
+      <div className="flex flex-col gap-1 pe-10">
         <DialogTitle>{t.rich("ownTitle", { name: childName, bdi })}</DialogTitle>
         <DialogDescription>{t.rich("ownDescription", { name: childName, gender: gender ?? "other", bdi })}</DialogDescription>
       </div>

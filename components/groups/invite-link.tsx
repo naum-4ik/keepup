@@ -76,6 +76,7 @@ export function InviteLink({
         </label>
         <Input
           id="invite-link"
+          dir="ltr"
           aria-label={t("linkAria")}
           readOnly
           value={url}
@@ -110,7 +111,7 @@ export function InviteLink({
         type="button"
         disabled={pending}
         onClick={() => run(() => revokeInvites(groupId))}
-        className="-ml-2 flex min-h-11 items-center self-start rounded-lg px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+        className="-ms-2 flex min-h-11 items-center self-start rounded-lg px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
       >
         {pending ? t("turningOff") : t("turnOff")}
       </button>

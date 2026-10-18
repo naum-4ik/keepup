@@ -70,12 +70,12 @@ export function StartDatePicker({ value, onChange, today, min = today, weekStart
             <button type="button" aria-label={t("habits.datePicker.previousMonth")} disabled={month <= min.slice(0, 7)}
               onClick={() => setMonth((m) => addMonths(m, -1))}
               className="flex size-11 items-center justify-center rounded-full text-primary hover:bg-muted disabled:text-muted-foreground/40">
-              <ChevronLeft className="size-5" />
+              <ChevronLeft className="size-5 rtl:-scale-x-100" />
             </button>
             <span className="text-sm font-bold" aria-live="polite">{formatMonth(month, locale)}</span>
             <button type="button" aria-label={t("habits.datePicker.nextMonth")} onClick={() => setMonth((m) => addMonths(m, 1))}
               className="flex size-11 items-center justify-center rounded-full text-primary hover:bg-muted">
-              <ChevronRight className="size-5" />
+              <ChevronRight className="size-5 rtl:-scale-x-100" />
             </button>
           </div>
           <div className="grid grid-cols-7 text-center">

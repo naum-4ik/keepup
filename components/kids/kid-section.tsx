@@ -18,7 +18,7 @@ export async function KidSection({ child, habits, stars }: { child: MyChild; hab
         <Avatar name={child.name} emoji={child.avatar_emoji} color={child.avatar_color} size="md" />
         <h2 className="min-w-0 flex-1 truncate text-base font-bold">{child.name}</h2>
         {stars !== null && <span className="text-sm font-bold tabular-nums">⭐ {stars}</span>}
-        <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
+        <ChevronRight aria-hidden className="size-5 text-muted-foreground rtl:-scale-x-100" />
       </Link>
       {ordered.length > 0 ? (
         <ul className="flex flex-col gap-3">

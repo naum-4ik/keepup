@@ -117,7 +117,7 @@ export function TodayCard({
             <span key={i.habitId} data-done={i.done || undefined} className="relative">
               <HabitEmoji category={i.category} emoji={i.emoji} className={cn("size-9 transition", !i.done && "opacity-40 grayscale dark:opacity-60 dark:brightness-150")} />
               {i.done && (
-                <span aria-hidden className="absolute -right-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-done text-done-foreground ring-2 ring-card">
+                <span aria-hidden className="absolute -end-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-done text-done-foreground ring-2 ring-card">
                   <Check className="size-2.5" strokeWidth={4} />
                 </span>
               )}
@@ -148,7 +148,7 @@ export function TodayCard({
               </span>
             </>
           )}
-          <ChevronRight className="ml-auto size-4" aria-hidden />
+          <ChevronRight className="ms-auto size-4 rtl:-scale-x-100" aria-hidden />
         </Link>
       )}
     </section>

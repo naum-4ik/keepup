@@ -125,7 +125,7 @@ export function BottomNav({
                   // The number only; Profile says "Level 2 · Seedling" in words. Soft sage, smaller than the
                   // bell's count and never its colour, so it doesn't read as unread (owner). bottom-0, not
                   // below: the label is 2px below the avatar, so anything lower covers "Profile".
-                  <span className="absolute -right-2 bottom-0 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-done-soft px-0.5 text-[0.5625rem] leading-none md:-right-4 md:-bottom-1 md:h-4 md:min-w-4 md:text-[0.625rem] font-bold text-done tabular-nums shadow-[0_0_0_2px_var(--card)] ring-1 ring-done/50">
+                  <span className="absolute -end-2 bottom-0 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-done-soft px-0.5 text-[0.5625rem] leading-none md:-end-4 md:-bottom-1 md:h-4 md:min-w-4 md:text-[0.625rem] font-bold text-done tabular-nums shadow-[0_0_0_2px_var(--card)] ring-1 ring-done/50">
                     {level}
                   </span>
                 ) : null}

@@ -26,13 +26,20 @@ export function joinNames(t: T, locale: Locale, names: string[]): string {
 
 export function dailySummary(t: T, { todo, atRisk }: { todo: SummaryItem[]; atRisk: AtRiskItem[] }): Copy | null {
   if (todo.length === 0 && atRisk.length === 0) return null;
+  const comma = t("common.listSeparator");
   const parts = [
-    todo.map((i) => (i.target && i.target > 1 ? `${isolate(i.title)} ${i.done ?? 0}/${i.target}` : isolate(i.title))).join(", "),
+    todo
+      .map((i) =>
+        i.target && i.target > 1
+          ? t("push.dailySummary.count", { habit: isolate(i.title), done: String(i.done ?? 0), target: String(i.target) })
+          : isolate(i.title),
+      )
+      .join(comma),
     atRisk
       .map((r) => t("push.dailySummary.atRisk", { habit: isolate(r.title), done: String(r.done), target: String(r.target), period: r.period, days: r.daysLeft }))
-      .join(", "),
+      .join(comma),
   ].filter(Boolean);
-  return { title: t("push.today"), body: t("push.dailySummary.body", { items: parts.join(" · ") }) };
+  return { title: t("push.today"), body: t("push.dailySummary.body", { items: parts.join(t("common.sectionSeparator")) }) };
 }
 
 // The Inbox line for a daily summary row with nothing left to do (the push is skipped then).

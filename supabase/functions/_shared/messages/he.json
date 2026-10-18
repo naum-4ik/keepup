@@ -1,0 +1,1642 @@
+{
+  "settings": {
+    "language": "שפה",
+    "languageHint": "Keepup וההתראות שלו יוצגו בשפה הזו.",
+    "languageNames": {
+      "en": "English",
+      "ru": "Русский",
+      "he": "עברית"
+    },
+    "title": "הגדרות",
+    "typeToConfirm": "כדי לאשר, הקלידו \"{word}\"",
+    "celebrations": {
+      "label": "הגדרות חגיגות",
+      "title": "חגיגות",
+      "hint": "איך יופיעו רמות חדשות ותגים חדשים.",
+      "full": "מלא",
+      "subtle": "עדין",
+      "fullHint": "רגע קצר על כל המסך, עם קונפטי.",
+      "subtleHint": "כרטיס קטן בתחתית, בלי קונפטי."
+    },
+    "reset": {
+      "title": "איפוס הנתונים שלי",
+      "clears": "יימחקו ההרגלים שלכם והסימונים שלהם, ה-XP והרמה, התגים, הסיכומים וההודעות.",
+      "keeps": "החשבון, ההגדרות, המכשירים, הקבוצות והילדים יישארו, וגם הסימונים שלכם בהרגלים קבוצתיים.",
+      "dialogTitle": "לאפס את הנתונים שלכם?",
+      "dialogBody": "{clears} {keeps} אי אפשר לבטל את זה.",
+      "word": "איפוס"
+    }
+  },
+  "push": {
+    "today": "היום",
+    "dailySummary": {
+      "body": "עוד נשאר: {items} 🌱",
+      "count": "{habit} {done}/{target}",
+      "atRisk": "{habit}: {done} מתוך {target} {period, select, month {החודש} other {השבוע}}, {days, plural, one {נשאר יום אחד} two {נשארו יומיים} other {נשארו # ימים}}"
+    },
+    "allDoneToday": "הכול בוצע להיום 🎉",
+    "habitReminder": "הגיע הזמן: {habit}.",
+    "groupCheckIn": "{names}: סימון ✓ {habit}",
+    "others": "{n, plural, one {עוד אדם אחד} two {עוד # אנשים} other {עוד # אנשים}}",
+    "everyoneDidIt": "כולם עשו את זה: {habit} ✓",
+    "approvalNeeded": {
+      "one": "{author}: סימון ✓ {habit}. לאשר?",
+      "many": "{n, plural, one {סימון אחד מחכה לכם} two {# סימונים מחכים לכם} other {# סימונים מחכים לכם}}"
+    },
+    "approvalExpiring": "{author}: הסימון של {habit} צריך אישור תוך שעתיים",
+    "approvalDecided": "{author}: {habit} — {outcome, select, approved {אושר} rejected {לא אושר} other {לא נבדק בזמן}}",
+    "checkInNotApproved": "{reviewer}: הסימון שלכם לא אושר. אפשר לסמן שוב {period, select, week {השבוע} month {החודש} other {היום}}.",
+    "nudge": "{sender}: {kind, select, you_got_this {אתם יכולים: {habit}} gentle_reminder {תזכורת עדינה: {habit}} other {חושבים עליכם. {habit} היום?}}",
+    "groupStreakEnded": "{habit}: הרצף נגמר אחרי {span}. אפשר להתחיל רצף חדש {period, select, week {השבוע} month {החודש} other {היום}}.",
+    "privateStreakEnded": {
+      "best": "{habit}: הרצף נגמר אחרי {span}. השיא שלכם עדיין {best}.",
+      "restart": "{habit}: הרצף נגמר אחרי {span}. אפשר להתחיל רצף חדש {period, select, week {השבוע} month {החודש} other {היום}}."
+    },
+    "groupStreakBack": "הגיע סימון מאוחר. הרצף של {habit} חזר 🔥",
+    "groupHabitCreated": "{author}: הרגל חדש — {habit}, {schedule}.",
+    "groupHabitPaused": {
+      "until": "{habit}: בהפסקה עד {until}.",
+      "open": "{habit}: בהפסקה."
+    },
+    "groupHabitResumed": "{habit}: ההפסקה הסתיימה.",
+    "memberJoined": "{group}: הצטרפות חדשה — {member} 👋",
+    "restDayUsed": "{period, select, week {{n, plural, one {נוצל שבוע מנוחה. הרצף שלכם של שבוע אחד שמור 💤} two {נוצל שבוע מנוחה. הרצף שלכם של שבועיים שמור 💤} other {נוצל שבוע מנוחה. הרצף שלכם של {n, number, ::group-off} שבועות שמור 💤}}} other {{n, plural, one {נוצל יום מנוחה. הרצף שלכם של יום אחד שמור 💤} two {נוצל יום מנוחה. הרצף שלכם של יומיים שמור 💤} other {נוצל יום מנוחה. הרצף שלכם של {n, number, ::group-off} ימים שמור 💤}}}}",
+    "longestStreak": "הרצף הארוך ביותר: {habit} 🔥 {span}",
+    "weeklyRecap": {
+      "title": "השבוע שלכם",
+      "inbox": "{done} מתוך {possible, plural, one {# סימון} two {# סימונים} other {# סימונים}} בשבוע שעבר.",
+      "history": "{done} מתוך {possible, plural, one {# סימון} two {# סימונים} other {# סימונים}}."
+    },
+    "monthlyRecap": {
+      "title": "החודש שלכם",
+      "body": "{done} מתוך {possible, plural, one {# סימון} two {# סימונים} other {# סימונים}} ב{month}.",
+      "lastMonth": "חודש שעבר"
+    },
+    "familyRecap": {
+      "plain": "יחד בשבוע שעבר: {n, plural, one {סימון אחד} two {# סימונים} other {# סימונים}}",
+      "best": "יחד בשבוע שעבר: {n, plural, one {סימון אחד} two {# סימונים} other {# סימונים}} · {habit} {span} 🔥"
+    },
+    "levelUp": "רמה {level}",
+    "badgeUnlocked": "תג חדש",
+    "groupMilestone": "🔥 {habit}: {span} ברצף, ביחד",
+    "milestoneCard": "🔥 {habit}: {span} ברצף",
+    "streakMilestone": {
+      "fresh": "התחלה חדשה: {habit} ✨",
+      "first": "{period, select, week {השבוע הראשון} month {החודש הראשון} other {היום הראשון}}: {habit} ✨",
+      "day2Again": "שוב יומיים ברצף 🌱",
+      "day2": "יומיים ברצף. התחלה טובה 🌱",
+      "back": "{habit}: שוב {span} ברצף 🔥"
+    },
+    "kidTreatGoal": "{gender, select, boy {{kid} הגיע ליעד: {goal} {emoji}} girl {{kid} הגיעה ליעד: {goal} {emoji}} other {יעד הושג: {kid} — {goal} {emoji}}}",
+    "kidFullGarden": "{gender, select, boy {{kid}: הגינה בפריחה מלאה השבוע 🌷} girl {{kid}: הגינה בפריחה מלאה השבוע 🌷} other {{kid}: הגינה בפריחה מלאה השבוע 🌷}}",
+    "kidStreak": "{gender, select, boy {{kid}: {span} ברצף: {habit} 🔥} girl {{kid}: {span} ברצף: {habit} 🔥} other {{kid}: {span} ברצף: {habit} 🔥}}",
+    "alreadyLogged": {
+      "byAdult": "{kid}: {habit} כבר סומן ({adult}) ✓",
+      "byKid": "{gender, select, boy {{kid} כבר עשה: {habit} ✓} girl {{kid} כבר עשתה: {habit} ✓} other {{kid}: {habit} כבר בוצע ✓}}"
+    },
+    "syncDropped": "סימון של {day} לא נספר: כשהוא סונכרן, עברו כבר יותר מ-3 ימים.",
+    "undoDropped": {
+      "approved": "לא הצלחנו לבטל את {habit}: הסימון כבר אושר.",
+      "periodClosed": "לא הצלחנו לבטל את {habit}: הזמן שלו כבר עבר."
+    },
+    "fallback": {
+      "group": "הקבוצה שלכם",
+      "habit": "הרגל",
+      "someone": "מישהו",
+      "child": "הילד/ה שלכם",
+      "badge": "תג חדש"
+    },
+    "actions": {
+      "approve": "אישור",
+      "reject": "לא לאשר"
+    }
+  },
+  "schedule": {
+    "daily": "כל יום",
+    "weekly": "כל שבוע",
+    "monthly": "כל חודש",
+    "timesPer": "{n}× ב{unit, select, day {יום} week {שבוע} other {חודש}}",
+    "once": {
+      "day": "כל יום",
+      "week": "פעם בשבוע",
+      "month": "פעם בחודש"
+    },
+    "progress": {
+      "starts": "התחלה: {date}",
+      "paused": "בהפסקה",
+      "pausedUntil": "בהפסקה עד {date}",
+      "doneToday": "בוצע להיום",
+      "notDoneYet": "עוד לא בוצע",
+      "todayCount": "{done}/{target} היום",
+      "todayOf": "{done} מתוך {target} היום",
+      "doneForPeriod": "{period, select, week {בוצע לשבוע הזה} other {בוצע לחודש הזה}}",
+      "periodCount": "{done} מתוך {target} {period, select, week {השבוע} other {החודש}}",
+      "daysLeft": "{n, plural, one {נשאר יום אחד} two {נשארו יומיים} other {נשארו # ימים}}"
+    }
+  },
+  "units": {
+    "day": "{n, plural, one {יום אחד} two {יומיים} other {# ימים}}",
+    "week": "{n, plural, one {שבוע אחד} two {שבועיים} other {# שבועות}}",
+    "month": "{n, plural, one {חודש אחד} two {חודשיים} other {# חודשים}}"
+  },
+  "levels": {
+    "Seedling": "זרע",
+    "Sprout": "נבט",
+    "Sapling": "שתיל",
+    "Tree": "עץ",
+    "Forest": "יער",
+    "line": "רמה {level} · {name}",
+    "toNext": "עוד {xp} XP לרמה {next}"
+  },
+  "dates": {
+    "today": "היום",
+    "yesterday": "אתמול",
+    "todayInline": "היום",
+    "yesterdayInline": "אתמול",
+    "justNow": "עכשיו",
+    "minutesAgo": "{n, plural, one {לפני דקה} two {לפני # דק׳} other {לפני # דק׳}}",
+    "hoursAgo": "{n, plural, one {לפני שעה} two {לפני שעתיים} other {לפני # שע׳}}",
+    "reviewBy": "לבדוק עד {time}"
+  },
+  "feed": {
+    "checkInApproved": "{who}: הסימון שלכם אושר.",
+    "groupHabitAdded": "{author}: הרגל חדש — {habit}.",
+    "habitArchived": "{habit}: בארכיון.",
+    "memberPaused": "{who}: הפסקה בהרגל {habit}.",
+    "memberRemoved": "{who} כבר לא בקבוצה {group}.",
+    "memberLeft": "יציאה מהקבוצה {group}: {who}.",
+    "roleAdmin": "עכשיו אתם מנהלים בקבוצה {group}.",
+    "roleMember": "עכשיו אתם חברים בקבוצה {group}.",
+    "cheer": "{who}: עידוד על הסימון שלכם ❤️",
+    "kidLoggedBy": "{kid}: {habit} — סומן ({adult}) ⭐",
+    "kidDidIt": "{gender, select, boy {{kid} עשה את זה: {habit} ⭐} girl {{kid} עשתה את זה: {habit} ⭐} other {{kid}: {habit} — בוצע ⭐}}",
+    "dayEarlier": "יום קודם",
+    "recapReady": "הסיכום שלכם מוכן.",
+    "nudgeLabel": {
+      "thinking_of_you": "חושבים עליכם",
+      "you_got_this": "אתם יכולים",
+      "gentle_reminder": "תזכורת עדינה"
+    }
+  },
+  "notificationCategories": {
+    "reminders": {
+      "label": "תזכורות",
+      "hint": "הסיכום היומי ותזכורות להרגלים."
+    },
+    "group_activity": {
+      "label": "פעילות בקבוצות",
+      "hint": "סימונים, \"כולם עשו את זה\" ורגעים גדולים של הילדים שלכם בקבוצות."
+    },
+    "approvals": {
+      "label": "אישורים",
+      "hint": "סימונים שמחכים לאישור שלכם."
+    },
+    "nudges": {
+      "label": "תזכורות מהקבוצה",
+      "hint": "כשמישהו בקבוצה חושב עליכם."
+    },
+    "group_updates": {
+      "label": "עדכוני קבוצות",
+      "hint": "הרגלים חדשים, הפסקות, חברים חדשים, רצפים ואבני דרך."
+    },
+    "achievements": {
+      "label": "הישגים",
+      "hint": "רמות חדשות, תגים, אבני דרך ברצף, ימי מנוחה והסיכום השבועי. רק בהודעות, אלא אם תשנו את זה."
+    },
+    "approvalsOffNote": "אישורים עדיין מחכים בהודעות."
+  },
+  "notificationSettings": {
+    "pauseChoice": {
+      "1h": "שעה אחת",
+      "8h": "8 שעות",
+      "tomorrow": "עד מחר",
+      "until_on": "עד שאפעיל שוב"
+    },
+    "delivery": {
+      "sound": "עם צליל",
+      "silent": "בשקט",
+      "inbox": "רק בהודעות"
+    },
+    "iphoneSoundHint": "ב-iPhone וב-iPad הצליל הוא מתג אחד לכל Keepup: הגדרות ← עדכונים ← Keepup ← צלילים.",
+    "hourHintDevice": "מתי מגיע הסיכום היומי.",
+    "hourHintNoDevice": "מתי מגיע הסיכום היומי, אחרי שמפעילים תזכורות.",
+    "status": {
+      "paused": "התזכורות מושהות עד {until}.",
+      "pausedUntilOn": "התזכורות מושהות עד שתפעילו אותן שוב.",
+      "inbox": "התזכורות מגיעות להודעות.",
+      "onWithHour": "התזכורות פועלות במכשיר הזה ✓ הסיכום היומי מגיע ב-{time}.",
+      "on": "התזכורות פועלות במכשיר הזה ✓"
+    }
+  },
+  "tabs": {
+    "approvals": "אישורים",
+    "approvalsCount": "אישורים ({n})",
+    "activity": "פעילות"
+  },
+  "weekOverview": {
+    "outcome": {
+      "done": "בוצע",
+      "missed": "פוספס",
+      "skipped": "בהפסקה או לא נספר",
+      "rested": "יום מנוחה",
+      "open": "בתהליך"
+    },
+    "goalsMet": "הושגו {done} מתוך {possible, plural, one {# יעד} two {# יעדים} other {# יעדים}}",
+    "ringLabel": "{goals} השבוע",
+    "moreThanLastWeek": "{n, plural, one {# יותר מבשבוע שעבר} two {# יותר מבשבוע שעבר} other {# יותר מבשבוע שעבר}}",
+    "bestWeekYet": "השבוע הכי טוב שלכם עד עכשיו",
+    "freshStart": "התחלה חדשה השבוע",
+    "dotsLabel": "{period, select, week {{n, plural, one {השבוע האחרון} two {השבועיים האחרונים} other {# השבועות האחרונים}}} month {{n, plural, one {החודש האחרון} two {החודשיים האחרונים} other {# החודשים האחרונים}}} other {{n, plural, one {היום האחרון} two {היומיים האחרונים} other {# הימים האחרונים}}}}: {counts}",
+    "dotCount": "{status, select, done {{n, plural, one {בוצע: #} two {בוצע: #} other {בוצע: #}}} missed {{n, plural, one {פוספס: #} two {פוספס: #} other {פוספס: #}}} paused {{n, plural, one {בהפסקה: #} two {בהפסקה: #} other {בהפסקה: #}}} not_started {{n, plural, one {לא התחיל: #} two {לא התחיל: #} other {לא התחיל: #}}} open {{n, plural, one {בתהליך: #} two {בתהליך: #} other {בתהליך: #}}} rested {{n, plural, one {ימי מנוחה: #} two {ימי מנוחה: #} other {ימי מנוחה: #}}} other {{n, plural, one {#} two {#} other {#}}}}"
+  },
+  "recaps": {
+    "weekOf": "שבוע מ-{date}",
+    "quietWeek": "שבוע שקט.",
+    "quietMonth": "חודש שקט.",
+    "nothingDue": "שום דבר לא היה מתוכנן.",
+    "streak": "{title} 🔥 {span}",
+    "page": {
+      "title": "סיכומים",
+      "weeks": "שבועות",
+      "months": "חודשים",
+      "firstWeekly": "הסיכום השבועי הראשון יגיע ביום הראשון של השבוע הבא.",
+      "restDays": "{n, plural, one {ימי מנוחה: # (מקווקו)} two {ימי מנוחה: # (מקווקו)} other {ימי מנוחה: # (מקווקו)}}",
+      "topStreaks": "הרצפים הארוכים ביותר",
+      "badges": "תגים: {list}"
+    },
+    "heatmap": {
+      "fullDays": "{n, plural, one {יום אחד שבו הכול בוצע} two {יומיים שבהם הכול בוצע} other {# ימים שבהם הכול בוצע}}",
+      "dayCounts": "{date}: {done} מתוך {possible}{rested, select, yes {, יום מנוחה} other {}}",
+      "dayRest": "{date}: יום מנוחה",
+      "dayNothingDue": "{date}: שום דבר לא מתוכנן"
+    }
+  },
+  "habitEnd": {
+    "progress": {
+      "day": "יום {n} מתוך {total}",
+      "week": "שבוע {n} מתוך {total}",
+      "month": "חודש {n} מתוך {total}"
+    },
+    "almostThere": "כמעט שם · {text}",
+    "extend": "+{span}"
+  },
+  "habitFinish": {
+    "did": "{together, select, yes {ביחד עשיתם {done} מתוך {span}} other {עשיתם {done} מתוך {span}}}",
+    "withBest": "{main} · הרצף הארוך ביותר {n} 🔥",
+    "anotherGo": "לנסות שוב?"
+  },
+  "myData": {
+    "deleteWord": "מחיקה",
+    "deleteTitle": "למחוק את החשבון?",
+    "deleteBody": "החשבון, ההרגלים, הסימונים, ה-XP, התגים וההודעות יימחקו מיד. אי אפשר לבטל את זה.",
+    "exportHint": "קובץ עם כל מה ש-Keepup שומר עליכם.",
+    "exportFirst": "אם אתם רוצים עותק, הורידו קודם את הנתונים שלכם.",
+    "deleteFailed": "לא הצלחנו למחוק את החשבון. טענו מחדש את Keepup ונסו שוב.",
+    "deletedNote": "החשבון והנתונים שלכם נמחקו.",
+    "groupDeleted": "הקבוצה <bdi>{group}</bdi> תימחק.",
+    "groupDeletedWithProfiles": "הקבוצה <bdi>{group}</bdi> תימחק, יחד עם {n, plural, one {הפרופיל של} two {הפרופילים של} other {הפרופילים של}} {names}.",
+    "possessive": "<bdi>{name}</bdi>",
+    "becomesAdmin": "<bdi>{group}</bdi>: הניהול עובר אל <bdi>{admin}</bdi>.",
+    "title": "הנתונים שלכם",
+    "export": "הורדת הנתונים שלי",
+    "deleteAccount": "מחיקת החשבון"
+  },
+  "errors": {
+    "group_not_found": "הקבוצה הזו לא זמינה.",
+    "not_admin": "רק מנהלי הקבוצה יכולים לעשות את זה.",
+    "not_an_adult": "רק מבוגרים יכולים לעשות את זה.",
+    "invite_invalid": "תוקף הקישור להזמנה פג, או שהוא כובה. בקשו קישור חדש.",
+    "last_admin": "קודם צריך למנות מישהו אחר למנהל.",
+    "children_would_be_deleted": "הפרופילים וההיסטוריה של הילדים יימחקו. קודם הורידו או העבירו אותם.",
+    "use_leave": "כדי לצאת מהקבוצה, לחצו על \"יציאה מהקבוצה\".",
+    "guardian_required": "נא לאשר שאתם ההורה או האפוטרופוס של הילד/ה.",
+    "invalid_name": "נא להזין כינוי.",
+    "invalid_gender": "נא לבחור: בן או בת.",
+    "same_group": "כבר בקבוצה הזו.",
+    "goal_exists": "כבר יש יעד. קודם צריך לסיים או לבטל אותו.",
+    "goal_not_found": "היעד הזה לא זמין.",
+    "goal_not_reached": "היעד עוד לא הושג.",
+    "member_not_found": "האדם הזה לא בקבוצה.",
+    "invalid_role": "נא לבחור: ניהול או חברות בקבוצה.",
+    "not_a_child": "זה רק לפרופיל של ילד/ה.",
+    "own_check_in": "מישהו אחר בקבוצה מאשר את הסימונים שלכם.",
+    "already_reviewed": "מישהו כבר בדק את הסימון הזה.",
+    "review_closed": "הזמן לבדוק את הסימון הזה עבר.",
+    "invalid_card": "הכרטיס הזה לא זמין.",
+    "child_not_found": "הילד/ה לא בקבוצה הזו.",
+    "category_required": "נא לבחור קטגוריה.",
+    "target_reached": "כבר בוצע לתקופה הזו.",
+    "already_checked_in_today": "כבר סומן היום. אפשר לחזור מחר.",
+    "habit_frozen": "ההרגל הזה בהפסקה.",
+    "habit_archived": "ההרגל הזה בארכיון.",
+    "habit_not_found": "ההרגל הזה לא זמין.",
+    "check_in_not_found": "הסימון הזה לא זמין.",
+    "period_closed": "התקופה הזו נגמרה, אז אי אפשר לשנות אותה.",
+    "habit_has_history": "יש להרגל הזה סימונים, אז אפשר רק להעביר אותו לארכיון.",
+    "freeze_in_past": "הפסקה לא יכולה להתחיל בעבר.",
+    "start_in_past": "תאריך ההתחלה לא יכול להיות בעבר.",
+    "start_too_far": "נא לבחור תאריך התחלה בשנה הקרובה.",
+    "start_locked": "אי אפשר לשנות את תאריך ההתחלה אחרי הסימון הראשון.",
+    "habit_not_started": "ההרגל הזה עוד לא התחיל.",
+    "freeze_overlaps": "ההרגל הזה כבר בהפסקה בזמן הזה.",
+    "freeze_range_invalid": "תאריך הסיום צריך להיות באותו יום או אחרי תאריך ההתחלה.",
+    "not_authenticated": "נא להתחבר שוב.",
+    "end_too_early": "אפשר לדחות את הסיום או להסיר אותו, אבל לא להקדים.",
+    "habit_ended": "ההרגל הזה הסתיים. אפשר להמשיך או לסיים אותו במסך \"היום\".",
+    "habit_not_ended": "ההרגל הזה עוד לא הסתיים.",
+    "end_passed": "ההרגל הזה הסתיים, אז אי אפשר לשנות את הסיום שלו. אפשר להמשיך או לסיים אותו במסך \"היום\".",
+    "bad_range": "נא לבחור טווח תאריכים תקין (עד חודשיים).",
+    "not_archived": "ההרגל הזה כבר פעיל.",
+    "habit_finished": "ההרגל הזה הסתיים. אפשר ללחוץ על \"התחלה מחדש\".",
+    "already_nudged": "כבר שלחתם על זה תזכורת היום.",
+    "cannot_nudge": "כרגע הכול אצלם בסדר.",
+    "cannot_cheer": "אפשר לעודד רק סימונים של אחרים.",
+    "invalid_category": "ההגדרה הזו לא זמינה.",
+    "invalid_choice": "נא לבחור אחת מהאפשרויות.",
+    "invalid_subscription": "לא הצלחנו להגדיר התראות במכשיר הזה.",
+    "invalid_time": "נא לבחור שעה בקפיצות של רבע שעה.",
+    "tap_in_future": "נראה שהשעון בטלפון מקדים. בדקו את השעה ונסו שוב.",
+    "generic": "משהו השתבש. נסו שוב.",
+    "endsAfterStart": "היום האחרון לא יכול להיות לפני היום הראשון.",
+    "alreadyReviewedBy": "{reviewer}: כבר נבדק.",
+    "alreadyReviewedSomeone": "מישהו כבר בדק את זה.",
+    "groupNameLength": "{max, plural, one {שם הקבוצה: עד תו אחד.} two {שם הקבוצה: עד # תווים.} other {שם הקבוצה: עד # תווים.}}",
+    "saveHabitFailed": "לא הצלחנו לשמור את ההרגל. נסו שוב.",
+    "checkDetails": "נא לבדוק את הפרטים.",
+    "pickFamilyOrFriends": "נא לבחור: משפחה או חברים.",
+    "groupCreateFailed": "לא הצלחנו ליצור את הקבוצה. נסו שוב.",
+    "childUnavailable": "הפרופיל של הילד/ה לא זמין.",
+    "pickHour": "נא לבחור שעה."
+  },
+  "demo": {
+    "off": "האפשרות הזו כבויה בדמו.",
+    "banner": "זה דמו. הנתונים מתאפסים אחרי 24 שעות.",
+    "signInLine": "<signIn>התחברו</signIn> כדי להתחיל עם חשבון משלכם.",
+    "failed": "הדמו לא נפתח. נסו שוב עוד רגע.",
+    "justLooking": "רק מסתכלים?",
+    "tryDemo": "כניסה לדמו",
+    "settingUp": "מכינים…",
+    "loading": "בטעינה…"
+  },
+  "validation": {
+    "nameRequired": "נא להזין שם.",
+    "maxChars": "{max, plural, one {עד תו אחד.} two {עד # תווים.} other {עד # תווים.}}",
+    "timezone": "נא לבחור אזור זמן מהרשימה.",
+    "weekStart": "נא לבחור יום ראשון או יום שני.",
+    "purpose": "נא לבחור אחת מהאפשרויות, או אף אחת.",
+    "treatName": "נא לתת שם לפינוק.",
+    "emoji": "נא לבחור אימוג׳י אחד.",
+    "stars": "{max, plural, one {נא לבחור כוכב אחד.} two {נא לבחור בין 1 ל-# כוכבים.} other {נא לבחור בין 1 ל-# כוכבים.}}",
+    "groupName": "נא לתת שם לקבוצה.",
+    "title": "נא להזין שם.",
+    "frequency": "נא לבחור באיזו תדירות.",
+    "targetCount": {
+      "day": "{limit, plural, one {נא לבחור פעם אחת ביום.} two {נא לבחור בין 1 ל-# פעמים ביום.} other {נא לבחור בין 1 ל-# פעמים ביום.}}",
+      "week": "{limit, plural, one {נא לבחור פעם אחת בשבוע.} two {נא לבחור בין 1 ל-# פעמים בשבוע.} other {נא לבחור בין 1 ל-# פעמים בשבוע.}}",
+      "month": "{limit, plural, one {נא לבחור פעם אחת בחודש.} two {נא לבחור בין 1 ל-# פעמים בחודש.} other {נא לבחור בין 1 ל-# פעמים בחודש.}}"
+    },
+    "startDate": "נא לבחור תאריך התחלה."
+  },
+  "groups": {
+    "kind": {
+      "family": "משפחה",
+      "friends": "חברים",
+      "couple": "זוג",
+      "roommates": "שותפים לדירה",
+      "other": "אחר"
+    },
+    "defaultFamily": "משפחה",
+    "defaultFriends": "חברים",
+    "childrenDeletion": "{n, plural, =0 {הפרופילים וההיסטוריה של הילדים יימחקו.} one {הפרופיל וההיסטוריה של {names} יימחקו.} two {הפרופילים וההיסטוריה של {names} יימחקו.} other {הפרופילים וההיסטוריה של {names} יימחקו.}}",
+    "newGroup": "קבוצה חדשה",
+    "list": {
+      "empty": "שתפו הרגלים עם האנשים שאתם גרים ומבלים איתם.",
+      "create": "יצירת קבוצה"
+    },
+    "card": {
+      "counts": "{members, plural, one {חבר אחד} two {# חברים} other {# חברים}}{withChildren, select, yes { · {children, plural, one {ילד אחד} two {# ילדים} other {# ילדים}}} other {}}"
+    },
+    "new": {
+      "whoFor": "בשביל מי הקבוצה?",
+      "name": "שם",
+      "namePlaceholder": "משפחת לוי, מועדון קריאה…",
+      "avatar": "תמונה <muted>(לא חובה)</muted>",
+      "avatarHint": "עד שתבחרו תמונה, תוצג האות הראשונה של שם הקבוצה.",
+      "timezoneHelp": "אזור הזמן שלכם ({city}) ותחילת השבוע ישמשו להרגלים של הקבוצה. המנהלים יכולים לשנות אותם אחר כך.",
+      "create": "יצירת קבוצה"
+    },
+    "detail": {
+      "avatarTitle": "החלפת התמונה של הקבוצה",
+      "avatarDescription": "כל מי שבקבוצה רואה אותה.",
+      "people": "אנשים",
+      "child": "ילד/ה",
+      "addChild": "הוספת ילד/ה",
+      "habits": "הרגלי הקבוצה",
+      "noHabits": "עוד אין הרגלים לקבוצה.",
+      "addHabit": "הוספת הרגל קבוצתי",
+      "habitLine": "{schedule}{approval, select, yes { · צריך אישור} other {}}",
+      "invite": "הזמנה",
+      "settings": "הגדרות הקבוצה",
+      "settingsHint": "אזור זמן ותחילת שבוע",
+      "leave": {
+        "title": "לצאת מהקבוצה <bdi>{name}</bdi>?",
+        "descriptionAlone": "אין בקבוצה אף אחד חוץ מכם, אז היציאה תמחק אותה.",
+        "description": "ההרגלים של הקבוצה כבר לא יוצגו לכם. ההרגלים האישיים שלכם נשארים אצלכם.",
+        "pending": "יוצאים…",
+        "action": "יציאה מהקבוצה"
+      },
+      "delete": {
+        "title": "למחוק את הקבוצה <bdi>{name}</bdi>?",
+        "description": "הקבוצה וההרגלים המשותפים שלה יימחקו לכולם. אי אפשר לבטל את זה.",
+        "action": "מחיקת הקבוצה"
+      }
+    },
+    "confirm": {
+      "allMoved": "כל הילדים הועברו.",
+      "exportFirst": "הורדה קודם",
+      "deleteAnyway": "מחיקה בכל זאת"
+    },
+    "rename": {
+      "action": "שינוי שם",
+      "label": "שם הקבוצה"
+    },
+    "settingsForm": {
+      "note": "חל על הרגלים שבועיים חדשים."
+    },
+    "member": {
+      "you": "אני",
+      "admin": "ניהול",
+      "options": "אפשרויות: {name}",
+      "makeMember": "הסרת הרשאות ניהול",
+      "makeAdmin": "מתן הרשאות ניהול",
+      "remove": "הסרה מהקבוצה",
+      "removeTitle": "להסיר את <bdi>{name}</bdi> מהקבוצה?",
+      "removeDescription": "יציאה מהקבוצה <bdi>{group}</bdi>: ההרגלים שלה כבר לא יוצגו. ההרגלים האישיים נשארים.",
+      "confirmRemove": "הסרה",
+      "removing": "מסירים…"
+    },
+    "invite": {
+      "helpNone": "עם הקישור אפשר להצטרף לקבוצה <bdi>{group}</bdi> במשך 7 ימים.",
+      "helpActive": "עם הקישור הזה אפשר להצטרף לקבוצה <bdi>{group}</bdi> במשך 7 ימים.",
+      "create": "יצירת קישור להזמנה",
+      "copyFailed": "ההעתקה לא הצליחה. סמנו את הקישור והעתיקו אותו.",
+      "label": "קישור להזמנה <muted>· בתוקף עד {date}</muted>",
+      "linkAria": "קישור להזמנה",
+      "shareTitle": "הצטרפו לקבוצה {group} ב-Keepup",
+      "share": "שיתוף",
+      "copy": "העתקת הקישור",
+      "copied": "הועתק",
+      "turnOff": "כיבוי הקישור",
+      "turningOff": "מכבים…"
+    },
+    "errors": {
+      "timezone": "נא לבחור אזור זמן.",
+      "weekStart": "נא לבחור יום שני או יום ראשון."
+    }
+  },
+  "auth": {
+    "emailInvalid": "נא להזין כתובת אימייל תקינה.",
+    "passwordRequired": "נא להזין סיסמה.",
+    "passwordMin": "{min, plural, one {נדרש לפחות תו אחד.} two {נדרשים לפחות # תווים.} other {נדרשים לפחות # תווים.}}",
+    "resetLinkStale": "תוקף קישור האיפוס הזה פג. אפשר לבקש קישור חדש במסך הכניסה.",
+    "confirmEmailSent": "כמעט סיימנו: פתחו את הקישור ששלחנו לכם במייל כדי לאשר את הכתובת, ואז היכנסו.",
+    "resetLinkSent": "אם יש חשבון עם האימייל הזה, קישור לאיפוס כבר בדרך.",
+    "emailNotConfirmed": "קודם צריך לאשר את האימייל: פתחו את הקישור ששלחנו לכם, ואז היכנסו.",
+    "invalidCredentials": "האימייל והסיסמה לא תואמים. נסו שוב.",
+    "accountExists": "כבר יש חשבון עם האימייל הזה.",
+    "samePassword": "זו הסיסמה הנוכחית שלכם. בחרו סיסמה חדשה.",
+    "rateLimited": "יותר מדי ניסיונות. חכו דקה ונסו שוב.",
+    "signIn": "כניסה",
+    "email": "אימייל",
+    "password": "סיסמה",
+    "emailPlaceholder": "you@example.com",
+    "or": "או",
+    "continueGoogle": "המשך עם Google",
+    "login": {
+      "title": "ברוכים השבים",
+      "subtitle": "שמרו על ההרגלים שלכם, ואת החשובים — עשו יחד עם המשפחה.",
+      "noAccount": "אין לכם חשבון?",
+      "signUp": "הרשמה",
+      "forgot": "שכחתם סיסמה?",
+      "sending": "שולחים…",
+      "needEmail": "הקלידו את האימייל למעלה, ואז לחצו שוב על \"{forgot}\".",
+      "orGoogle": "או היכנסו עם Google עם אותו אימייל.",
+      "signingIn": "נכנסים…",
+      "showPassword": "הצגת הסיסמה",
+      "hidePassword": "הסתרת הסיסמה"
+    },
+    "signup": {
+      "title": "יצירת חשבון",
+      "subtitle": "עקבו אחרי ההרגלים שלכם לבד, או יחד עם המשפחה.",
+      "haveAccount": "כבר יש לכם חשבון?",
+      "passwordRule": "{min, plural, one {לפחות תו אחד.} two {לפחות # תווים.} other {לפחות # תווים.}}",
+      "signInInstead": "כניסה",
+      "creating": "יוצרים את החשבון…",
+      "create": "יצירת חשבון"
+    },
+    "newPassword": {
+      "title": "בחירת סיסמה חדשה",
+      "subtitle": "מעכשיו תיכנסו איתה.",
+      "label": "סיסמה חדשה",
+      "save": "שמירת הסיסמה החדשה"
+    },
+    "error": {
+      "linkTitle": "הקישור לא עבד",
+      "linkBody": "קישורים במייל עובדים פעם אחת, למשך שעה. אפשר להיכנס, או לבקש קישור איפוס חדש במסך הכניסה.",
+      "title": "הכניסה לא הצליחה",
+      "expired": "הקישור הזה כבר שומש או שפג תוקפו. נא להיכנס שוב.",
+      "denied": "הכניסה בוטלה או לא אושרה. נסו שוב.",
+      "unknown": "משהו השתבש בזמן הכניסה. נסו שוב עוד רגע.",
+      "expiry": "תוקף הקישורים פג אחרי שעה, וצריך לפתוח אותם באותו דפדפן שבו ביקשתם אותם.",
+      "back": "חזרה לכניסה"
+    }
+  },
+  "onboarding": {
+    "title": "ברוכים הבאים ל-Keepup",
+    "subtitle": "קצת עליכם, ואז ההרגלים הראשונים.",
+    "subtitleInvited": "אתם מצטרפים לקבוצה <bdi>{group}</bdi>. קודם קצת עליכם.",
+    "purposeLabel": "Keepup בשביל… <muted>(לא חובה)</muted>",
+    "purpose": {
+      "me": "עצמי",
+      "family": "המשפחה שלי",
+      "friends": "חברים"
+    },
+    "habits": {
+      "title": "{max, plural, one {בחרו הרגל אחד להתחלה} two {בחרו בין 1 ל-# הרגלים להתחלה} other {בחרו בין 1 ל-# הרגלים להתחלה}}",
+      "subtitle": "כל אחד מהם מתחיל היום. אפשר לשנות אותם בכל זמן.",
+      "joinedEmpty": "להוסיף כמה הרגלים משלכם?",
+      "joinedTogether": "לקבוצה <bdi>{group}</bdi> כבר יש {n, plural, one {הרגל משותף אחד} two {# הרגלים משותפים} other {# הרגלים משותפים}}. להוסיף גם הרגלים משלכם?",
+      "joinedSubtitle": "{max, plural, one {אפשר לבחור הרגל אחד. הוא מתחיל היום.} two {אפשר לבחור עד #. כל אחד מהם מתחיל היום.} other {אפשר לבחור עד #. כל אחד מהם מתחיל היום.}}",
+      "atLimit": "{max, plural, one {אפשר לבחור הרגל אחד} two {אפשר לבחור עד #} other {אפשר לבחור עד #}}",
+      "picked": "{n, plural, one {נבחר # מתוך {max}} two {נבחרו # מתוך {max}} other {נבחרו # מתוך {max}}}",
+      "pickToStart": "בחרו הרגל כדי להתחיל",
+      "startWith": "{n, plural, one {התחלה עם הרגל אחד} two {התחלה עם # הרגלים} other {התחלה עם # הרגלים}}",
+      "skip": "דילוג",
+      "skipForNow": "דילוג בינתיים",
+      "addFailed": "לא הצלחנו להוסיף את ההרגלים. נסו שוב.",
+      "pickRange": "{max, plural, one {נא לבחור הרגל אחד.} two {נא לבחור בין 1 ל-# הרגלים.} other {נא לבחור בין 1 ל-# הרגלים.}}"
+    }
+  },
+  "invite": {
+    "invalidTitle": "הקישור להזמנה הזו כבר לא עובד",
+    "invalidBody": "בקשו קישור חדש ממי ששלח אותו.",
+    "goToKeepup": "מעבר ל-Keepup",
+    "invitedYou": "הזמנה מ-<bdi>{inviter}</bdi> לקבוצה <bdi>{group}</bdi>",
+    "members": "{n, plural, one {בקבוצה <bdi>{group}</bdi> כבר יש אדם אחד.} two {בקבוצה <bdi>{group}</bdi> כבר יש # אנשים.} other {בקבוצה <bdi>{group}</bdi> כבר יש # אנשים.}}",
+    "open": "פתיחת הקבוצה {group}",
+    "join": "הצטרפות לקבוצה {group}",
+    "joining": "מצטרפים…",
+    "joinGoogle": "הצטרפות עם Google",
+    "useEmail": "המשך עם אימייל",
+    "continueEmail": "המשך עם אימייל"
+  },
+  "templates": {
+    "water": "לשתות מים",
+    "sleep": "ללכת לישון עד 23:00",
+    "vitamins": "לקחת ויטמינים או תרופות",
+    "veggies": "לאכול פירות או ירקות",
+    "brush-teeth": "לצחצח שיניים",
+    "wake-up": "לקום לפני 07:00",
+    "steps": "ללכת 10,000 צעדים",
+    "workout": "אימון",
+    "stretch": "מתיחות",
+    "run": "ריצה",
+    "yoga": "יוגה",
+    "swim-cycle": "שחייה או רכיבה על אופניים",
+    "meditate": "מדיטציה",
+    "journal": "כתיבת יומן",
+    "gratitude": "הכרת תודה: לכתוב 3 דברים",
+    "no-phone-bed": "בלי טלפון במיטה",
+    "outside": "זמן בחוץ",
+    "pray": "תפילה",
+    "read": "לקרוא 20 דקות",
+    "language": "ללמוד שפה",
+    "instrument": "לתרגל כלי נגינה",
+    "podcast": "פודקאסט או קורס",
+    "study": "ללמוד",
+    "write": "כתיבה",
+    "call": "להתקשר למשפחה או לחבר",
+    "message": "לשלוח הודעה למישהו שמתגעגעים אליו",
+    "kids-time": "זמן עם הילדים בלי טלפון",
+    "date-night": "ערב זוגי",
+    "kind": "לעשות משהו טוב",
+    "screen-free-dinner": "ארוחת ערב בלי מסכים",
+    "tidy": "לסדר את הבית",
+    "bed": "לסדר את המיטה",
+    "cook": "לבשל בבית",
+    "plants": "להשקות את העציצים",
+    "laundry": "כביסה",
+    "kitchen": "לנקות את המטבח",
+    "plan-tomorrow": "לתכנן את מחר",
+    "deep-work": "זמן לעבודה עמוקה",
+    "no-work-email": "בלי מייל של עבודה אחרי 19:00",
+    "no-spend": "יום בלי הוצאות",
+    "log-expenses": "לרשום הוצאות",
+    "budget-check": "בדיקת תקציב שבועית",
+    "no-sugar": "בלי סוכר",
+    "no-alcohol": "בלי אלכוהול",
+    "no-social-morning": "בלי רשתות חברתיות עד הצהריים",
+    "no-smoking": "בלי עישון",
+    "no-snacking": "בלי נשנושים אחרי ארוחת הערב",
+    "no-caffeine": "בלי קפאין אחרי 14:00",
+    "g-family-dinner": "ארוחת ערב משפחתית",
+    "g-date-night": "ערב זוגי",
+    "g-family-walk": "טיול משפחתי",
+    "g-game-night": "ערב משחקים",
+    "g-cook-together": "לבשל ביחד",
+    "g-tidy-together": "לסדר ביחד",
+    "kid": {
+      "brush-teeth": "לצחצח שיניים",
+      "read-together": "לקרוא ספר ביחד",
+      "tidy-toys": "לסדר את הצעצועים",
+      "bath": "זמן אמבטיה",
+      "veggies": "לאכול ירקות",
+      "bedtime": "ללכת לישון בזמן",
+      "dressed": "להתלבש לבד",
+      "wash-hands": "לשטוף ידיים לפני האוכל",
+      "water": "לשתות מים",
+      "outside": "לשחק בחוץ",
+      "please-thanks": "להגיד \"בבקשה\" ו\"תודה\"",
+      "chore": "לעזור בבית",
+      "make-bed": "לסדר את המיטה",
+      "fruit": "לאכול פרי",
+      "clear-plate": "לפנות את הצלחת",
+      "laundry-basket": "בגדים לסל הכביסה",
+      "feed-pet": "להאכיל את חיית המחמד",
+      "plants": "להשקות את העציצים",
+      "homework": "להכין שיעורי בית",
+      "school-bag": "לארוז את התיק לבית הספר",
+      "music": "לתרגל מוזיקה",
+      "sports": "אימון ספורט",
+      "draw": "לצייר או לצבוע",
+      "screen-free": "שעה בלי מסכים"
+    },
+    "treat": {
+      "ice-cream": "גלידה בפארק",
+      "playground": "יציאה לגן השעשועים",
+      "movie-night": "ערב סרט משפחתי",
+      "pizza-night": "ערב פיצה",
+      "cupcakes": "לאפות קאפקייקס ביחד",
+      "pancakes": "פנקייקים לארוחת בוקר",
+      "zoo": "טיול לגן החיות",
+      "swimming": "שחייה בבריכה",
+      "bike-ride": "רכיבה על אופניים ביחד",
+      "picnic": "פיקניק בפארק",
+      "new-book": "ספר חדש",
+      "art-supplies": "צבעים וכלי יצירה חדשים",
+      "small-toy": "צעצוע קטן וחדש",
+      "game-time": "עוד זמן משחק",
+      "fair": "יום בלונה פארק",
+      "late-friday": "ללכת לישון מאוחר ביום שישי"
+    },
+    "kidGroup": {
+      "morning-evening": "בוקר וערב",
+      "healthy": "בריאות",
+      "helping": "עזרה בבית",
+      "learning-play": "לימוד ומשחק",
+      "kind-calm": "טוב לב ורוגע"
+    }
+  },
+  "categories": {
+    "health": "בריאות",
+    "fitness": "כושר",
+    "mind": "נפש",
+    "learning": "למידה",
+    "people": "אנשים",
+    "home": "בית",
+    "work_money": "עבודה וכסף",
+    "break_habit": "גמילה מהרגל"
+  },
+  "badges": {
+    "planted": {
+      "name": "נשתל",
+      "description": "ליצור את ההרגל הראשון."
+    },
+    "first_step": {
+      "name": "צעד ראשון",
+      "description": "לסמן בפעם הראשונה."
+    },
+    "full_day": {
+      "name": "יום מלא",
+      "description": "להשלים את כל ההרגלים של היום, לפחות שניים."
+    },
+    "first_week": {
+      "name": "שבוע ראשון",
+      "description": "7 פעמים ברצף בהרגל כלשהו."
+    },
+    "two_weeks_strong": {
+      "name": "שבועיים ברצף",
+      "description": "14 ימים ברצף."
+    },
+    "unstoppable": {
+      "name": "בלי עצירות",
+      "description": "30 ימים ברצף."
+    },
+    "century": {
+      "name": "מאה",
+      "description": "100 ימים ברצף."
+    },
+    "year_round": {
+      "name": "כל השנה",
+      "description": "365 ימים ברצף."
+    },
+    "perfect_week": {
+      "name": "שבוע מושלם",
+      "description": "כל ההרגלים, בכל פעם, במשך שבוע שלם. לפחות שני הרגלים."
+    },
+    "steady_month": {
+      "name": "חודש יציב",
+      "description": "ארבעה שבועות של הרגל שבועי בחודש אחד, או הרגל חודשי שלושה חודשים ברצף."
+    },
+    "hydrated": {
+      "name": "שתייה טובה",
+      "description": "הרגל מ\"בריאות\" 8 פעמים ביום או יותר, 7 ימים ברצף."
+    },
+    "mover": {
+      "name": "בתנועה",
+      "description": "50 סימונים ב\"כושר\"."
+    },
+    "calm_mind": {
+      "name": "נפש רגועה",
+      "description": "30 פעמים ב\"נפש\"."
+    },
+    "bookworm": {
+      "name": "תולעת ספרים",
+      "description": "30 פעמים ב\"למידה\"."
+    },
+    "good_company": {
+      "name": "חברה טובה",
+      "description": "10 פעמים ב\"אנשים\"."
+    },
+    "home_keeper": {
+      "name": "שומרי הבית",
+      "description": "50 סימונים ב\"בית\"."
+    },
+    "go_getter": {
+      "name": "עם מוטיבציה",
+      "description": "6 פעמים ב\"עבודה וכסף\"."
+    },
+    "free": {
+      "name": "חופש",
+      "description": "30 ימים ברצף בהרגל מ\"גמילה מהרגל\"."
+    },
+    "back_on_track": {
+      "name": "חזרה למסלול",
+      "description": "שוב 7 ברצף אחרי שרצף נגמר."
+    },
+    "rest_well": {
+      "name": "מנוחה טובה",
+      "description": "לקחת את יום המנוחה הראשון."
+    },
+    "all_together": {
+      "name": "כולם ביחד",
+      "description": "ה\"כולם עשו את זה\" הראשון של הקבוצה."
+    },
+    "team_player": {
+      "name": "רוח צוות",
+      "description": "10 הרגלים קבוצתיים שבוצעו ביחד."
+    },
+    "cheerleader": {
+      "name": "מעודדים",
+      "description": "לעודד 20 סימונים."
+    },
+    "fair_judge": {
+      "name": "שיפוט הוגן",
+      "description": "לאשר 20 סימונים."
+    }
+  },
+  "badgeGroups": {
+    "getting_started": "התחלה",
+    "consistency": "התמדה",
+    "categories": "קטגוריות",
+    "comeback": "חזרה",
+    "family": "משפחה"
+  },
+  "kidThemes": {
+    "garden": {
+      "name": "גינה",
+      "noun": "גינה",
+      "seed": "זרע חדש נשתל 🌱",
+      "stages": {
+        "0": "זרע באדמה",
+        "1": "נבט",
+        "2": "הפרח הראשון",
+        "3": "פרחים ופרפר",
+        "4": "גינה מלאה"
+      },
+      "toStage": {
+        "1": "הנבט",
+        "2": "הפרח הראשון",
+        "3": "הפרחים והפרפר",
+        "4": "גינה מלאה"
+      },
+      "thisWeek": "הגינה של השבוע"
+    },
+    "aquarium": {
+      "name": "אקווריום",
+      "noun": "אקווריום",
+      "seed": "מים טריים מוכנים 💧",
+      "stages": {
+        "0": "מים צלולים",
+        "1": "אצות",
+        "2": "דג",
+        "3": "דג וצדף",
+        "4": "שונית מלאה"
+      },
+      "toStage": {
+        "1": "האצות",
+        "2": "הדג",
+        "3": "הדג והצדף",
+        "4": "שונית מלאה"
+      },
+      "thisWeek": "האקווריום של השבוע"
+    },
+    "space": {
+      "name": "חלל",
+      "noun": "גלקסיה",
+      "seed": "כן שיגור חדש מוכן 🚀",
+      "stages": {
+        "0": "כן שיגור",
+        "1": "טיל",
+        "2": "הירח",
+        "3": "כוכבי לכת",
+        "4": "גלקסיה זרועת כוכבים"
+      },
+      "toStage": {
+        "1": "הטיל",
+        "2": "הירח",
+        "3": "כוכבי הלכת",
+        "4": "גלקסיה זרועת כוכבים"
+      },
+      "thisWeek": "החלל של השבוע"
+    },
+    "dino": {
+      "name": "ביצת דינוזאור",
+      "noun": "ביצת דינוזאור",
+      "seed": "ביצה חדשה מחכה 🥚",
+      "stages": {
+        "0": "ביצה",
+        "1": "ביצה נסדקת",
+        "2": "דינוזאור תינוק",
+        "3": "דינוזאור והקן שלו",
+        "4": "דינוזאור גדול"
+      },
+      "toStage": {
+        "1": "הביצה הנסדקת",
+        "2": "הדינוזאור התינוק",
+        "3": "הדינוזאור והקן",
+        "4": "דינוזאור גדול"
+      },
+      "thisWeek": "ביצת הדינוזאור של השבוע"
+    },
+    "town": {
+      "name": "עיירה",
+      "noun": "עיירה",
+      "seed": "שדה חדש מוכן 🌾",
+      "stages": {
+        "0": "שדה ריק",
+        "1": "בית",
+        "2": "בית ועץ",
+        "3": "רחוב",
+        "4": "עיירה קטנה"
+      },
+      "toStage": {
+        "1": "הבית",
+        "2": "הבית והעץ",
+        "3": "הרחוב",
+        "4": "עיירה קטנה"
+      },
+      "thisWeek": "העיירה של השבוע"
+    }
+  },
+  "kids": {
+    "gender": {
+      "label": "בן או בת",
+      "boy": "בן",
+      "girl": "בת",
+      "unset": "לא צוין",
+      "hint": "משמש למילים כמו \"כל הכבוד\" ברוסית ובעברית."
+    },
+    "errors": {
+      "pickHabit": "נא לבחור הרגל.",
+      "themeFailed": "השינוי לא הצליח. נסו שוב."
+    },
+    "new": {
+      "askAdmin": "בקשו ממנהלי הקבוצה <bdi>{group}</bdi> להוסיף ילד/ה."
+    },
+    "form": {
+      "nickname": "כינוי",
+      "nicknameHelp": "מספיק כינוי. בלי שמות מלאים, תמונות או תאריכי לידה.",
+      "guardian": "אני ההורה או האפוטרופוס של הילד/ה",
+      "habitsToStart": "הרגלים להתחלה",
+      "noneYet": "עוד אין. אפשר להוסיף הרגלים גם אחר כך.",
+      "remove": "הסרה: {title}",
+      "chooseMore": "בחירת עוד הרגלים",
+      "chooseHint": "לחצו כדי לבחור או לבטל בחירה. אפשר להוסיף הרגלים משלכם אחר כך.",
+      "donePicked": "{count, plural, one {סיום · נבחר #} two {סיום · נבחרו #} other {סיום · נבחרו #}}",
+      "submit": "{named, select, yes {הוספת <bdi>{name}</bdi>} other {הוספת ילד/ה}}"
+    },
+    "edit": {
+      "button": "עריכה",
+      "title": "עריכה: <bdi>{name}</bdi>"
+    },
+    "habit": {
+      "title": "הוספת הרגל ל-<bdi>{name}</bdi>",
+      "description": "לחצו על הרגל כדי להוסיף אותו, או צרו אחד משלכם.",
+      "added": "נוסף: {title} ✓",
+      "add": "הוספה: {title}",
+      "hasAll": "<bdi>{name}</bdi>: כל ההרגלים המוצעים כבר נוספו.",
+      "ownTitle": "הרגל משלכם בשביל <bdi>{name}</bdi>",
+      "ownDescription": "{gender, select, boy {תנו להרגל שם ש-<bdi>{name}</bdi> מבין, ותמונה.} girl {תנו להרגל שם ש-<bdi>{name}</bdi> מבינה, ותמונה.} other {תנו להרגל שם ותמונה שיהיו מובנים ל-<bdi>{name}</bdi>.}}",
+      "titlePlaceholder": "להאכיל את הדגים",
+      "picture": "תמונה",
+      "period": "{period, select, day {יום} week {שבוע} other {חודש}}",
+      "back": "חזרה"
+    },
+    "detail": {
+      "habitsFailed": "חלק מההרגלים לא נוספו. אפשר להוסיף אותם מכאן.",
+      "openView": "פתיחת המסך של {name}",
+      "habits": "הרגלים",
+      "progressInGroup": "{progress} · <bdi>{group}</bdi>",
+      "logged": "{by, select, child {{gender, select, boy {<bdi>{name}</bdi> עשה את זה} girl {<bdi>{name}</bdi> עשתה את זה} other {<bdi>{name}</bdi>: בוצע}}} you {סומן על ידיכם} member {סומן על ידי <bdi>{name}</bdi>} other {סומן על ידי מי שכבר לא בקבוצה}} · {time}",
+      "undo": "ביטול הסימון: {title}, {time}",
+      "data": "נתונים",
+      "dataText": "כל מה ש-Keepup שומר על <bdi>{name}</bdi>, בקובץ אחד."
+    },
+    "danger": {
+      "title": "אזור סכנה",
+      "moveLabel": "העברה לקבוצה אחרת",
+      "moveTo": "להעביר את <bdi>{name}</bdi> אל",
+      "move": "העברה",
+      "moving": "מעבירים…",
+      "export": "הורדת הנתונים של {name}",
+      "resetTrigger": "איפוס הפרופיל של {name}",
+      "resetDone": "הפרופיל של <bdi>{name}</bdi> אופס. התחלה חדשה 🌱",
+      "resetTitle": "לאפס את הפרופיל של <bdi>{name}</bdi>?",
+      "resetDescription": "הכול יימחק חוץ מהכינוי והתמונה של <bdi>{name}</bdi>: הרגלים, סימונים, כוכבים, אלבום הגינה ויעדי הפינוקים. אי אפשר לבטל את זה.",
+      "deleteTrigger": "מחיקת הפרופיל של {name}",
+      "deleteTitle": "למחוק את הפרופיל של <bdi>{name}</bdi>?",
+      "deleteDescription": "הפרופיל וההיסטוריה של <bdi>{name}</bdi> יימחקו. אי אפשר לבטל את זה."
+    },
+    "goal": {
+      "title": "יעד פינוק",
+      "starsLabel": "{stars} מתוך {target, plural, one {כוכב אחד} two {# כוכבים} other {# כוכבים}}",
+      "reached": "{gender, select, boy {<bdi>{name}</bdi> הגיע ליעד ✓} girl {<bdi>{name}</bdi> הגיעה ליעד ✓} other {<bdi>{name}</bdi>: היעד הושג ✓}}",
+      "markReceived": "קיבלנו את הפינוק",
+      "progress": "⭐ {stars} מתוך {target}",
+      "cancel": "ביטול היעד",
+      "cancelTitle": "לבטל את היעד?",
+      "cancelDescription": "{gender, select, boy {היעד <bdi>{goal}</bdi> יוסר יחד עם שביל הכוכבים שלו. יעד חדש יתחיל מאפס; הכוכבים יישארו אצל <bdi>{name}</bdi>.} girl {היעד <bdi>{goal}</bdi> יוסר יחד עם שביל הכוכבים שלו. יעד חדש יתחיל מאפס; הכוכבים יישארו אצל <bdi>{name}</bdi>.} other {היעד <bdi>{goal}</bdi> יוסר יחד עם שביל הכוכבים שלו. יעד חדש יתחיל מאפס; הכוכבים יישארו אצל <bdi>{name}</bdi>.}}",
+      "keep": "השארת היעד",
+      "cancelling": "מבטלים…",
+      "intro": "בחרו פינוק ביחד, ואז אספו בשבילו כוכבים.",
+      "set": "הצבת יעד",
+      "choose": "בחרו פינוק ביחד",
+      "moreIdeas": "עוד רעיונות",
+      "own": "רעיון משלנו",
+      "treat": "פינוק",
+      "picture": "תמונה: {emoji}. שינוי",
+      "placeholder": "טיול לאקווריום",
+      "emojiGroup": "אימוג׳י לפינוק",
+      "starsToCollect": "כמה כוכבים לאסוף",
+      "other": "אחר",
+      "stars": "כוכבים",
+      "earns": "כל סימון שווה כוכב אחד.",
+      "submit": "הצבת היעד"
+    },
+    "garden": {
+      "stars": "⭐ {stars} השבוע",
+      "album": "אלבום הגינה",
+      "weekOf": "שבוע מ-{date} · ⭐ {stars}"
+    },
+    "theme": {
+      "title": "מה גדל",
+      "hint": "בחרו את זה יחד עם <bdi>{name}</bdi>. הכוכבים לא משתנים.",
+      "group": "נושא"
+    },
+    "checkIn": {
+      "label": "{state, select, open {לסמן} done {בוצע} pending {מחכה לאישור} checkedToday {סומן היום} frozen {בהפסקה} other {יתחיל בהמשך}} — {name}: {title}"
+    }
+  },
+  "garden": {
+    "starsToNext": "{gender, select, boy {{left, plural, one {עוד כוכב אחד עד {label} {icon}} two {עוד # כוכבים עד {label} {icon}} other {עוד # כוכבים עד {label} {icon}}}} girl {{left, plural, one {עוד כוכב אחד עד {label} {icon}} two {עוד # כוכבים עד {label} {icon}} other {עוד # כוכבים עד {label} {icon}}}} other {{left, plural, one {עוד כוכב אחד עד {label} {icon}} two {עוד # כוכבים עד {label} {icon}} other {עוד # כוכבים עד {label} {icon}}}}}",
+    "restart": "{gender, select, boy {{weekStart, select, sun {{noun}: מתחילים מחדש ביום ראשון {start}} mon {{noun}: מתחילים מחדש ביום שני {start}} other {{noun}: מתחילים מחדש ביום שני {start}}}} girl {{weekStart, select, sun {{noun}: מתחילים מחדש ביום ראשון {start}} mon {{noun}: מתחילים מחדש ביום שני {start}} other {{noun}: מתחילים מחדש ביום שני {start}}}} other {{weekStart, select, sun {{noun}: מתחילים מחדש ביום ראשון {start}} mon {{noun}: מתחילים מחדש ביום שני {start}} other {{noun}: מתחילים מחדש ביום שני {start}}}}}",
+    "restartFull": "{gender, select, boy {{weekStart, select, sun {{done} ביום ראשון מתחילים מחדש} mon {{done} ביום שני מתחילים מחדש} other {{done} ביום שני מתחילים מחדש}}} girl {{weekStart, select, sun {{done} ביום ראשון מתחילים מחדש} mon {{done} ביום שני מתחילים מחדש} other {{done} ביום שני מתחילים מחדש}}} other {{weekStart, select, sun {{done} ביום ראשון מתחילים מחדש} mon {{done} ביום שני מתחילים מחדש} other {{done} ביום שני מתחילים מחדש}}}}",
+    "fullGarden": "גינה בפריחה מלאה! 🌻",
+    "stageDone": "{label}! {icon}",
+    "newWeek": "{gender, select, boy {לאלבום נוספה תמונה: {noun} מהשבוע שעבר 📸 {seed}} girl {לאלבום נוספה תמונה: {noun} מהשבוע שעבר 📸 {seed}} other {לאלבום נוספה תמונה: {noun} מהשבוע שעבר 📸 {seed}}}"
+  },
+  "moved": {
+    "notice": "ל-Keepup יש כתובת חדשה. הוסיפו אותה למסך הבית מכאן, אחר כך מחקו את הסמל הישן והפעילו שוב את התזכורות.",
+    "how": "איך?",
+    "installTitle": "התקנת Keepup",
+    "installIntro": "Keepup עובד הכי טוב ממסך הבית: על כל המסך, ועם תזכורות.",
+    "installReminders": "התקנתם מחדש? התזכורות לא עוברות עם האפליקציה. הפעילו אותן שוב: {profile} ← {settings} ← {turnOn}."
+  },
+  "offline": {
+    "banner": "אין חיבור · מוצג העדכון האחרון",
+    "needsConnection": "צריך חיבור",
+    "needsConnectionFor": "צריך חיבור<sr>: {label}</sr>",
+    "saving": "שומרים… ☁️",
+    "undo": "ביטול",
+    "undoLabel": "ביטול הסימון: {habit}",
+    "couldntSave": "לא הצלחנו לשמור סימון. נא להוסיף אותו שוב.",
+    "unsavedSignOut": "{n, plural, one {{count} סימון עוד לא נשמר. להתנתק בכל זאת? הוא יימחק מהטלפון הזה.} two {{count} סימונים עוד לא נשמרו. להתנתק בכל זאת? הם יימחקו מהטלפון הזה.} other {{count} סימונים עוד לא נשמרו. להתנתק בכל זאת? הם יימחקו מהטלפון הזה.}}",
+    "signOutAnyway": "להתנתק בכל זאת",
+    "staySignedIn": "להישאר מחוברים",
+    "page": {
+      "title": "אין חיבור",
+      "text": "הדף הזה צריך חיבור. \"היום\" ומסך הילדים עובדים גם בלי חיבור, והסימונים שתעשו שם יחכו בטלפון עד שהחיבור יחזור.",
+      "openToday": "פתיחת \"היום\""
+    }
+  },
+  "pushSupport": {
+    "needsInstall": "ב-iPhone, התזכורות עובדות אחרי ש-Keepup נמצא במסך הבית.",
+    "iosTooOld": "התזכורות צריכות iOS 16.4 ומעלה. אפשר לעדכן בהגדרות ← כללי ← עדכוני תוכנה.",
+    "unsupported": "הדפדפן הזה לא יכול להציג התראות. נסו את Chrome, או את Safari ב-iPhone.",
+    "blocked": "ההתראות של Keepup כבויות. אפשר להפעיל אותן בהגדרות של הדפדפן או של הטלפון.",
+    "notConfigured": "ההתראות עוד לא מוגדרות כאן."
+  },
+  "devices": {
+    "generic": "מכשיר"
+  },
+  "today": {
+    "title": "היום",
+    "resetDone": "הנתונים שלכם אופסו. התחלה חדשה 🌱",
+    "progressLabel": "ההתקדמות של היום",
+    "ringLabel": "היום בוצעו {done} מתוך {total}",
+    "doneOfTotal": "בוצעו {done} מתוך {total}",
+    "habitsLabel": "ההרגלים של היום: {list}",
+    "itemDone": "{title}: בוצע",
+    "itemTodo": "{title}: עוד לא בוצע",
+    "thisWeek": "השבוע",
+    "weekCount": "{done} מתוך {possible}",
+    "bestStreak": "הרצף הארוך ביותר:",
+    "line": {
+      "allDone": "הכול בוצע להיום 🎉",
+      "toGoToday": "{n, plural, one {נשאר עוד אחד להיום} two {נשארו עוד # להיום} other {נשארו עוד # להיום}}",
+      "oneMore": "עוד אחד!",
+      "halfway": "באמצע הדרך 💪",
+      "toGo": "{n, plural, one {נשאר עוד אחד} two {נשארו עוד #} other {נשארו עוד #}}"
+    },
+    "welcome": {
+      "title": "ברוכים הבאים לקבוצה <bdi>{name}</bdi> 👋",
+      "people": "{n, plural, one {אדם אחד} two {# אנשים} other {# אנשים}}",
+      "habitsBelow": "ההרגלים של הקבוצה מופיעים למטה",
+      "noGroupHabits": "עוד אין הרגלים לקבוצה",
+      "open": "פתיחה",
+      "openLabel": "פתיחת הקבוצה {name}"
+    },
+    "approvalsWaiting": "{n, plural, one {סימון אחד מחכה לכם} two {# סימונים מחכים לכם} other {# סימונים מחכים לכם}}",
+    "habitFallback": "הרגל",
+    "empty": {
+      "text": "עוד אין מה לעשות. הוסיפו הרגל כדי להתחיל.",
+      "action": "הוספת ההרגל הראשון"
+    },
+    "sections": {
+      "mine": "שלי",
+      "groupFallback": "קבוצה",
+      "allCheckedOff": "הכול סומן. כל הכבוד.",
+      "doneForToday": "בוצע להיום",
+      "later": "בהמשך"
+    },
+    "finish": {
+      "label": "{title}: הסתיים",
+      "reachedEnd": "<bdi>{title}</bdi>: התקופה הסתיימה{celebrate, select, yes { 🎉} other {}}",
+      "finish": "סיום",
+      "keepGoing": "המשך",
+      "adminChooses": "מנהלי הקבוצה מחליטים מה הלאה."
+    },
+    "gentle": {
+      "inviteFamily": {
+        "title": "הזמינו את המשפחה",
+        "body": "שתפו הרגלים כמו ארוחת ערב משפחתית. ההרגל בוצע כשכולם עשו אותו.",
+        "cta": "הזמנה"
+      },
+      "inviteFriend": {
+        "title": "הזמינו חבר או חברה",
+        "body": "עשו הרגל ביחד ועודדו זה את זה.",
+        "cta": "הזמנה"
+      },
+      "addChild": {
+        "title": "להוסיף ילד/ה? 🐼",
+        "body": "צחצוח שיניים, קריאה ביחד ועוד."
+      },
+      "notNow": "לא עכשיו"
+    }
+  },
+  "nav": {
+    "main": "ראשי",
+    "today": "היום",
+    "progress": "התקדמות",
+    "newHabit": "הרגל חדש",
+    "groups": "קבוצות",
+    "profile": "פרופיל",
+    "inbox": "הודעות",
+    "inboxUnread": "{n, plural, one {הודעות, {n, number, ::group-off} שלא נקראה} two {הודעות, {n, number, ::group-off} שלא נקראו} other {הודעות, {n, number, ::group-off} שלא נקראו}}",
+    "profileLevel": "פרופיל, רמה {level}",
+    "profileLevelProgress": "פרופיל, רמה {level}, {percent, number, ::percent} עד רמה {next}"
+  },
+  "habits": {
+    "new": {
+      "title": "הרגל חדש"
+    },
+    "common": {
+      "everyoneDidIt": "כולם עשו את זה ✓"
+    },
+    "form": {
+      "tabsLabel": "קטגוריות של תבניות",
+      "popular": "פופולרי",
+      "together": "ביחד",
+      "createOwn": "יצירת הרגל משלכם",
+      "addHabit": "הוספת הרגל",
+      "adding": "מוסיפים…",
+      "addHabitSchedule": "הוספת הרגל · {schedule}",
+      "titleLabel": "שם",
+      "categoryLabel": "קטגוריה",
+      "pickCategory": "בחרו קטגוריה",
+      "howOften": "באיזו תדירות",
+      "times": "כמה פעמים",
+      "per": "תקופה",
+      "frequencyOption": "{n, plural, one {פעם} two {פעמים} other {פעמים}} ב{period, select, day {יום} week {שבוע} other {חודש}}",
+      "whoFor": "בשביל מי",
+      "justMe": "רק בשבילי",
+      "groupNote": "בקבוצה <bdi>{group}</bdi> עושים את זה ביחד. ההרגל בוצע כשכולם סימנו.",
+      "needsApproval": "צריך אישור",
+      "needsApprovalHint": "מישהו אחר בקבוצה <bdi>{group}</bdi> מאשר כל סימון.",
+      "include": "לכלול את <bdi>{name}</bdi>",
+      "starts": "התחלה",
+      "startsNote": "{date}. שום דבר לפני היום הזה לא נספר."
+    },
+    "checkIn": {
+      "state": {
+        "open": "לסמן",
+        "done": "בוצע",
+        "pending": "מחכה לאישור",
+        "checked-today": "סומן היום",
+        "frozen": "בהפסקה",
+        "not-started": "יתחיל בהמשך"
+      },
+      "label": "{state}: {title}",
+      "labelRing": "{state}: {title}, {done} מתוך {target}",
+      "whoDid": "מי עשה את {title}?",
+      "meAndChild": "אני + <bdi>{name}</bdi>",
+      "meAndEveryone": "אני + כולם"
+    },
+    "checkIns": {
+      "empty": "עוד אין סימונים בתקופה הזו.",
+      "count": "{n, plural, one {{count} סימון בתקופה הזו} two {{count} סימונים בתקופה הזו} other {{count} סימונים בתקופה הזו}}",
+      "undoAt": "ביטול הסימון של {time}"
+    },
+    "streak": {
+      "label": "רצף:"
+    },
+    "memberStatus": {
+      "done": "בוצע",
+      "pending": "מחכה לאישור",
+      "paused": "בהפסקה",
+      "open": "עוד לא",
+      "not_required": "מהתקופה הבאה",
+      "avatar": {
+        "done": "{name}: בוצע",
+        "pending": "{name}: מחכה לאישור",
+        "paused": "{name}: בהפסקה",
+        "open": "{name}: עוד לא",
+        "not_required": "{name}: מהתקופה הבאה"
+      }
+    },
+    "history": {
+      "empty": "עוד אין כאן כלום. כל {period, select, day {יום} week {שבוע} other {חודש}} שתשלימו ימלא משבצת.",
+      "cell": "{date}: {outcome}"
+    },
+    "countStepper": {
+      "decrease": "פחות",
+      "increase": "יותר"
+    },
+    "cheer": {
+      "done": "נשלח עידוד<sr> <bdi>{name}</bdi></sr>",
+      "cta": "עידוד ❤️<sr> <bdi>{name}</bdi></sr>"
+    },
+    "nudge": {
+      "done": "נשלחה תזכורת ✓<sr> <bdi>{name}</bdi></sr>",
+      "cta": "תזכורת<sr> <bdi>{name}</bdi></sr>",
+      "menuLabel": "תזכורת ל-{name}"
+    },
+    "archive": {
+      "trigger": "העברה לארכיון",
+      "title": "להעביר את \"<bdi>{title}</bdi>\" לארכיון?",
+      "description": "ההרגל ייעלם מ\"היום\", וההיסטוריה שלו תישמר ב\"התקדמות ← ארכיון\".",
+      "confirm": "העברה לארכיון",
+      "pending": "מעבירים לארכיון…"
+    },
+    "delete": {
+      "trigger": "מחיקת ההרגל",
+      "title": "למחוק את \"<bdi>{title}</bdi>\"?",
+      "description": "אי אפשר לבטל את זה."
+    },
+    "restore": {
+      "label": "שחזור",
+      "aria": "שחזור: {title}",
+      "pending": "משחזרים…"
+    },
+    "startAgain": {
+      "label": "התחלה מחדש",
+      "aria": "התחלה מחדש: {title}",
+      "pending": "מתחילים…",
+      "openNew": "פתיחת ההרגל החדש <bdi>{title}</bdi>"
+    },
+    "reminders": {
+      "group": "תזכורות",
+      "legend": "מתי להזכיר לכם",
+      "summary": "בסיכום היומי שלי",
+      "time": "בשעה מסוימת",
+      "off": "בלי תזכורות",
+      "timeLabel": "שעת התזכורת",
+      "saved": "נשמר ✓",
+      "mute": "השתקת ההרגל הזה",
+      "muteHint": "בלי התראות עליו, גם לא מהקבוצה. הוא נשאר בהודעות.",
+      "turnOn": "הפעלת תזכורות במכשיר הזה",
+      "hintMuted": "מושתק: אין תזכורות להרגל הזה",
+      "hintOff": "בלי תזכורות",
+      "hintTime": "ב-{time}",
+      "hintSummary": "בסיכום היומי ב-{time}"
+    },
+    "freeze": {
+      "pauseHabit": "הפסקה בהרגל",
+      "pause": "הפסקה",
+      "resume": "חידוש",
+      "resumeMe": "חזרה להרגל",
+      "meNote": "בזמן ההפסקה לא סופרים אתכם. כל השאר ממשיכים.",
+      "starts": "ההפסקה מתחילה ב-{date}",
+      "pausedFrom": "בהפסקה מ-{from}",
+      "pausedFromUntil": "בהפסקה מ-{from} עד {until}",
+      "cancel": "ביטול ההפסקה",
+      "pauseFrom": "תחילת ההפסקה",
+      "addReturn": "הוספת תאריך חזרה",
+      "until": "עד",
+      "removeEnd": "הסרת תאריך הסיום",
+      "pausing": "עוצרים…"
+    },
+    "end": {
+      "lastDay": "יום אחרון: {date}.",
+      "noEnd": "בלי סיום: ההרגל ממשיך עד שתעצרו אותו.",
+      "reached": "ההרגל הגיע לסוף. \"המשך\" מסיר את הסיום; \"סיום\" מעביר אותו להרגלים שהסתיימו.",
+      "removeEnd": "הסרת הסיום"
+    },
+    "endPicker": {
+      "legend": "סיום",
+      "noEnd": "בלי סיום",
+      "untilDate": "עד תאריך",
+      "dateLabel": "תאריך סיום",
+      "lastDay": "יום אחרון: {date}. אחר כך תבחרו אם להמשיך או לסיים.",
+      "keepsGoing": "ממשיך עד שתעצרו אותו."
+    },
+    "emoji": {
+      "choose": "בחירת אימוג׳י (עכשיו {emoji})",
+      "suggested": "אימוג׳י מוצעים",
+      "another": "אימוג׳י אחר",
+      "help": "לחצו על התיבה, ואז על המקש 😀 במקלדת.",
+      "notEmoji": "זה טקסט, לא אימוג׳י. בחרו אחד למעלה או השתמשו במקלדת האימוג׳י.",
+      "justOne": "רק אימוג׳י אחד, בבקשה."
+    },
+    "details": {
+      "none": "אין"
+    },
+    "datePicker": {
+      "tomorrow": "מחר",
+      "next": "{day, select, 0 {ראשון הבא} 1 {שני הבא} 2 {שלישי הבא} 3 {רביעי הבא} 4 {חמישי הבא} 5 {שישי הבא} 6 {שבת הבאה} other {השבוע הבא}}",
+      "date": "תאריך",
+      "pick": "בחירת תאריך",
+      "pickWith": "בחירת תאריך, {date}",
+      "previousMonth": "החודש הקודם",
+      "nextMonth": "החודש הבא"
+    },
+    "detail": {
+      "groupLine": "<bdi>{group}</bdi> · {schedule}{approval, select, yes { · צריך אישור} other {}}{archived, select, yes { · בארכיון} other {}}",
+      "categoryLine": "{schedule} · {category}{archived, select, yes { · בארכיון} other {}}",
+      "scheduleLine": "{schedule}{archived, select, yes { · בארכיון} other {}}",
+      "archived": {
+        "title": "בארכיון",
+        "note": "{who, select, child {אפשר לשחזר את ההרגל כדי להחזיר אותו לרשימה של <bdi>{name}</bdi>. הימים שבהם הוא היה בארכיון לא נחשבים כפספוס.} other {אפשר לשחזר את ההרגל כדי להחזיר אותו ל\"היום\". הימים שבהם הוא היה בארכיון לא נחשבים כפספוס.}}"
+      },
+      "periodTitle": {
+        "day": "היום",
+        "week": "השבוע",
+        "month": "החודש"
+      },
+      "you": "(אני)",
+      "streaksLabel": "רצפים",
+      "childStreak": "הרצף של <bdi>{name}</bdi>",
+      "yourStreak": "הרצף שלכם",
+      "bestStreak": "הרצף הארוך ביותר",
+      "streakUnit": {
+        "day": "{n, plural, one {יום} two {ימים} other {ימים}}",
+        "week": "{n, plural, one {שבוע} two {שבועות} other {שבועות}}",
+        "month": "{n, plural, one {חודש} two {חודשים} other {חודשים}}"
+      },
+      "history": "היסטוריה",
+      "manage": {
+        "label": "ניהול ההרגל",
+        "reminders": "תזכורות",
+        "pauseMe": {
+          "title": "הפסקה רק בשבילי",
+          "hintPaused": "אתם בהפסקה. אפשר לחזור בכל זמן",
+          "hintScheduled": "ההפסקה שלכם מתוכננת",
+          "hintIdle": "נוסעים לזמן מה? כל השאר ממשיכים"
+        },
+        "ends": {
+          "title": "סיום",
+          "hintReached": "ההרגל הגיע לסוף. אפשר להמשיך או לסיים",
+          "hintLastDay": "יום אחרון {date}",
+          "hintNone": "עוד אין סיום"
+        },
+        "pause": {
+          "everyone": "הפסקה לכולם",
+          "paused": "בהפסקה",
+          "scheduled": "הפסקה מתוכננת",
+          "title": "הפסקה",
+          "hintResume": "אפשר לחזור או לבטל את ההפסקה",
+          "hintGroup": "נוסעים ביחד? הפסקה שומרת על הרצף של הקבוצה",
+          "hintChild": "נוסעים? הרצף של <bdi>{name}</bdi> מחכה",
+          "hintOwn": "נוסעים? הרצף שלכם מחכה לכם"
+        },
+        "edit": {
+          "title": "עריכת פרטים",
+          "hintWithStart": "שם, אימוג׳י, קטגוריה ותאריך התחלה",
+          "hintNoStart": "שם, אימוג׳י וקטגוריה"
+        },
+        "archive": {
+          "title": "העברה לארכיון",
+          "hint": "ההיסטוריה נשמרת, ההרגל יוצא מ\"היום\""
+        },
+        "delete": {
+          "title": "מחיקה",
+          "hint": "עוד אין לו סימונים, אז שום דבר לא הולך לאיבוד"
+        }
+      }
+    },
+    "actions": {
+      "pickValidDates": "נא לבחור תאריכים תקינים.",
+      "pickGroup": "נא לבחור קבוצה.",
+      "pickDate": "נא לבחור תאריך.",
+      "startedAgainNoEnd": "ההרגל התחיל מחדש, אבל לא הצלחנו לקבוע את הסיום. אפשר לקבוע אותו בדף ההרגל."
+    }
+  },
+  "progress": {
+    "title": "התקדמות",
+    "recaps": "סיכומים",
+    "back": "חזרה להתקדמות",
+    "listLabel": "רשימת הרגלים",
+    "tabs": {
+      "active": "פעילים",
+      "finished": "הסתיימו",
+      "archived": "ארכיון"
+    },
+    "empty": {
+      "finished": "עוד אין הרגלים שהסתיימו. אפשר לתת להרגל סיום, למשל 30 ימים.",
+      "archived": "אין הרגלים בארכיון."
+    },
+    "habitLine": "{ended, select, yes {הסתיים · להחליט במסך \"היום\" · {schedule}} other {{schedule}}}{best, select, yes { · שיא {span}} other {}}",
+    "calendar": {
+      "title": "לוח שנה",
+      "monthLabel": "חודש",
+      "previousMonth": "החודש הקודם, {month}",
+      "nextMonth": "החודש הבא, {month}"
+    }
+  },
+  "overview": {
+    "yourWeek": "השבוע שלכם",
+    "calendar": "לוח שנה",
+    "noStreak": "עוד אין רצף",
+    "checkIns": "{n, plural, one {סימון} two {סימונים} other {סימונים}}",
+    "activeHabits": "{n, plural, one {הרגל פעיל} two {הרגלים פעילים} other {הרגלים פעילים}}",
+    "byDayLabel": "השבוע לפי ימים",
+    "tapDay": "לחצו על יום כדי לראות מה עשיתם.",
+    "day": {
+      "future": "{name}: עוד לפנינו",
+      "nothingDue": "{name}: שום דבר לא מתוכנן",
+      "counts": "{name}: בוצעו {done} מתוך {possible}"
+    },
+    "dailyDone": "הרגלים יומיים שבוצעו: {done} מתוך {possible}",
+    "noCheckIns": "אין סימונים ביום הזה.",
+    "waiting": "{n, plural, one {# מחכה} two {# מחכים} other {# מחכים}}",
+    "status": {
+      "done": "בוצע",
+      "checked_in": "סומן",
+      "open": "עוד לא בוצע",
+      "missed": "לא בוצע",
+      "paused": "בהפסקה",
+      "rested": "יום מנוחה"
+    }
+  },
+  "common": {
+    "close": "סגירה",
+    "save": "שמירה",
+    "saved": "נשמר",
+    "saving": "שומרים…",
+    "dismiss": "הסתרה",
+    "whatIsThis": "מה זה?",
+    "signOut": "התנתקות",
+    "signOutTitle": "להתנתק?",
+    "privacyConsent": "אם תמשיכו, אתם מסכימים ל<link>מדיניות הפרטיות</link>",
+    "firstCheckinTip": {
+      "dismiss": "הסתרת הטיפ: ",
+      "text": "לחצו כשתסיימו"
+    },
+    "cancel": "ביטול",
+    "creating": "יוצרים…",
+    "exporting": "מורידים…",
+    "deleting": "מוחקים…",
+    "resetting": "מאפסים…",
+    "reset": "איפוס",
+    "delete": "מחיקה",
+    "addHabit": "הוספת הרגל",
+    "noHabits": "עוד אין הרגלים.",
+    "change": "שינוי",
+    "continue": "המשך",
+    "tagline": "הרגלים, ביחד.",
+    "listSeparator": ", ",
+    "sectionSeparator": " · ",
+    "tryAgain": "ניסיון חוזר"
+  },
+  "inbox": {
+    "title": "הודעות",
+    "approvals": {
+      "empty": "שום דבר לא מחכה לכם.",
+      "approveAll": "אישור הכול ({n})",
+      "rowLabel": "{name}: סימון — {habit}",
+      "did": "<bdi>{name}</bdi>: סימון ✓ <bdi>{habit}</bdi>",
+      "approve": "אישור",
+      "notApproved": "לא אושר"
+    },
+    "feed": {
+      "empty": "עוד אין כלום. הפעילות מהקבוצות שלכם תופיע כאן.",
+      "unread": "לא נקרא: "
+    },
+    "errors": {
+      "pickMessage": "נא לבחור אחת מההודעות."
+    }
+  },
+  "notifications": {
+    "card": {
+      "title": "התראות",
+      "dailyReminder": "תזכורת יומית",
+      "pauseAll": "השהיית הכול",
+      "pausedUntil": "מושהות עד {until}",
+      "pausedUntilOn": "מושהות עד שתפעילו שוב",
+      "resume": "חידוש",
+      "whatToSend": "מה לשלוח",
+      "devices": "מכשירים",
+      "thisDevice": "המכשיר הזה",
+      "remove": "הסרה",
+      "removeLabel": "הסרה: {label}",
+      "removeThisLabel": "הסרה: {label} (המכשיר הזה)"
+    },
+    "turnOn": {
+      "label": "הפעלת תזכורות",
+      "addToHomeScreen": "הוסיפו את Keepup למסך הבית",
+      "title": "תזכורות",
+      "stepShare": "ב-Safari, לחצו על \"שיתוף\" (הריבוע עם החץ).",
+      "stepAdd": "בחרו \"הוספה למסך הבית\", ואז \"הוספה\".",
+      "stepOpen": "פתחו את Keepup ממסך הבית והפעילו שם את התזכורות.",
+      "intro": "סיכום אחד ביום של מה שעוד נשאר. אפשר להשהות או לשנות אותו בכל זמן.",
+      "summaryAt": "סיכום יומי בשעה",
+      "allow": "אישור התראות",
+      "failed": "לא הצלחנו להגדיר התראות במכשיר הזה. נסו שוב."
+    }
+  },
+  "celebrations": {
+    "label": "חגיגה",
+    "dismissHint": "לחצו על המסך או על Esc",
+    "everyoneDidIt": "כולם עשו את זה!",
+    "everyoneDidItHabit": "<bdi>{habit}</bdi> ✓",
+    "habitSeparator": " · "
+  },
+  "avatars": {
+    "hint": "בחרו חיה או משהו חמוד. אף פעם לא תמונות.",
+    "avatarGroup": "דמות",
+    "backgroundGroup": "צבע רקע",
+    "colors": {
+      "peach": "אפרסק",
+      "sage": "מרווה",
+      "sky": "שמיים",
+      "lilac": "לילך",
+      "butter": "חמאה",
+      "rose": "ורד"
+    },
+    "pickEmoji": "נא לבחור אחת מהדמויות האלה.",
+    "pickColor": "נא לבחור צבע.",
+    "saveFailed": "לא הצלחנו לשמור את הדמות. נסו שוב."
+  },
+  "profile": {
+    "form": {
+      "displayName": "השם שיוצג",
+      "weekStart": "תחילת השבוע",
+      "weekStartHint": "הרגלים שבועיים מתאפסים ביום הזה.",
+      "monday": "יום שני",
+      "sunday": "יום ראשון",
+      "weekStartNote": "חל על הרגלים שבועיים שתיצרו מעכשיו."
+    },
+    "timezone": {
+      "label": "אזור זמן",
+      "hint": "בחרו את השעה הנוכחית במקום שבו אתם נמצאים. הימים שלכם מתחילים שם בחצות.",
+      "useDevice": "שימוש באזור הזמן של המכשיר הזה ({city})",
+      "changeNote": "השינויים יחולו מהיום ומהשבוע הבאים."
+    },
+    "accountNav": "חשבון",
+    "links": {
+      "whatsNew": "מה חדש"
+    },
+    "avatar": {
+      "title": "החלפת הדמות שלכם",
+      "description": "מוצגת לקבוצות שלכם."
+    },
+    "summary": "<place>{city}</place> <dot>·</dot> <week>השבוע מתחיל {weekStart, select, sun {ביום ראשון} mon {ביום שני} other {ביום שני}}</week>",
+    "footer": {
+      "privacy": "מדיניות הפרטיות",
+      "install": "איך להתקין"
+    },
+    "level": {
+      "xpLabel": "XP עד רמה {next}"
+    },
+    "errors": {
+      "timezoneUnsupported": "אזור הזמן הזה לא נתמך. בחרו עיר קרובה.",
+      "saveFailed": "השמירה לא הצליחה. נסו שוב."
+    }
+  },
+  "kidView": {
+    "sound": "צליל",
+    "starsThisWeek": "{count, plural, one {כוכב אחד השבוע} two {# כוכבים השבוע} other {# כוכבים השבוע}}",
+    "done": ", בוצע",
+    "exitLabel": "להחזיק כדי לצאת מהמסך של {name}",
+    "closing": "סוגרים…",
+    "holdToExit": "להחזיק כדי לצאת",
+    "hold": "{step, select, 0 {מחזיקים…} 1 {מחזיקים… 1…} other {מחזיקים… 1… 2}}",
+    "newWeek": {
+      "label": "שבוע חדש",
+      "album": "צפייה באלבום",
+      "gotIt": "הבנתי"
+    }
+  },
+  "achievements": {
+    "title": "הישגים",
+    "earnedCount": "{earned, plural, one {הושג # מתוך {total}} two {הושגו # מתוך {total}} other {הושגו # מתוך {total}}}",
+    "earnedLabel": "{name}, הושג ב-{date}",
+    "lockedLabel": "{name}, עוד לא הושג: {hint}",
+    "earnedNote": "הושג ב-{date}",
+    "unavailable": "אי אפשר להציג את התגים כרגע. נסו שוב מאוחר יותר."
+  },
+  "landing": {
+    "getStarted": "בואו נתחיל"
+  },
+  "meta": {
+    "pageTitle": "{page} · Keepup",
+    "shareTitle": "Keepup: הרגלים, ביחד",
+    "shareText": "מעקב הרגלים לאדם אחד או לכל המשפחה, כולל הילדים."
+  },
+  "install": {
+    "iphone": {
+      "heading": "iPhone ו-iPad",
+      "step1": "פתחו את Keepup ב-Safari.",
+      "step2": "לחצו על \"שיתוף\" (או על ⋯, ואז \"שיתוף\").",
+      "step3": "לחצו על \"הוספה למסך הבית\".",
+      "step4": "בדקו שהשם הוא Keepup, ולחצו על \"הוספה\".",
+      "step5": "פתחו את Keepup מהסמל החדש והיכנסו.",
+      "step6": "{profile} ← {settings} ← {turnOn}.",
+      "step7": "היה לכם סמל ישן? לחצו עליו לחיצה ארוכה והסירו אותו.",
+      "pic1": "שלב 1: ב-Safari, לחצו על כפתור \"שיתוף\" בסרגל הכלים, או על ⋯ ואז \"שיתוף\"",
+      "pic2": "שלב 2: בחלון השיתוף, לחצו על \"הוספה למסך הבית\"",
+      "pic3": "שלב 3: הסמל והשם של Keepup, עם \"הוספה\" בפינה הימנית העליונה",
+      "pic4": "שלב 4: הסמל של Keepup במסך הבית"
+    },
+    "android": {
+      "heading": "Android",
+      "step1": "פתחו את Keepup ב-Chrome.",
+      "step2": "לחצו על ⋮, ואז \"התקנת האפליקציה\" (או \"הוספה למסך הבית\").",
+      "step3": "פתחו את Keepup מהסמל החדש, והפעילו תזכורות ב{profile} ← {settings}.",
+      "pic1": "שלב 1: ב-Chrome, לחצו על התפריט ⋮ ליד שורת הכתובת",
+      "pic2": "שלב 2: בתפריט, לחצו על \"התקנת האפליקציה\"",
+      "pic3": "שלב 3: הסמל של Keepup במסך הבית"
+    },
+    "computer": {
+      "heading": "מחשב",
+      "step1": "ב-Chrome או ב-Edge, לחצו על סמל ההתקנה בצד שורת הכתובת, ואז \"התקנה\".",
+      "step2": "אחר כך הפעילו תזכורות ב{profile} ← {settings}.",
+      "pic1": "סמל ההתקנה בצד שורת הכתובת, וחלון \"התקנת Keepup\" עם כפתור \"התקנה\""
+    }
+  },
+  "errorPage": {
+    "title": "משהו השתבש",
+    "text": "נתקלנו בבעיה בטעינת הדף. נסו שוב, או חזרו ל\"היום\".",
+    "backToToday": "חזרה ל\"היום\""
+  },
+  "notFound": {
+    "title": "הדף לא נמצא",
+    "text": "הדף שחיפשתם לא קיים או שהועבר.",
+    "backHome": "חזרה לדף הבית"
+  },
+  "whatsNew": {
+    "version": "גרסה {version}",
+    "comingSoon": "בקרוב"
+  }
+}

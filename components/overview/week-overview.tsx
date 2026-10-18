@@ -78,7 +78,7 @@ export function WeekStrip({ t, overview: o }: { t: T; overview: WeekOverview }) 
           </span>
         </>
       )}
-      <ChevronRight className="ml-auto size-4 text-muted-foreground" aria-hidden />
+      <ChevronRight className="ms-auto size-4 text-muted-foreground rtl:-scale-x-100" aria-hidden />
     </Link>
   );
 }
@@ -100,7 +100,7 @@ export function WeekCard({ t, overview: o, days }: { t: T; overview: WeekOvervie
           {line && <p className="text-sm text-muted-foreground">{line}</p>}
         </div>
         {days && (
-          <Link href="/progress/calendar" className="ml-auto flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted">
+          <Link href="/progress/calendar" className="ms-auto flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted">
             <CalendarDays aria-hidden className="size-4" />
             {t("overview.calendar")}
           </Link>

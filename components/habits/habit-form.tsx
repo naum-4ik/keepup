@@ -109,7 +109,7 @@ export function HabitForm({
             aria-selected={tab === key}
             onClick={() => setTab(key)}
             className={cn(
-              "flex min-h-11 items-center gap-1.5 rounded-xl bg-card px-2 py-1.5 text-left text-xs leading-tight font-semibold shadow-soft",
+              "flex min-h-11 items-center gap-1.5 rounded-xl bg-card px-2 py-1.5 text-start text-xs leading-tight font-semibold shadow-soft",
               tab === key ? "bg-accent text-foreground ring-2 ring-primary" : "text-muted-foreground hover:bg-muted",
             )}
           >
@@ -133,7 +133,7 @@ export function HabitForm({
             key={t.id}
             type="button"
             onClick={() => pickTemplate(t)}
-            className="flex h-full items-center gap-2.5 rounded-2xl bg-card px-3 text-left shadow-soft hover:bg-muted"
+            className="flex h-full items-center gap-2.5 rounded-2xl bg-card px-3 text-start shadow-soft hover:bg-muted"
           >
             <HabitEmoji category={t.category} emoji={t.emoji} size="xs" />
             <span className="flex min-w-0 flex-col">
@@ -170,7 +170,7 @@ export function HabitForm({
           }}
           onEscapeKeyDown={(e) => (e.target as Element | null)?.closest?.(`[${EMOJI_PANEL_ATTR}]`) && e.preventDefault()}
         >
-          <div className="flex flex-col gap-1 pr-10">
+          <div className="flex flex-col gap-1 pe-10">
             <DialogTitle>{draft?.custom ? tr("habits.form.createOwn") : tr("habits.form.addHabit")}</DialogTitle>
           </div>
           {draft && (
@@ -390,7 +390,7 @@ function Toggle({ name, value, label, hint, icon }: { name: string; value?: stri
         name={name}
         value={value}
         onChange={(e) => (e.currentTarget.dataset.on = e.currentTarget.checked ? "1" : "0")}
-        className="relative h-7 w-12 shrink-0 cursor-pointer appearance-none rounded-full bg-muted transition-colors before:absolute before:top-0.5 before:left-0.5 before:size-6 before:rounded-full before:bg-white before:shadow-sm before:transition-transform checked:bg-primary checked:before:translate-x-5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        className="relative h-7 w-12 shrink-0 cursor-pointer appearance-none rounded-full bg-muted transition-colors before:absolute before:top-0.5 before:start-0.5 before:size-6 before:rounded-full before:bg-white before:shadow-sm before:transition-transform checked:bg-primary checked:before:translate-x-5 rtl:checked:before:-translate-x-5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       />
     </label>
   );

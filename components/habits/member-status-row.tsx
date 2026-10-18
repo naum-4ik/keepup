@@ -33,7 +33,7 @@ export function MemberAvatar({ member, status, size = "sm" }: { member: Member; 
         <span
           aria-hidden
           className={cn(
-            "absolute -right-1 -bottom-1 flex items-center justify-center rounded-full text-card ring-2 ring-card",
+            "absolute -end-1 -bottom-1 flex items-center justify-center rounded-full text-card ring-2 ring-card",
             size === "sm" ? "size-3.5" : "size-4.5",
             badge.className,
           )}

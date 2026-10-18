@@ -154,9 +154,9 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
       <RenderedTaps ids={renderedTaps} periods={tapPeriods([h], () => group?.timezone ?? profile.timezone)} />
       <Link
         href={child ? `/kids/${child.id}` : "/today"}
-        className="-ml-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+        className="-ms-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
       >
-        <ChevronLeft aria-hidden className="size-4 shrink-0" />
+        <ChevronLeft aria-hidden className="size-4 shrink-0 rtl:-scale-x-100" />
         <span className="truncate">{child ? child.name : t("today.title")}</span>
       </Link>
 

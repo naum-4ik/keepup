@@ -588,7 +588,7 @@ export function KidPlay({
                   setCheer((c) => (c === h.id ? null : c));
                 }}
                 className={cn(
-                  "flex min-h-24 w-full touch-manipulation items-center gap-4 rounded-3xl border-2 p-4 text-left shadow-soft transition-colors",
+                  "flex min-h-24 w-full touch-manipulation items-center gap-4 rounded-3xl border-2 p-4 text-start shadow-soft transition-colors",
                   done ? "border-done bg-done text-done-foreground" : "border-transparent bg-card active:bg-accent",
                   bumped === h.id ? "animate-wiggle" : cheer === h.id && "animate-card-bounce",
                 )}

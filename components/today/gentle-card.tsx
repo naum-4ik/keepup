@@ -55,7 +55,7 @@ export function GentleCard({ card }: { card: GentleCardData }) {
           setHidden(true);
           void dismissCard(card.key);
         }}
-        className="-mt-2 -mr-2 flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+        className="-mt-2 -me-2 flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
       >
         <X aria-hidden className="size-5" />
       </button>

@@ -5,6 +5,7 @@ import { completeOnboarding, signIn, signUp, uniqueEmail } from "./helpers/auth"
 
 // The Russian words come from the catalog, so a wording fix there doesn't break these tests.
 const ru = JSON.parse(readFileSync(join(process.cwd(), "supabase/functions/_shared/messages/ru.json"), "utf8"));
+const he = JSON.parse(readFileSync(join(process.cwd(), "supabase/functions/_shared/messages/he.json"), "utf8"));
 
 test("English pages say lang=en and ltr", async ({ page }) => {
   await page.goto("/login");
@@ -51,6 +52,17 @@ test("a locale=ru cookie shows the sign-in screen in Russian", async ({ page, co
   await page.getByLabel(ru.auth.email).fill(uniqueEmail());
   await page.getByRole("button", { name: ru.common.continue, exact: true }).click();
   await expect(page.getByRole("button", { name: ru.auth.signIn, exact: true })).toBeVisible();
+});
+
+test("a locale=he cookie shows the sign-in screen in Hebrew, right to left", async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: "locale", value: "he", url: baseURL! }]);
+  await page.goto("/login");
+  await expect(page.locator("html")).toHaveAttribute("lang", "he");
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await expect(page.getByText(he.auth.login.title, { exact: true })).toBeVisible();
+  await page.getByLabel(he.auth.email).fill(uniqueEmail());
+  await page.getByRole("button", { name: he.common.continue, exact: true }).click();
+  await expect(page.getByRole("button", { name: he.auth.signIn, exact: true })).toBeVisible();
 });
 
 test("Settings → Language → Русский switches the app, and the profile carries it to a new browser", async ({ page, browser }) => {

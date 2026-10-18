@@ -17,9 +17,9 @@ export default async function NewChildPage({ searchParams }: { searchParams: Pro
     <section className="flex flex-col gap-3 pt-2 pb-6">
       <Link
         href={`/groups/${group.id}`}
-        className="-ml-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+        className="-ms-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
       >
-        <ChevronLeft aria-hidden className="size-4 shrink-0" />
+        <ChevronLeft aria-hidden className="size-4 shrink-0 rtl:-scale-x-100" />
         <span className="truncate">{group.name}</span>
       </Link>
       <h1 className="text-xl font-bold">{tg("addChild")}</h1>

@@ -41,7 +41,7 @@ export function CheckInList({
       {checkIns.length > 1 && <p className="text-sm font-semibold">{t("habits.checkIns.count", { n: checkIns.length, count: String(checkIns.length) })}</p>}
       <ul className="flex flex-col gap-2">
         {checkIns.map((c) => (
-          <li key={c.id} className="flex min-h-14 items-center justify-between rounded-xl bg-muted py-1.5 pr-1.5 pl-4 text-sm">
+          <li key={c.id} className="flex min-h-14 items-center justify-between rounded-xl bg-muted py-1.5 pe-1.5 ps-4 text-sm">
             <span>{time.format(new Date(c.created_at))}</span>
             <Button
               type="button"

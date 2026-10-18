@@ -170,3 +170,19 @@ Deno.test("a key missing from a translation falls back to English, with its valu
   assertEquals(t("push.everyoneDidIt", { habit: isolate("Read") }), "Everyone did it: \u2068Read\u2069 ✓");
   assertEquals(t("push.today"), "Сегодня");
 });
+
+Deno.test("Hebrew: a habit name typed in English stays direction-isolated in the push body", () => {
+  const { t } = translatorFor("he", ["en", "ru", "he"]);
+  const body = buildPush(job({ kind: "everyone_done", habit: "Read" }), t)?.body ?? "";
+  assertEquals(body.includes("⁨Read⁩"), true);
+});
+
+Deno.test("the daily summary takes its separators and counts from the catalog", () => {
+  const j = job({
+    kind: "daily_summary",
+    payload: { todo: [{ title: "Water", done: 5, target: 8 }, { title: "Read" }], at_risk: [{ title: "Run", done: 1, target: 3, period: "week", days_left: 2 }] },
+  });
+  assertEquals(buildPush(j, t)?.body, "Still to do: ⁨Water⁩ 5/8, ⁨Read⁩ · ⁨Run⁩: 1 of 3 this week, 2 days left 🌱");
+  const he = makeTranslator("he", { common: { listSeparator: "، ", sectionSeparator: " | " }, push: { dailySummary: { count: "{habit} ({done}/{target})" } } });
+  assertEquals(buildPush(j, he.t)?.body, "Still to do: ⁨Water⁩ (5/8)، ⁨Read⁩ | ⁨Run⁩: 1 of 3 this week, 2 days left 🌱");
+});

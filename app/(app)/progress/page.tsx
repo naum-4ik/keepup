@@ -125,12 +125,12 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                       <StreakBadge count={h.current_streak} />
                     </Link>
                     {showFinished && h.archived_at && (!h.group_id || h.my_role === "admin") && (
-                      <span className="shrink-0 pr-2">
+                      <span className="shrink-0 pe-2">
                         <StartAgainButton habitId={h.habit_id} title={h.title} />
                       </span>
                     )}
                     {showArchived && !showFinished && (!h.group_id || h.my_role === "admin") && (
-                      <span className="shrink-0 pr-2">
+                      <span className="shrink-0 pe-2">
                         <RestoreHabitButton habitId={h.habit_id} title={h.title} />
                       </span>
                     )}

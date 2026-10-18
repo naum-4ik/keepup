@@ -63,7 +63,7 @@ function ActiveGoal({ childId, childName, gender, goal }: { childId: string; chi
             className={cn("size-3 rounded-full", i < stars ? "bg-pending" : "bg-muted ring-1 ring-border")}
           />
         ))}
-        <span aria-hidden className="ml-1 text-2xl leading-none">{goal.emoji}</span>
+        <span aria-hidden className="ms-1 text-2xl leading-none">{goal.emoji}</span>
       </div>
       {reached ? (
         <>
@@ -91,7 +91,7 @@ function ActiveGoal({ childId, childName, gender, goal }: { childId: string; chi
       {/* Like the other destructive actions: an in-app confirm with the error inline. */}
       <Dialog open={confirming} onOpenChange={(next) => !pending && setConfirming(next)}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pr-10">
+          <div className="flex flex-col gap-1 pe-10">
             <DialogTitle>{t("cancelTitle")}</DialogTitle>
             <DialogDescription>{t.rich("cancelDescription", { goal: goal.title, name: childName, gender: gender ?? "other", bdi })}</DialogDescription>
           </div>

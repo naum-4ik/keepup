@@ -37,7 +37,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
         <nav aria-label={t("progress.calendar.monthLabel")} className="flex items-center justify-between">
           {hasPrev ? (
             <Link href={`/progress/calendar?m=${prev}`} aria-label={t("progress.calendar.previousMonth", { month: monthName(prev) })} className={`${NAV} hover:bg-muted`}>
-              <ChevronLeft aria-hidden className="size-5" />
+              <ChevronLeft aria-hidden className="size-5 rtl:-scale-x-100" />
             </Link>
           ) : (
             <span className="size-11" />
@@ -45,7 +45,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           <h2 className="font-bold">{monthName(month)}</h2>
           {hasNext ? (
             <Link href={`/progress/calendar?m=${next}`} aria-label={t("progress.calendar.nextMonth", { month: monthName(next) })} className={`${NAV} hover:bg-muted`}>
-              <ChevronRight aria-hidden className="size-5" />
+              <ChevronRight aria-hidden className="size-5 rtl:-scale-x-100" />
             </Link>
           ) : (
             <span className="size-11" />

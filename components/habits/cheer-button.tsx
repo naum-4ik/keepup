@@ -41,7 +41,7 @@ export function CheerButton({ checkInId, habitId, name, cheered }: { checkInId: 
         {rich(done ? "habits.cheer.done" : "habits.cheer.cta", { name, sr: srOnly })}
       </Button>
       {error && (
-        <p role="alert" className="max-w-48 text-right text-xs text-destructive">
+        <p role="alert" className="max-w-48 text-end text-xs text-destructive">
           {error}
         </p>
       )}

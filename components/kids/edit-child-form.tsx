@@ -41,7 +41,7 @@ export function EditChildButton({
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pr-10">
+          <div className="flex flex-col gap-1 pe-10">
             <DialogTitle>{t.rich("edit.title", { name, bdi: (c) => <bdi>{c}</bdi> })}</DialogTitle>
             <DialogDescription>{t("form.nicknameHelp")}</DialogDescription>
           </div>

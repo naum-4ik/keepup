@@ -35,7 +35,7 @@ export function GroupCard({ group, t }: { group: MyGroup; t: T }) {
           <span className="tabular-nums">{counts}</span>
         </span>
       </span>
-      <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+      <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground rtl:-scale-x-100" />
     </Link>
   );
 }

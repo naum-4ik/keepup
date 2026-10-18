@@ -142,7 +142,7 @@ function ResetChildButton({ childId, childName }: { childId: string; childName: 
       )}
       <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pr-10">
+          <div className="flex flex-col gap-1 pe-10">
             <DialogTitle>{t.rich("resetTitle", { name: childName, bdi })}</DialogTitle>
             <DialogDescription>{t.rich("resetDescription", { name: childName, bdi })}</DialogDescription>
           </div>
@@ -188,7 +188,7 @@ function DeleteChildButton({ childId, childName }: { childId: string; childName:
       </Button>
       <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pr-10">
+          <div className="flex flex-col gap-1 pe-10">
             <DialogTitle>{t.rich("deleteTitle", { name: childName, bdi })}</DialogTitle>
             <DialogDescription>{t.rich("deleteDescription", { name: childName, bdi })}</DialogDescription>
           </div>

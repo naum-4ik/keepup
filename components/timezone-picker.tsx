@@ -85,7 +85,7 @@ export function TimezonePicker({ name, value, onChange, timezones, error, showCh
         <button
           type="button"
           onClick={() => onChange(device)}
-          className="-ml-2 flex min-h-11 items-center gap-1.5 self-start rounded-lg px-2 text-sm font-semibold text-primary hover:bg-accent"
+          className="-ms-2 flex min-h-11 items-center gap-1.5 self-start rounded-lg px-2 text-sm font-semibold text-primary hover:bg-accent"
         >
           <MapPin className="size-4" aria-hidden />
           {t("profile.timezone.useDevice", { city: cityOf(device) })}

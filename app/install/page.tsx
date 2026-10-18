@@ -40,8 +40,8 @@ export default async function InstallPage() {
   const menu = { profile: t("nav.profile"), settings: t("settings.title"), turnOn: t("notifications.turnOn.label") };
   return (
     <main className="mx-auto w-full max-w-md px-4 py-6">
-      <Link href="/" className="-ml-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
-        <ChevronLeft aria-hidden className="size-4" />
+      <Link href="/" className="-ms-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
+        <ChevronLeft aria-hidden className="size-4 rtl:-scale-x-100" />
         Keepup
       </Link>
       <h1 className="mt-2 text-2xl font-bold">{t("moved.installTitle")}</h1>
@@ -49,7 +49,7 @@ export default async function InstallPage() {
       {SECTIONS.map(({ key, steps, pictures }) => (
         <section key={key} className="mt-6">
           <h2 className="text-lg font-bold">{t(`install.${key}.heading`)}</h2>
-          <ol className="mt-2 list-decimal space-y-1 pl-5">
+          <ol className="mt-2 list-decimal space-y-1 ps-5">
             {upTo(steps).map((n) => (
               <li key={n}>{t(`install.${key}.step${n}`, menu)}</li>
             ))}

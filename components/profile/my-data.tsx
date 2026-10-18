@@ -143,7 +143,7 @@ function DeleteAccount() {
       </Button>
       <Dialog open={open} onOpenChange={(next) => !pending && !next && close()}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pr-10">
+          <div className="flex flex-col gap-1 pe-10">
             <DialogTitle>{t("myData.deleteTitle")}</DialogTitle>
             <DialogDescription>{t("myData.deleteBody")}</DialogDescription>
           </div>
