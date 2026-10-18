@@ -1567,7 +1567,7 @@
   "kidView": {
     "sound": "Звук",
     "starsThisWeek": "{count, plural, one {# звезда на этой неделе} few {# звезды на этой неделе} many {# звёзд на этой неделе} other {# звезды на этой неделе}}",
-    "done": ", готово",
+    "doneTitle": "<title><bdi>{habit}</bdi></title><sr>, готово</sr>",
     "exitLabel": "Удерживайте, чтобы выйти с экрана: {name}",
     "closing": "Закрываем…",
     "holdToExit": "Удерживайте, чтобы выйти",

@@ -32,6 +32,12 @@ describe("lists and separators are catalog words", () => {
       .toBe("<bdi>Levis</bdi> · weekly");
   });
 
+  it("a done kid card: the title and its hidden \", done\" in one message", () => {
+    const title = (c: ReactNode) => createElement("span", { className: "title" }, c);
+    expect(markup(richEn("kidView.doneTitle", { habit: "Brush teeth", title, sr })))
+      .toBe('<span class="title"><bdi>Brush teeth</bdi></span><span class="sr-only">, done</span>');
+  });
+
   it("Needs a connection names the card for screen readers in one message", () => {
     expect(markup(richEn("offline.needsConnectionFor", { label: "Invite", sr })))
       .toBe('Needs a connection<span class="sr-only">: Invite</span>');
