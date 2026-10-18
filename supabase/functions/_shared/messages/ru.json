@@ -31,6 +31,7 @@
     "today": "Сегодня",
     "dailySummary": {
       "body": "Ещё осталось: {items} 🌱",
+      "count": "{habit} {done}/{target}",
       "atRisk": "{habit}: {done} из {target} {period, select, month {в этом месяце} other {на этой неделе}}, {days, plural, one {остался # день} few {осталось # дня} many {осталось # дней} other {осталось # дня}}"
     },
     "allDoneToday": "На сегодня всё сделано 🎉",
@@ -1455,6 +1456,7 @@
     "continue": "Продолжить",
     "tagline": "Привычки — вместе.",
     "listSeparator": ", ",
+    "sectionSeparator": " · ",
     "tryAgain": "Попробовать снова"
   },
   "inbox": {

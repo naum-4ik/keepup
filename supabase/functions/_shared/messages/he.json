@@ -31,6 +31,7 @@
     "today": "היום",
     "dailySummary": {
       "body": "עוד נשאר: {items} 🌱",
+      "count": "{habit} {done}/{target}",
       "atRisk": "{habit}: {done} מתוך {target} {period, select, month {החודש} other {השבוע}}, {days, plural, one {נשאר יום אחד} two {נשארו יומיים} other {נשארו # ימים}}"
     },
     "allDoneToday": "הכול בוצע להיום 🎉",
@@ -1455,6 +1456,7 @@
     "continue": "המשך",
     "tagline": "הרגלים, ביחד.",
     "listSeparator": ", ",
+    "sectionSeparator": " · ",
     "tryAgain": "ניסיון חוזר"
   },
   "inbox": {
