@@ -23,6 +23,8 @@ export default async function PrivacyPage() {
         Keepup
       </Link>
       <article
+        lang="en"
+        dir="ltr"
         className="prose prose-neutral mt-2 max-w-none break-words dark:prose-invert prose-h1:text-2xl prose-h2:text-lg prose-a:text-primary"
         dangerouslySetInnerHTML={{ __html: html }}
       />

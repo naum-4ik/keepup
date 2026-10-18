@@ -42,6 +42,7 @@ export function SignupForm({ next, signInHref }: { next: string; signInHref: str
         id="email"
         name="email"
         type="email"
+        dir="ltr"
         inputMode="email"
         autoComplete="email"
         autoCapitalize="none"

@@ -23,7 +23,7 @@ export default async function WhatsNewPage() {
           </div>
           <ul className="flex list-disc flex-col gap-1.5 ps-5 text-sm">
             {notesFor(r, locale).map((n) => (
-              <li key={n}>{n}</li>
+              <li key={n} dir="auto">{n}</li>
             ))}
           </ul>
         </section>

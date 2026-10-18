@@ -76,6 +76,7 @@ export function InviteLink({
         </label>
         <Input
           id="invite-link"
+          dir="ltr"
           aria-label={t("linkAria")}
           readOnly
           value={url}

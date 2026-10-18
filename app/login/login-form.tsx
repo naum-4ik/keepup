@@ -90,6 +90,7 @@ export function LoginForm({ next }: { next: string }) {
           id="email"
           name="email"
           type="email"
+          dir="ltr"
           inputMode="email"
           autoComplete="username"
           autoCapitalize="none"
@@ -136,6 +137,7 @@ export function LoginForm({ next }: { next: string }) {
             id="email"
             name="email"
             type="email"
+            dir="ltr"
             autoComplete="username"
             readOnly
             value={email}
