@@ -791,7 +791,7 @@ isOneToOne: false
                            },
 "family_recaps":
 { Args: Record<PropertyKey, never>; Returns: {
-              "best_emoji": string,"best_period": Database["public"]['Enums']["habit_period"],"best_streak": number,"best_title": string,"check_ins": number,"group_id": string,"group_name": string,"week_start": string
+              "best_emoji": string,"best_period": Database["public"]['Enums']["habit_period"],"best_streak": number,"best_template": string,"best_title": string,"check_ins": number,"group_id": string,"group_name": string,"week_start": string
             }[]
                            },
 "finish_habit":

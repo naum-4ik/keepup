@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(31);
+select plan(33);
 
 -- Habits remember the template they came from (task 8.5): backfill by English title, cleared on
 -- rename, stored by the create paths, returned by the reads.
@@ -85,6 +85,11 @@ select is(pg_temp.tpl('rpc_kid'), 'kid.make-bed', 'create_child_habit stores the
 select is(pg_temp.tpl('rpc_plain'), null, 'no template passed → null');
 select is((select template_id from public.habits where owner_id = '00000000-0000-0000-0000-0000000085a1' and title = 'Run'), 'run',
   'the app''s own insert may set the template');
+select tests.authenticate_as('00000000-0000-0000-0000-0000000085a1');
+update public.habits set title = 'Run far' where title = 'Run';
+reset role;
+select is((select template_id from public.habits where owner_id = '00000000-0000-0000-0000-0000000085a1' and title = 'Run far'), null,
+  'the app''s own rename clears the template');
 
 -- Reads.
 select tests.authenticate_as('00000000-0000-0000-0000-0000000085a1');
@@ -113,6 +118,8 @@ select is(private.push_job_build((select id from public.notifications
   'g-game-night', 'push_job_build pending items carry habit_template');
 
 -- Progress: the best current streak's template sits next to its title (null without a streak).
+select ok('best_template' = any ((select p.proargnames from pg_proc p where p.oid = 'public.family_recaps()'::regprocedure)::text[]),
+  'family_recaps returns best_template');
 select ok(private.week_overview_impl('00000000-0000-0000-0000-0000000085a1', now()) ? 'best_current_streak_template',
   'week_overview has best_current_streak_template');
 

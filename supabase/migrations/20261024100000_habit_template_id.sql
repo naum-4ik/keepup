@@ -15,6 +15,7 @@
 --   private.push_job_build                                       20261023100000_languages.sql
 --   private.inbox_feed_impl, public.inbox_feed                   20261009110000_polish.sql
 --   private.week_overview_impl                                   20261009130000_calendar_group_habits.sql
+--   private.family_recaps_impl, public.family_recaps             20260930100400_kid_rewards_celebrations.sql
 -- New return columns go last (drop + create; the public wrappers select * from the impls).
 
 -- 1. The column. The app inserts habits itself (lib/habit-create.ts), so it may set it on insert.
@@ -830,3 +831,42 @@ as $$
                                             order by ph.created_at) from per_habit ph), '[]'::jsonb))
     from wk cross join totals t;
 $$;
+
+-- 11. Reads: Today's weekly family card (best_template next to best_title).
+drop function public.family_recaps();
+drop function private.family_recaps_impl(uuid, timestamptz);
+create function private.family_recaps_impl(p_user uuid, p_now timestamptz)
+returns table (group_id uuid, group_name text, week_start date, check_ins int, best_title text, best_emoji text,
+               best_streak int, best_period public.habit_period, best_template text)
+language sql
+stable
+set search_path = ''
+as $$
+  with gs as (
+    select g.*, private.local_date(p_now, g.timezone) as today
+      from public.groups g
+      join public.group_members m on m.group_id = g.id and m.user_id = p_user and m.left_at is null
+  ), due as (
+    select gs.*, gs.today - 7 as ws from gs
+     where private.period_start('week', gs.today, gs.week_start) = gs.today
+  )
+  select d.id, d.name, d.ws,
+         (select count(*)::int from public.check_ins c join public.habits h on h.id = c.habit_id
+           where h.group_id = d.id and c.status = 'approved' and c.local_date >= d.ws and c.local_date < d.ws + 7),
+         b.title, b.emoji, b.current_streak, b.period, b.template_id
+    from due d
+    left join lateral (
+      select h.title, h.emoji, h.period, st.current_streak, h.template_id
+        from public.habits h cross join lateral private.habit_streaks(h.id, p_now) st
+       where h.group_id = d.id and h.archived_at is null and st.current_streak > 0
+       order by st.current_streak desc, h.created_at
+       limit 1) b on true;
+$$;
+create function public.family_recaps()
+returns table (group_id uuid, group_name text, week_start date, check_ins int, best_title text, best_emoji text,
+               best_streak int, best_period public.habit_period, best_template text)
+language sql stable security definer set search_path = '' as $$
+  select * from private.family_recaps_impl(auth.uid(), now());
+$$;
+revoke execute on function public.family_recaps() from public, anon;
+grant execute on function public.family_recaps() to authenticated;
