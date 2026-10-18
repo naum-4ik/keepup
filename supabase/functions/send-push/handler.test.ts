@@ -1,7 +1,7 @@
 // supabase/functions/send-push/handler.test.ts
 import { assertEquals } from "jsr:@std/assert@1";
 import type { PushJob } from "./build.ts";
-import { type Deps, handle } from "./handler.ts";
+import { type Delivery, type Deps, handle } from "./handler.ts";
 
 const job: PushJob = {
   id: "n1", kind: "nudge", user_id: "u1", pushed: false, group_id: "g1", group: "Family", habit_id: "h1", habit: "Run",
@@ -18,6 +18,7 @@ const job: PushJob = {
 function deps(over: Partial<Deps> = {}) {
   const sent: string[] = [];
   const done: [string, string[]][] = [];
+  const logged: Delivery[] = [];
   const d: Deps = {
     secret: "s3cret",
     pushConfigured: true,
@@ -28,9 +29,10 @@ function deps(over: Partial<Deps> = {}) {
       sent.push(sub.endpoint);
     },
     done: async (id, dead) => void done.push([id, dead]),
+    log: async (row) => void logged.push(row),
     ...over,
   };
-  return { d, sent, done };
+  return { d, sent, done, logged };
 }
 
 const post = (body: unknown, secret = "s3cret") =>
@@ -95,4 +97,74 @@ Deno.test("the push is rendered in the recipient's language (an unknown one read
   });
   await handle(post({ id: "n1" }), d);
   assertEquals(bodies, ["\u2068Anna\u2069: You've got this: \u2068Run\u2069"]);
+});
+
+// The delivery log (public.push_deliveries): one row per device, or one 'skipped' row without a device.
+const byHost = (rows: Delivery[]) => rows.map((r) => [r.outcome, r.reason, r.status, r.endpoint_host]).sort();
+
+Deno.test("logs one row per device: sent, gone (404/410) and failed, with the HTTP status", async () => {
+  const { d, logged } = deps({
+    send: async (sub) => {
+      const code = { "https://push.example/gone": 410, "https://push.example/missing": 404, "https://push.example/flaky": 500 }[sub.endpoint];
+      if (code) throw Object.assign(new Error("push failed"), { statusCode: code });
+      return 201;
+    },
+  });
+  await handle(post({ id: "n1" }), d);
+  assertEquals(logged.length, 4);
+  for (const row of logged) assertEquals([row.notification_id, row.user_id, row.kind], ["n1", "u1", "nudge"]);
+  assertEquals(byHost(logged), [
+    ["failed", "http_500", 500, "push.example"],
+    ["gone", "http_404", 404, "push.example"],
+    ["gone", "http_410", 410, "push.example"],
+    ["sent", null, 201, "push.example"],
+  ]);
+});
+
+Deno.test("a send that fails without an HTTP status is logged as a network failure", async () => {
+  const { d, logged } = deps({
+    loadJob: async () => ({ ...job, subscriptions: [job.subscriptions[0]] }),
+    send: async () => {
+      throw new Error("timeout");
+    },
+  });
+  await handle(post({ id: "n1" }), d);
+  assertEquals(byHost(logged), [["failed", "network", null, "push.example"]]);
+});
+
+Deno.test("no device: one skipped row, nothing sent", async () => {
+  const { d, sent, done, logged } = deps({ loadJob: async () => ({ ...job, subscriptions: [] }) });
+  assertEquals(await (await handle(post({ id: "n1" }), d)).json(), { sent: 0, dead: 0 });
+  assertEquals([sent, done], [[], [["n1", []]]]);
+  assertEquals(logged, [{
+    notification_id: "n1", user_id: "u1", kind: "nudge", outcome: "skipped", reason: "no_device", status: null, endpoint_host: null,
+  }]);
+});
+
+Deno.test("the log never stores the endpoint path or the device keys", async () => {
+  const { d, logged } = deps();
+  await handle(post({ id: "n1" }), d);
+  const text = JSON.stringify(logged);
+  for (const secret of ["/ok", "/gone", "p256dh", "\"auth\""]) assertEquals(text.includes(secret), false, secret);
+});
+
+Deno.test("a failing log insert doesn't break sending", async () => {
+  const { d, sent, done } = deps({
+    log: async () => {
+      throw new Error("push_deliveries: permission denied");
+    },
+  });
+  const res = await handle(post({ id: "n1" }), d);
+  assertEquals(res.status, 200);
+  assertEquals(await res.json(), { sent: 1, dead: 2 });
+  assertEquals(sent, ["https://push.example/ok"]);
+  assertEquals(done.length, 1);
+});
+
+Deno.test("nothing is logged for a row already pushed or with nothing to show", async () => {
+  const pushed = deps({ loadJob: async () => ({ ...job, pushed: true }) });
+  await handle(post({ id: "n1" }), pushed.d);
+  const empty = deps({ loadJob: async () => ({ ...job, kind: "approval_needed", pending: [] }) });
+  await handle(post({ id: "n1" }), empty.d);
+  assertEquals([pushed.logged, empty.logged], [[], []]);
 });
