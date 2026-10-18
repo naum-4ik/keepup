@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { tEn } from "@/lib/i18n/test-t";
 import { BANNED_PATTERNS, BANNED_WORDS } from "./notification-copy";
-import { LOCALE_COOKIE, asLocale, pickLocale } from "@/i18n/config";
+import { LOCALE_COOKIE, asLocale, pickLocale, type Locale } from "@/i18n/config";
 import { offlineLocaleScript, offlinePageLocale, undoLabel, unsavedSignOut } from "./offline-copy";
 
 describe("sign-out with check-ins still on the phone", () => {
@@ -27,8 +27,17 @@ describe("sign-out with check-ins still on the phone", () => {
 
 describe("the offline page's language", () => {
   const all = ["en", "ru", "he"] as const;
-  const pick = (cookie: string, phone: string | undefined, available: ("en" | "ru" | "he")[] = [...all]) =>
-    offlinePageLocale(cookie, phone, available);
+  // The app's own rules for the same inputs: the locale cookie through asLocale, else Accept-Language through pickLocale.
+  const appRule = (cookie: string, phone: string | undefined, available: Locale[]): Locale => {
+    const fromCookie = cookie.split(";").map((c) => c.trim()).find((c) => c.startsWith(`${LOCALE_COOKIE}=`))?.slice(LOCALE_COOKIE.length + 1);
+    return asLocale(fromCookie, available) ?? pickLocale(phone ?? null, available);
+  };
+  // Every case below runs through both, so a change to either side fails here.
+  const pick = (cookie: string, phone: string | undefined, available: Locale[] = [...all]) => {
+    const got = offlinePageLocale(cookie, phone, available);
+    expect(got, `app rules for ${cookie} | ${phone}`).toBe(appRule(cookie, phone, available));
+    return got;
+  };
 
   it("takes the locale cookie first", () => {
     expect(pick("theme=x; locale=he; other=1", "ru-RU")).toBe("he");
