@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(48);
+select plan(92);
 
 -- The demo looks live on any day, in the visitor's language (20261026100000_demo_live.sql).
 
@@ -51,10 +51,10 @@ select is((select g.name || ' / ' || t.title from public.groups g join public.pr
              join public.treat_goals t on t.child_id = c.id where g.created_by = '00000000-0000-0000-0000-0000000007a3'),
           'Family / Trip to the playground', 'a blank or missing name falls back to English');
 
--- Date-proof: Nova's week and the Inbox at fixed moments of next week (Mon 00:30, Wed 12:00, Sun 23:59 Berlin).
+-- Date-proof: Nova's week and the Inbox on every day of next week (Mon 00:30, Tue..Sat 12:00, Sun 23:59 Berlin).
 create function pg_temp.live_at(p_user uuid, p_now timestamptz, p_label text) returns setof text language plpgsql as $$
 declare
-  v_group uuid; v_nova uuid; v_today date; v_week date;
+  v_group uuid; v_nova uuid; v_today date; v_week date; v_full int; v_slots int; v_stars int;
 begin
   perform private.start_demo_impl(p_user, 'Europe/Berlin', p_now);
   v_group := (select id from public.groups where created_by = p_user);
@@ -63,8 +63,13 @@ begin
   v_week := private.period_start('week', v_today, 1::smallint);
   return next is((select count(*)::int from public.check_ins where user_id = v_nova and local_date >= v_today), 0,
                  p_label || ': no star for Nova today (the visitor taps those)');
-  return next is((select count(*)::int from public.check_ins where user_id = v_nova and local_date between v_week and v_today - 1),
-                 4 * (v_today - v_week), p_label || ': every slot of every elapsed day this week');
+  -- The full garden, from the SQL thresholds; today's slots = Nova's daily targets.
+  v_full := (select min(s) from generate_series(0, 100) s where private.garden_stage(s) = private.garden_stage(1000));
+  v_slots := (select sum(target_count)::int from public.habits where owner_id = v_nova and period = 'day');
+  v_stars := (private.child_rewards_impl(p_user, v_nova, p_now)->>'stars_this_week')::int;
+  return next is(v_stars, least(v_full - v_slots, v_slots * (v_today - v_week)),
+                 p_label || ': this week''s stars: every slot of the elapsed days, up to the cap');
+  return next ok(v_stars + v_slots <= v_full, p_label || ': today''s taps still fit under the full garden');
   return next is((select count(distinct local_date)::int from public.check_ins where user_id = v_nova and local_date between v_week and v_today - 1),
                  v_today - v_week, p_label || ': each elapsed day has stars');
   return next is((select count(*)::int from public.check_ins where user_id = v_nova and local_date between v_week - 7 and v_week - 1), 28,
@@ -85,22 +90,17 @@ begin
                           union all select u.created_at from public.nudges u where u.recipient_id = p_user
                           union all select c.created_at from public.cheers c join public.check_ins ci on ci.id = c.check_in_id where ci.user_id = p_user) x
                    where x.created_at > p_now), 0, p_label || ': nothing dated in the future');
-  return next is(private.garden_stage((private.child_rewards_impl(p_user, v_nova, p_now)->>'stars_this_week')::int),
-                 private.garden_stage(4 * (v_today - v_week)), p_label || ': the garden grows with the seeded week');
   return next is((select count(*)::int from public.period_results x join public.habits h on h.id = x.habit_id
-                   where h.owner_id = v_nova and x.period_start >= v_week - 7 and x.outcome <> 'done'), 0,
-                 p_label || ': Nova''s closed days are all done');
+                   where h.owner_id = v_nova and x.period_start between v_week - 7 and v_week - 1 and x.outcome <> 'done'), 0,
+                 p_label || ': Nova''s last week is all done');
 end; $$;
-create temp table berlin as
-  select date_trunc('week', now() at time zone 'Europe/Berlin')::date + 7 as mon,
-         date_trunc('week', now() at time zone 'Europe/Berlin')::date + 9 as wed,
-         date_trunc('week', now() at time zone 'Europe/Berlin')::date + 13 as sun;
-select tests.create_anonymous_user('00000000-0000-0000-0000-0000000007d1');
-select tests.create_anonymous_user('00000000-0000-0000-0000-0000000007d2');
-select tests.create_anonymous_user('00000000-0000-0000-0000-0000000007d3');
-select pg_temp.live_at('00000000-0000-0000-0000-0000000007d1', (mon + time '00:30') at time zone 'Europe/Berlin', 'Monday 00:30') from berlin;
-select pg_temp.live_at('00000000-0000-0000-0000-0000000007d2', (wed + time '12:00') at time zone 'Europe/Berlin', 'Wednesday 12:00') from berlin;
-select pg_temp.live_at('00000000-0000-0000-0000-0000000007d3', (sun + time '23:59') at time zone 'Europe/Berlin', 'Sunday 23:59') from berlin;
+create temp table days as
+  select i, date_trunc('week', now() at time zone 'Europe/Berlin')::date + 7 + i as day,
+         case i when 0 then time '00:30' when 6 then time '23:59' else time '12:00' end as at,
+         ('00000000-0000-0000-0000-0000000007d' || i)::uuid as visitor
+    from generate_series(0, 6) i;
+select tests.create_anonymous_user(visitor) from days order by i;
+select pg_temp.live_at(visitor, (day + at) at time zone 'Europe/Berlin', to_char(day, 'Dy') || ' ' || to_char(at, 'HH24:MI')) from days order by i;
 
 select * from finish();
 rollback;

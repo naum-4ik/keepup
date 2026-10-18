@@ -4,7 +4,8 @@
 --   * Nova is a girl (gendered ru/he kid copy).
 --   * The group and the treat are named in the visitor's language: start_demo takes them from the app
 --     (en defaults keep the old call working; the treat is the catalog's "Trip to the playground").
---   * Nova's week: every slot on every elapsed day of this week, none today (something to tap).
+--   * Nova's week: stars on every elapsed day of this week, none today (something to tap), capped so
+--     today's taps still fit under the full garden.
 --   * The Inbox: a nudge and a cheer from Alex, a few hours old.
 --
 -- Replaced functions are copied from their latest definitions; only the above changes:
@@ -34,6 +35,7 @@ declare
   v_habit public.habits;
   v_ps date;
   v_nudged_at timestamptz; v_cheered_at timestamptz; v_cheered uuid;
+  v_cap int;
   r record;
 begin
   select * into v_profile from public.profiles where id = p_user for update;
@@ -107,15 +109,27 @@ begin
          case when u = p_user then v_alex else p_user end, ((v_week - 7 * w + k) + time '20:00') at time zone v_tz
     from generate_series(1, 3) w cross join unnest(array[p_user, v_alex]) u cross join unnest(array[1, 5]) k;
 
-  -- 3c. Nova: every slot last week, and every slot of each elapsed day this week (local days before
-  -- today; none on a Monday), logged by Sam at 08:00. Today stays open, so the visitor has something to
-  -- tap; every star is before now, so none counts toward the new treat goal.
+  -- 3c. Nova: every slot last week. This week, the elapsed days only (local days before today; none on
+  -- a Monday), logged by Sam at 08:00, and capped so today's slots still fit under the full garden: the
+  -- visitor's taps can always grow it. Spread slot by slot (every day's first brush, then the second,
+  -- then the story, then tidying), so no elapsed day looks missed. Today stays open, so the visitor has
+  -- something to tap; every star is before now, so none counts toward the new treat goal.
+  v_cap := (select min(s) from generate_series(0, 1000) s where private.garden_stage(s) = private.garden_stage(1000000))
+         - (select sum(h.target_count)::int from public.habits h where h.id in (v_brush, v_story, v_tidy));
   insert into public.check_ins (habit_id, user_id, local_date, period_start, status, created_at, logged_by)
-  select h.id, v_nova, d::date, d::date, 'approved', (d::date + time '08:00') at time zone v_tz, p_user
-    from public.habits h
-   cross join generate_series((v_week - 7)::timestamp, (v_today - 1)::timestamp, interval '1 day') d
-   cross join lateral generate_series(1, h.target_count::int) n
-   where h.id in (v_brush, v_story, v_tidy);
+  with slots as (
+    select h.id as habit_id, d::date as day,
+           row_number() over (partition by d order by array_position(array[v_brush, v_story, v_tidy], h.id), n) as k
+      from public.habits h
+     cross join generate_series((v_week - 7)::timestamp, (v_today - 1)::timestamp, interval '1 day') d
+     cross join lateral generate_series(1, h.target_count::int) n
+     where h.id in (v_brush, v_story, v_tidy)),
+  picked as (
+    select * from slots where day < v_week
+    union all
+    (select * from slots where day >= v_week order by k, day limit greatest(v_cap, 0)))
+  select habit_id, v_nova, day, day, 'approved', (day + time '08:00') at time zone v_tz, p_user
+    from picked;
 
   -- 3d. A result for every closed period of every seeded habit, oldest first and one per statement
   -- (rest_days_left reads the earlier ones), by finalize's own rule.

@@ -168,7 +168,8 @@ begin
                  p_label || ': every seeded result matches the real rule');
   v_rewards := private.child_rewards_impl(p_user, v_nova, p_now);
   return next is((v_rewards->>'week_start')::date, v_week, p_label || ': Nova''s week starts on Monday');
-  return next is((v_rewards->>'stars_this_week')::int, 4 * (v_today - v_week), p_label || ': Nova''s stars this week (4 a day before today)');
+  return next is((v_rewards->>'stars_this_week')::int, least((select min(s) from generate_series(0, 100) s where private.garden_stage(s) = private.garden_stage(1000)) - 4, 4 * (v_today - v_week)),
+                 p_label || ': Nova''s stars this week (4 a day before today, room left for today''s 4)');
   -- The goal starts at 0: no seeded star is at or after the seed moment (the goal is created then).
   return next is((v_rewards->'goal'->>'target')::int || ' ' || coalesce(v_rewards->'goal'->>'reached_at', 'open'), '20 open', p_label || ': treat goal of 20, not reached');
   return next is((select count(*)::int from public.check_ins c where c.user_id = v_nova and c.created_at >= p_now), 0,
