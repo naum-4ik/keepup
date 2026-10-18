@@ -126,6 +126,16 @@ Deno.test("an unknown locale falls back to English", () => {
   assertEquals(translatorFor("fr").locale, "en");
 });
 
+Deno.test("a locale that is not enabled renders English", () => {
+  const j = job({ kind: "everyone_done", group: "Family", habit: "Read" });
+  const en = "Everyone did it: \u2068Read\u2069 ✓";
+  assertEquals(buildPush(j, translatorFor("ru").t)?.body, en);
+  assertEquals(translatorFor("ru", ["en"]).locale, "en");
+  const ru = translatorFor("ru", ["en", "ru"]);
+  assertEquals(ru.locale, "ru");
+  assertEquals(buildPush(j, ru.t)?.body === en, false);
+});
+
 Deno.test("catalog words: buttons, fallbacks, schedules and a kid's gender keep today's English", () => {
   const one = buildPush(job({ kind: "approval_needed", pending: [{ check_in_id: "c1", author: "Anna", habit: "Gym" }] }), t)!;
   assertEquals(one.actions.map((a) => a.title), ["Approve", "Don't approve"]);
