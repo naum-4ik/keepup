@@ -63,7 +63,7 @@ export function LoginForm({ next }: { next: string }) {
       </button>
       {/* One live region, always in the page, so the hint and the answer are announced when they appear. */}
       <p id={FORGOT_STATUS_ID} role="status" className={needEmail ? "text-sm text-muted-foreground" : "text-sm"}>
-        {needEmail ? t("auth.login.needEmail") : sent ? reset.message : null}
+        {needEmail ? t("auth.login.needEmail", { forgot: t("auth.login.forgot") }) : sent ? reset.message : null}
       </p>
       {sent && <p className="text-sm text-muted-foreground">{t("auth.login.orGoogle")}</p>}
     </div>

@@ -36,7 +36,8 @@ const chipClass =
   "relative flex h-11 cursor-pointer items-center rounded-full border border-border px-4 text-sm font-semibold has-checked:border-primary has-checked:bg-accent has-checked:text-accent-foreground has-focus-visible:ring-2 has-focus-visible:ring-ring";
 const initialState: HabitFormState = { status: "idle" };
 type Tab = "together" | "popular" | HabitCategory;
-type Draft = { key: number; custom: boolean; values: HabitFormValues; groupId: string; groupOnly: boolean };
+// templateId: the template it was opened from (telemetry only; the words it shows are in the user's language).
+type Draft = { key: number; custom: boolean; values: HabitFormValues; groupId: string; groupOnly: boolean; templateId?: string };
 // `today`: the group's today in its own time zone (a group habit starts on the group's calendar).
 export type FormGroup = {
   id: string;
@@ -80,9 +81,9 @@ export function HabitForm({
   // Each open gets a new key, so the dialog's form starts fresh (no errors from a previous try).
   // The button that opened the dialog gets focus back when it closes (there's no DialogTrigger).
   const opener = useRef<HTMLElement | null>(null);
-  const open = (custom: boolean, values: Omit<HabitFormValues, "startsOn">, groupId = initialGroupId ?? "", groupOnly = false) => {
+  const open = (custom: boolean, values: Omit<HabitFormValues, "startsOn">, groupId = initialGroupId ?? "", groupOnly = false, templateId?: string) => {
     opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setDraft((d) => ({ key: (d?.key ?? 0) + 1, custom, values: { ...values, startsOn: todayForGroup(groups, groupId, today) }, groupId, groupOnly }));
+    setDraft((d) => ({ key: (d?.key ?? 0) + 1, custom, values: { ...values, startsOn: todayForGroup(groups, groupId, today) }, groupId, groupOnly, templateId }));
   };
   const pickTemplate = (t: HabitTemplate) =>
     open(
@@ -92,6 +93,7 @@ export function HabitForm({
       tab === "together" ? (initialGroupId ?? groups[0].id) : undefined,
       // Together templates are for groups only: no "Just me".
       tab === "together",
+      t.id,
     );
   // Your own habit starts with no category: the tab you were browsing isn't a choice you made.
   const createOwn = () => open(true, { title: "", emoji: "", category: "", targetCount: "1", period: "day" });
@@ -177,6 +179,7 @@ export function HabitForm({
               initial={draft.values}
               initialGroupId={draft.groupId}
               groupOnly={draft.groupOnly}
+              templateId={draft.templateId}
               groups={groups}
               today={today}
               weekStart={weekStart}
@@ -193,6 +196,7 @@ function HabitFields({
   initial,
   initialGroupId,
   groupOnly,
+  templateId,
   groups,
   today,
   weekStart,
@@ -201,6 +205,7 @@ function HabitFields({
   initial: HabitFormValues;
   initialGroupId: string;
   groupOnly: boolean;
+  templateId?: string;
   groups: FormGroup[];
   today: string;
   weekStart: 0 | 1;
@@ -241,6 +246,7 @@ function HabitFields({
 
   return (
     <form ref={formRef} action={formAction} className="flex flex-col gap-4">
+      {templateId && <input type="hidden" name="templateId" value={templateId} />}
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="title" className="font-semibold">{tf("titleLabel")}</Label>
         <EmojiPicker

@@ -8,7 +8,7 @@ describe("demo copy", () => {
 
   it("has every line the demo shows", () => {
     expect(strings.map(([name]) => name).sort()).toEqual(
-      ["banner", "failed", "justLooking", "loading", "off", "settingUp", "signIn", "signInTail", "tryDemo"].sort(),
+      ["banner", "failed", "justLooking", "loading", "off", "settingUp", "signInLine", "tryDemo"].sort(),
     );
   });
 

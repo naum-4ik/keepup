@@ -35,15 +35,17 @@ export function parseRecap(v: unknown): Recap | null {
   };
 }
 
-// English keeps fixed abbreviations: newer ICU data spells September "Sept" in en-GB.
+// "8 Oct": day and month in the language's order. English keeps fixed abbreviations: newer ICU
+// data spells September "Sept" in en-GB.
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const shortMonth = (locale: Locale, start: string): string =>
-  locale === "en"
-    ? MON[Number(start.slice(5, 7)) - 1]
-    : new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: "UTC", month: "short" }).format(new Date(`${start}T00:00:00Z`));
+const dayMonth = (locale: Locale, start: string): string =>
+  new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: "UTC", day: "numeric", month: "short" })
+    .formatToParts(new Date(`${start}T00:00:00Z`))
+    .map((p) => (locale === "en" && p.type === "month" ? MON[Number(start.slice(5, 7)) - 1] : p.value))
+    .join("");
 export function recapTitle(t: T, locale: Locale, r: Recap): string {
   return r.kind === "week"
-    ? t("recaps.weekOf", { day: String(Number(r.start.slice(8))), month: shortMonth(locale, r.start) })
+    ? t("recaps.weekOf", { date: dayMonth(locale, r.start) })
     : formatMonth(r.start.slice(0, 7), locale);
 }
 

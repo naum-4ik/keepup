@@ -158,7 +158,7 @@ function DeleteAccount() {
             <div className="flex items-center justify-between gap-2">
               <p role="alert" className="text-sm text-destructive">{previewError}</p>
               <Button type="button" variant="outline" className="h-11 shrink-0" onClick={() => void loadPreview()}>
-                {t("myData.tryAgain")}
+                {t("common.tryAgain")}
               </Button>
             </div>
           )}

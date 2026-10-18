@@ -29,7 +29,7 @@ export function dailySummary(t: T, { todo, atRisk }: { todo: SummaryItem[]; atRi
   const parts = [
     todo.map((i) => (i.target && i.target > 1 ? `${isolate(i.title)} ${i.done ?? 0}/${i.target}` : isolate(i.title))).join(", "),
     atRisk
-      .map((r) => t("push.dailySummary.atRisk", { habit: isolate(r.title), done: String(r.done), target: String(r.target), period: r.period, days: span(t, r.daysLeft, "day") }))
+      .map((r) => t("push.dailySummary.atRisk", { habit: isolate(r.title), done: String(r.done), target: String(r.target), period: r.period, days: r.daysLeft }))
       .join(", "),
   ].filter(Boolean);
   return { title: t("push.today"), body: t("push.dailySummary.body", { items: parts.join(" · ") }) };
@@ -125,7 +125,7 @@ export const memberJoined = (t: T, group: string, member: string): Copy => ({
 
 export const restDayUsed = (t: T, habit: string, streakLength: number, period: "day" | "week"): Copy => ({
   title: habit,
-  body: t("push.restDayUsed", { period, n: String(streakLength) }),
+  body: t("push.restDayUsed", { period, n: streakLength }),
 });
 
 type RecapStreak = { habit: string; length: number; period?: PeriodUnit };

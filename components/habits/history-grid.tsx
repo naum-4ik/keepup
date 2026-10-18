@@ -24,7 +24,7 @@ export function HistoryGrid({ t, locale, cells, period }: { t: T; locale: Locale
     <div className="flex flex-col gap-3">
       <ol className="flex flex-wrap gap-1.5">
         {cells.map((c) => {
-          const text = `${formatLocalDate(c.period_start, locale)}: ${outcomeLabel(t, c.outcome as Outcome)}`;
+          const text = t("habits.history.cell", { date: formatLocalDate(c.period_start, locale), outcome: outcomeLabel(t, c.outcome as Outcome) });
           return (
             <li key={c.period_start} title={text} className={cn(period === "day" ? "size-7" : "size-9", "rounded-md", STYLE[c.outcome])}>
               <span className="sr-only">{text}</span>

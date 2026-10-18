@@ -12,7 +12,7 @@ type Parsed<T> = { ok: true; value: T } | { ok: false; error: FieldError };
 // A nickname only (privacy policy §9). Postgres counts code points, so count the same way.
 export function parseChildName(raw: string): Parsed<string> {
   const value = raw.trim();
-  if (value === "") return { ok: false, error: { key: "validation.nickname" } };
+  if (value === "") return { ok: false, error: { key: "errors.invalid_name" } };
   if ([...value].length > CHILD_NAME_MAX) return { ok: false, error: { key: "validation.maxChars", values: { max: CHILD_NAME_MAX } } };
   return { ok: true, value };
 }

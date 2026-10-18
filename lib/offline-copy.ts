@@ -12,11 +12,12 @@ export const unsavedSignOut = (t: T, n: number): string => t("offline.unsavedSig
 
 // /offline is built once (force-static, the service worker's fallback page), so it carries the words in
 // every language this build has and picks one in the browser: the device's locale cookie, then the
-// phone's language (two letters, iw → he), then English.
+// phone's languages in order (navigator.languages joined with ",", read like Accept-Language: two
+// letters, iw → he), then English.
 export type OfflinePageCopy = { title: string; text: string; openToday: string };
 
-export function offlinePageLocale(cookie: string, phoneLanguage: string | undefined, available: Locale[]): Locale {
+export function offlinePageLocale(cookie: string, phoneLanguages: string | undefined, available: Locale[]): Locale {
   const prefix = `${LOCALE_COOKIE}=`;
   const fromCookie = cookie.split(";").map((c) => c.trim()).find((c) => c.startsWith(prefix))?.slice(prefix.length);
-  return asLocale(fromCookie, available) ?? pickLocale(phoneLanguage ?? null, available);
+  return asLocale(fromCookie, available) ?? pickLocale(phoneLanguages ?? null, available);
 }

@@ -109,9 +109,12 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                           )}
                         </span>
                         <span className="text-sm text-muted-foreground">
-                          {!h.archived_at && ended(h) && `${t("progress.endedDecide")} · `}
-                          {describeSchedule(t, h.target_count, h.period)}
-                          {h.best_streak > 0 && ` · ${t("progress.best", { span: streakSpan(t, h.best_streak, h.period) })}`}
+                          {t("progress.habitLine", {
+                            ended: !h.archived_at && ended(h) ? "yes" : "no",
+                            schedule: describeSchedule(t, h.target_count, h.period),
+                            best: h.best_streak > 0 ? "yes" : "no",
+                            span: h.best_streak > 0 ? streakSpan(t, h.best_streak, h.period) : "",
+                          })}
                         </span>
                         {cellsFor.has(h.habit_id) && (
                           <span className="pt-1.5">

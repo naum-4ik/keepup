@@ -98,7 +98,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     ...tapPeriods(summaries, (h) => zoneOf(h.group_id)),
     ...Object.assign({}, ...kids.map((k) => tapPeriods(k.habits, () => zoneOf(k.child.group_id)))),
   };
-  const sections = sectionsForToday(t, habits, groups);
+  const sections = sectionsForToday(t, locale, habits, groups);
   // A solo user's Today looks as before: the "Mine" heading shows only next to a group section.
   const withHeadings = sections.some((s) => s.key !== "mine") || kids.length > 0;
   // Check-ins by other members (and other adults logging for a child) refresh these cards.

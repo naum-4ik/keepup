@@ -31,7 +31,7 @@
     "today": "Today",
     "dailySummary": {
       "body": "Still to do: {items} 🌱",
-      "atRisk": "{habit}: {done} of {target} {period, select, month {this month} other {this week}}, {days} left"
+      "atRisk": "{habit}: {done} of {target} {period, select, month {this month} other {this week}}, {days, plural, one {# day left} other {# days left}}"
     },
     "allDoneToday": "All done for today 🎉",
     "habitReminder": "Time for {habit}.",
@@ -59,7 +59,7 @@
     },
     "groupHabitResumed": "{habit} is back.",
     "memberJoined": "{member} joined {group} 👋",
-    "restDayUsed": "{period, select, week {Rest week used. Your {n}-week streak is safe 💤} other {Rest day used. Your {n}-day streak is safe 💤}}",
+    "restDayUsed": "{period, select, week {{n, plural, other {Rest week used. Your {n, number, ::group-off}-week streak is safe 💤}}} other {{n, plural, other {Rest day used. Your {n, number, ::group-off}-day streak is safe 💤}}}}",
     "longestStreak": "Longest streak: {habit} 🔥 {span}",
     "weeklyRecap": {
       "title": "Your week",
@@ -150,6 +150,8 @@
   "dates": {
     "today": "Today",
     "yesterday": "Yesterday",
+    "todayInline": "today",
+    "yesterdayInline": "yesterday",
     "justNow": "just now",
     "minutesAgo": "{n, plural, other {# min ago}}",
     "hoursAgo": "{n, plural, other {# h ago}}",
@@ -219,6 +221,7 @@
     "hourHintNoDevice": "When your daily summary arrives, once reminders are on.",
     "status": {
       "paused": "Reminders are paused until {until}.",
+      "pausedUntilOn": "Reminders are paused until you turn them back on.",
       "inbox": "Reminders go to your Inbox.",
       "onWithHour": "Reminders are on for this device ✓ Your daily summary arrives at {time}.",
       "on": "Reminders are on for this device ✓"
@@ -242,11 +245,11 @@
     "moreThanLastWeek": "{n, plural, other {# more than last week}}",
     "bestWeekYet": "Your best week yet",
     "freshStart": "A fresh start this week",
-    "dotsLabel": "Last {span}: {counts}",
+    "dotsLabel": "Last {period, select, week {{n, plural, one {# week} other {# weeks}}} month {{n, plural, one {# month} other {# months}}} other {{n, plural, one {# day} other {# days}}}}: {counts}",
     "dotCount": "{status, select, done {{n, plural, other {# done}}} missed {{n, plural, other {# missed}}} paused {{n, plural, other {# paused}}} not_started {{n, plural, other {# not started}}} open {{n, plural, other {# in progress}}} rested {{n, plural, other {# rest day}}} other {{n, plural, other {#}}}}"
   },
   "recaps": {
-    "weekOf": "Week of {day} {month}",
+    "weekOf": "Week of {date}",
     "quietWeek": "A quiet week.",
     "quietMonth": "A quiet month.",
     "nothingDue": "Nothing was due.",
@@ -286,7 +289,6 @@
     "deleteTitle": "Delete your account?",
     "deleteBody": "Your account, habits, check-ins, XP, badges and Inbox are deleted right away. This can't be undone.",
     "exportHint": "A file with everything Keepup keeps about you.",
-    "tryAgain": "Try again",
     "exportFirst": "Export your data first if you want a copy.",
     "deleteFailed": "Couldn't delete your account. Reload Keepup and try again.",
     "deletedNote": "Your account and data are deleted.",
@@ -357,7 +359,7 @@
     "endsAfterStart": "The last day can't be before the first day.",
     "alreadyReviewedBy": "{reviewer} already reviewed this.",
     "alreadyReviewedSomeone": "Someone already reviewed this.",
-    "groupNameLength": "Give the group a name up to {max} characters.",
+    "groupNameLength": "{max, plural, other {Give the group a name up to # characters.}}",
     "saveHabitFailed": "Couldn't save the habit. Try again.",
     "checkDetails": "Check the details.",
     "pickFamilyOrFriends": "Pick family or friends.",
@@ -368,8 +370,7 @@
   "demo": {
     "off": "That's off in the demo.",
     "banner": "You're in the demo. Data resets after 24 hours.",
-    "signIn": "Sign in",
-    "signInTail": "to start your own.",
+    "signInLine": "<signIn>Sign in</signIn> to start your own.",
     "failed": "The demo didn't start. Try again in a moment.",
     "justLooking": "Just looking?",
     "tryDemo": "Try the demo",
@@ -378,22 +379,20 @@
   },
   "validation": {
     "nameRequired": "Enter a name.",
-    "maxChars": "Keep it to {max} characters.",
+    "maxChars": "{max, plural, other {Keep it to # characters.}}",
     "timezone": "Pick a time zone from the list.",
     "weekStart": "Pick Sunday or Monday.",
     "purpose": "Pick one of the options, or none.",
-    "nickname": "Enter a nickname.",
     "treatName": "Name the treat.",
     "emoji": "Pick one emoji.",
-    "stars": "Pick 1–{max} stars.",
+    "stars": "{max, plural, other {Pick 1–# stars.}}",
     "groupName": "Give the group a name.",
     "title": "Enter a title.",
-    "category": "Pick a category.",
     "frequency": "Pick how often.",
     "targetCount": {
-      "day": "Pick 1–{limit} times a day.",
-      "week": "Pick 1–{limit} times a week.",
-      "month": "Pick 1–{limit} times a month."
+      "day": "{limit, plural, other {Pick 1–# times a day.}}",
+      "week": "{limit, plural, other {Pick 1–# times a week.}}",
+      "month": "{limit, plural, other {Pick 1–# times a month.}}"
     },
     "startDate": "Pick a start date."
   },
@@ -497,7 +496,7 @@
   "auth": {
     "emailInvalid": "Enter a valid email address.",
     "passwordRequired": "Enter your password.",
-    "passwordMin": "Use at least {min} characters.",
+    "passwordMin": "{min, plural, other {Use at least # characters.}}",
     "resetLinkStale": "This reset link has expired. Ask for a new one from the sign-in screen.",
     "confirmEmailSent": "Almost done: open the link we emailed you to confirm your address, then sign in.",
     "resetLinkSent": "If that email has an account, a reset link is on its way.",
@@ -519,7 +518,7 @@
       "signUp": "Sign up",
       "forgot": "Forgot password?",
       "sending": "Sending…",
-      "needEmail": "Type your email above, then tap Forgot password? again.",
+      "needEmail": "Type your email above, then tap {forgot} again.",
       "orGoogle": "Or sign in with Google using the same email.",
       "signingIn": "Signing in…",
       "showPassword": "Show password",
@@ -529,7 +528,7 @@
       "title": "Create your account",
       "subtitle": "Track your habits on your own, or together with your family.",
       "haveAccount": "Already have an account?",
-      "passwordRule": "At least {min} characters.",
+      "passwordRule": "{min, plural, other {At least # characters.}}",
       "signInInstead": "Sign in instead",
       "creating": "Creating your account…",
       "create": "Create account"
@@ -555,7 +554,6 @@
     "title": "Welcome to Keepup",
     "subtitle": "A little about you, then your first habits.",
     "subtitleInvited": "You're joining <bdi>{group}</bdi>. A little about you first.",
-    "weeksStart": "weeks start {day}",
     "purposeLabel": "Keepup is for… <muted>(optional)</muted>",
     "purpose": {
       "me": "Me",
@@ -563,19 +561,19 @@
       "friends": "Friends"
     },
     "habits": {
-      "title": "Pick 1–{max} habits to start",
+      "title": "{max, plural, other {Pick 1–# habits to start}}",
       "subtitle": "Each starts today. You can change them any time.",
       "joinedEmpty": "Add a few habits of your own?",
       "joinedTogether": "<bdi>{group}</bdi> already has {n, plural, one {# habit} other {# habits}} together. Add your own too?",
-      "joinedSubtitle": "Pick up to {max}. Each starts today.",
-      "atLimit": "Pick up to {max}",
-      "picked": "{n} of {max} picked",
+      "joinedSubtitle": "{max, plural, other {Pick up to #. Each starts today.}}",
+      "atLimit": "{max, plural, other {Pick up to #}}",
+      "picked": "{n, plural, other {# of {max} picked}}",
       "pickToStart": "Pick a habit to start",
       "startWith": "Start with {n, plural, one {# habit} other {# habits}}",
       "skip": "Skip",
       "skipForNow": "Skip for now",
       "addFailed": "Couldn't add your habits. Try again.",
-      "pickRange": "Pick 1–{max} habits."
+      "pickRange": "{max, plural, other {Pick 1–# habits.}}"
     }
   },
   "invite": {
@@ -825,6 +823,12 @@
         "3": "Flowers and a butterfly",
         "4": "A full garden"
       },
+      "toStage": {
+        "1": "a sprout",
+        "2": "the first flower",
+        "3": "flowers and a butterfly",
+        "4": "a full garden"
+      },
       "thisWeek": "This week's garden"
     },
     "aquarium": {
@@ -837,6 +841,12 @@
         "2": "A fish",
         "3": "Fish and a shell",
         "4": "A full reef"
+      },
+      "toStage": {
+        "1": "seaweed",
+        "2": "a fish",
+        "3": "fish and a shell",
+        "4": "a full reef"
       },
       "thisWeek": "This week's aquarium"
     },
@@ -851,6 +861,12 @@
         "3": "Planets",
         "4": "A starry galaxy"
       },
+      "toStage": {
+        "1": "a rocket",
+        "2": "the moon",
+        "3": "planets",
+        "4": "a starry galaxy"
+      },
       "thisWeek": "This week's space"
     },
     "dino": {
@@ -864,6 +880,12 @@
         "3": "A dino and its nest",
         "4": "A grown-up dino"
       },
+      "toStage": {
+        "1": "a cracking egg",
+        "2": "a baby dino",
+        "3": "a dino and its nest",
+        "4": "a grown-up dino"
+      },
       "thisWeek": "This week's dino egg"
     },
     "town": {
@@ -876,6 +898,12 @@
         "2": "A house and a tree",
         "3": "A street",
         "4": "A little town"
+      },
+      "toStage": {
+        "1": "a house",
+        "2": "a house and a tree",
+        "3": "a street",
+        "4": "a little town"
       },
       "thisWeek": "This week's town"
     }
@@ -904,7 +932,7 @@
       "remove": "Remove {title}",
       "chooseMore": "Choose more habits",
       "chooseHint": "Tap to pick or unpick. You can add your own later.",
-      "donePicked": "Done · {count} picked",
+      "donePicked": "{count, plural, other {Done · # picked}}",
       "submit": "{named, select, yes {Add <bdi>{name}</bdi>} other {Add child}}"
     },
     "edit": {
@@ -991,8 +1019,8 @@
   },
   "garden": {
     "starsToNext": "{gender, select, boy {{left, plural, one {# more star to {label} {icon}} other {# more stars to {label} {icon}}}} girl {{left, plural, one {# more star to {label} {icon}} other {# more stars to {label} {icon}}}} other {{left, plural, one {# more star to {label} {icon}} other {# more stars to {label} {icon}}}}}",
-    "restart": "{gender, select, boy {A new {noun} starts on {day} {start}} girl {A new {noun} starts on {day} {start}} other {A new {noun} starts on {day} {start}}}",
-    "restartFull": "{gender, select, boy {{done} A new one starts on {day}} girl {{done} A new one starts on {day}} other {{done} A new one starts on {day}}}",
+    "restart": "{gender, select, boy {{weekStart, select, sun {A new {noun} starts on Sunday {start}} mon {A new {noun} starts on Monday {start}} other {A new {noun} starts on Monday {start}}}} girl {{weekStart, select, sun {A new {noun} starts on Sunday {start}} mon {A new {noun} starts on Monday {start}} other {A new {noun} starts on Monday {start}}}} other {{weekStart, select, sun {A new {noun} starts on Sunday {start}} mon {A new {noun} starts on Monday {start}} other {A new {noun} starts on Monday {start}}}}}",
+    "restartFull": "{gender, select, boy {{weekStart, select, sun {{done} A new one starts on Sunday} mon {{done} A new one starts on Monday} other {{done} A new one starts on Monday}}} girl {{weekStart, select, sun {{done} A new one starts on Sunday} mon {{done} A new one starts on Monday} other {{done} A new one starts on Monday}}} other {{weekStart, select, sun {{done} A new one starts on Sunday} mon {{done} A new one starts on Monday} other {{done} A new one starts on Monday}}}}",
     "fullGarden": "Full garden! 🌻",
     "stageDone": "{label}! {icon}",
     "newWeek": "{gender, select, boy {Last week's {noun} is in the album 📸 {seed}} girl {Last week's {noun} is in the album 📸 {seed}} other {Last week's {noun} is in the album 📸 {seed}}}"
@@ -1002,11 +1030,12 @@
     "how": "How?",
     "installTitle": "Install Keepup",
     "installIntro": "Keepup works best from your Home Screen: full screen, with reminders.",
-    "installReminders": "Reinstalled? Reminders don't move with the app. Turn them on again: Profile → Settings → Turn on reminders."
+    "installReminders": "Reinstalled? Reminders don't move with the app. Turn them on again: {profile} → {settings} → {turnOn}."
   },
   "offline": {
     "banner": "Offline · showing your last update",
     "needsConnection": "Needs a connection",
+    "needsConnectionFor": "Needs a connection<sr>: {label}</sr>",
     "saving": "Saving… ☁️",
     "undo": "Undo",
     "undoLabel": "Undo check-in for {habit}",
@@ -1105,7 +1134,7 @@
     "inbox": "Inbox",
     "inboxUnread": "{n, plural, other {Inbox, {n, number, ::group-off} unread}}",
     "profileLevel": "Profile, level {level}",
-    "profileLevelProgress": "Profile, level {level}, {percent}% to level {next}"
+    "profileLevelProgress": "Profile, level {level}, {percent, number, ::percent} to level {next}"
   },
   "habits": {
     "new": {
@@ -1176,19 +1205,20 @@
       }
     },
     "history": {
-      "empty": "Nothing here yet. Each {period, select, day {day} week {week} other {month}} you finish fills a square."
+      "empty": "Nothing here yet. Each {period, select, day {day} week {week} other {month}} you finish fills a square.",
+      "cell": "{date}: {outcome}"
     },
     "countStepper": {
       "decrease": "Decrease",
       "increase": "Increase"
     },
     "cheer": {
-      "done": "Cheered",
-      "cta": "Cheer ❤️"
+      "done": "Cheered<sr> <bdi>{name}</bdi></sr>",
+      "cta": "Cheer ❤️<sr> <bdi>{name}</bdi></sr>"
     },
     "nudge": {
-      "done": "Nudged ✓",
-      "cta": "Nudge",
+      "done": "Nudged ✓<sr> <bdi>{name}</bdi></sr>",
+      "cta": "Nudge<sr> <bdi>{name}</bdi></sr>",
       "menuLabel": "Nudge {name}"
     },
     "archive": {
@@ -1273,7 +1303,7 @@
     },
     "datePicker": {
       "tomorrow": "Tomorrow",
-      "next": "Next {weekday}",
+      "next": "{day, select, 0 {Next Sun} 1 {Next Mon} 2 {Next Tue} 3 {Next Wed} 4 {Next Thu} 5 {Next Fri} 6 {Next Sat} other {Next week}}",
       "date": "Date",
       "pick": "Pick a date",
       "pickWith": "Pick a date, {date}",
@@ -1281,9 +1311,9 @@
       "nextMonth": "Next month"
     },
     "detail": {
-      "groupLine": "<bdi>{group}</bdi> · {schedule}{approval, select, yes { · needs approval} other {}}",
-      "categoryLine": "{schedule} · {category}",
-      "archivedSuffix": " · Archived",
+      "groupLine": "<bdi>{group}</bdi> · {schedule}{approval, select, yes { · needs approval} other {}}{archived, select, yes { · Archived} other {}}",
+      "categoryLine": "{schedule} · {category}{archived, select, yes { · Archived} other {}}",
+      "scheduleLine": "{schedule}{archived, select, yes { · Archived} other {}}",
       "archived": {
         "title": "Archived",
         "note": "{who, select, child {Restore it to put it back on <bdi>{name}</bdi>'s list. The days it was archived don't count against <bdi>{name}</bdi>.} other {Restore it to put it back on Today. The days it was archived don't count against you.}}"
@@ -1365,8 +1395,7 @@
       "finished": "No finished habits yet. Give a habit an end, like 30 days.",
       "archived": "No archived habits."
     },
-    "endedDecide": "Ended · decide on Today",
-    "best": "best {span}",
+    "habitLine": "{ended, select, yes {Ended · decide on Today · {schedule}} other {{schedule}}}{best, select, yes { · best {span}} other {}}",
     "calendar": {
       "title": "Calendar",
       "monthLabel": "Month",
@@ -1424,7 +1453,9 @@
     "noHabits": "No habits yet.",
     "change": "Change",
     "continue": "Continue",
-    "tagline": "Habits, together."
+    "tagline": "Habits, together.",
+    "listSeparator": ", ",
+    "tryAgain": "Try again"
   },
   "inbox": {
     "title": "Inbox",
@@ -1450,7 +1481,7 @@
       "dailyReminder": "Daily reminder",
       "pauseAll": "Pause all",
       "pausedUntil": "Paused until {until}",
-      "untilTurnedOn": "you turn them back on",
+      "pausedUntilOn": "Paused until you turn them back on",
       "resume": "Resume",
       "whatToSend": "What to send",
       "devices": "Devices",
@@ -1476,7 +1507,8 @@
     "label": "Celebration",
     "dismissHint": "Tap or press Esc",
     "everyoneDidIt": "Everyone did it!",
-    "everyoneDidItHabit": "<bdi>{habit}</bdi> ✓"
+    "everyoneDidItHabit": "<bdi>{habit}</bdi> ✓",
+    "habitSeparator": " · "
   },
   "avatars": {
     "hint": "Pick an animal or a friendly thing. No photos, ever.",
@@ -1517,7 +1549,7 @@
       "title": "Change your avatar",
       "description": "Shown to your groups."
     },
-    "summary": "{city} · weeks start {day}",
+    "summary": "<place>{city}</place> <dot>·</dot> <week>weeks start {weekStart, select, sun {Sunday} mon {Monday} other {Monday}}</week>",
     "footer": {
       "privacy": "Privacy Policy",
       "install": "How to install"
@@ -1546,7 +1578,7 @@
   },
   "achievements": {
     "title": "Achievements",
-    "earnedCount": "{earned} of {total} earned",
+    "earnedCount": "{earned, plural, other {# of {total} earned}}",
     "earnedLabel": "{name}, earned {date}",
     "lockedLabel": "{name}, locked: {hint}",
     "earnedNote": "Earned {date}",
@@ -1568,7 +1600,7 @@
       "step3": "Tap Add to Home Screen.",
       "step4": "Check the name is Keepup, then tap Add.",
       "step5": "Open Keepup from the new icon and sign in.",
-      "step6": "Profile → Settings → Turn on reminders.",
+      "step6": "{profile} → {settings} → {turnOn}.",
       "step7": "Had the old icon? Press and hold it and remove it.",
       "pic1": "Step 1: in Safari, tap the Share button in the toolbar, or ⋯ and then Share",
       "pic2": "Step 2: in the share sheet, tap Add to Home Screen",
@@ -1579,7 +1611,7 @@
       "heading": "Android",
       "step1": "Open Keepup in Chrome.",
       "step2": "Tap ⋮, then Install app (or Add to Home screen).",
-      "step3": "Open Keepup from the new icon, then turn reminders on in Profile → Settings.",
+      "step3": "Open Keepup from the new icon, then turn reminders on in {profile} → {settings}.",
       "pic1": "Step 1: in Chrome, tap the ⋮ menu at the right of the address bar",
       "pic2": "Step 2: in the menu, tap Install app",
       "pic3": "Step 3: the Keepup icon on the home screen"
@@ -1587,7 +1619,7 @@
     "computer": {
       "heading": "Computer",
       "step1": "In Chrome or Edge, click the install icon at the right of the address bar, then Install.",
-      "step2": "Then turn reminders on in Profile → Settings.",
+      "step2": "Then turn reminders on in {profile} → {settings}.",
       "pic1": "The install icon at the right of the address bar, and Install Keepup with an Install button"
     }
   },

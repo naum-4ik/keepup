@@ -108,7 +108,7 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
       logError("create_child_habit failed", habitError.message);
       habitsFailed = true;
     } else {
-      track("child_habit_added", who, { "child.id": childId, "child.nickname": name.value, "habit.title": title, "habit.period": tpl.period, "habit.target_count": tpl.targetCount });
+      track("child_habit_added", who, { "child.id": childId, "child.nickname": name.value, "habit.title": title, "habit.template_id": tpl.id, "habit.period": tpl.period, "habit.target_count": tpl.targetCount });
     }
   }
   refresh(childId);
@@ -179,7 +179,8 @@ export async function addChildHabit(childId: string, _prev: KidFormState, formDa
     p_period: habit.period,
   });
   if (error) return { status: "error", message: habitErrorMessage(t, error) };
-  track("child_habit_added", who, { "child.id": childId, "habit.title": habit.title, "habit.period": habit.period, "habit.target_count": habit.targetCount });
+  // habit.title is in the adult's language; habit.template_id names a template the same in every language.
+  track("child_habit_added", who, { "child.id": childId, "habit.title": habit.title, "habit.template_id": templateId || undefined, "habit.period": habit.period, "habit.target_count": habit.targetCount });
   refresh(childId);
   return { status: "saved" };
 }

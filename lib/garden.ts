@@ -1,4 +1,4 @@
-import { INTL_LOCALE, type Locale, type T } from "@/supabase/functions/_shared/i18n";
+import type { T } from "@/supabase/functions/_shared/i18n";
 
 // ideas/achievements-and-rewards.md §8 and ideas/kid-view-next.md §2. Stages mirror
 // private.garden_stage(): 0 / 3 / 7 / 12 / 18 stars in the week. Each theme grows the same way: one big
@@ -128,7 +128,8 @@ export function stepLines(t: T, stars: number, theme?: string | null, gender: Ge
   const next = nextStep(t, stars, id);
   return {
     now: `${labelAt(t, id, index)} ${stages[index].icon}`,
-    next: next && t("garden.starsToNext", { gender: genderOf(gender), left: next.left, label: next.label[0].toLowerCase() + next.label.slice(1), icon: next.icon }),
+    // kidThemes.<theme>.toStage: the picture's name as it reads after "to" (its own form per language).
+    next: next && t("garden.starsToNext", { gender: genderOf(gender), left: next.left, label: t(`kidThemes.${id}.toStage.${stages.findIndex((g) => g.min > stars)}`), icon: next.icon }),
   };
 }
 
@@ -136,19 +137,19 @@ export function stepLines(t: T, stars: number, theme?: string | null, gender: Ge
 // new week is announced, in the child's theme. The emoji are the scene's, not the language's.
 const THEME_START: Record<KidThemeId, string> = { garden: "🌱", aquarium: "💧", space: "🚀", dino: "🥚", town: "🏠" };
 
-// This week started on weekStart, so the next one starts 7 days later, on the same weekday.
-export function restartDay(locale: Locale, weekStart: string): string {
-  return new Intl.DateTimeFormat(INTL_LOCALE[locale], { weekday: "long", timeZone: "UTC" }).format(new Date(`${weekStart}T00:00:00Z`));
-}
+// This week started on weekStart, so the next one starts 7 days later, on the same weekday. Weeks
+// start on Sunday or Monday only (groups.week_start in (0, 1)); the messages name the day.
+export type WeekStartDay = "sun" | "mon";
+export const restartDay = (weekStart: string): WeekStartDay => (new Date(`${weekStart}T00:00:00Z`).getUTCDay() === 0 ? "sun" : "mon");
 
-export function restartLine(t: T, theme: string | null | undefined, day: string, full: boolean, gender: Gender = null): string {
+export function restartLine(t: T, theme: string | null | undefined, day: WeekStartDay, full: boolean, gender: Gender = null): string {
   const { id, stages } = kidTheme(theme);
   if (full) {
     const last = stages[stages.length - 1];
     const done = id === "garden" ? t("garden.fullGarden") : t("garden.stageDone", { label: labelAt(t, id, stages.length - 1), icon: last.icon });
-    return t("garden.restartFull", { gender: genderOf(gender), done, day });
+    return t("garden.restartFull", { gender: genderOf(gender), done, weekStart: day });
   }
-  return t("garden.restart", { gender: genderOf(gender), noun: t(`kidThemes.${id}.noun`), day, start: THEME_START[id] });
+  return t("garden.restart", { gender: genderOf(gender), noun: t(`kidThemes.${id}.noun`), weekStart: day, start: THEME_START[id] });
 }
 
 export function newWeekLine(t: T, theme: string | null | undefined, gender: Gender = null): string {

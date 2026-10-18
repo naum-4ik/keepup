@@ -14,7 +14,7 @@ export default function ErrorPage({ reset }: { error: Error & { digest?: string 
       <h1 className="text-2xl font-bold">{t("errorPage.title")}</h1>
       <p className="text-sm text-muted-foreground">{t("errorPage.text")}</p>
       <Button className="h-11" onClick={() => reset()}>
-        {t("myData.tryAgain")}
+        {t("common.tryAgain")}
       </Button>
       <Button asChild variant="ghost" className="h-11">
         <Link href="/today">{t("errorPage.backToToday")}</Link>

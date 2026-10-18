@@ -77,7 +77,7 @@ export function EveryoneDidIt(props: Props) {
         {t("everyoneDidIt")}{" "}
         {habits.map((h, i) => (
           <Fragment key={i}>
-            {i > 0 && " · "}
+            {i > 0 && t("habitSeparator")}
             {t.rich("everyoneDidItHabit", { habit: h, bdi: (c) => <bdi>{c}</bdi> })}
           </Fragment>
         ))}

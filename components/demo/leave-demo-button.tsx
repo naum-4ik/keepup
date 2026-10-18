@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { unstable_rethrow } from "next/navigation";
 import { leaveDemo } from "@/app/demo/actions";
@@ -11,11 +11,11 @@ import { clearOfflineCaches, markPagesOwnerDeleted } from "@/lib/offline-pages";
 import { browserSubscription, signOutCleanup } from "@/lib/push-support";
 import { runLeaveDemo } from "@/lib/try-demo";
 
-// The demo banner's "Sign in": the phone is cleared the way Delete account clears it, then leaveDemo
+// The demo banner's "Sign in" (`children`: its words, from the banner's one sentence): the phone is cleared the way Delete account clears it, then leaveDemo
 // ends the session and opens /login (lib/try-demo.ts runLeaveDemo), with `next` when given. Outside
 // OfflineQueueProvider (the invite page, onboarding) there is no queue to delete: useOfflineSignOut's
 // deleteQueue does nothing there; saved pages, push and the pages-owner sentinel are still cleared.
-export function LeaveDemoButton({ next }: { next?: string }) {
+export function LeaveDemoButton({ next, children }: { next?: string; children: ReactNode }) {
   const { t } = useT();
   const queue = useOfflineSignOut();
   const [error, setError] = useState<string | null>(null);
@@ -42,18 +42,17 @@ export function LeaveDemoButton({ next }: { next?: string }) {
 
   return (
     <form action={leave} className="inline">
-      <Submit />
+      <Submit>{children}</Submit>
       {error && <span role="alert" className="block text-destructive">{error}</span>}
     </form>
   );
 }
 
-function Submit() {
-  const { t } = useT();
+function Submit({ children }: { children: ReactNode }) {
   const { pending } = useFormStatus();
   return (
     <button type="submit" disabled={pending} className="inline-flex min-h-11 items-center px-1 font-bold text-foreground underline underline-offset-2 disabled:opacity-60">
-      {t("demo.signIn")}
+      {children}
     </button>
   );
 }

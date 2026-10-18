@@ -1,11 +1,10 @@
-import { LOCALES, type Locale } from "@/supabase/functions/_shared/i18n";
+import { enabledLocales as parseEnabled, type Locale } from "@/supabase/functions/_shared/i18n";
 export type { Locale };
 export const LOCALE_COOKIE = "locale";
 
 // Which languages people can pick: production stays "en" until the release (plans/2026-10-15).
 export function enabledLocales(raw: string | undefined = process.env.KEEPUP_LOCALES): Locale[] {
-  const asked = (raw ?? "").split(",").map((s) => s.trim());
-  return LOCALES.filter((l) => l === "en" || asked.includes(l));
+  return parseEnabled(raw);
 }
 
 export function asLocale(v: unknown, enabled: Locale[]): Locale | null {

@@ -121,7 +121,7 @@ export default async function KidPage({
           albumHref="#album"
         />
       )}
-      {rewards && <Garden t={tg} locale={locale} stars={rewards.stars_this_week} theme={child.kid_theme} weekStart={rewards.week_start} gender={child.gender} />}
+      {rewards && <Garden t={tg} stars={rewards.stars_this_week} theme={child.kid_theme} weekStart={rewards.week_start} gender={child.gender} />}
       <ThemePicker childId={id} childName={child.name} theme={child.kid_theme} />
       {rewards && <GardenAlbum t={tg} locale={locale} weeks={rewards.album} theme={child.kid_theme} />}
       {rewards && <TreatGoal childId={id} childName={child.name} gender={child.gender} goal={rewards.goal} />}

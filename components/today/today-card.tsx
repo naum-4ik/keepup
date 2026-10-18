@@ -110,7 +110,7 @@ export function TodayCard({
         // One picture with one label: the habit cards below are the interactive part.
         <div
           role="img"
-          aria-label={t("today.habitsLabel", { list: items.map((i) => t(i.done ? "today.itemDone" : "today.itemTodo", { title: isolate(i.title) })).join(", ") })}
+          aria-label={t("today.habitsLabel", { list: items.map((i) => t(i.done ? "today.itemDone" : "today.itemTodo", { title: isolate(i.title) })).join(t("common.listSeparator")) })}
           className="flex flex-wrap gap-1.5"
         >
           {items.map((i) => (

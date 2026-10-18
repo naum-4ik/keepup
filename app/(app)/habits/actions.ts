@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getProfile, requireUser } from "@/lib/auth";
+import { GROUP_TEMPLATES } from "@/lib/group-templates";
+import { HABIT_TEMPLATES } from "@/lib/habit-templates";
 import { insertHabits, setHabitEnd } from "@/lib/habit-create";
 import { startAgainEnd } from "@/lib/habit-finish";
 import { todayIn } from "@/lib/dates";
@@ -43,6 +45,13 @@ async function endBeforeStart(formData: FormData, startsOn: string | undefined, 
   return endsOn < (startsOn ?? todayIn(timeZone ?? (await getProfile()).profile.timezone));
 }
 
+// The template a habit was opened from (habit.title is in the user's language): known ids only.
+const TEMPLATE_IDS: ReadonlySet<string> = new Set([...HABIT_TEMPLATES, ...GROUP_TEMPLATES].map((x) => x.id));
+function templateIdOf(formData: FormData): string | undefined {
+  const id = String(formData.get("templateId") ?? "");
+  return TEMPLATE_IDS.has(id) ? id : undefined;
+}
+
 export async function createHabit(_prev: HabitFormState, formData: FormData): Promise<HabitFormState> {
   const { t } = await getT();
   const values = readHabitForm(formData);
@@ -60,7 +69,7 @@ export async function createHabit(_prev: HabitFormState, formData: FormData): Pr
   if (endError) logError("set_habit_end failed", endError.message);
 
   const h = parsed.value;
-  track("habit_created", who, { "habit.scope": "private", "habit.id": ids[0], "habit.title": h.title, "habit.category": h.category, "habit.period": h.period, "habit.target_count": h.targetCount });
+  track("habit_created", who, { "habit.scope": "private", "habit.id": ids[0], "habit.title": h.title, "habit.template_id": templateIdOf(formData), "habit.category": h.category, "habit.period": h.period, "habit.target_count": h.targetCount });
   refresh();
   redirect("/today");
 }
@@ -227,7 +236,7 @@ export async function createGroupHabit(_prev: HabitFormState, formData: FormData
   const endError = created ? await setHabitEnd(supabase, created.id, readEndsOn(formData)) : null;
   if (endError) logError("set_habit_end failed", endError.message);
   const h = parsed.value;
-  track("habit_created", who, { "habit.scope": "group", "habit.id": created?.id, "group.id": groupId, "habit.title": h.title, "habit.category": h.category, "habit.period": h.period, "habit.target_count": h.targetCount });
+  track("habit_created", who, { "habit.scope": "group", "habit.id": created?.id, "group.id": groupId, "habit.title": h.title, "habit.template_id": templateIdOf(formData), "habit.category": h.category, "habit.period": h.period, "habit.target_count": h.targetCount });
   refresh();
   revalidatePath(`/groups/${groupId}`);
   redirect("/today");

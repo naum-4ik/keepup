@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 // Inside OfflineQueueProvider, Sign in also deletes this phone's check-in queue. `next`: where sign-in
 // returns (the invite page). The status role is on the line only, so the form isn't re-announced.
 export async function DemoBanner({ placement, next }: { placement: "header" | "top"; next?: string }) {
-  const { t } = await getT();
+  const { t, rich } = await getT();
   return (
     <div
       className={cn(
@@ -17,8 +17,7 @@ export async function DemoBanner({ placement, next }: { placement: "header" | "t
     >
       <span role="status">{t("demo.banner")}</span>
       <span className="inline-flex items-center gap-1">
-        <LeaveDemoButton next={next} />
-        <span>{t("demo.signInTail")}</span>
+        {rich("demo.signInLine", { signIn: (c: React.ReactNode) => <LeaveDemoButton next={next}>{c}</LeaveDemoButton> })}
       </span>
     </div>
   );
