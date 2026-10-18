@@ -2,7 +2,8 @@
 import { describe, expect, it } from "vitest";
 import { tEn } from "@/lib/i18n/test-t";
 import { BANNED_PATTERNS, BANNED_WORDS } from "./notification-copy";
-import { offlinePageLocale, undoLabel, unsavedSignOut } from "./offline-copy";
+import { LOCALE_COOKIE, asLocale, pickLocale } from "@/i18n/config";
+import { offlineLocaleScript, offlinePageLocale, undoLabel, unsavedSignOut } from "./offline-copy";
 
 describe("sign-out with check-ins still on the phone", () => {
   it("says how many, and what happens to them", () => {
@@ -56,5 +57,39 @@ describe("the offline page's language", () => {
     expect(pick("locale=de", "fr-FR")).toBe("en");
     expect(pick("locale=ru", "ru-RU", ["en"])).toBe("en");
     expect(pick("xlocale=ru", "")).toBe("en");
+  });
+});
+
+describe("the offline page's inline language script", () => {
+  // Runs the script as the browser would, with a fake document and navigator; returns the data-locale it set.
+  const run = (cookie: string, languages: string[] | undefined, language: string, available: ("en" | "ru" | "he")[] = ["en", "ru", "he"]) => {
+    const attrs: Record<string, string> = {};
+    const parentNode = { setAttribute: (k: string, v: string) => { attrs[k] = v; } };
+    new Function("document", "navigator", offlineLocaleScript(available))({ cookie, currentScript: { parentNode } }, { languages, language });
+    return attrs["data-locale"];
+  };
+
+  it("picks like offlinePageLocale, from the cookie, then the phone's languages", () => {
+    const cases: [string, string[] | undefined, string][] = [
+      ["theme=x; locale=he; other=1", ["ru-RU"], "ru-RU"], ["locale=fr", ["ru"], "ru"], ["", ["fr-FR", "ru-RU", "en"], "fr-FR"],
+      ["", ["de", "iw-IL"], "de"], ["", undefined, "HE"], ["", [], ""], ["xlocale=ru", ["fr"], "fr"], ["", undefined, ""],
+    ];
+    for (const [cookie, languages, language] of cases) {
+      const phone = languages?.join(",") || language;
+      expect(run(cookie, languages, language), `${cookie} | ${phone}`).toBe(offlinePageLocale(cookie, phone, ["en", "ru", "he"]));
+    }
+    expect(run("locale=ru", ["he-IL"], "he-IL", ["en", "he"])).toBe("he");
+  });
+
+  it("follows the app's own rules (cookie name, asLocale, pickLocale)", () => {
+    expect(run(`${LOCALE_COOKIE}=ru`, ["he"], "he")).toBe("ru");
+    for (const phone of ["fr-FR,ru-RU,en", "de,iw-IL", "fr-FR,de", "HE", ""]) {
+      expect(offlinePageLocale("", phone, ["en", "ru", "he"])).toBe(pickLocale(phone, ["en", "ru", "he"]));
+    }
+    expect(offlinePageLocale("locale=he", "ru", ["en", "ru", "he"])).toBe(asLocale("he", ["en", "ru", "he"]));
+  });
+
+  it("never throws: a page without currentScript just stays English", () => {
+    expect(() => new Function("document", "navigator", offlineLocaleScript(["en"]))({ cookie: "" }, {})).not.toThrow();
   });
 });

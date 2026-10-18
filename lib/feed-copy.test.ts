@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { tEn } from "@/lib/i18n/test-t";
+import { deepMerge } from "@/i18n/merge-messages";
+import en from "@/supabase/functions/_shared/messages/en.json";
+import { tEn, tFor } from "@/lib/i18n/test-t";
 import { FEED_KINDS, feedCopy, type FeedItem } from "@/lib/feed-copy";
 import { NUDGE_KINDS } from "@/lib/nudge-kinds";
 import { BANNED_PATTERNS, BANNED_WORDS } from "@/lib/notification-copy";
@@ -146,5 +148,34 @@ describe("plain feed lines", () => {
   it("falls back to gentle names", () => {
     const body = feedCopy(tEn, "en", item({ kind: "member_joined", group_name: null, actor_name: null })).body;
     expect(body).toBe(`${I("Someone")} joined ${I("Your group")} 👋`);
+  });
+});
+
+describe("kid lines use the kid's gender (inbox_feed.subject_gender)", () => {
+  // A fake catalog whose five kid selects say which branch they took.
+  const sel = (key: string) => `${key}:{gender, select, boy {boy} girl {girl} other {other}}`;
+  const fake = deepMerge(en, {
+    feed: { kidDidIt: sel("kidDidIt") },
+    push: { kidStreak: sel("kidStreak"), kidTreatGoal: sel("kidTreatGoal"), kidFullGarden: sel("kidFullGarden"), alreadyLogged: { byKid: sel("byKid") } },
+  });
+  const tFake = tFor("en", fake);
+  const kidRows = (gender: string | null) => [
+    item({ kind: "kid_check_in", actor_name: null, subject_name: "Mary", subject_gender: gender }),
+    item({ kind: "kid_streak", subject_name: "Mary", subject_gender: gender, payload: { streak: 7 } }),
+    item({ kind: "kid_goal_reached", subject_name: "Mary", subject_gender: gender, payload: { title: "Park", emoji: "🛝" } }),
+    item({ kind: "kid_garden_full", subject_name: "Mary", subject_gender: gender }),
+    item({ kind: "already_logged", actor_name: null, subject_name: "Mary", subject_gender: gender }),
+  ];
+
+  it.each([["boy", "boy"], ["girl", "girl"], [null, "other"], ["unexpected", "other"]])("%s → the %s branch", (gender, branch) => {
+    expect(kidRows(gender).map((r) => feedCopy(tFake, "en", r).body)).toEqual(
+      ["kidDidIt", "kidStreak", "kidTreatGoal", "kidFullGarden", "byKid"].map((k) => `${k}:${branch}`),
+    );
+  });
+
+  it("English reads the same for a boy, a girl and no gender", () => {
+    const bodies = (g: string | null) => kidRows(g).map((r) => feedCopy(tEn, "en", r).body);
+    expect(bodies("boy")).toEqual(bodies(null));
+    expect(bodies("girl")).toEqual(bodies(null));
   });
 });

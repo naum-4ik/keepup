@@ -38,6 +38,8 @@ export function isFeedKind(kind: string): kind is Kind {
 const SCHEDULE_KEY: Record<PeriodUnit, string> = { day: "schedule.daily", week: "schedule.weekly", month: "schedule.monthly" };
 
 const asOutcome = (o: unknown): copy.ApprovalOutcome | null => (o === "approved" || o === "rejected" || o === "expired" ? o : null);
+// inbox_feed's subject_gender (the kid's profiles.gender): boy/girl pick the wording, anything else is neutral.
+const asGender = (g: string | null): copy.KidGender => (g === "boy" || g === "girl" ? g : "other");
 const asPeriod = (p: unknown, fallback: PeriodUnit): PeriodUnit => (p === "day" || p === "week" || p === "month" ? p : fallback);
 
 export function feedCopy(t: T, locale: Locale, n: FeedItem): { title: string; body: string; href: string | null } {
@@ -45,6 +47,7 @@ export function feedCopy(t: T, locale: Locale, n: FeedItem): { title: string; bo
   const habit = n.habit_title ?? t("push.fallback.habit");
   const who = n.actor_name ?? t("push.fallback.someone");
   const kid = n.subject_name ?? t("push.fallback.child");
+  const gender = asGender(n.subject_gender);
   const streak = Number(n.payload.streak ?? 0);
   const habitHref = n.habit_id ? `/habits/${n.habit_id}` : null;
   const groupHref = n.group_id ? `/groups/${n.group_id}` : null;
@@ -86,13 +89,13 @@ export function feedCopy(t: T, locale: Locale, n: FeedItem): { title: string; bo
     }
     case "cheer": return { title: habit, body: t("feed.cheer", { who: isolate(who) }), href: habitHref };
     case "kid_check_in":
-      return { title: kid, body: n.actor_name ? t("feed.kidLoggedBy", { adult: isolate(who), habit: isolate(habit), kid: isolate(kid) }) : t("feed.kidDidIt", { gender: "other", kid: isolate(kid), habit: isolate(habit) }), href: kidHref };
-    case "kid_streak": return { ...copy.kidStreak(t, kid, streak, habit), href: kidHref };
+      return { title: kid, body: n.actor_name ? t("feed.kidLoggedBy", { adult: isolate(who), habit: isolate(habit), kid: isolate(kid) }) : t("feed.kidDidIt", { gender, kid: isolate(kid), habit: isolate(habit) }), href: kidHref };
+    case "kid_streak": return { ...copy.kidStreak(t, kid, streak, habit, gender), href: kidHref };
     case "kid_goal_reached": {
-      const goal = copy.kidTreatGoal(t, kid, String(n.payload.title ?? ""), String(n.payload.emoji ?? ""));
+      const goal = copy.kidTreatGoal(t, kid, String(n.payload.title ?? ""), String(n.payload.emoji ?? ""), gender);
       return { ...goal, body: goal.body.trim(), href: kidHref };
     }
-    case "kid_garden_full": return { ...copy.kidFullGarden(t, kid), href: kidHref };
+    case "kid_garden_full": return { ...copy.kidFullGarden(t, kid, gender), href: kidHref };
     case "private_streak_ended":
       return { ...copy.privateStreakEnded(t, habit, streak, asPeriod(n.payload.period, "day"), Number(n.payload.best ?? 0)), href: habitHref };
     case "daily_summary": {
@@ -113,7 +116,7 @@ export function feedCopy(t: T, locale: Locale, n: FeedItem): { title: string; bo
       return { ...copy.approvalExpiring(t, group, who, habit), href: "/inbox" };
     // Offline sync notes (ideas/offline.md §4). A private habit's streak note has no group: the habit is the title.
     case "streak_back": return { ...copy.groupStreakBack(t, n.group_name ?? habit, habit), href: habitHref };
-    case "already_logged": return { ...copy.alreadyLogged(t, kid, n.actor_name, habit), href: kidHref ?? habitHref };
+    case "already_logged": return { ...copy.alreadyLogged(t, kid, n.actor_name, habit, gender), href: kidHref ?? habitHref };
     case "sync_dropped": {
       // tapped_on is the habit's local date; read it as a plain date (UTC), so the weekday never shifts.
       const day = typeof n.payload.tapped_on === "string" && /^\d{4}-\d{2}-\d{2}$/.test(n.payload.tapped_on)
