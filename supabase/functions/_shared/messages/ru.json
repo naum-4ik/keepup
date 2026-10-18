@@ -20,7 +20,7 @@
     },
     "reset": {
       "title": "Сбросить мои данные",
-      "clears": "Будут удалены ваши привычки и их отметки, опыт и уровень, значки, итоги и Входящие.",
+      "clears": "Будут удалены ваши привычки и их отметки, XP и уровень, значки, итоги и Входящие.",
       "keeps": "Аккаунт, настройки, устройства, группы и дети останутся, как и ваши отметки в групповых привычках.",
       "dialogTitle": "Сбросить ваши данные?",
       "dialogBody": "{clears} {keeps} Это нельзя отменить.",
@@ -42,22 +42,22 @@
       "one": "{author}: отметка ✓ {habit}. Подтвердить?",
       "many": "{n, plural, one {# отметка ждёт вас} few {# отметки ждут вас} many {# отметок ждут вас} other {# отметки ждут вас}}"
     },
-    "approvalExpiring": "Отметку {habit} ({author}) нужно подтвердить в течение 2 часов",
+    "approvalExpiring": "{author}: отметка «{habit}» ждёт подтверждения ещё 2 часа",
     "approvalDecided": "{author}: {habit} — {outcome, select, approved {подтверждено} rejected {не подтверждено} other {не проверено вовремя}}",
-    "checkInNotApproved": "{reviewer}: отметка не подтверждена. Можно отметить снова {period, select, week {на этой неделе} month {в этом месяце} other {сегодня}}.",
+    "checkInNotApproved": "{reviewer}: ваша отметка не подтверждена. Можно отметить снова {period, select, week {на этой неделе} month {в этом месяце} other {сегодня}}.",
     "nudge": "{sender}: {kind, select, you_got_this {У вас получится: {habit}} gentle_reminder {Мягкое напоминание: {habit}} other {Думаю о вас. {habit} сегодня?}}",
     "groupStreakEnded": "{habit}: серия ({span}) прервалась. Начните новую {period, select, week {на этой неделе} month {в этом месяце} other {сегодня}}.",
     "privateStreakEnded": {
       "best": "{habit}: серия ({span}) прервалась. Ваш рекорд — по-прежнему {best}.",
       "restart": "{habit}: серия ({span}) прервалась. Начните новую {period, select, week {на этой неделе} month {в этом месяце} other {сегодня}}."
     },
-    "groupStreakBack": "Пришла поздняя отметка. Серия {habit} вернулась 🔥",
-    "groupHabitCreated": "Новая привычка от {author}: {habit}, {schedule}.",
+    "groupStreakBack": "{habit}: серия вернулась 🔥",
+    "groupHabitCreated": "{author}: новая привычка — {habit}, {schedule}.",
     "groupHabitPaused": {
       "until": "{habit}: пауза до {until}.",
       "open": "{habit}: на паузе."
     },
-    "groupHabitResumed": "{habit} снова в деле.",
+    "groupHabitResumed": "{habit}: пауза закончилась",
     "memberJoined": "{group}: новый участник — {member} 👋",
     "restDayUsed": "{period, select, week {{n, plural, one {Использована неделя отдыха. Ваша серия в {n, number, ::group-off} неделю сохранена 💤} few {Использована неделя отдыха. Ваша серия в {n, number, ::group-off} недели сохранена 💤} many {Использована неделя отдыха. Ваша серия в {n, number, ::group-off} недель сохранена 💤} other {Использована неделя отдыха. Ваша серия в {n, number, ::group-off} недели сохранена 💤}}} other {{n, plural, one {Использован день отдыха. Ваша серия в {n, number, ::group-off} день сохранена 💤} few {Использован день отдыха. Ваша серия в {n, number, ::group-off} дня сохранена 💤} many {Использован день отдыха. Ваша серия в {n, number, ::group-off} дней сохранена 💤} other {Использован день отдыха. Ваша серия в {n, number, ::group-off} дня сохранена 💤}}}}",
     "longestStreak": "Самая длинная серия: {habit} 🔥 {span}",
@@ -95,8 +95,8 @@
     },
     "syncDropped": "Отметка за {day} не засчитана: когда она синхронизировалась, ей было больше 3 дней.",
     "undoDropped": {
-      "approved": "Не удалось отменить {habit}: отметка уже подтверждена.",
-      "periodClosed": "Не удалось отменить {habit}: время уже прошло."
+      "approved": "Не удалось отменить отметку: {habit}, она уже подтверждена.",
+      "periodClosed": "Не удалось отменить отметку: {habit}, время уже прошло."
     },
     "fallback": {
       "group": "Ваша группа",
@@ -159,17 +159,17 @@
   },
   "feed": {
     "checkInApproved": "{who}: ваша отметка подтверждена.",
-    "groupHabitAdded": "Новая привычка от {author}: {habit}.",
+    "groupHabitAdded": "{author}: новая привычка — {habit}.",
     "habitArchived": "{habit}: в архиве.",
     "memberPaused": "{who}: пауза в привычке {habit}.",
     "memberRemoved": "{who} больше не в группе {group}.",
-    "memberLeft": "{who}: выход из группы {group}.",
+    "memberLeft": "{who} покидает группу {group}.",
     "roleAdmin": "Теперь вы администратор группы {group}.",
     "roleMember": "Теперь вы участник группы {group}.",
-    "cheer": "{who}: поддержка вашей отметки ❤️",
+    "cheer": "{who} поддерживает вас ❤️",
     "kidLoggedBy": "{kid}: {habit} — отмечено ({adult}) ⭐",
     "kidDidIt": "{gender, select, boy {{kid} сделал: {habit} ⭐} girl {{kid} сделала: {habit} ⭐} other {{kid}: {habit} — готово ⭐}}",
-    "dayEarlier": "раньше",
+    "dayEarlier": "один из прошлых дней",
     "recapReady": "Ваши итоги готовы.",
     "nudgeLabel": {
       "thinking_of_you": "Думаю о вас",
@@ -196,11 +196,11 @@
     },
     "group_updates": {
       "label": "Новости групп",
-      "hint": "Новые привычки, паузы, новые участники, серии и рекорды."
+      "hint": "Новые привычки, паузы, новые участники, серии и круглые даты серий."
     },
     "achievements": {
       "label": "Достижения",
-      "hint": "Новые уровни, значки, рекорды серий, дни отдыха и итоги недели. Только во Входящих, если не измените."
+      "hint": "Новые уровни, значки, круглые даты серий, дни отдыха и итоги недели. Только во Входящих, если не измените."
     },
     "approvalsOffNote": "Подтверждения всё равно ждут во Входящих."
   },
@@ -245,8 +245,8 @@
     "moreThanLastWeek": "{n, plural, one {на # больше, чем на прошлой неделе} few {на # больше, чем на прошлой неделе} many {на # больше, чем на прошлой неделе} other {на # больше, чем на прошлой неделе}}",
     "bestWeekYet": "Ваша лучшая неделя",
     "freshStart": "Новое начало на этой неделе",
-    "dotsLabel": "{span}: {counts}",
-    "dotCount": "{status, select, done {{n, plural, one {# сделано} few {# сделано} many {# сделано} other {# сделано}}} missed {{n, plural, one {# не сделано} few {# не сделано} many {# не сделано} other {# не сделано}}} paused {{n, plural, one {# на паузе} few {# на паузе} many {# на паузе} other {# на паузе}}} not_started {{n, plural, one {# ещё не началось} few {# ещё не началось} many {# ещё не началось} other {# ещё не началось}}} open {{n, plural, one {# в процессе} few {# в процессе} many {# в процессе} other {# в процессе}}} rested {{n, plural, one {# день отдыха} few {# дня отдыха} many {# дней отдыха} other {# дня отдыха}}} other {{n, plural, one {#} few {#} many {#} other {#}}}}"
+    "dotsLabel": "Последние {span}: {counts}",
+    "dotCount": "{status, select, done {{n, plural, one {сделано: #} few {сделано: #} many {сделано: #} other {сделано: #}}} missed {{n, plural, one {не сделано: #} few {не сделано: #} many {не сделано: #} other {не сделано: #}}} paused {{n, plural, one {на паузе: #} few {на паузе: #} many {на паузе: #} other {на паузе: #}}} not_started {{n, plural, one {не начато: #} few {не начато: #} many {не начато: #} other {не начато: #}}} open {{n, plural, one {в процессе: #} few {в процессе: #} many {в процессе: #} other {в процессе: #}}} rested {{n, plural, one {дни отдыха: #} few {дни отдыха: #} many {дни отдыха: #} other {дни отдыха: #}}} other {{n, plural, one {#} few {#} many {#} other {#}}}}"
   },
   "recaps": {
     "weekOf": "Неделя с {date}",
@@ -280,14 +280,14 @@
     "extend": "+{span}"
   },
   "habitFinish": {
-    "did": "{together, select, yes {Вместе: {done} за срок {span}} other {Ваш итог: {done} за срок {span}}}",
+    "did": "{together, select, yes {Сделано вместе: {done}; срок — {span}} other {Сделано: {done}; срок — {span}}}",
     "withBest": "{main} · лучшая серия {n} 🔥",
     "anotherGo": "Попробуете ещё раз?"
   },
   "myData": {
     "deleteWord": "удалить",
     "deleteTitle": "Удалить аккаунт?",
-    "deleteBody": "Аккаунт, привычки, отметки, опыт, значки и Входящие удаляются сразу. Это нельзя отменить.",
+    "deleteBody": "Аккаунт, привычки, отметки, XP, значки и Входящие удаляются сразу. Это нельзя отменить.",
     "exportHint": "Файл со всем, что Keepup хранит о вас.",
     "exportFirst": "Если нужна копия, сначала скачайте свои данные.",
     "deleteFailed": "Не удалось удалить аккаунт. Перезагрузите Keepup и попробуйте снова.",
@@ -469,15 +469,15 @@
       "makeMember": "Сделать участником",
       "makeAdmin": "Сделать администратором",
       "remove": "Удалить из группы",
-      "removeTitle": "Удалить <bdi>{name}</bdi> из группы?",
-      "removeDescription": "Этот человек выйдет из группы <bdi>{group}</bdi> и перестанет видеть её привычки. Свои привычки останутся при нём.",
+      "removeTitle": "Удалить из группы: <bdi>{name}</bdi>?",
+      "removeDescription": "Этот человек выйдет из группы <bdi>{group}</bdi> и перестанет видеть её привычки. Их собственные привычки сохранятся.",
       "confirmRemove": "Удалить",
       "removing": "Удаляем…"
     },
     "invite": {
       "helpNone": "Любой, у кого есть ссылка, сможет вступить в группу <bdi>{group}</bdi> в течение 7 дней.",
       "helpActive": "Любой, у кого есть эта ссылка, сможет вступить в группу <bdi>{group}</bdi> в течение 7 дней.",
-      "create": "Создать ссылку-приглашение",
+      "create": "Создать ссылку",
       "copyFailed": "Не удалось скопировать. Выделите ссылку и скопируйте её.",
       "label": "Ссылка-приглашение <muted>· действует до {date}</muted>",
       "linkAria": "Ссылка-приглашение",
@@ -580,7 +580,7 @@
     "invalidTitle": "Эта ссылка-приглашение больше не работает",
     "invalidBody": "Попросите новую у того, кто её прислал.",
     "goToKeepup": "Перейти в Keepup",
-    "invitedYou": "Приглашение от <bdi>{inviter}</bdi> в группу <bdi>{group}</bdi>",
+    "invitedYou": "<bdi>{inviter}</bdi> приглашает вас в группу <bdi>{group}</bdi>",
     "members": "{n, plural, one {В группе <bdi>{group}</bdi> уже # человек.} few {В группе <bdi>{group}</bdi> уже # человека.} many {В группе <bdi>{group}</bdi> уже # человек.} other {В группе <bdi>{group}</bdi> уже # человека.}}",
     "open": "Открыть группу {group}",
     "join": "Вступить в группу {group}",
@@ -591,7 +591,7 @@
   },
   "templates": {
     "water": "Пить воду",
-    "sleep": "Спать до 23:00",
+    "sleep": "Ложиться спать до 23:00",
     "vitamins": "Принять витамины или лекарства",
     "veggies": "Есть фрукты или овощи",
     "brush-teeth": "Чистить зубы",
@@ -684,7 +684,7 @@
       "new-book": "Новая книжка",
       "art-supplies": "Новые краски и карандаши",
       "small-toy": "Маленькая новая игрушка",
-      "game-time": "Лишнее время для игр",
+      "game-time": "Больше времени на игры",
       "fair": "День в парке аттракционов",
       "late-friday": "Лечь попозже в пятницу"
     },
@@ -699,7 +699,7 @@
   "categories": {
     "health": "Здоровье",
     "fitness": "Спорт",
-    "mind": "Разум",
+    "mind": "Ум",
     "learning": "Учёба",
     "people": "Люди",
     "home": "Дом",
@@ -821,13 +821,13 @@
         "1": "Росток",
         "2": "Первый цветок",
         "3": "Цветы и бабочка",
-        "4": "Полный сад"
+        "4": "Цветущий сад"
       },
       "toStage": {
         "1": "ростка",
         "2": "первого цветка",
         "3": "цветов и бабочки",
-        "4": "полного сада"
+        "4": "цветущего сада"
       },
       "thisWeek": "Сад этой недели"
     },
@@ -958,7 +958,7 @@
       "habits": "Привычки",
       "progressInGroup": "{progress} · <bdi>{group}</bdi>",
       "logged": "{by, select, child {{gender, select, boy {<bdi>{name}</bdi> сделал} girl {<bdi>{name}</bdi> сделала} other {<bdi>{name}</bdi>: готово}}} you {Отмечено вами} member {Отметка: <bdi>{name}</bdi>} other {Отметка бывшего участника}} · {time}",
-      "undo": "Отменить {title} в {time}",
+      "undo": "Отменить отметку: {title}, {time}",
       "data": "Данные",
       "dataText": "Всё, что Keepup хранит о ребёнке (<bdi>{name}</bdi>), в одном файле."
     },
@@ -985,7 +985,7 @@
       "progress": "⭐ {stars} из {target}",
       "cancel": "Отменить цель",
       "cancelTitle": "Отменить цель?",
-      "cancelDescription": "{gender, select, boy {<bdi>{goal}</bdi> исчезнет вместе с дорожкой звёзд. Новая цель начнётся с нуля; звёзды останутся у него (<bdi>{name}</bdi>).} girl {<bdi>{goal}</bdi> исчезнет вместе с дорожкой звёзд. Новая цель начнётся с нуля; звёзды останутся у неё (<bdi>{name}</bdi>).} other {<bdi>{goal}</bdi> исчезнет вместе с дорожкой звёзд. Новая цель начнётся с нуля; звёзды останутся (<bdi>{name}</bdi>).}}",
+      "cancelDescription": "{gender, select, boy {<bdi>{goal}</bdi> исчезнет вместе с дорожкой звёзд. Новая цель начнётся с нуля; <bdi>{name}</bdi> сохранит все звёзды.} girl {<bdi>{goal}</bdi> исчезнет вместе с дорожкой звёзд. Новая цель начнётся с нуля; <bdi>{name}</bdi> сохранит все звёзды.} other {<bdi>{goal}</bdi> исчезнет вместе с дорожкой звёзд. Новая цель начнётся с нуля; <bdi>{name}</bdi> сохранит все звёзды.}}",
       "keep": "Оставить цель",
       "cancelling": "Отменяем…",
       "intro": "Выберите награду вместе, а потом собирайте для неё звёзды.",
@@ -1128,7 +1128,7 @@
     "main": "Главное меню",
     "today": "Сегодня",
     "progress": "Прогресс",
-    "newHabit": "Новая привычка",
+    "newHabit": "Добавить",
     "groups": "Группы",
     "profile": "Профиль",
     "inbox": "Входящие",
@@ -1156,7 +1156,7 @@
       "pickCategory": "Выберите категорию",
       "howOften": "Как часто",
       "times": "Сколько раз",
-      "per": "За",
+      "per": "Период",
       "frequencyOption": "{n, plural, one {раз} few {раза} many {раз} other {раза}} в {period, select, day {день} week {неделю} other {месяц}}",
       "whoFor": "Для кого",
       "justMe": "Только для меня",
@@ -1255,7 +1255,7 @@
       "mute": "Без уведомлений о привычке",
       "muteHint": "Никаких уведомлений о ней, даже от группы. Во Входящих она останется.",
       "turnOn": "Включить напоминания на этом устройстве",
-      "hintMuted": "Без звука: никаких напоминаний об этой привычке",
+      "hintMuted": "Уведомления выключены: никаких напоминаний об этой привычке",
       "hintOff": "Без напоминаний",
       "hintTime": "В {time}",
       "hintSummary": "В ежедневной сводке в {time}"
@@ -1505,7 +1505,7 @@
   },
   "celebrations": {
     "label": "Поздравление",
-    "dismissHint": "Нажмите или Esc",
+    "dismissHint": "Нажмите на экран или Esc",
     "everyoneDidIt": "Все сделали!",
     "everyoneDidItHabit": "<bdi>{habit}</bdi> ✓",
     "habitSeparator": " · "
@@ -1516,10 +1516,10 @@
     "backgroundGroup": "Цвет фона",
     "colors": {
       "peach": "Персик",
-      "sage": "Шалфей",
+      "sage": "Олива",
       "sky": "Небо",
       "lilac": "Сирень",
-      "butter": "Масло",
+      "butter": "Ваниль",
       "rose": "Роза"
     },
     "pickEmoji": "Выберите один из этих аватаров.",
