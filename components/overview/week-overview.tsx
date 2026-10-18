@@ -153,7 +153,8 @@ export function HabitDots({ t, cells, category, period }: { t: T; cells: HabitCe
   const counts = new Map<DayCellStatus, number>();
   for (const c of cells) counts.set(c.status, (counts.get(c.status) ?? 0) + 1);
   const label = t("weekOverview.dotsLabel", {
-    span: t(`units.${period}`, { n: cells.length }),
+    period,
+    n: cells.length,
     counts: [...counts].map(([status, n]) => t("weekOverview.dotCount", { status, n })).join(t("common.listSeparator")),
   });
   return (
