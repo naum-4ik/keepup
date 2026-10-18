@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getProfile, requireUser } from "@/lib/auth";
 import { GROUP_TEMPLATES } from "@/lib/group-templates";
 import { HABIT_TEMPLATES } from "@/lib/habit-templates";
+import { habitNameFor, isRename, templateKept } from "@/lib/habit-title";
 import { insertHabits, setHabitEnd } from "@/lib/habit-create";
 import { startAgainEnd } from "@/lib/habit-finish";
 import { todayIn } from "@/lib/dates";
@@ -51,6 +52,7 @@ function templateIdOf(formData: FormData): string | undefined {
   const id = String(formData.get("templateId") ?? "");
   return TEMPLATE_IDS.has(id) ? id : undefined;
 }
+const keptTemplate = (t: T, formData: FormData, title: string) => templateKept(t, templateIdOf(formData), title);
 
 export async function createHabit(_prev: HabitFormState, formData: FormData): Promise<HabitFormState> {
   const { t } = await getT();
@@ -60,7 +62,7 @@ export async function createHabit(_prev: HabitFormState, formData: FormData): Pr
   if (await endBeforeStart(formData, parsed.value.startsOn)) return { status: "error", message: t("errors.endsAfterStart"), values };
 
   const { supabase, who } = await requireUser();
-  const { error, ids } = await insertHabits(supabase, [parsed.value]);
+  const { error, ids } = await insertHabits(supabase, [{ ...parsed.value, templateId: keptTemplate(t, formData, parsed.value.title) }]);
   if (error) {
     const message = habitErrorMessage(t, error);
     return { status: "error", message: message === genericError(t) ? t("errors.saveHabitFailed") : message, values };
@@ -147,9 +149,14 @@ export async function updateHabitDetails(habitId: string, _prev: FormActionState
   const startsOn = String(formData.get("startsOn") ?? "");
   if (startsOn !== "" && !LOCAL_DATE.test(startsOn)) return { status: "error", message: t("validation.startDate") };
   const { supabase, who } = await requireUser();
+  // The form shows the title as this person reads it. Saved unchanged, it's no rename: a template habit
+  // keeps its template (a rename drops it) and its stored title (not overwritten by a translation).
+  const { data: stored, error: readError } = await supabase.from("habits").select("title, template_id").eq("id", habitId).maybeSingle();
+  if (readError || !stored) return { status: "error", message: t("errors.habit_not_found") };
+  const { title, ...rest } = parsed.value;
   const { error } = await supabase
     .from("habits")
-    .update({ ...parsed.value, ...(startsOn ? { starts_on: startsOn } : {}) })
+    .update({ ...rest, ...(isRename(habitNameFor(t), title, stored) ? { title } : {}), ...(startsOn ? { starts_on: startsOn } : {}) })
     .eq("id", habitId);
   if (error) return { status: "error", message: habitErrorMessage(t, error) };
   track("habit_edited", who, { "habit.id": habitId, "habit.title": parsed.value.title, "habit.category": parsed.value.category ?? undefined });
@@ -221,6 +228,7 @@ export async function createGroupHabit(_prev: HabitFormState, formData: FormData
   if (await endBeforeStart(formData, parsed.value.startsOn, group?.timezone)) return { status: "error", message: t("errors.endsAfterStart"), values };
   const children = formData.getAll("children").map(String).filter(isUuid);
   const { supabase, who } = await requireUser();
+  const templateId = keptTemplate(t, formData, parsed.value.title);
   const { data: created, error } = await supabase.rpc("create_group_habit", {
     p_group_id: groupId,
     p_title: parsed.value.title,
@@ -231,6 +239,7 @@ export async function createGroupHabit(_prev: HabitFormState, formData: FormData
     ...(parsed.value.startsOn ? { p_starts_on: parsed.value.startsOn } : {}),
     p_requires_approval: formData.get("requiresApproval") === "on",
     p_children: children,
+    ...(templateId ? { p_template_id: templateId } : {}),
   });
   if (error) return { status: "error", message: habitErrorMessage(t, error), values };
   const endError = created ? await setHabitEnd(supabase, created.id, readEndsOn(formData)) : null;
@@ -340,12 +349,13 @@ export async function startAgain(habitId: string): Promise<StartAgainResult> {
       p_period: h.period,
       p_requires_approval: h.requires_approval,
       p_children: children,
+      ...(h.template_id ? { p_template_id: h.template_id } : {}),
     });
     if (error) return { ok: false, message: habitErrorMessage(t, error) };
     newId = data?.id;
   } else {
     const { error, ids } = await insertHabits(supabase, [
-      { title: h.title, emoji: h.emoji, category: h.category, targetCount: h.target_count, period: h.period, startsOn: "" },
+      { title: h.title, emoji: h.emoji, category: h.category, targetCount: h.target_count, period: h.period, startsOn: "", templateId: h.template_id },
     ]);
     if (error) return { ok: false, message: habitErrorMessage(t, error) };
     newId = ids[0];

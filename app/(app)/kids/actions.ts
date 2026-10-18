@@ -103,6 +103,7 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
       p_emoji: tpl.emoji,
       p_target_count: tpl.targetCount,
       p_period: tpl.period,
+      p_template_id: `kid.${tpl.id}`,
     });
     if (habitError) {
       logError("create_child_habit failed", habitError.message);
@@ -177,6 +178,7 @@ export async function addChildHabit(childId: string, _prev: KidFormState, formDa
     p_emoji: habit.emoji,
     p_target_count: habit.targetCount,
     p_period: habit.period,
+    ...(templateId ? { p_template_id: `kid.${templateId}` } : {}),
   });
   if (error) return { status: "error", message: habitErrorMessage(t, error) };
   // habit.title is in the adult's language; habit.template_id names a template the same in every language.

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import en from "@/supabase/functions/_shared/messages/en.json";
 import { habitTitle, namedPayload, templateIdsIn } from "@/supabase/functions/_shared/habit-title";
 import { tEn, tFor } from "@/lib/i18n/test-t";
-import { habitNameFor, TEMPLATE_IDS } from "./habit-title";
+import { habitNameFor, isRename, TEMPLATE_IDS, templateKept } from "./habit-title";
 
 const tRu = tFor("ru");
 const tHe = tFor("he");
@@ -66,5 +66,34 @@ describe("namedPayload", () => {
 
   it("leaves a malformed payload alone", () => {
     expect(namedPayload({ todo: "x", longest: null }, habitNameFor(tRu))).toEqual({ todo: "x", longest: null });
+  });
+});
+
+describe("isRename", () => {
+  const stored = { title: "Drink water", template_id: "water" };
+  it("saving the displayed title unchanged is no rename, in any language", () => {
+    expect(isRename(habitNameFor(tRu), "Пить воду", stored)).toBe(false);
+    expect(isRename(habitNameFor(tEn), "Drink water", stored)).toBe(false);
+  });
+  it("a different name is a rename (even the stored English title under Russian)", () => {
+    expect(isRename(habitNameFor(tRu), "Пить воду утром", stored)).toBe(true);
+    expect(isRename(habitNameFor(tRu), "Drink water", stored)).toBe(true);
+  });
+  it("a typed habit: the same title is no rename, a new one is", () => {
+    const typed = { title: "Мой бег", template_id: null };
+    expect(isRename(habitNameFor(tRu), "Мой бег", typed)).toBe(false);
+    expect(isRename(habitNameFor(tRu), "Бег", typed)).toBe(true);
+  });
+});
+
+describe("templateKept", () => {
+  it("a template picked and left under its own title keeps its id", () => {
+    expect(templateKept(tRu, "water", "Пить воду")).toBe("water");
+    expect(templateKept(tEn, "g-family-dinner", "Family dinner")).toBe("g-family-dinner");
+  });
+  it("a name typed over the template, or an unknown id, keeps none", () => {
+    expect(templateKept(tRu, "water", "Пить воду утром")).toBeUndefined();
+    expect(templateKept(tRu, "treat.zoo", "Trip to the zoo")).toBeUndefined();
+    expect(templateKept(tRu, undefined, "Пить воду")).toBeUndefined();
   });
 });
