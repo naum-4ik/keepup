@@ -42,16 +42,16 @@
       "one": "{author}: סימון ✓ {habit}. לאשר?",
       "many": "{n, plural, one {סימון אחד מחכה לכם} two {# סימונים מחכים לכם} other {# סימונים מחכים לכם}}"
     },
-    "approvalExpiring": "{author}: הסימון של {habit} מחכה לאישור עוד שעתיים",
+    "approvalExpiring": "{author}: הסימון של {habit} צריך אישור תוך שעתיים",
     "approvalDecided": "{author}: {habit} — {outcome, select, approved {אושר} rejected {לא אושר} other {לא נבדק בזמן}}",
     "checkInNotApproved": "{reviewer}: הסימון שלכם לא אושר. אפשר לסמן שוב {period, select, week {השבוע} month {החודש} other {היום}}.",
     "nudge": "{sender}: {kind, select, you_got_this {אתם יכולים: {habit}} gentle_reminder {תזכורת עדינה: {habit}} other {חושבים עליכם. {habit} היום?}}",
-    "groupStreakEnded": "{habit}: הרצף נגמר אחרי {span}. אפשר להתחיל חדש {period, select, week {השבוע} month {החודש} other {היום}}.",
+    "groupStreakEnded": "{habit}: הרצף נגמר אחרי {span}. אפשר להתחיל רצף חדש {period, select, week {השבוע} month {החודש} other {היום}}.",
     "privateStreakEnded": {
       "best": "{habit}: הרצף נגמר אחרי {span}. השיא שלכם עדיין {best}.",
-      "restart": "{habit}: הרצף נגמר אחרי {span}. אפשר להתחיל חדש {period, select, week {השבוע} month {החודש} other {היום}}."
+      "restart": "{habit}: הרצף נגמר אחרי {span}. אפשר להתחיל רצף חדש {period, select, week {השבוע} month {החודש} other {היום}}."
     },
-    "groupStreakBack": "סימון מאוחר הגיע. הרצף של {habit} חזר 🔥",
+    "groupStreakBack": "הגיע סימון מאוחר. הרצף של {habit} חזר 🔥",
     "groupHabitCreated": "{author}: הרגל חדש — {habit}, {schedule}.",
     "groupHabitPaused": {
       "until": "{habit}: בהפסקה עד {until}.",
@@ -126,7 +126,7 @@
       "pausedUntil": "בהפסקה עד {date}",
       "doneToday": "בוצע להיום",
       "notDoneYet": "עוד לא בוצע",
-      "todayCount": "{done} / {target} היום",
+      "todayCount": "{done}/{target} היום",
       "todayOf": "{done} מתוך {target} היום",
       "doneForPeriod": "{period, select, week {בוצע לשבוע הזה} other {בוצע לחודש הזה}}",
       "periodCount": "{done} מתוך {target} {period, select, week {השבוע} other {החודש}}",
@@ -169,7 +169,7 @@
     "cheer": "{who}: עידוד על הסימון שלכם ❤️",
     "kidLoggedBy": "{kid}: {habit} — סומן ({adult}) ⭐",
     "kidDidIt": "{gender, select, boy {{kid} עשה את זה: {habit} ⭐} girl {{kid} עשתה את זה: {habit} ⭐} other {{kid}: {habit} — בוצע ⭐}}",
-    "dayEarlier": "באחד הימים הקודמים",
+    "dayEarlier": "יום קודם",
     "recapReady": "הסיכום שלכם מוכן.",
     "nudgeLabel": {
       "thinking_of_you": "חושבים עליכם",
@@ -316,7 +316,7 @@
     "goal_not_found": "היעד הזה לא זמין.",
     "goal_not_reached": "היעד עוד לא הושג.",
     "member_not_found": "האדם הזה לא בקבוצה.",
-    "invalid_role": "נא לבחור: מנהל או חבר בקבוצה.",
+    "invalid_role": "נא לבחור: ניהול או חברות בקבוצה.",
     "not_a_child": "זה רק לפרופיל של ילד/ה.",
     "own_check_in": "מישהו אחר בקבוצה מאשר את הסימונים שלכם.",
     "already_reviewed": "מישהו כבר בדק את הסימון הזה.",
@@ -370,7 +370,7 @@
   "demo": {
     "off": "האפשרות הזו כבויה בדמו.",
     "banner": "זה דמו. הנתונים מתאפסים אחרי 24 שעות.",
-    "signInLine": "<signIn>התחברו</signIn> כדי להתחיל משלכם.",
+    "signInLine": "<signIn>התחברו</signIn> כדי להתחיל עם חשבון משלכם.",
     "failed": "הדמו לא נפתח. נסו שוב עוד רגע.",
     "justLooking": "רק מסתכלים?",
     "tryDemo": "כניסה לדמו",
@@ -463,20 +463,20 @@
       "note": "חל על הרגלים שבועיים חדשים."
     },
     "member": {
-      "you": "אתם",
-      "admin": "מנהל/ת",
+      "you": "אני",
+      "admin": "ניהול",
       "options": "אפשרויות: {name}",
-      "makeMember": "הגדרה כחבר/ה",
-      "makeAdmin": "הגדרה כמנהל/ת",
+      "makeMember": "הסרת הרשאות ניהול",
+      "makeAdmin": "מתן הרשאות ניהול",
       "remove": "הסרה מהקבוצה",
       "removeTitle": "להסיר את <bdi>{name}</bdi> מהקבוצה?",
-      "removeDescription": "האדם הזה ייצא מהקבוצה <bdi>{group}</bdi> ולא יראה יותר את ההרגלים שלה. ההרגלים האישיים שלו יישארו אצלו.",
+      "removeDescription": "יציאה מהקבוצה <bdi>{group}</bdi>: ההרגלים שלה כבר לא יוצגו. ההרגלים האישיים נשארים.",
       "confirmRemove": "הסרה",
       "removing": "מסירים…"
     },
     "invite": {
-      "helpNone": "כל מי שיש לו את הקישור יכול להצטרף לקבוצה <bdi>{group}</bdi> במשך 7 ימים.",
-      "helpActive": "כל מי שיש לו את הקישור הזה יכול להצטרף לקבוצה <bdi>{group}</bdi> במשך 7 ימים.",
+      "helpNone": "עם הקישור אפשר להצטרף לקבוצה <bdi>{group}</bdi> במשך 7 ימים.",
+      "helpActive": "עם הקישור הזה אפשר להצטרף לקבוצה <bdi>{group}</bdi> במשך 7 ימים.",
       "create": "יצירת קישור להזמנה",
       "copyFailed": "ההעתקה לא הצליחה. סמנו את הקישור והעתיקו אותו.",
       "label": "קישור להזמנה <muted>· בתוקף עד {date}</muted>",
@@ -586,7 +586,7 @@
     "join": "הצטרפות לקבוצה {group}",
     "joining": "מצטרפים…",
     "joinGoogle": "הצטרפות עם Google",
-    "useEmail": "עדיף עם אימייל",
+    "useEmail": "המשך עם אימייל",
     "continueEmail": "המשך עם אימייל"
   },
   "templates": {
@@ -603,7 +603,7 @@
     "yoga": "יוגה",
     "swim-cycle": "שחייה או רכיבה על אופניים",
     "meditate": "מדיטציה",
-    "journal": "יומן",
+    "journal": "כתיבת יומן",
     "gratitude": "הכרת תודה: לכתוב 3 דברים",
     "no-phone-bed": "בלי טלפון במיטה",
     "outside": "זמן בחוץ",
@@ -612,7 +612,7 @@
     "language": "ללמוד שפה",
     "instrument": "לתרגל כלי נגינה",
     "podcast": "פודקאסט או קורס",
-    "study": "לימודים",
+    "study": "ללמוד",
     "write": "כתיבה",
     "call": "להתקשר למשפחה או לחבר",
     "message": "לשלוח הודעה למישהו שמתגעגעים אליו",
@@ -620,7 +620,7 @@
     "date-night": "ערב זוגי",
     "kind": "לעשות משהו טוב",
     "screen-free-dinner": "ארוחת ערב בלי מסכים",
-    "tidy": "לסדר",
+    "tidy": "לסדר את הבית",
     "bed": "לסדר את המיטה",
     "cook": "לבשל בבית",
     "plants": "להשקות את העציצים",
@@ -724,11 +724,11 @@
       "description": "7 פעמים ברצף בהרגל כלשהו."
     },
     "two_weeks_strong": {
-      "name": "שבועיים חזק",
+      "name": "שבועיים ברצף",
       "description": "14 ימים ברצף."
     },
     "unstoppable": {
-      "name": "בלתי ניתן לעצירה",
+      "name": "בלי עצירות",
       "description": "30 ימים ברצף."
     },
     "century": {
@@ -792,7 +792,7 @@
       "description": "ה\"כולם עשו את זה\" הראשון של הקבוצה."
     },
     "team_player": {
-      "name": "שחקן קבוצתי",
+      "name": "רוח צוות",
       "description": "10 הרגלים קבוצתיים שבוצעו ביחד."
     },
     "cheerleader": {
@@ -800,7 +800,7 @@
       "description": "לעודד 20 סימונים."
     },
     "fair_judge": {
-      "name": "שופט הוגן",
+      "name": "שיפוט הוגן",
       "description": "לאשר 20 סימונים."
     }
   },
@@ -921,7 +921,7 @@
       "themeFailed": "השינוי לא הצליח. נסו שוב."
     },
     "new": {
-      "askAdmin": "בקשו ממנהל של הקבוצה <bdi>{group}</bdi> להוסיף ילד/ה."
+      "askAdmin": "בקשו ממנהלי הקבוצה <bdi>{group}</bdi> להוסיף ילד/ה."
     },
     "form": {
       "nickname": "כינוי",
@@ -963,7 +963,7 @@
       "dataText": "כל מה ש-Keepup שומר על <bdi>{name}</bdi>, בקובץ אחד."
     },
     "danger": {
-      "title": "אזור מסוכן",
+      "title": "אזור סכנה",
       "moveLabel": "העברה לקבוצה אחרת",
       "moveTo": "להעביר את <bdi>{name}</bdi> אל",
       "move": "העברה",
@@ -981,7 +981,7 @@
       "title": "יעד פינוק",
       "starsLabel": "{stars} מתוך {target, plural, one {כוכב אחד} two {# כוכבים} other {# כוכבים}}",
       "reached": "{gender, select, boy {<bdi>{name}</bdi> הגיע ליעד ✓} girl {<bdi>{name}</bdi> הגיעה ליעד ✓} other {<bdi>{name}</bdi>: היעד הושג ✓}}",
-      "markReceived": "הפינוק התקבל",
+      "markReceived": "קיבלנו את הפינוק",
       "progress": "⭐ {stars} מתוך {target}",
       "cancel": "ביטול היעד",
       "cancelTitle": "לבטל את היעד?",
@@ -1075,7 +1075,7 @@
       "allDone": "הכול בוצע להיום 🎉",
       "toGoToday": "{n, plural, one {נשאר עוד אחד להיום} two {נשארו עוד # להיום} other {נשארו עוד # להיום}}",
       "oneMore": "עוד אחד!",
-      "halfway": "חצי דרך 💪",
+      "halfway": "באמצע הדרך 💪",
       "toGo": "{n, plural, one {נשאר עוד אחד} two {נשארו עוד #} other {נשארו עוד #}}"
     },
     "welcome": {
@@ -1160,7 +1160,7 @@
       "frequencyOption": "{n, plural, one {פעם} two {פעמים} other {פעמים}} ב{period, select, day {יום} week {שבוע} other {חודש}}",
       "whoFor": "בשביל מי",
       "justMe": "רק בשבילי",
-      "groupNote": "כל מי שבקבוצה <bdi>{group}</bdi> עושה את זה ביחד. ההרגל בוצע כשכולם סימנו.",
+      "groupNote": "בקבוצה <bdi>{group}</bdi> עושים את זה ביחד. ההרגל בוצע כשכולם סימנו.",
       "needsApproval": "צריך אישור",
       "needsApprovalHint": "מישהו אחר בקבוצה <bdi>{group}</bdi> מאשר כל סימון.",
       "include": "לכלול את <bdi>{name}</bdi>",
@@ -1224,7 +1224,7 @@
     "archive": {
       "trigger": "העברה לארכיון",
       "title": "להעביר את \"<bdi>{title}</bdi>\" לארכיון?",
-      "description": "ההרגל ייעלם מ\"היום\", וההיסטוריה שלו תישמר בהתקדמות ← ארכיון.",
+      "description": "ההרגל ייעלם מ\"היום\", וההיסטוריה שלו תישמר ב\"התקדמות ← ארכיון\".",
       "confirm": "העברה לארכיון",
       "pending": "מעבירים לארכיון…"
     },
@@ -1263,8 +1263,8 @@
     "freeze": {
       "pauseHabit": "הפסקה בהרגל",
       "pause": "הפסקה",
-      "resume": "חזרה",
-      "resumeMe": "החזרה שלי",
+      "resume": "חידוש",
+      "resumeMe": "חזרה להרגל",
       "meNote": "בזמן ההפסקה לא סופרים אתכם. כל השאר ממשיכים.",
       "starts": "ההפסקה מתחילה ב-{date}",
       "pausedFrom": "בהפסקה מ-{from}",
@@ -1323,7 +1323,7 @@
         "week": "השבוע",
         "month": "החודש"
       },
-      "you": "(אתם)",
+      "you": "(אני)",
       "streaksLabel": "רצפים",
       "childStreak": "הרצף של <bdi>{name}</bdi>",
       "yourStreak": "הרצף שלכם",
@@ -1480,8 +1480,8 @@
       "title": "התראות",
       "dailyReminder": "תזכורת יומית",
       "pauseAll": "השהיית הכול",
-      "pausedUntil": "מושהה עד {until}",
-      "pausedUntilOn": "מושהה עד שתפעילו שוב",
+      "pausedUntil": "מושהות עד {until}",
+      "pausedUntilOn": "מושהות עד שתפעילו שוב",
       "resume": "חידוש",
       "whatToSend": "מה לשלוח",
       "devices": "מכשירים",
@@ -1537,7 +1537,7 @@
     },
     "timezone": {
       "label": "אזור זמן",
-      "hint": "בחרו את השעה שבה אתם נמצאים עכשיו. הימים שלכם מתחילים שם בחצות.",
+      "hint": "בחרו את השעה הנוכחית במקום שבו אתם נמצאים. הימים שלכם מתחילים שם בחצות.",
       "useDevice": "שימוש באזור הזמן של המכשיר הזה ({city})",
       "changeNote": "השינויים יחולו מהיום ומהשבוע הבאים."
     },
