@@ -14,12 +14,14 @@ select private.accept_invite_impl('00000000-0000-0000-0000-0000000c1eb1',
   (private.create_invite_impl('00000000-0000-0000-0000-0000000c1ea1', (select v from t where k = 'fam'), now())).token, now());
 update public.group_members set joined_at = '2026-09-01' where group_id = (select v from t where k = 'fam');
 
--- 1. The family recap: Dinner (from the g-family-dinner template) checked in once in the week of 28 Sep.
+-- 1. The family recap: Family dinner (from the g-family-dinner template), done by both adults in the
+-- week of 28 Sep (a group streak needs everyone).
 set local session_replication_role = replica;
 insert into public.habits (id, owner_id, group_id, title, category, emoji, target_count, period, starts_on, week_start, requires_approval, created_at, created_by, template_id) values
   ('00000000-0000-0000-0000-0000000c1ed1', null, (select v from t where k = 'fam'), 'Family dinner', 'people', '🍝', 1, 'week', '2026-09-28', 1, false, '2026-09-28 08:00+02', '00000000-0000-0000-0000-0000000c1ea1', 'g-family-dinner');
 set local session_replication_role = origin;
 select private.check_in_impl('00000000-0000-0000-0000-0000000c1ed1', '00000000-0000-0000-0000-0000000c1ea1', '2026-09-30 20:00+02');
+select private.check_in_impl('00000000-0000-0000-0000-0000000c1ed1', '00000000-0000-0000-0000-0000000c1eb1', '2026-10-01 20:00+02');
 select private.enqueue_recaps('2026-10-05 10:05+02');
 create temp table fr as
   select n.payload -> 'best' as best from public.notifications n
