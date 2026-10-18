@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.0](https://github.com/naum-4ik/keepup/compare/v1.4.0...v1.5.0) (2026-10-18)
+
+
+### Features
+
+* **db:** kid gender in my_children ([#234](https://github.com/naum-4ik/keepup/issues/234)) ([4631a1f](https://github.com/naum-4ik/keepup/commit/4631a1ff6a3194ee7135b9a30d0b75ec63984788))
+* **db:** profile language, kid gender, push language ([#229](https://github.com/naum-4ik/keepup/issues/229)) ([f3d1784](https://github.com/naum-4ik/keepup/commit/f3d1784175b06ea1a32fb5c5c5100563489a6199))
+* **db:** remember which template a habit came from ([#239](https://github.com/naum-4ik/keepup/issues/239)) ([44d8756](https://github.com/naum-4ik/keepup/commit/44d8756e76c57e35f83ba0e235284087e173a323))
+* **habits:** template habits in each person's language ([#240](https://github.com/naum-4ik/keepup/issues/240)) ([775ab05](https://github.com/naum-4ik/keepup/commit/775ab05da2af0d2fcb5d8ad6043e9222f5536ced))
+* **i18n:** groups, kids (boy/girl), profile ([#235](https://github.com/naum-4ik/keepup/issues/235)) ([a6b53da](https://github.com/naum-4ik/keepup/commit/a6b53da271d32c9d181c528fd7bbfa952cc05214))
+* **i18n:** Hebrew and right-to-left layout ([#238](https://github.com/naum-4ik/keepup/issues/238)) ([c22a410](https://github.com/naum-4ik/keepup/commit/c22a410bb0ea06298798ebb215ea30702295ce77))
+* **i18n:** language foundation (next-intl, setting, fonts) ([#231](https://github.com/naum-4ik/keepup/issues/231)) ([6ade13e](https://github.com/naum-4ik/keepup/commit/6ade13e224a84685649fd3213f542dedea6f9732))
+* **i18n:** Russian ([#237](https://github.com/naum-4ik/keepup/issues/237)) ([4b427d7](https://github.com/naum-4ik/keepup/commit/4b427d78ce46c862cb6f51c5a4e6311c9a2ac039))
+
 ## [1.4.0](https://github.com/naum-4ik/keepup/compare/v1.3.1...v1.4.0) (2026-10-14)
 
 
