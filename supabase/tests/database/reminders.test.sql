@@ -54,9 +54,9 @@ select is((select count(*)::int from summary where user_id = '00000000-0000-0000
 
 select private.enqueue_reminders('2026-10-24 07:05+02');
 select is((select payload -> 'todo' from summary where user_id = '00000000-0000-0000-0000-0000000000a1'),
-  '[{"title": "Read", "done": 0, "target": 1}, {"title": "Water", "done": 5, "target": 8}]'::jsonb, 'still to do today, with progress');
+  '[{"title": "Read", "template": null, "done": 0, "target": 1}, {"title": "Water", "template": null, "done": 5, "target": 8}]'::jsonb, 'still to do today, with progress');
 select is((select payload -> 'at_risk' from summary where user_id = '00000000-0000-0000-0000-0000000000a1'),
-  '[{"title": "Run", "done": 1, "target": 3, "period": "week", "days_left": 2}]'::jsonb, 'Run is at risk: 2 days left, 2 to go');
+  '[{"title": "Run", "template": null, "done": 1, "target": 3, "period": "week", "days_left": 2}]'::jsonb, 'Run is at risk: 2 days left, 2 to go');
 select ok((select payload::text not like '%Vitamins%' from summary where user_id = '00000000-0000-0000-0000-0000000000a1'),
   'a habit with its own time is left out of the summary');
 select ok((select payload::text !~ '(Stretch|Yoga|Swim|Piano|Chess)' from summary where user_id = '00000000-0000-0000-0000-0000000000a1'),

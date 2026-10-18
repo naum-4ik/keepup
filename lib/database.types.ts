@@ -269,13 +269,13 @@ isOneToOne: false
                   ]
                 },"habits": {
                   Row: {
-                    "archived_at": string | null,"category": Database["public"]['Enums']["habit_category"] | null,"created_at": string,"created_by": string | null,"emoji": string,"ends_on": string | null,"finished_at": string | null,"group_id": string | null,"id": string,"owner_id": string | null,"period": Database["public"]['Enums']["habit_period"],"requires_approval": boolean,"starts_on": string,"target_count": number,"title": string,"week_start": number
+                    "archived_at": string | null,"category": Database["public"]['Enums']["habit_category"] | null,"created_at": string,"created_by": string | null,"emoji": string,"ends_on": string | null,"finished_at": string | null,"group_id": string | null,"id": string,"owner_id": string | null,"period": Database["public"]['Enums']["habit_period"],"requires_approval": boolean,"starts_on": string,"target_count": number,"template_id": string | null,"title": string,"week_start": number
                   }
                   Insert: {
-                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"] | null,"created_at"?: string,"created_by"?: string | null,"emoji": string,"ends_on"?: string | null,"finished_at"?: string | null,"group_id"?: string | null,"id"?: string,"owner_id"?: string | null,"period": Database["public"]['Enums']["habit_period"],"requires_approval"?: boolean,"starts_on": string,"target_count": number,"title": string,"week_start"?: number
+                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"] | null,"created_at"?: string,"created_by"?: string | null,"emoji": string,"ends_on"?: string | null,"finished_at"?: string | null,"group_id"?: string | null,"id"?: string,"owner_id"?: string | null,"period": Database["public"]['Enums']["habit_period"],"requires_approval"?: boolean,"starts_on": string,"target_count": number,"template_id"?: string | null,"title": string,"week_start"?: number
                   }
                   Update: {
-                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"] | null,"created_at"?: string,"created_by"?: string | null,"emoji"?: string,"ends_on"?: string | null,"finished_at"?: string | null,"group_id"?: string | null,"id"?: string,"owner_id"?: string | null,"period"?: Database["public"]['Enums']["habit_period"],"requires_approval"?: boolean,"starts_on"?: string,"target_count"?: number,"title"?: string,"week_start"?: number
+                    "archived_at"?: string | null,"category"?: Database["public"]['Enums']["habit_category"] | null,"created_at"?: string,"created_by"?: string | null,"emoji"?: string,"ends_on"?: string | null,"finished_at"?: string | null,"group_id"?: string | null,"id"?: string,"owner_id"?: string | null,"period"?: Database["public"]['Enums']["habit_period"],"requires_approval"?: boolean,"starts_on"?: string,"target_count"?: number,"template_id"?: string | null,"title"?: string,"week_start"?: number
                   }
                   Relationships: [
                     {
@@ -670,14 +670,14 @@ isOneToOne: false
                            },
 "child_summaries":
 { Args: { "p_child_id": string }; Returns: {
-              "archived_at": string,"best_streak": number,"category": Database["public"]['Enums']["habit_category"],"checked_in_today": boolean,"created_at": string,"current_streak": number,"days_left": number,"done_count": number,"emoji": string,"frozen": boolean,"frozen_until": string,"group_done": boolean,"group_id": string,"group_name": string,"habit_id": string,"members": Json,"my_role": string,"not_started": boolean,"pending_count": number,"period": Database["public"]['Enums']["habit_period"],"period_start": string,"requires_approval": boolean,"starts_on": string,"target_count": number,"title": string
+              "archived_at": string,"best_streak": number,"category": Database["public"]['Enums']["habit_category"],"checked_in_today": boolean,"created_at": string,"current_streak": number,"days_left": number,"done_count": number,"emoji": string,"frozen": boolean,"frozen_until": string,"group_done": boolean,"group_id": string,"group_name": string,"habit_id": string,"members": Json,"my_role": string,"not_started": boolean,"pending_count": number,"period": Database["public"]['Enums']["habit_period"],"period_start": string,"requires_approval": boolean,"starts_on": string,"target_count": number,"template_id": string,"title": string
             }[]
                            },
 "create_child":
 { Args: { "p_avatar_color": string,"p_avatar_emoji": string,"p_group_id": string,"p_guardian_confirmed": boolean,"p_name": string }; Returns: string
                            },
 "create_child_habit":
-{ Args: { "p_child_id": string,"p_emoji": string,"p_period": Database["public"]['Enums']["habit_period"],"p_starts_on"?: string,"p_target_count": number,"p_title": string }; Returns: {
+{ Args: { "p_child_id": string,"p_emoji": string,"p_period": Database["public"]['Enums']["habit_period"],"p_starts_on"?: string,"p_target_count": number,"p_template_id"?: string,"p_title": string }; Returns: {
               "archived_at": string | null,
 "category": Database["public"]['Enums']["habit_category"] | null,
 "created_at": string,
@@ -692,6 +692,7 @@ isOneToOne: false
 "requires_approval": boolean,
 "starts_on": string,
 "target_count": number,
+"template_id": string | null,
 "title": string,
 "week_start": number
             }
@@ -720,7 +721,7 @@ isOneToOne: false
         isSetofReturn: false
       } },
 "create_group_habit":
-{ Args: { "p_category": Database["public"]['Enums']["habit_category"],"p_children"?: (string)[],"p_emoji": string,"p_group_id": string,"p_period": Database["public"]['Enums']["habit_period"],"p_requires_approval"?: boolean,"p_starts_on"?: string,"p_target_count": number,"p_title": string }; Returns: {
+{ Args: { "p_category": Database["public"]['Enums']["habit_category"],"p_children"?: (string)[],"p_emoji": string,"p_group_id": string,"p_period": Database["public"]['Enums']["habit_period"],"p_requires_approval"?: boolean,"p_starts_on"?: string,"p_target_count": number,"p_template_id"?: string,"p_title": string }; Returns: {
               "archived_at": string | null,
 "category": Database["public"]['Enums']["habit_category"] | null,
 "created_at": string,
@@ -735,6 +736,7 @@ isOneToOne: false
 "requires_approval": boolean,
 "starts_on": string,
 "target_count": number,
+"template_id": string | null,
 "title": string,
 "week_start": number
             }
@@ -789,7 +791,7 @@ isOneToOne: false
                            },
 "family_recaps":
 { Args: Record<PropertyKey, never>; Returns: {
-              "best_emoji": string,"best_period": Database["public"]['Enums']["habit_period"],"best_streak": number,"best_title": string,"check_ins": number,"group_id": string,"group_name": string,"week_start": string
+              "best_emoji": string,"best_period": Database["public"]['Enums']["habit_period"],"best_streak": number,"best_template": string,"best_title": string,"check_ins": number,"group_id": string,"group_name": string,"week_start": string
             }[]
                            },
 "finish_habit":
@@ -808,6 +810,7 @@ isOneToOne: false
 "requires_approval": boolean,
 "starts_on": string,
 "target_count": number,
+"template_id": string | null,
 "title": string,
 "week_start": number
             }
@@ -864,12 +867,12 @@ isOneToOne: false
                            },
 "habit_summaries":
 { Args: Record<PropertyKey, never>; Returns: {
-              "archived_at": string,"best_streak": number,"category": Database["public"]['Enums']["habit_category"],"checked_in_today": boolean,"created_at": string,"current_streak": number,"days_left": number,"done_count": number,"emoji": string,"frozen": boolean,"frozen_until": string,"group_done": boolean,"group_id": string,"group_name": string,"habit_id": string,"members": Json,"my_role": string,"not_started": boolean,"pending_count": number,"period": Database["public"]['Enums']["habit_period"],"period_start": string,"requires_approval": boolean,"starts_on": string,"target_count": number,"title": string
+              "archived_at": string,"best_streak": number,"category": Database["public"]['Enums']["habit_category"],"checked_in_today": boolean,"created_at": string,"current_streak": number,"days_left": number,"done_count": number,"emoji": string,"frozen": boolean,"frozen_until": string,"group_done": boolean,"group_id": string,"group_name": string,"habit_id": string,"members": Json,"my_role": string,"not_started": boolean,"pending_count": number,"period": Database["public"]['Enums']["habit_period"],"period_start": string,"requires_approval": boolean,"starts_on": string,"target_count": number,"template_id": string,"title": string
             }[]
                            },
 "inbox_feed":
 { Args: { "p_limit"?: number }; Returns: {
-              "actor_avatar_color": string,"actor_avatar_emoji": string,"actor_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_title": string,"id": string,"kind": string,"payload": Json,"read_at": string,"seen_at": string,"subject_avatar_emoji": string,"subject_id": string,"subject_name": string
+              "actor_avatar_color": string,"actor_avatar_emoji": string,"actor_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_template": string,"habit_title": string,"id": string,"kind": string,"payload": Json,"read_at": string,"seen_at": string,"subject_avatar_emoji": string,"subject_id": string,"subject_name": string
             }[]
                            },
 "invite_membership":
@@ -905,6 +908,7 @@ isOneToOne: false
 "requires_approval": boolean,
 "starts_on": string,
 "target_count": number,
+"template_id": string | null,
 "title": string,
 "week_start": number
             }
@@ -958,7 +962,7 @@ isOneToOne: false
                            },
 "pending_approvals":
 { Args: Record<PropertyKey, never>; Returns: {
-              "author_avatar_color": string,"author_avatar_emoji": string,"author_id": string,"author_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_title": string,"local_date": string,"review_deadline": string
+              "author_avatar_color": string,"author_avatar_emoji": string,"author_id": string,"author_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_template": string,"habit_title": string,"local_date": string,"review_deadline": string
             }[]
                            },
 "push_done":
@@ -998,6 +1002,7 @@ isOneToOne: false
 "requires_approval": boolean,
 "starts_on": string,
 "target_count": number,
+"template_id": string | null,
 "title": string,
 "week_start": number
             }
@@ -1084,6 +1089,7 @@ isOneToOne: false
 "requires_approval": boolean,
 "starts_on": string,
 "target_count": number,
+"template_id": string | null,
 "title": string,
 "week_start": number
             }
