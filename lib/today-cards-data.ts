@@ -1,6 +1,9 @@
 import "server-only";
 import { requireUser } from "@/lib/auth";
 import type { FeedItem } from "@/lib/feed-copy";
+import { habitNameFor } from "@/lib/habit-title";
+import { getT } from "@/lib/i18n/server";
+import { namedFeedItem } from "@/lib/inbox";
 import type { FamilyRecap } from "@/lib/today-cards";
 import { logError } from "@/lib/log";
 
@@ -15,9 +18,8 @@ export async function getCelebrations(): Promise<FeedItem[]> {
     logError("inbox_feed failed", error.message);
     return [];
   }
-  return (data ?? [])
-    .filter((row) => row.kind === "everyone_done")
-    .map((row) => ({ ...row, payload: (row.payload ?? {}) as Record<string, unknown> }) as FeedItem);
+  const name = habitNameFor((await getT()).t);
+  return (data ?? []).filter((row) => row.kind === "everyone_done").map((row) => namedFeedItem(row, name));
 }
 
 export async function getFamilyRecaps(): Promise<FamilyRecap[]> {
@@ -27,7 +29,8 @@ export async function getFamilyRecaps(): Promise<FamilyRecap[]> {
     logError("family_recaps failed", error.message);
     return [];
   }
-  return (data ?? []) as FamilyRecap[];
+  const name = habitNameFor((await getT()).t);
+  return ((data ?? []) as FamilyRecap[]).map((r) => (r.best_title == null ? r : { ...r, best_title: name(r.best_title, r.best_template) }));
 }
 
 // RLS: a user reads only their own dismissals. null on an error: the caller then shows no

@@ -31,6 +31,8 @@ export type FamilyRecap = {
   week_start: string;
   check_ins: number;
   best_title: string | null;
+  // habits.template_id of the best habit (lib/today-cards-data.ts shows best_title by it).
+  best_template?: string | null;
   best_emoji: string | null;
   best_streak: number | null;
   best_period: string | null;

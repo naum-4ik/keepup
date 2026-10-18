@@ -17,6 +17,8 @@ export type WeekOverview = {
   days: WeekDay[];
   best_current_streak: number;
   best_current_streak_title: string | null;
+  // habits.template_id of that habit (lib/habits.ts getWeekOverview shows the title by it).
+  best_current_streak_template?: string | null;
   best_current_streak_period: HabitPeriod | null;
   check_ins: number;
   active_habits: number;
