@@ -186,3 +186,28 @@ Deno.test("the daily summary takes its separators and counts from the catalog", 
   const he = makeTranslator("he", { common: { listSeparator: "، ", sectionSeparator: " | " }, push: { dailySummary: { count: "{habit} ({done}/{target})" } } });
   assertEquals(buildPush(j, he.t)?.body, "Still to do: ⁨Water⁩ (5/8)، ⁨Read⁩ | ⁨Run⁩: 1 of 3 this week, 2 days left 🌱");
 });
+
+Deno.test("a template habit is named in the recipient's language; a typed one stays as typed", () => {
+  const ru = translatorFor("ru", ["en", "ru", "he"]);
+  const reminder = buildPush(job({ kind: "habit_reminder", habit: "Drink water", habit_template: "water" }), ru.t, ru.locale)!;
+  assertEquals(reminder.title, "Пить воду");
+  const typed = buildPush(job({ kind: "habit_reminder", habit: "Мой бег", habit_template: null }), ru.t, ru.locale)!;
+  assertEquals(typed.title, "Мой бег");
+  const forged = buildPush(job({ kind: "habit_reminder", habit: "Typed", habit_template: "treat.zoo" }), ru.t, ru.locale)!;
+  assertEquals(forged.title, "Typed");
+  // English: unchanged (the stored title is the English template title).
+  assertEquals(buildPush(job({ kind: "habit_reminder", habit: "Drink water", habit_template: "water" }), t)!.title, "Drink water");
+});
+
+Deno.test("pending approvals, the daily summary and recaps name template habits by language", () => {
+  const he = translatorFor("he", ["en", "ru", "he"]);
+  const approval = buildPush(job({ kind: "approval_needed", pending: [{ check_in_id: "c1", author: "Anna", habit: "Family dinner", habit_template: "g-family-dinner" }] }), he.t, he.locale)!;
+  assertEquals(approval.body.includes(isolate("ארוחת ערב משפחתית")), true);
+  const ru = translatorFor("ru", ["en", "ru", "he"]);
+  const summary = buildPush(job({ kind: "daily_summary", habit_id: null, group: null, payload: {
+    todo: [{ title: "Drink water", template: "water", done: 0, target: 1 }, { title: "Мой бег", template: null, done: 0, target: 1 }], at_risk: [],
+  } }), ru.t, ru.locale)!;
+  assertEquals(summary.body.includes(isolate("Пить воду")) && summary.body.includes(isolate("Мой бег")), true);
+  const recap = buildPush(job({ kind: "weekly_recap", habit_id: null, payload: { kind: "week", done: 3, possible: 7, longest: { title: "Drink water", template: "water", length: 3, period: "day" } } }), ru.t, ru.locale)!;
+  assertEquals(recap.body.includes(isolate("Пить воду")), true);
+});

@@ -2,7 +2,8 @@
 // One feed row → one notification payload. Pure: send-push's handler and tests call it.
 import * as copy from "../_shared/notification-copy.ts";
 import { levelName } from "../_shared/levels.ts";
-import { badgeName } from "./i18n.ts";
+import { badgeName, TEMPLATE_IDS } from "./i18n.ts";
+import { habitNamer, namedPayload } from "../_shared/habit-title.ts";
 import { INTL_LOCALE, type Locale, type T } from "../_shared/i18n.ts";
 
 export type PushJob = {
@@ -14,6 +15,9 @@ export type PushJob = {
   group: string | null;
   habit_id: string | null;
   habit: string | null;
+  // habits.template_id: a template habit's name is shown in the recipient's language. Absent on an
+  // older push_job: the stored title.
+  habit_template?: string | null;
   period: string | null;
   target: number | null;
   check_in_id: string | null;
@@ -23,7 +27,7 @@ export type PushJob = {
   subject: string | null;
   payload: Record<string, unknown>;
   names: string[];
-  pending: { check_in_id: string; author: string; habit: string }[];
+  pending: { check_in_id: string; author: string; habit: string; habit_template?: string | null }[];
   subscriptions: { endpoint: string; p256dh: string; auth: string }[];
   // The person's delivery for this category: anything but Sound is silent. Absent (an older push_job)
   // means silent too: fail to quiet.
@@ -71,9 +75,16 @@ function dayLabel(locale: Locale, iso: unknown): string | null {
 type Row = Record<string, unknown>;
 const rows = (v: unknown): Row[] => (Array.isArray(v) ? (v as Row[]) : []);
 
-function copyFor(job: PushJob, t: T, locale: Locale): copy.Copy | null {
+function copyFor(raw: PushJob, t: T, locale: Locale): copy.Copy | null {
+  // Template habits by the recipient's language: the habit, the pending list and the payload's rows.
+  const name = habitNamer(t, TEMPLATE_IDS);
+  const job: PushJob = {
+    ...raw,
+    pending: raw.pending.map((p) => ({ ...p, habit: name(p.habit, p.habit_template) })),
+    payload: namedPayload(raw.payload, name),
+  };
   const group = job.group ?? t("push.fallback.group");
-  const habit = job.habit ?? t("push.fallback.habit");
+  const habit = job.habit == null ? t("push.fallback.habit") : name(job.habit, job.habit_template);
   const who = job.actor ?? t("push.fallback.someone");
   const kid = job.subject ?? t("push.fallback.child");
   const gender = job.subject_gender ?? "other";

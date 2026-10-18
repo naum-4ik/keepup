@@ -4,6 +4,7 @@ import { createTranslator } from "npm:use-intl@4.14.9/core";
 import en from "../_shared/messages/en.json" with { type: "json" };
 import ru from "../_shared/messages/ru.json" with { type: "json" };
 import he from "../_shared/messages/he.json" with { type: "json" };
+import { templateIdsIn } from "../_shared/habit-title.ts";
 import { enabledLocales, LOCALES, type Locale, type T } from "../_shared/i18n.ts";
 
 const catalogs: Partial<Record<Locale, Record<string, unknown>>> = { en, ru, he };
@@ -22,6 +23,9 @@ export function makeTranslator(locale: Locale, messages: Record<string, unknown>
 // newer database's badge). Mirrors lib/badges.ts badgeName.
 const BADGE_CODES = new Set(Object.keys((en as { badges: Record<string, unknown> }).badges));
 export const badgeName = (t: T, code: string, fallback: string): string => (BADGE_CODES.has(code) ? t(`badges.${code}.name`) : fallback);
+
+// The habit templates this catalog names (habits.template_id): any other id shows the stored title.
+export const TEMPLATE_IDS: ReadonlySet<string> = templateIdsIn((en as { templates: Record<string, unknown> }).templates);
 
 // Unknown, missing or not-enabled locale → English (same KEEPUP_LOCALES gate as the app).
 export function translatorFor(
