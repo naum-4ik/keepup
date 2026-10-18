@@ -10,7 +10,8 @@ type HabitsInsert = Database["public"]["Tables"]["habits"]["Insert"];
 // start-date rules are filled in and checked by the database.
 export async function insertHabits(
   supabase: SupabaseClient<Database>,
-  habits: HabitInput[],
+  // templateId: habits.template_id, for a habit made from a template under its own title.
+  habits: (HabitInput & { templateId?: string | null })[],
 ): Promise<{ error: PostgrestError | null; ids: string[] }> {
   const { data, error } = await supabase.from("habits").insert(
     habits.map(
@@ -22,6 +23,7 @@ export async function insertHabits(
           target_count: h.targetCount,
           period: h.period,
           ...(h.startsOn ? { starts_on: h.startsOn } : {}),
+          ...(h.templateId ? { template_id: h.templateId } : {}),
           // The generated type marks starts_on required (the column is NOT NULL), but the insert
           // trigger fills it with today in the owner's time zone when it's missing.
         }) as HabitsInsert,

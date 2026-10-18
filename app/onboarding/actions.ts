@@ -70,7 +70,7 @@ export async function startWithHabits(_prev: PickHabitsState, formData: FormData
     habits.push(parsed.value);
   }
 
-  const { error, ids: created } = await insertHabits(supabase, habits);
+  const { error, ids: created } = await insertHabits(supabase, habits.map((h, i) => ({ ...h, templateId: picked[i].id })));
   if (error) return { status: "error", message: habitErrorMessage(t, error) };
   habits.forEach((h, i) =>
     track("habit_created", who, { "habit.scope": "private", "habit.id": created[i], "habit.title": h.title, "habit.template_id": picked[i].id, "habit.category": h.category, "habit.period": h.period, "habit.target_count": h.targetCount }),

@@ -15,8 +15,8 @@ export type HabitTemplate = {
 const tpl = (id: string, emoji: string, category: HabitCategory, targetCount: number, period: HabitPeriod, popular = false): HabitTemplate =>
   ({ id, emoji, category, targetCount, period, popular });
 
-// A habit or group template's title, in the reader's language (templates.<id>). It is the habit's
-// title once created, so it is never translated afterwards.
+// A habit or group template's title, in the reader's language (templates.<id>). A habit made from it
+// keeps the template (habits.template_id) and shows this title in each viewer's language, until renamed.
 export const templateTitle = (t: T, id: string): string => t(`templates.${id}`);
 
 // Exactly 6 per category (the new-habit screen is a fixed 2×3 grid); anything else is "Create
