@@ -6,7 +6,7 @@
 
 **[Open Keepup](https://keepuphabits.vercel.app)**
 
-[![CI](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml) ![Tests: 3126](https://img.shields.io/badge/tests-3126-brightgreen) [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![CI](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml) ![Tests: 3564](https://img.shields.io/badge/tests-3564-brightgreen) [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 <p align="center">
   <img src="docs/screenshots/today.png" width="220" alt="Today: a progress card, then habits left to do, then Done for today">
@@ -59,6 +59,7 @@ Try the demo on the first screen, no sign-up: it opens a lived-in account (Sam's
 - **Ready-made habits:** 48 templates, 6 in each of 8 categories (Health, Fitness, Mind, Learning, People, Home, Work & money, Break a habit), or your own with any emoji. Schedules are *X times a day, week or month*, from a start date you choose.
 - **Habit page:** this period's check-ins with undo, current and best streak, history, pause and resume, an optional end ("Day 12 of 30", then keep going or finish), edit, archive or delete.
 - **Fair streaks:** periods follow your time zone and week start (Sunday or Monday), a pause never breaks a streak, and a habit started mid-week doesn't count as missed.
+- **Three languages:** English, Russian and Hebrew (right to left), chosen per person; habits from suggestions show in each person's language.
 
 <p align="center">
   <img src="docs/screenshots/new-habit.png" width="220" alt="New habit: category chips above popular templates, and Create your own">
@@ -134,7 +135,7 @@ Diagrams, security layers, free-tier limits and the scaling path: [docs/architec
 
 **A demo that is a database seed.** "Try the demo" signs in anonymously and seeds 30 days of a lived-in account in one transaction; demo and real accounts can't mix (database guards), and an hourly job deletes demos after 24 hours ([decision 0026](docs/decisions/0026-the-demo-is-a-database-seed.md)).
 
-**Tests at every layer:** 1257 pgTAP tests in 51 files, 1668 Vitest and 201 Playwright tests (phone viewport), plus the Edge Function tests under Deno in CI. Counts from [`scripts/count-tests.mjs`](scripts/count-tests.mjs).
+**Tests at every layer:** 1410 pgTAP tests in 54 files, 1935 Vitest and 219 Playwright tests (phone viewport), plus the Edge Function tests under Deno in CI. Counts from [`scripts/count-tests.mjs`](scripts/count-tests.mjs).
 
 ## Environments
 
