@@ -25,6 +25,29 @@ export function releaseLabel(r: Release, appVersion: string, locale: Locale, t: 
 
 export const RELEASES: Release[] = [
   {
+    version: "1.6.0",
+    notes: {
+      en: [
+        "The demo (Try the demo) now feels like a real family on any day, and in your language: suggested habits, the family name and the treat goal show in your language, the kid's garden has room to grow, and the Inbox has a cheer and a nudge.",
+        "In Russian and Hebrew, Inbox lines about a kid now use the right words for a boy or a girl.",
+        "Recaps: hover a day on the month heatmap to see a readable date.",
+        "The offline page shows your language right away.",
+      ],
+      ru: [
+        "Демо («Открыть демо») теперь выглядит как настоящая семья в любой день и на вашем языке: подсказки привычек, название семьи и цель-награда показываются на вашем языке, в саду ребёнка есть место для роста, а во Входящих есть похвала и мягкое напоминание.",
+        "На русском и иврите строки о ребёнке во Входящих теперь говорят правильно: про мальчика или про девочку.",
+        "Итоги: если навести курсор на день в месячной тепловой карте, появится понятная дата.",
+        "Страница без интернета сразу показывается на вашем языке.",
+      ],
+      he: [
+        "הדמו („כניסה לדמו”) נראה עכשיו כמו משפחה אמיתית בכל יום, ובשפה שלכם: הרגלים מוצעים, שם המשפחה ויעד הפינוק מוצגים בשפה שלכם, בגינה של הילד יש מקום לצמוח, ובהודעות יש מחמאה ותזכורת עדינה.",
+        "ברוסית ובעברית, שורות על ילד בהודעות משתמשות עכשיו במילים הנכונות לבן או לבת.",
+        "סיכום: ריחוף על יום במפת החום החודשית מציג תאריך קריא.",
+        "דף האופליין מוצג מיד בשפה שלכם.",
+      ],
+    },
+  },
+  {
     version: "1.5.0",
     date: "2026-10-18",
     notes: {
