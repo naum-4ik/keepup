@@ -872,7 +872,7 @@ isOneToOne: false
                            },
 "inbox_feed":
 { Args: { "p_limit"?: number }; Returns: {
-              "actor_avatar_color": string,"actor_avatar_emoji": string,"actor_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_template": string,"habit_title": string,"id": string,"kind": string,"payload": Json,"read_at": string,"seen_at": string,"subject_avatar_emoji": string,"subject_id": string,"subject_name": string
+              "actor_avatar_color": string,"actor_avatar_emoji": string,"actor_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_template": string,"habit_title": string,"id": string,"kind": string,"payload": Json,"read_at": string,"seen_at": string,"subject_avatar_emoji": string,"subject_gender": string,"subject_id": string,"subject_name": string
             }[]
                            },
 "invite_membership":
