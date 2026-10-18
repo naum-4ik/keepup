@@ -46,10 +46,10 @@ select is((select g.name || ' / ' || t.title from public.groups g join public.pr
              join public.treat_goals t on t.child_id = c.id where g.created_by = '00000000-0000-0000-0000-0000000007a2'),
           'Family / Trip to the playground', 'defaults: Family and Trip to the playground');
 select tests.create_anonymous_user('00000000-0000-0000-0000-0000000007a3');
-select private.start_demo_impl('00000000-0000-0000-0000-0000000007a3', 'Europe/Berlin', now(), '  ', repeat('x', 41));
-select is((select g.name || ' / ' || char_length(t.title) from public.groups g join public.profiles c on c.group_id = g.id and c.kind = 'child'
+select private.start_demo_impl('00000000-0000-0000-0000-0000000007a3', 'Europe/Berlin', now(), '  ', null);
+select is((select g.name || ' / ' || t.title from public.groups g join public.profiles c on c.group_id = g.id and c.kind = 'child'
              join public.treat_goals t on t.child_id = c.id where g.created_by = '00000000-0000-0000-0000-0000000007a3'),
-          'Family / 40', 'a blank group name falls back; a long treat title is cut to fit');
+          'Family / Trip to the playground', 'a blank or missing name falls back to English');
 
 -- Date-proof: Nova's week and the Inbox at fixed moments of next week (Mon 00:30, Wed 12:00, Sun 23:59 Berlin).
 create function pg_temp.live_at(p_user uuid, p_now timestamptz, p_label text) returns setof text language plpgsql as $$

@@ -22,9 +22,9 @@ declare
   v_tz text := case when public.is_valid_timezone(coalesce(p_timezone, '')) then p_timezone else 'UTC' end;
   v_today date := (p_now at time zone v_tz)::date;
   v_week date := private.period_start('week', (p_now at time zone v_tz)::date, 1::smallint);
-  -- A name the tables would refuse (blank, too long) falls back to English rather than failing the demo.
-  v_group_name text := coalesce(nullif(left(btrim(coalesce(p_group_name, ''), E' \t\n\r' || chr(160)), 40), ''), 'Family');
-  v_treat_title text := coalesce(nullif(left(btrim(coalesce(p_treat_title, ''), E' \t\n\r' || chr(160)), 40), ''), 'Trip to the playground');
+  -- A blank name falls back to English rather than failing the demo.
+  v_group_name text := coalesce(nullif(btrim(coalesce(p_group_name, ''), E' \t\n\r' || chr(160)), ''), 'Family');
+  v_treat_title text := coalesce(nullif(btrim(coalesce(p_treat_title, ''), E' \t\n\r' || chr(160)), ''), 'Trip to the playground');
   v_alex uuid := gen_random_uuid();
   v_profile public.profiles;
   v_group uuid; v_nova uuid;

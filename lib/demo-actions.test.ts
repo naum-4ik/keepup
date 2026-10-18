@@ -10,13 +10,14 @@ vi.mock("@/lib/supabase/server", () => ({
 vi.mock("@/lib/i18n/server", () => ({
   getT: async () => ({ t: (k: string) => ({ "groups.defaultFamily": "Семья", "templates.treat.playground": "Поход на детскую площадку" })[k] ?? k }),
 }));
-vi.mock("next/navigation", () => ({ redirect: (to: string) => { throw new Error(`redirect:${to}`); } }));
 vi.mock("@/lib/geo", () => ({ whereFrom: async () => ({}) }));
 vi.mock("@/lib/log", () => ({ track: vi.fn() }));
 vi.mock("@/lib/telemetry", () => ({ userAttributes: () => ({}) }));
 
 const { startDemo } = await import("@/app/demo/actions");
 
+// The real redirect() throws; its digest names the target ("NEXT_REDIRECT;replace;/today;307;").
+const redirectsTo = async (p: Promise<unknown>) => (await p.then(() => null, (e: { digest?: string }) => e.digest ?? null))?.split(";")[2];
 const form = () => { const f = new FormData(); f.set("timezone", "Europe/Berlin"); return f; };
 
 beforeEach(() => {
@@ -27,7 +28,7 @@ beforeEach(() => {
 describe("startDemo", () => {
   it("seeds with the group and treat names in the visitor's language", async () => {
     rpc.mockResolvedValue({ error: null });
-    await expect(startDemo(form())).rejects.toThrow("redirect:/today");
+    expect(await redirectsTo(startDemo(form()))).toBe("/today");
     expect(rpc).toHaveBeenCalledOnce();
     expect(rpc).toHaveBeenCalledWith("start_demo", {
       p_timezone: "Europe/Berlin", p_group_name: "Семья", p_treat_title: "Поход на детскую площадку",
@@ -36,14 +37,14 @@ describe("startDemo", () => {
 
   it("retries with the time zone only when the database doesn't know the new params yet", async () => {
     rpc.mockResolvedValueOnce({ error: { code: "PGRST202", message: "Could not find the function" } }).mockResolvedValueOnce({ error: null });
-    await expect(startDemo(form())).rejects.toThrow("redirect:/today");
+    expect(await redirectsTo(startDemo(form()))).toBe("/today");
     expect(rpc).toHaveBeenLastCalledWith("start_demo", { p_timezone: "Europe/Berlin" });
     expect(signOut).not.toHaveBeenCalled();
   });
 
   it("any other failure ends the demo without a retry", async () => {
     rpc.mockResolvedValue({ error: { code: "42501", message: "keepup:not_demo" } });
-    await expect(startDemo(form())).rejects.toThrow("redirect:/?demo=failed");
+    expect(await redirectsTo(startDemo(form()))).toBe("/?demo=failed");
     expect(rpc).toHaveBeenCalledOnce();
     expect(signOut).toHaveBeenCalled();
   });
