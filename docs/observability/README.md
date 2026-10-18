@@ -89,6 +89,31 @@ sum by (habit_title) (count_over_time({service_name="keepup"} | event_name="keep
 ```
 From a trace to the database: `user.id` is `auth.users.id` and `profiles.id`; `habit.id` is `habits.id`.
 
+## Push delivery log
+Production pushes once stopped silently (no device, empty Vault) and nothing showed it. Now every push is logged in `public.push_deliveries`, kept 30 days (the `keepup-feed-retention` cron job):
+| Outcome | Reason | Written by |
+|---|---|---|
+| `sent` | – (`status` = the push service's answer, e.g. 201) | `send-push`, one row per device |
+| `gone` | `http_404` / `http_410` (the device is removed) | `send-push` |
+| `failed` | `http_<status>`, or `network` (timeout, no answer) | `send-push` |
+| `skipped` | `no_device` | `send-push` (a row to push, no device), and `private.enqueue_reminders` (daily summary due, no device; once per person per local day; demo visitors excluded) |
+| `skipped` | `no_vault_url` | `private.dispatch_push` (`send_push_url` or `send_push_secret` missing from Vault) |
+
+Stored: feed row id, person, kind, outcome, reason, HTTP status and the push service's **host** only (`web.push.apple.com`); never the endpoint URL or its keys. People can read their own rows (RLS); only the service role writes. Logging never blocks a push: a failed insert is a console error (send-push) or a warning (database).
+
+Where to look: Supabase → Table Editor → `push_deliveries`; Supabase → Edge Functions → `send-push` → Logs (one JSON line per delivery, `"event":"push_delivery"`).
+```sql
+-- Last 50 deliveries
+select d.created_at, p.display_name, d.kind, d.outcome, d.reason, d.status, d.endpoint_host
+  from public.push_deliveries d join public.profiles p on p.id = d.user_id
+ order by d.created_at desc limit 50;
+
+-- Today's skipped pushes by reason (UTC day)
+select reason, count(*) from public.push_deliveries
+ where outcome = 'skipped' and created_at >= date_trunc('day', now())
+ group by reason order by count(*) desc;
+```
+
 ## Configuration (Vercel)
 | Variable | Value |
 |---|---|

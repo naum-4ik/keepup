@@ -454,6 +454,31 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"push_deliveries": {
+                  Row: {
+                    "created_at": string,"endpoint_host": string | null,"id": string,"kind": string,"notification_id": string | null,"outcome": string,"reason": string | null,"status": number | null,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"endpoint_host"?: string | null,"id"?: string,"kind": string,"notification_id"?: string | null,"outcome": string,"reason"?: string | null,"status"?: number | null,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"endpoint_host"?: string | null,"id"?: string,"kind"?: string,"notification_id"?: string | null,"outcome"?: string,"reason"?: string | null,"status"?: number | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "push_deliveries_notification_id_fkey"
+      columns: ["notification_id"]
+isOneToOne: false
+      referencedRelation: "notifications"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "push_deliveries_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"push_subscriptions": {
                   Row: {
                     "auth": string,"created_at": string,"endpoint": string,"id": string,"p256dh": string,"user_agent": string | null,"user_id": string
