@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { ChevronRight, Clock } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { EveryoneDidIt, type CardMember } from "@/components/celebrations/everyone-did-it";
 import { EmptyState } from "@/components/empty-state";
 import { FirstCheckinTip } from "@/components/first-checkin-tip";
 import { SproutIcon } from "@/components/sprout-icon";
-import { HabitCard } from "@/components/habits/habit-card";
+import { HabitCard, type EndLine } from "@/components/habits/habit-card";
 import { LiveRefresh } from "@/components/habits/live-refresh";
 import { KidSection } from "@/components/kids/kid-section";
 import { NeedsConnection } from "@/components/offline/needs-connection";
@@ -18,7 +19,8 @@ import { getProfile } from "@/lib/auth";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
 import { getFinishSummary, getGroupTimezones, getHabitEnds, getHabitSummaries, getRecentTapRows, getWeekOverview, type HabitSummary } from "@/lib/habits";
-import { ANOTHER_GO, celebrates, finishLine } from "@/lib/habit-finish";
+import { celebrates, finishLine } from "@/lib/habit-finish";
+import { getT } from "@/lib/i18n/server";
 import { FinishCard } from "@/components/today/finish-card";
 import { endLabel, endProgress, hasEnded, withoutEnded } from "@/lib/habit-end";
 import { todayIn } from "@/lib/dates";
@@ -32,9 +34,13 @@ import { chooseGentleCard } from "@/lib/today-cards";
 import { getCelebrations, getDismissedCards, hasCheckedIn } from "@/lib/today-cards-data";
 import { membersOf, sectionsForToday } from "@/lib/today-sections";
 import { hasWeekData } from "@/lib/week-overview";
+import { INTL_LOCALE, isolate, type T } from "@/supabase/functions/_shared/i18n";
 
 export default async function TodayPage({ searchParams }: { searchParams: Promise<{ joined?: string; reset?: string }> }) {
   const { joined, reset } = await searchParams;
+  const { t, locale } = await getT();
+  const tt = await getTranslations("today");
+  const tg = await getTranslations("groups.detail");
   const childrenP = getMyChildren();
   const [summaries, overview, groups, approvals, children, { profile }, celebrations, dismissed, checkedIn, tapRows] = await Promise.all([
     getHabitSummaries(),
@@ -92,7 +98,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     ...tapPeriods(summaries, (h) => zoneOf(h.group_id)),
     ...Object.assign({}, ...kids.map((k) => tapPeriods(k.habits, () => zoneOf(k.child.group_id)))),
   };
-  const sections = sectionsForToday(habits, groups);
+  const sections = sectionsForToday(t, locale, habits, groups);
   // A solo user's Today looks as before: the "Mine" heading shows only next to a group section.
   const withHeadings = sections.some((s) => s.key !== "mine") || kids.length > 0;
   // Check-ins by other members (and other adults logging for a child) refresh these cards.
@@ -110,14 +116,14 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   }));
   const progress = todayProgress(progressHabits);
   const now = new Date();
-  const date = new Intl.DateTimeFormat("en-GB", { timeZone: profile.timezone, weekday: "long", day: "numeric", month: "long" }).format(now);
+  const date = new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: profile.timezone, weekday: "long", day: "numeric", month: "long" }).format(now);
   const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: profile.timezone }).format(now);
   // "Day 12 of 30" for habits with an end.
-  const endLines = new Map<string, string>();
+  const endLines = new Map<string, EndLine>();
   for (const h of habits) {
     const endsOn = ends.get(h.habit_id);
     const p = endsOn ? endProgress(h.starts_on, endsOn, todayOf(h.group_id), h.period) : null;
-    if (p) endLines.set(h.habit_id, endLabel(p, h.period));
+    if (p) endLines.set(h.habit_id, { text: endLabel(t, p, h.period), almost: p.almost });
   }
 
   // "Everyone did it" (ideas/achievements-and-rewards.md §7), then at most one gentle card. No other
@@ -133,7 +139,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     return [...seen.values()];
   };
   const everyone = celebrations.filter((n) => n.kind === "everyone_done" && !n.seen_at);
-  const everyoneHabits = [...new Map(everyone.map((n) => [n.habit_id ?? n.id, n.habit_title ?? "A habit"])).entries()];
+  const everyoneHabits = [...new Map(everyone.map((n) => [n.habit_id ?? n.id, n.habit_title ?? t("today.habitFallback")])).entries()];
   // Dismissals couldn't be read: show no dismissible cards rather than bring back closed ones.
   const purpose = parsePurpose(profile.purpose ?? "");
   const gentle = dismissed && chooseGentleCard({
@@ -151,7 +157,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   return (
     <section className="flex flex-col gap-4 py-6">
       <RenderedTaps ids={renderedTaps} periods={shownPeriods} />
-      <h1 className="text-xl font-bold">Today</h1>
+      <h1 className="text-xl font-bold">{tt("title")}</h1>
       {/* Right after Settings → Reset my data. */}
       {reset === "1" && <ResetNote />}
       {progress.total > 0 && (
@@ -170,18 +176,18 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
             <Avatar name={joinedGroup.name} emoji={joinedGroup.avatar_emoji} color={joinedGroup.avatar_color} size="md" />
           </span>
           <span className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate font-bold">Welcome to {joinedGroup.name} 👋</span>
+            <span className="truncate font-bold">{tt.rich("welcome.title", { name: joinedGroup.name, bdi: (c) => <bdi>{c}</bdi> })}</span>
             <span className="text-sm text-muted-foreground">
-              {joinedGroup.member_count === 1 ? "1 person" : `${joinedGroup.member_count} people`} ·{" "}
-              {habits.some((h) => h.group_id === joinedGroup.group_id) ? "your group habits are below" : "no group habits yet"}
+              {tt("welcome.people", { n: joinedGroup.member_count })} ·{" "}
+              {habits.some((h) => h.group_id === joinedGroup.group_id) ? tt("welcome.habitsBelow") : tt("welcome.noGroupHabits")}
             </span>
           </span>
           <Link
             href={`/groups/${joinedGroup.group_id}`}
-            aria-label={`Open ${joinedGroup.name}`}
+            aria-label={tt("welcome.openLabel", { name: isolate(joinedGroup.name) })}
             className="flex h-11 shrink-0 items-center rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted"
           >
-            Open
+            {tt("welcome.open")}
           </Link>
         </div>
       )}
@@ -191,9 +197,9 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
             <Clock className="size-5" />
           </span>
           <span className="flex-1 font-semibold">
-            {approvals.length} {approvals.length === 1 ? "check-in" : "check-ins"} waiting for you
+            {tt("approvalsWaiting", { n: approvals.length })}
           </span>
-          <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
+          <ChevronRight aria-hidden className="size-5 text-muted-foreground rtl:-scale-x-100" />
         </Link>
       )}
       {/* Always rendered, so the card survives a refresh after it was seen (EveryoneDidIt). */}
@@ -204,12 +210,12 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       />
       {/* Offline (the saved page), cards whose buttons need the server say so (ideas/offline.md §3). */}
       {gentle && (
-        <NeedsConnection key={gentle.key} label={gentle.key.startsWith("add_child") ? "Add a child" : "Invite"}>
+        <NeedsConnection key={gentle.key} label={gentle.key.startsWith("add_child") ? tg("addChild") : tt("gentle.inviteFamily.cta")}>
           <GentleCard card={gentle} />
         </NeedsConnection>
       )}
       {finishes.map(({ h, summary }) => (
-        <NeedsConnection key={h.habit_id} label={`${h.title} is finished`}>
+        <NeedsConnection key={h.habit_id} label={tt("finish.label", { title: isolate(h.title) })}>
           <FinishCard
             habitId={h.habit_id}
             endsOn={ends.get(h.habit_id) ?? ""}
@@ -217,7 +223,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
             title={h.title}
             emoji={h.emoji}
             category={h.category}
-            line={summary && celebrates(summary) ? finishLine(summary, h.period, Boolean(h.group_id)) : ANOTHER_GO}
+            line={summary && celebrates(summary) ? finishLine(t, summary, h.period, Boolean(h.group_id)) : t("habitFinish.anotherGo")}
             celebrate={Boolean(summary && celebrates(summary))}
             canDecide={!h.group_id || h.my_role === "admin"}
           />
@@ -232,11 +238,11 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
           icon={<SproutIcon className="size-6" />}
           action={
             <Button asChild className="h-11">
-              <Link href="/habits/new">Add your first habit</Link>
+              <Link href="/habits/new">{tt("empty.action")}</Link>
             </Button>
           }
         >
-          Nothing to do yet. Add a habit to get started.
+          {tt("empty.text")}
         </EmptyState>
       ) : (
         sections.map((s) =>
@@ -255,14 +261,14 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
                       <Avatar name={s.title} emoji={s.avatar?.emoji} color={s.avatar?.color} size="sm" />
                     </span>
                     <span className="truncate">{s.title}</span>
-                    <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+                    <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground rtl:-scale-x-100" />
                   </Link>
                 )}
               </h2>
-              <TodayLists habits={s.habits} tipFor={isNewUser ? tipFor : undefined} sectionDone={s.key === checkedOffKey} endLines={endLines} />
+              <TodayLists t={t} habits={s.habits} tipFor={isNewUser ? tipFor : undefined} sectionDone={s.key === checkedOffKey} endLines={endLines} />
             </section>
           ) : (
-            <TodayLists key={s.key} habits={s.habits} tipFor={isNewUser ? tipFor : undefined} sectionDone={false} endLines={endLines} />
+            <TodayLists key={s.key} t={t} habits={s.habits} tipFor={isNewUser ? tipFor : undefined} sectionDone={false} endLines={endLines} />
           ),
         )
       )}
@@ -279,15 +285,17 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
 // `sectionDone`: say "All checked off" when this section is finished. Only one section says it
 // (allCheckedOffKey); off for a lone section, where the Today card already says "Today's all done".
 function TodayLists({
+  t,
   habits,
   tipFor,
   sectionDone = true,
   endLines,
 }: {
+  t: T;
   habits: HabitSummary[];
   tipFor?: string;
   sectionDone?: boolean;
-  endLines?: Map<string, string>;
+  endLines?: Map<string, EndLine>;
 }) {
   const { todo, done, later } = groupForToday(habits);
   return (
@@ -295,10 +303,10 @@ function TodayLists({
       {todo.length > 0 ? (
         <HabitList habits={todo} tipFor={tipFor} endLines={endLines} />
       ) : done.length > 0 && sectionDone ? (
-        <p className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">All checked off. Nice work.</p>
+        <p className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">{t("today.sections.allCheckedOff")}</p>
       ) : null}
-      {done.length > 0 && <HabitList title="Done for today" habits={done} endLines={endLines} />}
-      {later.length > 0 && <HabitList title="Later" habits={later} endLines={endLines} />}
+      {done.length > 0 && <HabitList title={t("today.sections.doneForToday")} habits={done} endLines={endLines} />}
+      {later.length > 0 && <HabitList title={t("today.sections.later")} habits={later} endLines={endLines} />}
     </>
   );
 }
@@ -312,7 +320,7 @@ function HabitList({
   title?: string;
   habits: HabitSummary[];
   tipFor?: string;
-  endLines?: Map<string, string>;
+  endLines?: Map<string, EndLine>;
 }) {
   if (habits.length === 0) return null;
   const list = (

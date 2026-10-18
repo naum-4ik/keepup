@@ -2,7 +2,14 @@
 // release-please). Each release: add an entry at the top with 3–5 plain lines about what people
 // can now do. No PR numbers, hashes or internals; never guilt; kid copy stays gender-neutral.
 // Add the date once the release merges; until then a version newer than the app's says "Coming soon".
-export type Release = { version: string; date?: string; notes: string[] };
+// Notes are plain English lines, or per language ({ en, ru, he }; a missing language falls back to en).
+import { INTL_LOCALE, type Locale, type T } from "@/supabase/functions/_shared/i18n";
+
+export type Release = { version: string; date?: string; notes: string[] | Partial<Record<Locale, string[]>> };
+
+export function notesFor(r: Release, locale: Locale): string[] {
+  return Array.isArray(r.notes) ? r.notes : (r.notes[locale] ?? r.notes.en ?? []);
+}
 
 // > 0 when a is newer than b ("0.10.0" vs "0.9.1").
 export function compareVersions(a: string, b: string): number {
@@ -10,15 +17,39 @@ export function compareVersions(a: string, b: string): number {
   return x[0] - y[0] || x[1] - y[1] || x[2] - y[2];
 }
 
-export function releaseLabel(r: Release, appVersion: string): string {
+export function releaseLabel(r: Release, appVersion: string, locale: Locale, t: T): string {
   const [y, m, d] = (r.date ?? "").split("-").map(Number);
-  if (r.date) return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" }).format(new Date(Date.UTC(y, m - 1, d)));
-  return compareVersions(r.version, appVersion) > 0 ? "Coming soon" : "";
+  if (r.date) return new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: "UTC", day: "numeric", month: "long", year: "numeric" }).format(new Date(Date.UTC(y, m - 1, d)));
+  return compareVersions(r.version, appVersion) > 0 ? t("whatsNew.comingSoon") : "";
 }
 
 export const RELEASES: Release[] = [
   {
+    version: "1.5.0",
+    notes: {
+      en: [
+        "Keepup speaks Russian and Hebrew too. It follows your phone's language; change it any time in Profile → Settings → Language. Hebrew is laid out right to left.",
+        "Habits added from Keepup's suggestions show their name in your language. Names you typed yourself stay as you wrote them.",
+        "Kids can have boy or girl set (optional), so Russian and Hebrew can say ‘well done’ the right way.",
+        "Privacy: Keepup remembers your language on your profile and in a cookie on your device, and a kid's boy or girl if you set it. The privacy policy says so.",
+      ],
+      ru: [
+        "Keepup теперь говорит по-русски и на иврите. Язык берётся из настроек телефона; сменить его можно в «Профиль → Настройки → Язык». Иврит отображается справа налево.",
+        "Привычки из подсказок Keepup показываются на вашем языке. Названия, которые вы написали сами, остаются как есть.",
+        "Для ребёнка можно указать «мальчик» или «девочка» (по желанию), чтобы по-русски и на иврите хвалить правильно.",
+        "Конфиденциальность: Keepup запоминает ваш язык в профиле и в cookie на устройстве, а также пол ребёнка, если вы его указали. Об этом сказано в политике конфиденциальности.",
+      ],
+      he: [
+        "Keepup מדבר עכשיו גם רוסית ועברית. השפה נלקחת מהטלפון; אפשר לשנות אותה בכל זמן ב„פרופיל ← הגדרות ← שפה”. העברית מוצגת מימין לשמאל.",
+        "הרגלים שנוספו מההצעות של Keepup מוצגים בשפה שלכם. שמות שכתבתם בעצמכם נשארים כפי שכתבתם.",
+        "לילדים אפשר לציין בן או בת (לא חובה), כדי שברוסית ובעברית יגידו להם „כל הכבוד” בצורה הנכונה.",
+        "פרטיות: Keepup שומר את השפה שלכם בפרופיל ובעוגייה במכשיר, וגם בן או בת של ילד אם ציינתם. מדיניות הפרטיות מפרטת זאת.",
+      ],
+    },
+  },
+  {
     version: "1.4.0",
+    date: "2026-10-14",
     notes: [
       "Keepup emails (confirm your address, reset your password, change your email) now look like Keepup, say which account they are about, and tell you what to do if you didn't ask for them.",
       "Privacy: when someone signs up or starts the demo, we get an email alert with their email address (or demo ID), IP address and the country and city it points to, kept for up to 90 days. The privacy policy says so.",

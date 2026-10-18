@@ -1,4 +1,5 @@
 import { isValidEmail } from "@/lib/email";
+import type { T } from "@/supabase/functions/_shared/i18n";
 
 // Matches Supabase Auth's minimum_password_length (supabase/config.toml and the hosted dashboard).
 export const PASSWORD_MIN = 8;
@@ -10,22 +11,23 @@ export type CredentialsField = "email" | "password";
 // Checked before calling Supabase, so the common mistakes get a message (and the right field outlined)
 // without a round trip.
 export function credentialsError(
+  t: T,
   email: string,
   password: string,
   mode: CredentialsMode,
 ): { field: CredentialsField; message: string } | null {
-  if (!isValidEmail(email)) return { field: "email", message: "Enter a valid email address." };
+  if (!isValidEmail(email)) return { field: "email", message: t("auth.emailInvalid") };
   if (mode === "signup") {
-    const tooShort = newPasswordError(password);
+    const tooShort = newPasswordError(t, password);
     if (tooShort) return { field: "password", message: tooShort };
   }
-  if (mode === "signin" && password === "") return { field: "password", message: "Enter your password." };
+  if (mode === "signin" && password === "") return { field: "password", message: t("auth.passwordRequired") };
   return null;
 }
 
 // A password being set (sign-up or a reset): the same minimum as Supabase, counted in characters.
-export function newPasswordError(password: string): string | null {
-  return [...password].length < PASSWORD_MIN ? `Use at least ${PASSWORD_MIN} characters.` : null;
+export function newPasswordError(t: T, password: string): string | null {
+  return [...password].length < PASSWORD_MIN ? t("auth.passwordMin", { min: PASSWORD_MIN }) : null;
 }
 
 // Setting a new password without the current one is allowed only right after a reset (or confirm)
@@ -47,26 +49,19 @@ export function isFreshRecovery(claims: AuthClaims, now: Date): boolean {
   );
 }
 
-// Said when the new-password form is sent after that window.
-export const RESET_LINK_STALE = "This reset link has expired. Ask for a new one from the sign-in screen.";
-
-// Sign-up succeeded but Supabase wants the address confirmed first (Confirm email on), so no session yet.
-export const CONFIRM_EMAIL_SENT = "Almost done: open the link we emailed you to confirm your address, then sign in.";
-
-// Said for every valid email, so the reset form never tells whether an address has an account.
-export const RESET_LINK_SENT = "If that email has an account, a reset link is on its way.";
-
-const MESSAGES: Record<string, string> = {
-  email_not_confirmed: "Confirm your email first: open the link we sent you, then sign in.",
-  invalid_credentials: "That email and password don't match. Try again.",
-  user_already_exists: "That email already has an account.",
-  email_exists: "That email already has an account.",
-  weak_password: `Use at least ${PASSWORD_MIN} characters.`,
-  same_password: "That's the password you have now. Choose a new one.",
-  over_request_rate_limit: "Too many tries. Wait a minute and try again.",
-  email_address_invalid: "Enter a valid email address.",
+// What Supabase Auth's error codes say. weak_password and email_address_invalid reuse the form checks' lines.
+const MESSAGE_KEYS: Record<string, string> = {
+  email_not_confirmed: "auth.emailNotConfirmed",
+  invalid_credentials: "auth.invalidCredentials",
+  user_already_exists: "auth.accountExists",
+  email_exists: "auth.accountExists",
+  weak_password: "auth.passwordMin",
+  same_password: "auth.samePassword",
+  over_request_rate_limit: "auth.rateLimited",
+  email_address_invalid: "auth.emailInvalid",
 };
 
-export function passwordAuthMessage(error: { code?: string }): string {
-  return (error.code && MESSAGES[error.code]) || "Something went wrong. Try again.";
+export function passwordAuthMessage(t: T, error: { code?: string }): string {
+  const key = error.code && MESSAGE_KEYS[error.code];
+  return key ? t(key, { min: PASSWORD_MIN }) : t("errors.generic");
 }

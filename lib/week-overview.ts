@@ -1,14 +1,10 @@
 import type { HabitPeriod } from "@/lib/habit-schema";
+import type { T } from "@/supabase/functions/_shared/i18n";
 
 // The shape of public.week_overview() (a jsonb object, so the generated type is just `Json`).
 export type DayCellStatus = "done" | "missed" | "paused" | "not_started" | "open" | "rested";
-// Words for the week dots' label and the history grid (M5: a rest day keeps the streak, never "missed").
-export const STATUS_WORD: Record<DayCellStatus, string> = {
-  done: "done", missed: "missed", paused: "paused", not_started: "not started", open: "in progress", rested: "rest day",
-};
-export const OUTCOME_LABEL: Record<"done" | "missed" | "skipped" | "rested" | "open", string> = {
-  done: "Done", missed: "Missed", skipped: "Paused or not counted", rested: "Rest day", open: "In progress",
-};
+export type Outcome = "done" | "missed" | "skipped" | "rested" | "open";
+export const outcomeLabel = (t: T, outcome: Outcome): string => t(`weekOverview.outcome.${outcome}`);
 export type WeekDay = { local_date: string; daily_done: number; daily_possible: number };
 export type HabitCells = { habit_id: string; cells: { period_start: string; status: DayCellStatus }[] };
 export type WeekOverview = {
@@ -21,6 +17,8 @@ export type WeekOverview = {
   days: WeekDay[];
   best_current_streak: number;
   best_current_streak_title: string | null;
+  // habits.template_id of that habit (lib/habits.ts getWeekOverview shows the title by it).
+  best_current_streak_template?: string | null;
   best_current_streak_period: HabitPeriod | null;
   check_ins: number;
   active_habits: number;
@@ -42,15 +40,15 @@ export function withTodayPending(o: WeekOverview): WeekOverview {
 
 // The week's headline: "1 of 1 goal met", "2 of 3 goals met" ("goals met", not "done": next to the
 // card's check-in count, "done" read like a second count). The noun follows the total.
-export const goalsMet = (done: number, possible: number) => `${done} of ${possible} ${possible === 1 ? "goal" : "goals"} met`;
+export const goalsMet = (t: T, done: number, possible: number): string => t("weekOverview.goalsMet", { done, possible });
 
 // Only positive or neutral. "More than last week" needs a last week to compare with. "Best week
 // yet" means this week's share done beats last week's (the only other week in the data), while
 // having done at least as much. Null when there's nothing to add: the line sits under the
 // headline, which already says how many goals were met.
-export function comparisonLine(o: Pick<WeekOverview, "done" | "possible" | "prev_done" | "prev_possible">): string | null {
+export function comparisonLine(t: T, o: Pick<WeekOverview, "done" | "possible" | "prev_done" | "prev_possible">): string | null {
   if (o.prev_possible > 0 && o.done > o.prev_done) {
-    return `${o.done - o.prev_done} more than last week`;
+    return t("weekOverview.moreThanLastWeek", { n: o.done - o.prev_done });
   }
   if (
     o.prev_possible > 0 &&
@@ -59,9 +57,9 @@ export function comparisonLine(o: Pick<WeekOverview, "done" | "possible" | "prev
     o.done === o.prev_done &&
     o.done * o.prev_possible > o.prev_done * o.possible
   ) {
-    return "Your best week yet";
+    return t("weekOverview.bestWeekYet");
   }
-  if (o.done === 0) return "A fresh start this week";
+  if (o.done === 0) return t("weekOverview.freshStart");
   return null;
 }
 
@@ -77,5 +75,5 @@ export function ringDash(done: number, possible: number, r: number): { circumfer
   return { circumference, offset: circumference * (1 - ringFraction(done, possible)) };
 }
 
-const UNIT: Record<HabitPeriod, [string, string]> = { day: ["day", "days"], week: ["week", "weeks"], month: ["month", "months"] };
-export const streakUnit = (n: number, period: HabitPeriod | null) => UNIT[period ?? "day"][n === 1 ? 0 : 1];
+// "12 days", "1 week": a streak's length with its unit.
+export const streakSpan = (t: T, n: number, period: HabitPeriod | null): string => t(`units.${period ?? "day"}`, { n });

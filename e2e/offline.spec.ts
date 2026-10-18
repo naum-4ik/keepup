@@ -43,12 +43,12 @@ test("a check-in queued offline survives a reload and syncs once, for the day it
   await signUpAndOnboard(page);
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
   const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
-  await waitForWorker(page, "/today", "Check in: Walk");
+  await waitForWorker(page, "/today", "Check in: \u2068Walk\u2069");
 
   await context.setOffline(true);
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect(page.getByText("Saving… ☁️")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Checked in today: Walk" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Checked in today: \u2068Walk\u2069" })).toBeVisible();
 
   await page.reload(); // what a service-worker update does at a safe moment
   await expect(page.getByText(BANNER)).toBeVisible();
@@ -57,10 +57,10 @@ test("a check-in queued offline survives a reload and syncs once, for the day it
 
   await context.setOffline(false);
   await expect(page.getByText("Saving… ☁️")).toBeHidden();
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
   await expect(page.getByText(BANNER)).toBeHidden();
   await page.reload();
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
   expect(countCheckIns(id)).toBe(1);
 });
 
@@ -68,7 +68,7 @@ test("signing out with a check-in not yet saved asks first; Stay signed in keeps
   await signUpAndOnboard(page);
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
   await context.setOffline(true);
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect(page.getByText("Saving… ☁️")).toBeVisible();
   // Back online, but the server can't be reached: the tap stays on the phone.
   await page.route("**/api/check-ins/sync", (route) => route.abort());
@@ -106,7 +106,7 @@ test("the kid view offline: a tap plays and counts once, stays after a reload, a
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   const childId = await addChild(page, "Mary");
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
+  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   await expect(page).toHaveURL(/\/play$/);
   await waitForWorker(page, `/kids/${childId}/play`);
   await expect(page.getByText("0 stars this week")).toBeAttached();
@@ -151,13 +151,13 @@ test("offline, Me + Mary needs a connection; Just me waits on the phone", async 
   await dialog.getByRole("switch", { name: "Include Mary" }).click();
   await dialog.getByRole("button", { name: /^Add habit/ }).click();
   await expect(page).toHaveURL(/\/today$/);
-  await waitForWorker(page, "/today", "Check in: Walk the dog");
+  await waitForWorker(page, "/today", "Check in: \u2068Walk the dog\u2069");
 
   await context.setOffline(true);
-  await page.getByRole("button", { name: "Check in: Walk the dog" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Walk the dog\u2069" }).click();
   await page.getByRole("button", { name: "Me + Mary" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Needs a connection" })).toBeVisible();
-  await page.getByRole("button", { name: "Check in: Walk the dog" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Walk the dog\u2069" }).click();
   await page.getByRole("button", { name: "Just me" }).click();
   // Only my check-in waits: Mary's row for the same habit doesn't say it's saving.
   await expect(page.getByRole("region", { name: "Family" }).getByText("Saving… ☁️")).toBeVisible();
@@ -167,21 +167,21 @@ test("offline, Me + Mary needs a connection; Just me waits on the phone", async 
 test("Today reached by client-side navigation is saved for offline use, and kept fresh after a check-in", async ({ page, context }) => {
   await signUpAndOnboard(page);
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
-  await waitForWorker(page, "/today", "Check in: Walk");
+  await waitForWorker(page, "/today", "Check in: \u2068Walk\u2069");
   await page.goto("/progress");
   await page.evaluate(() => caches.delete("keepup-pages"));
   await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Today" }).click();
   await expect(page).toHaveURL(/\/today$/);
   await waitForSaved(page, "/today");
 
-  await page.getByRole("button", { name: "Check in: Walk" }).click(); // online
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click(); // online
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
   await expect(page.getByText("Saving… ☁️")).toHaveCount(0);
-  await waitForSaved(page, "/today", "Done: Walk");
+  await waitForSaved(page, "/today", "Done: \u2068Walk\u2069");
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByText(BANNER)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
 });
 
 test("offline: the Today card counts a queued tap; Undo takes it back and nothing is sent", async ({ page, context }) => {
@@ -189,23 +189,23 @@ test("offline: the Today card counts a queued tap; Undo takes it back and nothin
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
   await createHabit(page, { title: "Read", count: 1, period: "day" });
   const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
-  await waitForWorker(page, "/today", "Check in: Read");
+  await waitForWorker(page, "/today", "Check in: \u2068Read\u2069");
   const card = page.getByRole("region", { name: "Today's progress" });
   await expect(card.getByText("0 of 2 done")).toBeVisible();
 
   await context.setOffline(true);
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect(page.getByText("Saving… ☁️")).toBeVisible();
   await expect(card.getByText("1 of 2 done")).toBeVisible();
   await expect(card.getByRole("img", { name: "1 of 2 done today" })).toBeVisible();
 
-  const undo = page.getByRole("button", { name: "Undo check-in for Walk" });
+  const undo = page.getByRole("button", { name: "Undo check-in for \u2068Walk\u2069" });
   const box = await undo.boundingBox();
   expect(box!.width).toBeGreaterThanOrEqual(44);
   expect(box!.height).toBeGreaterThanOrEqual(44);
   await undo.click();
   await expect(page.getByText("Saving… ☁️")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check in: \u2068Walk\u2069" })).toBeVisible();
   await expect(card.getByText("0 of 2 done")).toBeVisible();
 
   // Nothing is sent at all (not a check-in followed by an undo).
@@ -213,7 +213,7 @@ test("offline: the Today card counts a queued tap; Undo takes it back and nothin
   page.on("request", (r) => void (r.url().includes("/api/check-ins/sync") && syncs.push(r.url())));
   await context.setOffline(false);
   await page.reload();
-  await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check in: \u2068Walk\u2069" })).toBeVisible();
   await page.waitForLoadState("networkidle");
   expect(syncs).toHaveLength(0);
   expect(countCheckIns(id)).toBe(0);
@@ -235,23 +235,23 @@ test("Undo after an online try that got no answer in time: the server ends witho
     await route.fulfill({ response: res }).catch(() => undefined); // the phone gave up on it
   });
   await page.route("**/api/check-ins/sync", (route) => route.abort());
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect.poll(() => countCheckIns(id)).toBe(1); // the server has it
-  const undo = page.getByRole("button", { name: "Undo check-in for Walk" });
+  const undo = page.getByRole("button", { name: "Undo check-in for \u2068Walk\u2069" });
   await expect(undo).toBeVisible({ timeout: 15_000 }); // the try timed out: it waits on the phone
   await undo.click();
-  await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible(); // open again at once
+  await expect(page.getByRole("button", { name: "Check in: \u2068Walk\u2069" })).toBeVisible(); // open again at once
   await page.unroute("**/api/check-ins/sync");
   await page.evaluate(() => window.dispatchEvent(new Event("online")));
   await expect.poll(() => countCheckIns(id), { timeout: 15_000 }).toBe(0); // the queued undo reached the server
   // Now the late answer turns up: it never draws "Done" (the phone aborted that request).
   release();
   await page.waitForTimeout(1_500);
-  await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Check in: \u2068Walk\u2069" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toHaveCount(0);
   await page.unrouteAll({ behavior: "ignoreErrors" });
   await page.reload();
-  await expect(page.getByRole("button", { name: "Check in: Walk" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check in: \u2068Walk\u2069" })).toBeVisible();
   expect(countCheckIns(id)).toBe(0);
 });
 
@@ -269,9 +269,9 @@ test("a tap right after the page opens keeps Saving… and Undo through live ref
   await page.route("**/api/check-ins/sync", (route) => route.abort());
   // A fresh load: the layout's live listener is still joining when the tap happens.
   await page.reload();
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect.poll(() => countCheckIns(id)).toBe(1); // the server has it
-  const undo = page.getByRole("button", { name: "Undo check-in for Walk" });
+  const undo = page.getByRole("button", { name: "Undo check-in for \u2068Walk\u2069" });
   await expect(undo).toBeVisible();
   // The listener goes live (it refreshes to catch up), and the app comes back into view (it refreshes
   // again). Neither may swap the waiting tap for the server's "Done" while it's unsent.
@@ -280,12 +280,12 @@ test("a tap right after the page opens keeps Saving… and Undo through live ref
   await page.waitForTimeout(1_500);
   await expect(page.getByText("Saving… ☁️")).toBeVisible();
   await expect(undo).toBeVisible();
-  await expect(page.getByRole("button", { name: "Checked in today: Walk" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Checked in today: \u2068Walk\u2069" })).toBeVisible();
   // Back online for the sync route: the tap syncs once (its client id), and the page shows it done.
   await page.unroute("**/api/check-ins/sync");
   await page.evaluate(() => window.dispatchEvent(new Event("online")));
   await expect(page.getByText("Saving… ☁️")).toBeHidden({ timeout: 15_000 });
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
   expect(countCheckIns(id)).toBe(1);
 });
 
@@ -305,24 +305,24 @@ test("a live refresh while the online try is still running doesn't show the tap 
   await page.route("**/api/check-ins/sync", (route) => route.abort());
   await page.reload();
   await expect(page.locator('[data-live="ready"][data-table="notifications"]')).toBeAttached({ timeout: 20_000 });
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect.poll(() => countCheckIns(id)).toBe(1); // the server has it; the try hasn't answered
   // A refresh asked for while the try runs (the app comes back into view) must not draw "Done".
   await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
   await page.waitForTimeout(1_000);
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toHaveCount(0);
   // The try fails without an answer (after the 10 s timeout): the tap waits on the phone. Whatever
   // refresh was asked for in the meantime still doesn't draw the server's "Done".
   await page.waitForTimeout(10_000);
   release();
-  const undo = page.getByRole("button", { name: "Undo check-in for Walk" });
+  const undo = page.getByRole("button", { name: "Undo check-in for \u2068Walk\u2069" });
   await expect(undo).toBeVisible();
   await page.waitForTimeout(1_500);
   await expect(undo).toBeVisible();
-  await expect(page.getByRole("button", { name: "Checked in today: Walk" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Checked in today: \u2068Walk\u2069" })).toBeVisible();
   await page.unroute("**/api/check-ins/sync");
   await page.evaluate(() => window.dispatchEvent(new Event("online")));
   await expect(page.getByText("Saving… ☁️")).toBeHidden({ timeout: 15_000 });
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
   expect(countCheckIns(id)).toBe(1);
 });

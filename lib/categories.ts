@@ -1,19 +1,23 @@
 import { BookOpen, BriefcaseBusiness, Footprints, HeartPulse, House, ShieldBan, Sun, Users, type LucideIcon } from "lucide-react";
 import type { HabitCategory } from "@/lib/habit-schema";
+import type { T } from "@/supabase/functions/_shared/i18n";
 
-export type CategoryMeta = { label: string; icon: LucideIcon; chipClass: string; iconClass: string; defaultEmoji: string };
+export type CategoryMeta = { icon: LucideIcon; chipClass: string; iconClass: string; defaultEmoji: string };
 
 // Pastel chip + deeper icon color. defaultEmoji matches private.default_emoji() in the database.
 export const CATEGORIES: Record<HabitCategory, CategoryMeta> = {
-  health: { label: "Health", icon: HeartPulse, chipClass: "bg-cat-health-soft", iconClass: "text-cat-health", defaultEmoji: "🍎" },
-  fitness: { label: "Fitness", icon: Footprints, chipClass: "bg-cat-fitness-soft", iconClass: "text-cat-fitness", defaultEmoji: "👟" },
-  mind: { label: "Mind", icon: Sun, chipClass: "bg-cat-mind-soft", iconClass: "text-cat-mind", defaultEmoji: "🌿" },
-  learning: { label: "Learning", icon: BookOpen, chipClass: "bg-cat-learning-soft", iconClass: "text-cat-learning", defaultEmoji: "📚" },
-  people: { label: "People", icon: Users, chipClass: "bg-cat-people-soft", iconClass: "text-cat-people", defaultEmoji: "💛" },
-  home: { label: "Home", icon: House, chipClass: "bg-cat-home-soft", iconClass: "text-cat-home", defaultEmoji: "🏠" },
-  work_money: { label: "Work & money", icon: BriefcaseBusiness, chipClass: "bg-cat-work-money-soft", iconClass: "text-cat-work-money", defaultEmoji: "💼" },
-  break_habit: { label: "Break a habit", icon: ShieldBan, chipClass: "bg-cat-break-habit-soft", iconClass: "text-cat-break-habit", defaultEmoji: "🚫" },
+  health: { icon: HeartPulse, chipClass: "bg-cat-health-soft", iconClass: "text-cat-health", defaultEmoji: "🍎" },
+  fitness: { icon: Footprints, chipClass: "bg-cat-fitness-soft", iconClass: "text-cat-fitness", defaultEmoji: "👟" },
+  mind: { icon: Sun, chipClass: "bg-cat-mind-soft", iconClass: "text-cat-mind", defaultEmoji: "🌿" },
+  learning: { icon: BookOpen, chipClass: "bg-cat-learning-soft", iconClass: "text-cat-learning", defaultEmoji: "📚" },
+  people: { icon: Users, chipClass: "bg-cat-people-soft", iconClass: "text-cat-people", defaultEmoji: "💛" },
+  home: { icon: House, chipClass: "bg-cat-home-soft", iconClass: "text-cat-home", defaultEmoji: "🏠" },
+  work_money: { icon: BriefcaseBusiness, chipClass: "bg-cat-work-money-soft", iconClass: "text-cat-work-money", defaultEmoji: "💼" },
+  break_habit: { icon: ShieldBan, chipClass: "bg-cat-break-habit-soft", iconClass: "text-cat-break-habit", defaultEmoji: "🚫" },
 };
+
+// The category's name in the reader's language (categories.<code>).
+export const categoryLabel = (t: T, category: HabitCategory): string => t(`categories.${category}`);
 
 export const CATEGORY_ORDER: HabitCategory[] = ["health", "fitness", "mind", "learning", "people", "home", "work_money", "break_habit"];
 

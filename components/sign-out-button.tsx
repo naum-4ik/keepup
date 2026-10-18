@@ -7,11 +7,13 @@ import { forgetPushSubscription } from "@/app/(app)/profile/settings/notificatio
 import { useOfflineSignOut } from "@/components/offline/offline-queue-provider";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { SIGN_OUT_ANYWAY, STAY_SIGNED_IN, unsavedSignOut } from "@/lib/offline-copy";
+import { unsavedSignOut } from "@/lib/offline-copy";
 import { clearOfflineCaches } from "@/lib/offline-pages";
 import { browserSubscription, signOutCleanup, signOutWithQueue } from "@/lib/push-support";
+import { useT } from "@/lib/i18n/client";
 
 export function SignOutButton() {
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const queue = useOfflineSignOut();
   // Check-ins still on the phone after the last send: the confirm is open while this is set.
@@ -53,20 +55,20 @@ export function SignOutButton() {
           })
         }
       >
-        Sign out
+        {t("common.signOut")}
       </Button>
       <Dialog open={unsaved !== null} onOpenChange={(open) => !open && reply(false)}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pr-10">
-            <DialogTitle>Sign out?</DialogTitle>
-            <DialogDescription>{unsaved !== null && unsavedSignOut(unsaved)}</DialogDescription>
+          <div className="flex flex-col gap-1 pe-10">
+            <DialogTitle>{t("common.signOutTitle")}</DialogTitle>
+            <DialogDescription>{unsaved !== null && unsavedSignOut(t, unsaved)}</DialogDescription>
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" className="h-11 flex-1" onClick={() => reply(false)}>
-              {STAY_SIGNED_IN}
+              {t("offline.staySignedIn")}
             </Button>
             <Button type="button" variant="destructive" className="h-11 flex-1" onClick={() => reply(true)}>
-              {SIGN_OUT_ANYWAY}
+              {t("offline.signOutAnyway")}
             </Button>
           </div>
         </DialogContent>

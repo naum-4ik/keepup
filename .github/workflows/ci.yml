@@ -81,7 +81,7 @@ jobs:
           deno-version: v2.x
       # --no-lock: no deno.lock in the repo. --node-modules-dir=none: the root package.json would
       # otherwise make Deno look for npm: packages in node_modules, which this job doesn't install.
-      - run: deno test --no-lock --node-modules-dir=none supabase/functions
+      - run: deno test --no-lock --node-modules-dir=none --allow-env=NODE_ENV,KEEPUP_LOCALES supabase/functions
       - run: deno check --no-lock --node-modules-dir=none supabase/functions/send-push/index.ts
   # One end-to-end test on every PR, through a real database (e2e/sanity.spec.ts). Not a required
   # check: it reports ~3 min after the PR opens and never blocks the merge. `full-ci` PRs skip it,
@@ -116,6 +116,7 @@ jobs:
         run: npx playwright test e2e/sanity.spec.ts
         env:
           CI: "true"
+          KEEPUP_LOCALES: en,ru,he
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -163,6 +164,7 @@ jobs:
         run: npm run e2e
         env:
           CI: "true"
+          KEEPUP_LOCALES: en,ru,he
       - uses: actions/upload-artifact@v4
         if: failure() && github.event_name != 'push'
         with:

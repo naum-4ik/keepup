@@ -6,10 +6,11 @@ import type { AcceptInviteState } from "./actions";
 
 type Props = {
   action: (state: AcceptInviteState, formData: FormData) => Promise<AcceptInviteState>;
-  groupName: string;
+  label: string;
+  pendingLabel: string;
 };
 
-export function JoinButton({ action, groupName }: Props) {
+export function JoinButton({ action, label, pendingLabel }: Props) {
   const [state, formAction, pending] = useActionState(action, null);
   return (
     <form action={formAction} className="flex flex-col gap-2">
@@ -19,7 +20,7 @@ export function JoinButton({ action, groupName }: Props) {
         </p>
       )}
       <Button type="submit" disabled={pending} className="h-12 w-full rounded-xl text-base">
-        {pending ? "Joining…" : `Join ${groupName}`}
+        {pending ? pendingLabel : label}
       </Button>
     </form>
   );

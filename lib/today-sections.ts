@@ -1,4 +1,5 @@
 import type { HabitSummary } from "@/lib/habits";
+import { INTL_LOCALE, type Locale, type T } from "@/supabase/functions/_shared/i18n";
 
 export type Member = {
   profile_id: string;
@@ -48,18 +49,20 @@ export type TodaySection = {
 };
 type GroupAvatar = { group_id: string; avatar_emoji: string | null; avatar_color: string | null };
 
-// Today: "Mine" first, then one section per group by name; empty sections are dropped.
+// Today: "Mine" first, then one section per group by name (the language's alphabetical order);
+// empty sections are dropped.
 // `groups` (my_groups) gives each group section its avatar.
-export function sectionsForToday(habits: HabitSummary[], groups: readonly GroupAvatar[] = []): TodaySection[] {
+export function sectionsForToday(t: T, locale: Locale, habits: HabitSummary[], groups: readonly GroupAvatar[] = []): TodaySection[] {
   const mine = habits.filter((x) => !x.group_id);
   const avatars = new Map(groups.map((g) => [g.group_id, { emoji: g.avatar_emoji, color: g.avatar_color }]));
   const byGroup = new Map<string, TodaySection>();
+  const byName = new Intl.Collator(INTL_LOCALE[locale]).compare;
   for (const x of habits) {
     if (!x.group_id) continue;
-    const g = byGroup.get(x.group_id) ?? { key: x.group_id, title: x.group_name ?? "Group", habits: [], avatar: avatars.get(x.group_id) };
+    const g = byGroup.get(x.group_id) ?? { key: x.group_id, title: x.group_name ?? t("today.sections.groupFallback"), habits: [], avatar: avatars.get(x.group_id) };
     g.habits.push(x);
     byGroup.set(x.group_id, g);
   }
-  return [{ key: "mine", title: "Mine", habits: mine }, ...[...byGroup.values()].sort((a, b) => a.title.localeCompare(b.title))]
+  return [{ key: "mine", title: t("today.sections.mine"), habits: mine }, ...[...byGroup.values()].sort((a, b) => byName(a.title, b.title))]
     .filter((s) => s.habits.length > 0);
 }

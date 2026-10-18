@@ -9,7 +9,8 @@ import { NewWeekCard } from "@/components/kids/new-week-card";
 import { HoldToExit } from "@/components/kids/hold-to-exit";
 import { useReducedMotion } from "@/components/kids/use-calm";
 import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
-import { stageFor, themeStages } from "@/lib/garden";
+import { stageFor, themeStages, type Gender } from "@/lib/garden";
+import { useT } from "@/lib/i18n/client";
 import { createTapGuard, inOrder, orderForKid } from "@/lib/kid-order";
 import { createMoments, FLY_AT, LAND_AT, momentsForTap, type Moment, type Moments, type Step } from "@/lib/kid-reveal";
 import { isMuted, playKidSound, setMuted } from "@/lib/kid-sound";
@@ -19,7 +20,7 @@ import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
 type PlayHabit = { id: string; title: string; emoji: string; target: number; done: number; state: CheckInState };
-type Child = { id: string; name: string; emoji: string | null; color: string | null; theme: string };
+type Child = { id: string; name: string; emoji: string | null; color: string | null; theme: string; gender: Gender };
 // Where a big thing in the middle of the screen goes: from the middle to its place, and its size there.
 type Goal = { dx: number; dy: number; scale: number };
 // The big moment playing over the screen (lib/kid-reveal.ts): a reveal (the item this tap adds, at its
@@ -134,6 +135,7 @@ export function KidPlay({
   // Last week's stars, when it had any: the new-week card shows that picture going to the album.
   lastStars?: number;
 }) {
+  const { t } = useT();
   const [, startTransition] = useTransition();
   // Only the tapped habit waits for its save; the others stay tappable. The ref guards a quick
   // second tap on the same one before React re-renders it busy.
@@ -478,7 +480,7 @@ export function KidPlay({
         <button
           type="button"
           onClick={toggleSound}
-          aria-label="Sound"
+          aria-label={t("kidView.sound")}
           aria-pressed={!muted}
           className="flex size-11 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground shadow-soft"
         >
@@ -487,7 +489,7 @@ export function KidPlay({
         <HoldToExit href={`/kids/${child.id}`} childName={child.name} />
       </header>
 
-      {weekStart && lastStars ? <NewWeekCard childId={child.id} weekStart={weekStart} lastStars={lastStars} theme={child.theme} /> : null}
+      {weekStart && lastStars ? <NewWeekCard childId={child.id} weekStart={weekStart} lastStars={lastStars} theme={child.theme} gender={child.gender} /> : null}
 
       {/* The app draws under the iPhone status bar: cards scrolling up pass under this strip. */}
       <div aria-hidden className="fixed inset-x-0 top-0 z-20 h-[env(safe-area-inset-top)] bg-background" />
@@ -498,6 +500,7 @@ export function KidPlay({
         <div ref={backdrop} aria-hidden className="absolute -inset-x-4 top-0 -bottom-2 bg-background" />
         <div ref={picture} className="relative origin-top">
           <GardenPicture
+            t={t}
             stars={view.stars}
             size="lg"
             theme={child.theme}
@@ -513,7 +516,7 @@ export function KidPlay({
           {milestone && <Confetti key={milestone.id} />}
           {dance !== null && <Confetti key={dance} big />}
           <p className="sr-only" aria-live="polite">
-            {view.stars} {view.stars === 1 ? "star" : "stars"} this week
+            {t("kidView.starsThisWeek", { count: view.stars })}
           </p>
         </div>
       </div>
@@ -585,7 +588,7 @@ export function KidPlay({
                   setCheer((c) => (c === h.id ? null : c));
                 }}
                 className={cn(
-                  "flex min-h-24 w-full touch-manipulation items-center gap-4 rounded-3xl border-2 p-4 text-left shadow-soft transition-colors",
+                  "flex min-h-24 w-full touch-manipulation items-center gap-4 rounded-3xl border-2 p-4 text-start shadow-soft transition-colors",
                   done ? "border-done bg-done text-done-foreground" : "border-transparent bg-card active:bg-accent",
                   bumped === h.id ? "animate-wiggle" : cheer === h.id && "animate-card-bounce",
                 )}
@@ -620,7 +623,7 @@ export function KidPlay({
                     <span aria-hidden data-mark="done" className="flex size-16 shrink-0 items-center justify-center rounded-full bg-done-foreground text-done">
                       <Check className="size-10" strokeWidth={3} />
                     </span>
-                    <span className="sr-only">, done</span>
+                    <span className="sr-only">{t("kidView.done")}</span>
                   </>
                 ) : (
                   <span aria-hidden data-mark="open" className="size-16 shrink-0 rounded-full border-4 border-done bg-background" />

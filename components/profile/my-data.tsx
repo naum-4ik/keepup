@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition, type ReactNode } from "react";
 import { unstable_rethrow } from "next/navigation";
 import { deleteAccountPreview, deleteMyAccount, exportMyData } from "@/app/(app)/profile/settings/actions";
 import { forgetPushSubscription } from "@/app/(app)/profile/settings/notification-actions";
@@ -9,25 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { downloadJson } from "@/lib/download-json";
-import { GENERIC_ERROR } from "@/lib/habit-errors";
+import { useT } from "@/lib/i18n/client";
 import {
-  DELETE_BODY,
-  DELETE_TITLE,
-  DELETE_WORD,
   deletePreviewLines,
-  EXPORT_FIRST,
-  EXPORT_HINT,
   isDeleteWord,
   myDataFileName,
-  PREVIEW_RETRY,
   runDelete,
 } from "@/lib/my-data";
-import { NEEDS_CONNECTION } from "@/lib/offline-copy";
 import { clearOfflineCaches, markPagesOwnerDeleted } from "@/lib/offline-pages";
 import { browserSubscription, signOutCleanup } from "@/lib/push-support";
 
 // Saves everything Keepup keeps about this person as keepup-my-data-{date}.json.
 function ExportMyDataButton() {
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
@@ -46,7 +40,7 @@ function ExportMyDataButton() {
           })
         }
       >
-        {pending ? "Exporting…" : "Export my data"}
+        {pending ? t("common.exporting") : t("myData.export")}
       </Button>
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </div>
@@ -59,10 +53,11 @@ function ExportMyDataButton() {
 // are sent, the phone is cleared the way sign-out clears it, and the account is deleted.
 // A demo login has no Delete account at all (the demo deletes itself after 24 hours); Export stays.
 export function MyData({ isDemo = false }: { isDemo?: boolean }) {
+  const { t } = useT();
   return (
     <section aria-labelledby="my-data-title" className="flex flex-col gap-3 rounded-2xl bg-card p-6 shadow-soft">
-      <h2 id="my-data-title" className="text-base font-bold">Your data</h2>
-      <p className="text-sm text-muted-foreground">{EXPORT_HINT}</p>
+      <h2 id="my-data-title" className="text-base font-bold">{t("myData.title")}</h2>
+      <p className="text-sm text-muted-foreground">{t("myData.exportHint")}</p>
       <ExportMyDataButton />
       {!isDemo && <DeleteAccount />}
     </section>
@@ -70,9 +65,10 @@ export function MyData({ isDemo = false }: { isDemo?: boolean }) {
 }
 
 function DeleteAccount() {
+  const { t, rich, locale } = useT();
   const [open, setOpen] = useState(false);
   const [word, setWord] = useState("");
-  const [lines, setLines] = useState<string[] | null>(null);
+  const [lines, setLines] = useState<ReactNode[] | null>(null);
   // The preview loads outside the transition: Cancel and Escape work meanwhile; only the delete holds
   // the dialog open. Until it's in, Delete stays off.
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -87,12 +83,12 @@ function DeleteAccount() {
     const id = ++request.current;
     setLines(null);
     setPreviewError(null);
-    let next: { lines: string[] } | { error: string };
+    let next: { lines: ReactNode[] } | { error: string };
     try {
       const preview = await deleteAccountPreview();
-      next = preview ? { lines: deletePreviewLines(preview) } : { error: GENERIC_ERROR };
+      next = preview ? { lines: deletePreviewLines(rich, locale, preview) } : { error: t("errors.generic") };
     } catch {
-      next = { error: navigator.onLine ? GENERIC_ERROR : NEEDS_CONNECTION };
+      next = { error: navigator.onLine ? t("errors.generic") : t("offline.needsConnection") };
     }
     if (id !== request.current) return;
     if ("lines" in next) setLines(next.lines);
@@ -109,12 +105,12 @@ function DeleteAccount() {
   function remove() {
     setError(null);
     if (!navigator.onLine) {
-      setError(NEEDS_CONNECTION);
+      setError(t("offline.needsConnection"));
       return;
     }
     startTransition(async () => {
       // A successful delete redirects to the landing page: runDelete passes that on, never DELETE_FAILED.
-      const message = await runDelete({
+      const message = await runDelete(t, {
         flush: queue.flushQueue,
         // Saved pages, the queue and this phone's push subscription, as at sign-out.
         clearPhone: async () => {
@@ -143,18 +139,18 @@ function DeleteAccount() {
   return (
     <>
       <Button type="button" variant="outline" className="h-11 text-destructive hover:text-destructive" onClick={openDialog}>
-        Delete account
+        {t("myData.deleteAccount")}
       </Button>
       <Dialog open={open} onOpenChange={(next) => !pending && !next && close()}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pr-10">
-            <DialogTitle>{DELETE_TITLE}</DialogTitle>
-            <DialogDescription>{DELETE_BODY}</DialogDescription>
+          <div className="flex flex-col gap-1 pe-10">
+            <DialogTitle>{t("myData.deleteTitle")}</DialogTitle>
+            <DialogDescription>{t("myData.deleteBody")}</DialogDescription>
           </div>
           {lines && lines.length > 0 && (
             <ul className="flex flex-col gap-1 text-sm">
-              {lines.map((line) => (
-                <li key={line}>{line}</li>
+              {lines.map((line, i) => (
+                <li key={i}>{line}</li>
               ))}
             </ul>
           )}
@@ -162,21 +158,21 @@ function DeleteAccount() {
             <div className="flex items-center justify-between gap-2">
               <p role="alert" className="text-sm text-destructive">{previewError}</p>
               <Button type="button" variant="outline" className="h-11 shrink-0" onClick={() => void loadPreview()}>
-                {PREVIEW_RETRY}
+                {t("common.tryAgain")}
               </Button>
             </div>
           )}
-          <p className="text-sm text-muted-foreground">{EXPORT_FIRST}</p>
+          <p className="text-sm text-muted-foreground">{t("myData.exportFirst")}</p>
           <ExportMyDataButton />
           <form
             className="flex flex-col gap-3"
             onSubmit={(e) => {
               e.preventDefault();
-              if (ready && isDeleteWord(word) && !pending) remove();
+              if (ready && isDeleteWord(t, word) && !pending) remove();
             }}
           >
             <label htmlFor={inputId} className="text-sm font-semibold">
-              Type &ldquo;{DELETE_WORD}&rdquo; to confirm
+              {t("settings.typeToConfirm", { word: t("myData.deleteWord") })}
             </label>
             <Input
               id={inputId}
@@ -190,10 +186,10 @@ function DeleteAccount() {
             {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2">
               <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={close}>
-                Cancel
+                {t("common.cancel")}
               </Button>
-              <Button type="submit" variant="destructive" className="h-11 flex-1" disabled={pending || !ready || !isDeleteWord(word)}>
-                {pending ? "Deleting…" : "Delete"}
+              <Button type="submit" variant="destructive" className="h-11 flex-1" disabled={pending || !ready || !isDeleteWord(t, word)}>
+                {pending ? t("common.deleting") : t("common.delete")}
               </Button>
             </div>
           </form>

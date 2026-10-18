@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   parseOnboarding, parseProfile, parsePurpose, readOnboardingForm, readProfileForm, type ProfileFormValues,
 } from "./profile-schema";
+import { errorTexts, type FieldError } from "@/lib/field-error";
+import { tEn } from "@/lib/i18n/test-t";
+
+// The validators return catalog keys; these tests keep the English they have always shown.
+const english = <R extends { ok: boolean }>(r: R): R =>
+  (r as { ok: boolean; errors?: Record<string, FieldError> }).ok === false && "errors" in r
+    ? ({ ...r, errors: errorTexts(tEn, (r as unknown as { errors: Record<string, FieldError> }).errors) } as R)
+    : r;
 
 const zones = new Set(["UTC", "Europe/Rome", "Asia/Tokyo"]);
 const valid: ProfileFormValues = {
@@ -20,12 +28,12 @@ describe("parseProfile", () => {
 
   it("rejects a blank name", () => {
     const r = parseProfile({ ...valid, displayName: "   " }, zones);
-    expect(r).toEqual({ ok: false, errors: { displayName: "Enter a name." } });
+    expect(english(r)).toEqual({ ok: false, errors: { displayName: "Enter a name." } });
   });
 
   it("allows 40 characters and rejects 41", () => {
     expect(parseProfile({ ...valid, displayName: "x".repeat(40) }, zones).ok).toBe(true);
-    expect(parseProfile({ ...valid, displayName: "x".repeat(41) }, zones)).toEqual({
+    expect(english(parseProfile({ ...valid, displayName: "x".repeat(41) }, zones))).toEqual({
       ok: false,
       errors: { displayName: "Keep it to 40 characters." },
     });
@@ -37,7 +45,7 @@ describe("parseProfile", () => {
   });
 
   it("rejects an unknown time zone", () => {
-    expect(parseProfile({ ...valid, timezone: "Mars/Base" }, zones)).toEqual({
+    expect(english(parseProfile({ ...valid, timezone: "Mars/Base" }, zones))).toEqual({
       ok: false,
       errors: { timezone: "Pick a time zone from the list." },
     });
@@ -50,7 +58,7 @@ describe("parseProfile", () => {
 
   it("accepts Sunday or Monday as the first day of the week", () => {
     expect(parseProfile({ ...valid, weekStart: "0" }, zones)).toMatchObject({ ok: true, value: { weekStart: 0 } });
-    expect(parseProfile({ ...valid, weekStart: "3" }, zones)).toEqual({
+    expect(english(parseProfile({ ...valid, weekStart: "3" }, zones))).toEqual({
       ok: false,
       errors: { weekStart: "Pick Sunday or Monday." },
     });
@@ -76,7 +84,7 @@ describe("parsePurpose", () => {
   });
 
   it.each(["work", "Family", " me"])("rejects %j", (p) => {
-    expect(parsePurpose(p)).toEqual({ ok: false });
+    expect(english(parsePurpose(p))).toEqual({ ok: false });
   });
 });
 
@@ -95,7 +103,7 @@ describe("parseOnboarding", () => {
   });
 
   it("reports an unknown purpose alongside the other field errors", () => {
-    expect(parseOnboarding({ ...onboarding, displayName: "", purpose: "work" }, zones)).toEqual({
+    expect(english(parseOnboarding({ ...onboarding, displayName: "", purpose: "work" }, zones))).toEqual({
       ok: false,
       errors: { displayName: "Enter a name.", purpose: "Pick one of the options, or none." },
     });

@@ -6,6 +6,8 @@ import { habitEmoji, normalizeCategory } from "@/lib/categories";
 import type { Database } from "@/lib/database.types";
 import type { HabitCategory } from "@/lib/habit-schema";
 import type { TapRow } from "@/lib/rendered-taps";
+import { habitNameFor } from "@/lib/habit-title";
+import { getT } from "@/lib/i18n/server";
 import { getChildSummaries, getMyChildren } from "@/lib/kids";
 import { withTodayPending, type WeekOverview } from "@/lib/week-overview";
 import { logError } from "@/lib/log";
@@ -22,11 +24,13 @@ export async function getHabitSummaries(): Promise<AdultHabitSummary[]> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("habit_summaries");
   if (error) throw new Error(`habit_summaries failed: ${error.message}`);
+  // title: as the viewer reads it (a template habit in their language); template_id stays alongside.
+  const name = habitNameFor((await getT()).t);
   // Read defensively: previews (and the minutes after a merge) can run this code before the
   // database has the emoji migration, so `emoji` may be missing and `category` still `money`.
   return (data ?? []).map((row) => {
     const category = normalizeCategory(row.category);
-    return { ...row, category, emoji: habitEmoji(category, row.emoji), members: row.members ?? null };
+    return { ...row, title: name(row.title, row.template_id), category, emoji: habitEmoji(category, row.emoji), members: row.members ?? null };
   });
 }
 
@@ -39,7 +43,10 @@ export async function getWeekOverview(): Promise<WeekOverview | null> {
   // ERROR events in a day on a new production account).
   if (error) logError("week_overview failed", error.message);
   if (error || !data) return null;
-  return withTodayPending(data as unknown as WeekOverview);
+  const o = data as unknown as WeekOverview;
+  const title = o.best_current_streak_title;
+  const name = habitNameFor((await getT()).t);
+  return withTodayPending({ ...o, best_current_streak_title: title == null ? title : name(title, o.best_current_streak_template) });
 }
 
 // The recent check-ins a page is drawn with, read in the same request as its counts, for

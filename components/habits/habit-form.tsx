@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { Plus, Star, Users } from "lucide-react";
 import { createGroupHabit, createHabit } from "@/app/(app)/habits/actions";
 import { Avatar } from "@/components/avatar";
@@ -14,15 +15,17 @@ import { addButtonClass } from "@/components/ui/add-button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CATEGORIES, CATEGORY_ORDER } from "@/lib/categories";
+import { categoryLabel, CATEGORY_ORDER } from "@/lib/categories";
 import { formatLocalDate } from "@/lib/dates";
 import type { GroupKind } from "@/lib/group-schema";
 import { groupTemplatesFor } from "@/lib/group-templates";
-import { HABIT_TEMPLATES, type HabitTemplate } from "@/lib/habit-templates";
+import { HABIT_TEMPLATES, templateTitle, type HabitTemplate } from "@/lib/habit-templates";
 import { startAfterSwitch, todayForGroup } from "@/lib/habit-start";
 import {
   HABIT_TITLE_MAX, isHabitCategory, TARGET_LIMITS, type HabitCategory, type HabitFormState, type HabitFormValues, type HabitPeriod,
 } from "@/lib/habit-schema";
+import { errorTexts } from "@/lib/field-error";
+import { useT } from "@/lib/i18n/client";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
@@ -33,7 +36,8 @@ const chipClass =
   "relative flex h-11 cursor-pointer items-center rounded-full border border-border px-4 text-sm font-semibold has-checked:border-primary has-checked:bg-accent has-checked:text-accent-foreground has-focus-visible:ring-2 has-focus-visible:ring-ring";
 const initialState: HabitFormState = { status: "idle" };
 type Tab = "together" | "popular" | HabitCategory;
-type Draft = { key: number; custom: boolean; values: HabitFormValues; groupId: string; groupOnly: boolean };
+// templateId: the template it was opened from (telemetry only; the words it shows are in the user's language).
+type Draft = { key: number; custom: boolean; values: HabitFormValues; groupId: string; groupOnly: boolean; templateId?: string };
 // `today`: the group's today in its own time zone (a group habit starts on the group's calendar).
 export type FormGroup = {
   id: string;
@@ -60,6 +64,7 @@ export function HabitForm({
   // ?group=<id>: the group page's "Add a group habit" link.
   initialGroupId?: string;
 }) {
+  const { t: tr } = useT();
   // Together is offered only when adding from a group (?group=<id> of a group the user admins).
   const showTogether = Boolean(initialGroupId);
   const [tab, setTab] = useState<Tab>(initialGroupId ? "together" : "popular");
@@ -76,25 +81,26 @@ export function HabitForm({
   // Each open gets a new key, so the dialog's form starts fresh (no errors from a previous try).
   // The button that opened the dialog gets focus back when it closes (there's no DialogTrigger).
   const opener = useRef<HTMLElement | null>(null);
-  const open = (custom: boolean, values: Omit<HabitFormValues, "startsOn">, groupId = initialGroupId ?? "", groupOnly = false) => {
+  const open = (custom: boolean, values: Omit<HabitFormValues, "startsOn">, groupId = initialGroupId ?? "", groupOnly = false, templateId?: string) => {
     opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setDraft((d) => ({ key: (d?.key ?? 0) + 1, custom, values: { ...values, startsOn: todayForGroup(groups, groupId, today) }, groupId, groupOnly }));
+    setDraft((d) => ({ key: (d?.key ?? 0) + 1, custom, values: { ...values, startsOn: todayForGroup(groups, groupId, today) }, groupId, groupOnly, templateId }));
   };
   const pickTemplate = (t: HabitTemplate) =>
     open(
       false,
-      { title: t.title, emoji: t.emoji, category: t.category, targetCount: String(t.targetCount), period: t.period },
+      { title: templateTitle(tr, t.id), emoji: t.emoji, category: t.category, targetCount: String(t.targetCount), period: t.period },
       // A Together template pre-selects a group (the one from the link, else the first).
       tab === "together" ? (initialGroupId ?? groups[0].id) : undefined,
       // Together templates are for groups only: no "Just me".
       tab === "together",
+      t.id,
     );
   // Your own habit starts with no category: the tab you were browsing isn't a choice you made.
   const createOwn = () => open(true, { title: "", emoji: "", category: "", targetCount: "1", period: "day" });
 
   return (
     <div className="flex flex-col gap-4">
-      <div role="tablist" aria-label="Template categories" className="grid grid-cols-3 gap-2">
+      <div role="tablist" aria-label={tr("habits.form.tabsLabel")} className="grid grid-cols-3 gap-2">
         {([...(showTogether ? ["together"] : []), "popular", ...CATEGORY_ORDER] as Tab[]).map((key) => (
           <button
             key={key}
@@ -103,7 +109,7 @@ export function HabitForm({
             aria-selected={tab === key}
             onClick={() => setTab(key)}
             className={cn(
-              "flex min-h-11 items-center gap-1.5 rounded-xl bg-card px-2 py-1.5 text-left text-xs leading-tight font-semibold shadow-soft",
+              "flex min-h-11 items-center gap-1.5 rounded-xl bg-card px-2 py-1.5 text-start text-xs leading-tight font-semibold shadow-soft",
               tab === key ? "bg-accent text-foreground ring-2 ring-primary" : "text-muted-foreground hover:bg-muted",
             )}
           >
@@ -114,7 +120,7 @@ export function HabitForm({
             ) : (
               <CategoryIcon category={key} size="xs" />
             )}
-            {key === "popular" ? "Popular" : key === "together" ? "Together" : CATEGORIES[key].label}
+            {key === "popular" ? tr("habits.form.popular") : key === "together" ? tr("habits.form.together") : categoryLabel(tr, key)}
           </button>
         ))}
       </div>
@@ -127,12 +133,12 @@ export function HabitForm({
             key={t.id}
             type="button"
             onClick={() => pickTemplate(t)}
-            className="flex h-full items-center gap-2.5 rounded-2xl bg-card px-3 text-left shadow-soft hover:bg-muted"
+            className="flex h-full items-center gap-2.5 rounded-2xl bg-card px-3 text-start shadow-soft hover:bg-muted"
           >
             <HabitEmoji category={t.category} emoji={t.emoji} size="xs" />
             <span className="flex min-w-0 flex-col">
-              <span className="line-clamp-2 text-[0.9375rem] leading-snug font-bold">{t.title}</span>
-              <span className="text-xs text-muted-foreground">{describeSchedule(t.targetCount, t.period)}</span>
+              <span className="line-clamp-2 text-[0.9375rem] leading-snug font-bold">{templateTitle(tr, t.id)}</span>
+              <span className="text-xs text-muted-foreground">{describeSchedule(tr, t.targetCount, t.period)}</span>
             </span>
           </button>
         ))}
@@ -144,7 +150,7 @@ export function HabitForm({
         className={addButtonClass}
       >
         <Plus aria-hidden className="size-4" />
-        Create your own
+        {tr("habits.form.createOwn")}
       </button>
 
       <Dialog open={draft !== null} onOpenChange={(isOpen) => !isOpen && !pending && setDraft(null)}>
@@ -164,8 +170,8 @@ export function HabitForm({
           }}
           onEscapeKeyDown={(e) => (e.target as Element | null)?.closest?.(`[${EMOJI_PANEL_ATTR}]`) && e.preventDefault()}
         >
-          <div className="flex flex-col gap-1 pr-10">
-            <DialogTitle>{draft?.custom ? "Create your own" : "Add habit"}</DialogTitle>
+          <div className="flex flex-col gap-1 pe-10">
+            <DialogTitle>{draft?.custom ? tr("habits.form.createOwn") : tr("habits.form.addHabit")}</DialogTitle>
           </div>
           {draft && (
             <HabitFields
@@ -173,6 +179,7 @@ export function HabitForm({
               initial={draft.values}
               initialGroupId={draft.groupId}
               groupOnly={draft.groupOnly}
+              templateId={draft.templateId}
               groups={groups}
               today={today}
               weekStart={weekStart}
@@ -189,6 +196,7 @@ function HabitFields({
   initial,
   initialGroupId,
   groupOnly,
+  templateId,
   groups,
   today,
   weekStart,
@@ -197,11 +205,15 @@ function HabitFields({
   initial: HabitFormValues;
   initialGroupId: string;
   groupOnly: boolean;
+  templateId?: string;
   groups: FormGroup[];
   today: string;
   weekStart: 0 | 1;
   onPendingChange: (pending: boolean) => void;
 }) {
+  const { t: tr, locale } = useT();
+  const tf = useTranslations("habits.form");
+  const bdi = (c: ReactNode) => <bdi>{c}</bdi>;
   const [state, formAction, pending] = useActionState(submitHabit, initialState);
   const [groupId, setGroupId] = useState(initialGroupId);
   const group = groups.find((g) => g.id === groupId) ?? null;
@@ -212,7 +224,7 @@ function HabitFields({
   const [values, setValues] = useState(initial);
   const categoryRef = useRef<HTMLSelectElement>(null);
   const periodRef = useRef<HTMLSelectElement>(null);
-  const errors = state.status === "error" ? (state.errors ?? {}) : {};
+  const errors = state.status === "error" ? errorTexts(tr, state.errors) : {};
   const set = (key: keyof HabitFormValues) => (e: { target: { value: string } }) =>
     setValues((v) => ({ ...v, [key]: e.target.value }));
 
@@ -234,8 +246,9 @@ function HabitFields({
 
   return (
     <form ref={formRef} action={formAction} className="flex flex-col gap-4">
+      {templateId && <input type="hidden" name="templateId" value={templateId} />}
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="title" className="font-semibold">Title</Label>
+        <Label htmlFor="title" className="font-semibold">{tf("titleLabel")}</Label>
         <EmojiPicker
           value={values.emoji}
           category={isHabitCategory(values.category) ? values.category : null}
@@ -257,23 +270,23 @@ function HabitFields({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="category" className="font-semibold">Category</Label>
+        <Label htmlFor="category" className="font-semibold">{tf("categoryLabel")}</Label>
         <select id="category" name="category" ref={categoryRef} value={values.category} onChange={set("category")} className={selectClass}
           aria-invalid={Boolean(errors.category)} aria-describedby={errors.category ? "category-error" : undefined}>
           {/* Not `required`: the browser would block the submit and hide the other fields' messages. */}
-          <option value="" disabled>Pick a category</option>
+          <option value="" disabled>{tf("pickCategory")}</option>
           {CATEGORY_ORDER.map((c) => (
-            <option key={c} value={c}>{CATEGORIES[c].label}</option>
+            <option key={c} value={c}>{categoryLabel(tr, c)}</option>
           ))}
         </select>
         {errors.category && <p id="category-error" className="text-sm text-destructive">{errors.category}</p>}
       </div>
 
       <fieldset className="flex flex-col gap-1.5">
-        <legend className="mb-1.5 text-sm font-semibold">How often</legend>
+        <legend className="mb-1.5 text-sm font-semibold">{tf("howOften")}</legend>
         <div className="grid grid-cols-2 gap-2">
           {/* sr-only is absolutely positioned, so the label takes no grid cell. */}
-          <Label htmlFor="targetCount" className="sr-only">Times</Label>
+          <Label htmlFor="targetCount" className="sr-only">{tf("times")}</Label>
           <CountStepper
             id="targetCount"
             value={values.targetCount}
@@ -282,10 +295,10 @@ function HabitFields({
             invalid={Boolean(errors.targetCount)}
             describedBy={errors.targetCount ? "targetCount-error" : undefined}
           />
-          <Label htmlFor="period" className="sr-only">Per</Label>
+          <Label htmlFor="period" className="sr-only">{tf("per")}</Label>
           <select id="period" name="period" ref={periodRef} value={values.period} onChange={set("period")} className={selectClass}>
             {(["day", "week", "month"] as HabitPeriod[]).map((p) => (
-              <option key={p} value={p}>{`${count === 1 ? "time" : "times"} a ${p}`}</option>
+              <option key={p} value={p}>{tf("frequencyOption", { n: count, period: p })}</option>
             ))}
           </select>
         </div>
@@ -295,9 +308,9 @@ function HabitFields({
 
       {groups.length > 0 && (
         <fieldset className="flex flex-col gap-1.5">
-          <legend className="mb-1.5 text-sm font-semibold">Who&apos;s it for</legend>
+          <legend className="mb-1.5 text-sm font-semibold">{tf("whoFor")}</legend>
           <div className="flex flex-wrap gap-2">
-            {(groupOnly ? groups : [{ id: "", name: "Just me" }, ...groups]).map((g) => (
+            {(groupOnly ? groups : [{ id: "", name: tf("justMe") }, ...groups]).map((g) => (
               <label key={g.id || "me"} className={chipClass}>
                 <input
                   type="radio"
@@ -316,16 +329,14 @@ function HabitFields({
           </div>
           {group && (
             <div className="flex flex-col gap-3 pt-2">
-              <p className="text-sm text-muted-foreground">
-                Everyone in {group.name} does this together. It&apos;s done when everyone&apos;s checked in.
-              </p>
-              <Toggle name="requiresApproval" label="Needs approval" hint={`Someone else in ${group.name} confirms each check-in.`} />
+              <p className="text-sm text-muted-foreground">{tf.rich("groupNote", { group: group.name, bdi })}</p>
+              <Toggle name="requiresApproval" label={tf("needsApproval")} hint={tf.rich("needsApprovalHint", { group: group.name, bdi })} />
               {group.children.map((c) => (
                 <Toggle
                   key={c.id}
                   name="children"
                   value={c.id}
-                  label={`Include ${c.name}`}
+                  label={tf.rich("include", { name: c.name, bdi })}
                   icon={<Avatar name={c.name} emoji={c.avatar_emoji} color={c.avatar_color} size="sm" />}
                 />
               ))}
@@ -335,7 +346,7 @@ function HabitFields({
       )}
 
       <fieldset className="flex flex-col gap-1.5">
-        <legend className="mb-1.5 text-sm font-semibold">Starts</legend>
+        <legend className="mb-1.5 text-sm font-semibold">{tf("starts")}</legend>
         {/* Today is sent as empty, so the server uses its own today (this page's may be stale after midnight). */}
         <input type="hidden" name="startsOn" value={values.startsOn === fieldToday ? "" : values.startsOn} />
         <StartDatePicker
@@ -346,7 +357,7 @@ function HabitFields({
           errorId={errors.startsOn ? "startsOn-error" : undefined}
         />
         <p className="text-xs text-muted-foreground">
-          {formatLocalDate(values.startsOn)}. Nothing before this day counts.
+          {tf("startsNote", { date: formatLocalDate(values.startsOn, locale) })}
         </p>
         {errors.startsOn && <p id="startsOn-error" className="text-sm text-destructive">{errors.startsOn}</p>}
       </fieldset>
@@ -358,14 +369,14 @@ function HabitFields({
         <p role="alert" className="text-sm text-destructive">{state.message}</p>
       )}
       <Button type="submit" disabled={pending} className="h-11 text-base">
-        {pending ? "Adding…" : validCount ? `Add habit · ${describeSchedule(count, period)}` : "Add habit"}
+        {pending ? tf("adding") : validCount ? tf("addHabitSchedule", { schedule: describeSchedule(tr, count, period) }) : tf("addHabit")}
       </Button>
     </form>
   );
 }
 
 // An on/off row (a checkbox shown as a switch); off by default, sent as "on" or the value when ticked.
-function Toggle({ name, value, label, hint, icon }: { name: string; value?: string; label: string; hint?: string; icon?: React.ReactNode }) {
+function Toggle({ name, value, label, hint, icon }: { name: string; value?: string; label: ReactNode; hint?: ReactNode; icon?: ReactNode }) {
   return (
     <label className="flex min-h-11 cursor-pointer items-center gap-3">
       {icon}
@@ -379,7 +390,7 @@ function Toggle({ name, value, label, hint, icon }: { name: string; value?: stri
         name={name}
         value={value}
         onChange={(e) => (e.currentTarget.dataset.on = e.currentTarget.checked ? "1" : "0")}
-        className="relative h-7 w-12 shrink-0 cursor-pointer appearance-none rounded-full bg-muted transition-colors before:absolute before:top-0.5 before:left-0.5 before:size-6 before:rounded-full before:bg-white before:shadow-sm before:transition-transform checked:bg-primary checked:before:translate-x-5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        className="relative h-7 w-12 shrink-0 cursor-pointer appearance-none rounded-full bg-muted transition-colors before:absolute before:top-0.5 before:start-0.5 before:size-6 before:rounded-full before:bg-white before:shadow-sm before:transition-transform checked:bg-primary checked:before:translate-x-5 rtl:checked:before:-translate-x-5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       />
     </label>
   );

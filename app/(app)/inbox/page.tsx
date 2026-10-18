@@ -4,14 +4,15 @@ import { FeedList } from "@/components/inbox/feed-list";
 import { InboxTabs } from "@/components/inbox/inbox-tabs";
 import { MarkReadOnView } from "@/components/inbox/mark-read-on-view";
 import { getProfile } from "@/lib/auth";
+import { getT } from "@/lib/i18n/server";
 import { dayLabel, reviewBy, todayIn } from "@/lib/dates";
 import { getFeed, getPendingApprovals } from "@/lib/inbox";
 import { recapKey, recapLine, visibleRecaps } from "@/lib/today-cards";
 import { getDismissedCards, getFamilyRecaps } from "@/lib/today-cards-data";
 
 export default async function InboxPage() {
-  const [{ profile }, approvals, feed, recaps, dismissed] = await Promise.all([
-    getProfile(), getPendingApprovals(), getFeed(), getFamilyRecaps(), getDismissedCards(),
+  const [{ profile }, approvals, feed, recaps, dismissed, { t, locale }] = await Promise.all([
+    getProfile(), getPendingApprovals(), getFeed(), getFamilyRecaps(), getDismissedCards(), getT(),
   ]);
   // The weekly family recap (first day of the group's week), dismissible. Dismissals couldn't be read:
   // none shown, rather than bring back closed ones.
@@ -26,13 +27,13 @@ export default async function InboxPage() {
     author_avatar_color: a.author_avatar_color,
     habit_title: a.habit_title,
     group_name: a.group_name,
-    day: dayLabel(a.local_date, today).replace(/^(Today|Yesterday)$/, (d) => d.toLowerCase()),
-    reviewBy: reviewBy(a.review_deadline, tz, now),
+    day: dayLabel(t, locale, a.local_date, today, true),
+    reviewBy: reviewBy(t, locale, a.review_deadline, tz, now),
   }));
 
   return (
     <section className="flex flex-col gap-4 py-6">
-      <h1 className="text-xl font-bold">Inbox</h1>
+      <h1 className="text-xl font-bold">{t("inbox.title")}</h1>
       {/* New rows refresh this page through the app layout's notifications listener. */}
       <InboxTabs
         approvalsCount={rows.length}
@@ -40,9 +41,9 @@ export default async function InboxPage() {
         activity={
           <>
             {shownRecaps.map((r) => (
-              <FamilyRecapCard key={recapKey(r)} cardKey={recapKey(r)} group={r.group_name} line={recapLine(r)} />
+              <FamilyRecapCard key={recapKey(r)} cardKey={recapKey(r)} group={r.group_name} line={recapLine(t, r)} />
             ))}
-            <FeedList items={feed} timeZone={tz} now={now} />
+            <FeedList items={feed} timeZone={tz} now={now} t={t} locale={locale} />
             <MarkReadOnView ids={feed.filter((n) => !n.read_at).map((n) => n.id)} />
           </>
         }

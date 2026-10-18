@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { Star } from "lucide-react";
+import { useT } from "@/lib/i18n/client";
 import { Confetti } from "@/components/celebrations/confetti";
 import { SproutIcon } from "@/components/sprout-icon";
-import { BADGE_ICONS } from "@/lib/badges";
+import { BADGE_ICONS } from "@/lib/badge-icons";
 import { takeBurstTurn } from "@/lib/burst-turns";
 import { isCelebrationMode, type Celebration, type CelebrationMode, type SeenItem } from "@/lib/celebrations";
 
-// A level-up shows the app's sprout (docs/design.md: never lucide's); a badge its own icon (lib/badges.ts).
+// A level-up shows the app's sprout (docs/design.md: never lucide's); a badge its own icon (lib/badge-icons.ts).
 function CelebrationIcon({ item, className }: { item: Celebration; className: string }) {
   if (item.kind === "level") return <SproutIcon className={className} />;
   const Icon = BADGE_ICONS[item.icon] ?? Star;
@@ -50,6 +51,7 @@ const SHOWN_MS: Record<CelebrationMode, number> = { full: 2400, subtle: 4000 };
 // never in the kid view.
 export function CelebrationMoment() {
   const pathname = usePathname();
+  const { t } = useT();
   const [state, setState] = useState<{ mode: CelebrationMode; queue: Celebration[]; ready: boolean }>({ mode: "full", queue: [], ready: false });
   const [index, setIndex] = useState(0);
   const turn = useRef<{ release: () => void } | null>(null);
@@ -67,10 +69,10 @@ export function CelebrationMoment() {
         turn.current = null;
         setIndex(0);
         if (r.mode === "subtle") return setState({ ...r, ready: true }); // a toast is no burst
-        const t = takeBurstTurn(SHOWN_MS.full * r.queue.length);
-        turn.current = t;
-        setState({ ...r, ready: t.wait === 0 });
-        if (t.wait > 0) wait = window.setTimeout(() => setState((s) => ({ ...s, ready: true })), t.wait);
+        const burst = takeBurstTurn(SHOWN_MS.full * r.queue.length);
+        turn.current = burst;
+        setState({ ...r, ready: burst.wait === 0 });
+        if (burst.wait > 0) wait = window.setTimeout(() => setState((s) => ({ ...s, ready: true })), burst.wait);
       })
       .catch(() => {});
     return () => {
@@ -121,7 +123,7 @@ export function CelebrationMoment() {
 
   if (state.mode === "subtle") {
     return (
-      <div role="status" aria-label="Celebration" className="pointer-events-none fixed inset-x-0 bottom-24 z-50 mx-auto flex max-w-md justify-center px-4">
+      <div role="status" aria-label={t("celebrations.label")} className="pointer-events-none fixed inset-x-0 bottom-24 z-50 mx-auto flex max-w-md justify-center px-4">
         <div className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-soft">
           <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-primary">
             <CelebrationIcon item={current} className="size-5" />
@@ -138,7 +140,7 @@ export function CelebrationMoment() {
     // Not a `dialog` (e2e reads unscoped dialogs) and no focus trap: tap anywhere or Escape moves on.
     <div
       role="alertdialog"
-      aria-label="Celebration"
+      aria-label={t("celebrations.label")}
       aria-describedby={lineId}
       onClick={next}
       className="fixed inset-0 z-50 flex cursor-pointer items-center justify-center bg-background/90 p-6"
@@ -152,7 +154,7 @@ export function CelebrationMoment() {
         <p id={lineId} className="text-base text-muted-foreground">
           {current.line}
         </p>
-        <p className="text-xs text-muted-foreground">Tap or press Esc</p>
+        <p className="text-xs text-muted-foreground">{t("celebrations.dismissHint")}</p>
       </div>
     </div>
   );

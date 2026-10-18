@@ -5,6 +5,7 @@ import { changeHabitEnd, finishHabit, keepGoing, type ActionResult } from "@/app
 import { endOptions } from "@/lib/habit-end";
 import type { HabitPeriod } from "@/lib/habit-schema";
 import { formatLocalDate } from "@/lib/dates";
+import { useT } from "@/lib/i18n/client";
 
 // The habit page's end (ideas/habit-end-date.md): extend it or remove it; never earlier. Once the
 // habit's own today is past the end, only the finish card's two choices are left.
@@ -21,6 +22,7 @@ export function EndControl({
   endsOn: string | null;
   today: string;
 }) {
+  const { t, locale } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const run = (call: () => Promise<ActionResult>) =>
@@ -28,15 +30,15 @@ export function EndControl({
       const r = await call();
       setError(r.ok ? null : r.message);
     });
-  const options = endOptions(startsOn, endsOn, today, period);
+  const options = endOptions(t, startsOn, endsOn, today, period);
   const chip =
     "flex h-11 items-center rounded-full border border-border bg-card px-3.5 text-sm font-semibold hover:bg-muted disabled:opacity-50";
 
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm">
-        {endsOn ? `Last day: ${formatLocalDate(endsOn)}.` : "No end: it keeps going until you stop it."}
-        {!options && " It reached its end. Keep going removes the end; Finish moves it to Finished."}
+        {endsOn ? t("habits.end.lastDay", { date: formatLocalDate(endsOn, locale) }) : t("habits.end.noEnd")}
+        {!options && ` ${t("habits.end.reached")}`}
       </p>
       <div className="flex flex-wrap gap-2">
         {options ? (
@@ -48,17 +50,17 @@ export function EndControl({
             ))}
             {endsOn && (
               <button type="button" disabled={pending} onClick={() => run(() => changeHabitEnd(habitId, null))} className={chip}>
-                Remove end
+                {t("habits.end.removeEnd")}
               </button>
             )}
           </>
         ) : (
           <>
             <button type="button" disabled={pending} onClick={() => run(() => finishHabit(habitId))} className={chip}>
-              Finish
+              {t("today.finish.finish")}
             </button>
             <button type="button" disabled={pending} onClick={() => run(() => keepGoing(habitId))} className={chip}>
-              Keep going
+              {t("today.finish.keepGoing")}
             </button>
           </>
         )}

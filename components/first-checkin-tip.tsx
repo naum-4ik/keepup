@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 // One-time hint under the first check-in button on Today. Dismissed by tapping it or by any
 // check-in, and remembered in localStorage. Without storage (private mode, blocked site data) it
@@ -36,6 +37,7 @@ export function dismissFirstCheckinTip() {
 }
 
 export function FirstCheckinTip() {
+  const t = useTranslations("common.firstCheckinTip");
   // The server snapshot says "dismissed", so the tip only appears after hydration reads storage.
   const dismissed = useSyncExternalStore(subscribe, isDismissed, () => true);
   if (dismissed) return null;
@@ -45,12 +47,12 @@ export function FirstCheckinTip() {
       <button
         type="button"
         onClick={dismissFirstCheckinTip}
-        className="relative flex min-h-11 items-center gap-2 rounded-xl bg-primary py-2 pr-3 pl-4 text-sm font-semibold text-primary-foreground shadow-soft hover:brightness-95"
+        className="relative flex min-h-11 items-center gap-2 rounded-xl bg-primary py-2 pe-3 ps-4 text-sm font-semibold text-primary-foreground shadow-soft hover:brightness-95"
       >
         {/* Points up at the check-in button (card padding + half the 44px button, minus half the arrow). */}
-        <span aria-hidden className="absolute -top-1.5 right-[1.875rem] size-3 rotate-45 rounded-[2px] bg-primary" />
-        <span className="sr-only">Dismiss tip: </span>
-        <span>Tap when you&apos;ve done it</span>
+        <span aria-hidden className="absolute -top-1.5 end-[1.875rem] size-3 rotate-45 rounded-[2px] bg-primary" />
+        <span className="sr-only">{t("dismiss")}</span>
+        <span>{t("text")}</span>
         <X aria-hidden className="size-4 opacity-80" />
       </button>
     </div>

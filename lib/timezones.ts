@@ -1,3 +1,5 @@
+import { INTL_LOCALE, type Locale } from "@/supabase/functions/_shared/i18n";
+
 export function listTimezones(): string[] {
   const zones = Intl.supportedValuesOf("timeZone");
   return zones.includes("UTC") ? zones : ["UTC", ...zones];
@@ -36,14 +38,15 @@ export type ZoneInfo = {
   time: string; // "HH:mm" at the given instant
 };
 
-export function describeZone(tz: string, now: Date): ZoneInfo {
+// The offset is read back by parseOffset, so it stays in en-US; only the clock time follows the language.
+export function describeZone(tz: string, now: Date, locale: Locale): ZoneInfo {
   // ICU versions differ on zero: some say "GMT", some "GMT+0". Show "GMT" either way.
   const raw =
     new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "shortOffset" })
       .formatToParts(now)
       .find((p) => p.type === "timeZoneName")?.value ?? "GMT";
   const offset = raw === "GMT+0" || raw === "GMT-0" ? "GMT" : raw;
-  const time = new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(now);
+  const time = new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(now);
   return {
     id: tz,
     city: cityOf(tz),
@@ -80,10 +83,10 @@ const WELL_KNOWN = [
 
 // One row per local time right now (about 38), sorted by offset. `preferred` (the saved zone, then the
 // device's) wins its row; otherwise the most familiar city with that time; otherwise the first by name.
-export function timeChoices(zones: readonly string[], now: Date, preferred: readonly string[]): ZoneInfo[] {
+export function timeChoices(zones: readonly string[], now: Date, preferred: readonly string[], locale: Locale): ZoneInfo[] {
   const byOffset = new Map<number, ZoneInfo[]>();
   for (const tz of zones) {
-    const z = describeZone(tz, now);
+    const z = describeZone(tz, now, locale);
     byOffset.set(z.offsetMinutes, [...(byOffset.get(z.offsetMinutes) ?? []), z]);
   }
   const rank = (id: string) => {

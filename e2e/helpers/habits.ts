@@ -35,6 +35,22 @@ update public.habits h set starts_on = private.habit_today(h, now()) - 3, ends_o
   );
 }
 
+// Starts the owner's week so that yesterday (in the habit's own calendar) is in the current week:
+// Monday when today is Sunday, else Sunday. Without it, a habit that ended yesterday leaves an empty
+// week on the week's first day (the test browser's en-US starts weeks on Sunday), and the Today card
+// has nothing to show. Local stack only.
+export function weekIncludesYesterday(habitId: string): void {
+  if (!/^[0-9a-f-]{36}$/.test(habitId)) throw new Error(`Not a habit id: ${habitId}`);
+  execSync(
+    `docker exec -i supabase_db_keepup psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q`,
+    {
+      input: `update public.profiles p set week_start = case when extract(dow from private.habit_today(h, now())) = 0 then 1 else 0 end
+  from public.habits h where h.id = '${habitId}' and p.id = h.owner_id;`,
+      stdio: ["pipe", "ignore", "inherit"],
+    },
+  );
+}
+
 // Moves a habit's start back (Progress → Calendar needs past months). Same trick as above.
 export function startHabitDaysAgo(habitId: string, days: number): void {
   if (!/^[0-9a-f-]{36}$/.test(habitId) || !Number.isInteger(days)) throw new Error(`Bad input: ${habitId} ${days}`);

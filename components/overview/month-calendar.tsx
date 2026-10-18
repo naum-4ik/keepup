@@ -1,25 +1,27 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { DayCircle, DayPanel } from "@/components/overview/week-days";
 import type { CalendarDay } from "@/lib/calendar";
+import { useT } from "@/lib/i18n/client";
 import type { WeekDay } from "@/lib/week-overview";
+import { fromWeekStart, weekdayLabels } from "@/lib/weekdays";
+import { INTL_LOCALE, type Locale, type T } from "@/supabase/functions/_shared/i18n";
 
-const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
-
-function dayLabel(date: string, today: string, d: CalendarDay | undefined): string {
+function dayLabel(t: T, locale: Locale, date: string, today: string, d: CalendarDay | undefined): string {
   const [y, m, n] = date.split("-").map(Number);
-  const name = new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", day: "numeric", month: "long" }).format(new Date(Date.UTC(y, m - 1, n)));
-  if (date > today) return `${name}: still to come`;
-  if (!d || d.possible === 0) return `${name}: nothing due`;
-  return `${name}: ${d.done} of ${d.possible} done`;
+  const name = new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: "UTC", day: "numeric", month: "long" }).format(new Date(Date.UTC(y, m - 1, n)));
+  if (date > today) return t("overview.day.future", { name });
+  if (!d || d.possible === 0) return t("overview.day.nothingDue", { name });
+  return t("overview.day.counts", { name, done: String(d.done), possible: String(d.possible) });
 }
 
 // Progress → Calendar: a month of day circles; tap a day up to today to see what you did.
 export function MonthCalendar({ weeks, weekStart, today, days }: { weeks: (string | null)[][]; weekStart: 0 | 1; today: string; days: Record<string, CalendarDay> }) {
+  const { t, locale } = useT();
   const [selected, setSelected] = useState<string | null>(null);
   const panelId = useId();
-  const header = [...WEEKDAYS.slice(weekStart), ...WEEKDAYS.slice(0, weekStart)];
+  const header = useMemo(() => fromWeekStart(weekdayLabels(locale, "narrow"), weekStart), [locale, weekStart]);
   const asDay = (date: string): WeekDay => ({ local_date: date, daily_done: days[date]?.done ?? 0, daily_possible: days[date]?.possible ?? 0 });
   const sel = selected ? days[selected] : undefined;
 
@@ -41,7 +43,7 @@ export function MonthCalendar({ weeks, weekStart, today, days }: { weeks: (strin
                   (date <= today ? (
                     <button
                       type="button"
-                      aria-label={dayLabel(date, today, days[date])}
+                      aria-label={dayLabel(t, locale, date, today, days[date])}
                       aria-expanded={selected === date}
                       aria-controls={panelId}
                       onClick={() => setSelected((s) => (s === date ? null : date))}
@@ -50,7 +52,7 @@ export function MonthCalendar({ weeks, weekStart, today, days }: { weeks: (strin
                       <DayCircle day={asDay(date)} today={today} selected={selected === date} label={String(Number(date.slice(8)))} />
                     </button>
                   ) : (
-                    <span role="img" aria-label={dayLabel(date, today, undefined)} className="flex min-h-11 flex-col items-center gap-1">
+                    <span role="img" aria-label={dayLabel(t, locale, date, today, undefined)} className="flex min-h-11 flex-col items-center gap-1">
                       <DayCircle day={asDay(date)} today={today} selected={false} label={String(Number(date.slice(8)))} />
                     </span>
                   ))}
@@ -59,7 +61,7 @@ export function MonthCalendar({ weeks, weekStart, today, days }: { weeks: (strin
           </div>
         ))}
       </div>
-      {!selected && <p className="text-center text-xs text-muted-foreground">Tap a day to see what you did.</p>}
+      {!selected && <p className="text-center text-xs text-muted-foreground">{t("overview.tapDay")}</p>}
       <DayPanel id={panelId} date={selected} today={today} day={selected ? asDay(selected) : undefined} rows={selected ? (sel?.rows ?? []) : null} />
     </div>
   );

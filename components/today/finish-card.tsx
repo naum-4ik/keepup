@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { finishHabit, keepGoing } from "@/app/(app)/habits/actions";
 import { Confetti } from "@/components/celebrations/confetti";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { Button } from "@/components/ui/button";
 import { takeBurstTurn } from "@/lib/burst-turns";
 import type { HabitCategory } from "@/lib/habit-schema";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 
 const seenKey = (habitId: string, endsOn: string) => `keepup:finish-celebrated:${habitId}:${endsOn}`;
 
@@ -52,6 +54,7 @@ export function FinishCard({
   quiet?: boolean;
   canDecide: boolean;
 }) {
+  const t = useTranslations("today.finish");
   const [confetti, setConfetti] = useState(false);
   useEffect(() => {
     const key = seenKey(habitId, endsOn);
@@ -79,7 +82,7 @@ export function FinishCard({
 
   return (
     <section
-      aria-label={`${title} is finished`}
+      aria-label={t("label", { title: isolate(title) })}
       className="relative flex flex-col gap-3 overflow-hidden rounded-2xl bg-done-soft p-4 shadow-soft"
     >
       {confetti && <Confetti />}
@@ -87,21 +90,21 @@ export function FinishCard({
       <div className="relative z-10 flex items-center gap-3">
         <HabitEmoji category={category} emoji={emoji} />
         <div className="flex min-w-0 flex-col">
-          <p className="truncate font-bold">{title} reached its end{celebrate && " 🎉"}</p>
+          <p className="truncate font-bold">{t.rich("reachedEnd", { title, celebrate: celebrate ? "yes" : "no", bdi: (c) => <bdi>{c}</bdi> })}</p>
           <p className="text-sm text-done dark:text-foreground">{line}</p>
         </div>
       </div>
       {canDecide ? (
         <div className="relative z-10 flex gap-2">
           <Button type="button" variant="outline" className="h-11 flex-1 bg-card" disabled={pending} onClick={() => run(finishHabit)}>
-            Finish
+            {t("finish")}
           </Button>
           <Button type="button" className="h-11 flex-1" disabled={pending} onClick={() => run(keepGoing)}>
-            Keep going
+            {t("keepGoing")}
           </Button>
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">An admin of the group chooses what&apos;s next.</p>
+        <p className="text-sm text-muted-foreground">{t("adminChooses")}</p>
       )}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     </section>

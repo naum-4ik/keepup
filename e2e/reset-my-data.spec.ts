@@ -7,8 +7,8 @@ test("Settings → Reset my data: private habits, XP, badges and Inbox go; the g
   test.setTimeout(90_000);
   await signUpAndOnboard(page);
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
   await createGroup(page, "Reset family");
   const groupId = page.url().match(/\/groups\/([0-9a-f-]{36})/)![1];
   // A child with her starter habits and a star (her data stays: she has Reset child).
@@ -19,13 +19,13 @@ test("Settings → Reset my data: private habits, XP, badges and Inbox go; the g
   await page.getByRole("button", { name: "Add Mia" }).click();
   await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/);
   await page.goto("/today");
-  await page.getByRole("region", { name: /Mia/ }).getByRole("button", { name: "Check in for Mia: Tidy my toys" }).click();
+  await page.getByRole("region", { name: /Mia/ }).getByRole("button", { name: "Check in for \u2068Mia\u2069: \u2068Tidy my toys\u2069" }).click();
   await expect(page.getByRole("region", { name: /Mia/ })).toContainText("⭐ 1");
   await createGroupHabitVia(page, "Reset family", "Family stretch");
   const groupHabit = page.getByRole("link", { name: /Family stretch/ });
   const groupHabitId = (await groupHabit.getAttribute("href"))!.split("/").pop()!;
-  await page.getByRole("button", { name: "Check in: Family stretch" }).click();
-  await expect(page.getByRole("button", { name: "Done: Family stretch" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: \u2068Family stretch\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Done: \u2068Family stretch\u2069" })).toBeVisible();
   // Before: XP and badges to clear (Planted, First step), and their Inbox rows.
   await page.goto("/profile/achievements");
   await expect(page.getByRole("region", { name: "Achievements" })).not.toContainText("0 of 24 earned");
@@ -56,7 +56,7 @@ test("Settings → Reset my data: private habits, XP, badges and Inbox go; the g
   await page.reload();
   await expect(page.getByText("Your data is reset.")).toHaveCount(0);
   await expect(page.getByRole("link", { name: /^Walk/ })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Done: Family stretch" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Done: \u2068Family stretch\u2069" })).toBeVisible();
   expect(countCheckIns(groupHabitId)).toBe(1);
   await expect(page.getByRole("region", { name: /Mia/ })).toContainText("⭐ 1");
 

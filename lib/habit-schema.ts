@@ -1,4 +1,5 @@
 import { CATEGORIES } from "@/lib/categories";
+import type { FieldError } from "@/lib/field-error";
 import type { Database } from "@/lib/database.types";
 
 export type HabitPeriod = Database["public"]["Enums"]["habit_period"];
@@ -16,7 +17,7 @@ export type HabitFormValues = { title: string; emoji: string; category: string; 
 // startsOn omitted = today, decided by the database in the owner's time zone. The client never
 // sends its own "today": it goes stale after local midnight and the insert would be refused.
 export type HabitInput = { title: string; emoji: string; category: HabitCategory; targetCount: number; period: HabitPeriod; startsOn?: string };
-export type HabitErrors = Partial<Record<keyof HabitInput, string>>;
+export type HabitErrors = Partial<Record<keyof HabitInput, FieldError>>;
 export type HabitFormState =
   | { status: "idle" }
   | { status: "error"; errors?: HabitErrors; message?: string; values?: HabitFormValues };
@@ -40,10 +41,10 @@ function isPeriod(value: string): value is HabitPeriod {
   return (HABIT_PERIODS as readonly string[]).includes(value);
 }
 
-function titleError(title: string): string | undefined {
+function titleError(title: string): FieldError | undefined {
   const length = [...title].length; // code points, like Postgres char_length
-  if (length === 0) return "Enter a title.";
-  if (length > HABIT_TITLE_MAX) return `Keep it to ${HABIT_TITLE_MAX} characters.`;
+  if (length === 0) return { key: "validation.title" };
+  if (length > HABIT_TITLE_MAX) return { key: "validation.maxChars", values: { max: HABIT_TITLE_MAX } };
   return undefined;
 }
 
@@ -72,8 +73,8 @@ export function parseHabitDetails(values: { title: string; emoji: string; catego
   const errors: DetailErrors = {};
   const tError = titleError(title);
   if (tError) errors.title = tError;
-  if (emoji !== "" && !isOneEmoji(emoji)) errors.emoji = "Pick one emoji.";
-  if (!isHabitCategory(values.category)) errors.category = "Pick a category.";
+  if (emoji !== "" && !isOneEmoji(emoji)) errors.emoji = { key: "validation.emoji" };
+  if (!isHabitCategory(values.category)) errors.category = { key: "errors.category_required" };
   if (Object.keys(errors).length > 0 || !isHabitCategory(values.category)) return { ok: false, errors };
   return { ok: true, value: { title, emoji: emoji || CATEGORIES[values.category].defaultEmoji, category: values.category } };
 }
@@ -96,19 +97,19 @@ export function parseHabit(values: HabitFormValues):
   const errors: HabitErrors = details.ok ? {} : { ...details.errors };
 
   if (!isPeriod(values.period)) {
-    errors.period = "Pick how often.";
+    errors.period = { key: "validation.frequency" };
   } else {
     const limit = TARGET_LIMITS[values.period];
     const count = Number(values.targetCount);
     // Digits only: Number() would also take "1e1" or "0x5".
     if (!/^\s*\d+\s*$/.test(values.targetCount) || count < 1 || count > limit) {
-      errors.targetCount = `Pick 1–${limit} times a ${values.period}.`;
+      errors.targetCount = { key: `validation.targetCount.${values.period}`, values: { limit } };
     }
   }
 
   // Empty means today. Format only; "not in the past / within a year" is enforced by the database
   // in the owner's time zone.
-  if (values.startsOn !== "" && !LOCAL_DATE.test(values.startsOn)) errors.startsOn = "Pick a start date.";
+  if (values.startsOn !== "" && !LOCAL_DATE.test(values.startsOn)) errors.startsOn = { key: "validation.startDate" };
 
   if (!details.ok || Object.keys(errors).length > 0 || !isPeriod(values.period)) return { ok: false, errors };
   return {

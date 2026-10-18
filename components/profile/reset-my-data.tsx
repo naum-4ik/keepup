@@ -7,9 +7,8 @@ import { useForgetOfflineHabits } from "@/components/offline/offline-queue-provi
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { GENERIC_ERROR } from "@/lib/habit-errors";
-import { NEEDS_CONNECTION } from "@/lib/offline-copy";
-import { isResetWord, RESET_CLEARS, RESET_KEEPS, RESET_WORD, runReset } from "@/lib/reset-my-data";
+import { useT } from "@/lib/i18n/client";
+import { isResetWord, runReset } from "@/lib/reset-my-data";
 
 // Settings → Reset my data (owner 2026-10-06): a fresh start that keeps the account and the family.
 // The database decides what goes (public.reset_my_data); typing "reset" guards the button. Once it
@@ -18,6 +17,7 @@ import { isResetWord, RESET_CLEARS, RESET_KEEPS, RESET_WORD, runReset } from "@/
 export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) {
   const [open, setOpen] = useState(false);
   const [word, setWord] = useState("");
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const forgetOffline = useForgetOfflineHabits();
@@ -27,7 +27,7 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
   function reset() {
     setError(null);
     if (!navigator.onLine) {
-      setError(NEEDS_CONNECTION);
+      setError(t("offline.needsConnection"));
       return;
     }
     startTransition(async () => {
@@ -39,16 +39,16 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
         });
         if (message) setError(message);
       } catch {
-        setError(navigator.onLine ? GENERIC_ERROR : NEEDS_CONNECTION);
+        setError(navigator.onLine ? t("errors.generic") : t("offline.needsConnection"));
       }
     });
   }
 
   return (
     <section aria-labelledby="reset-my-data-title" className="flex flex-col gap-3 rounded-2xl bg-card p-6 shadow-soft">
-      <h2 id="reset-my-data-title" className="text-base font-bold">Reset my data</h2>
-      <p className="text-sm text-muted-foreground">{RESET_CLEARS}</p>
-      <p className="text-sm text-muted-foreground">{RESET_KEEPS}</p>
+      <h2 id="reset-my-data-title" className="text-base font-bold">{t("settings.reset.title")}</h2>
+      <p className="text-sm text-muted-foreground">{t("settings.reset.clears")}</p>
+      <p className="text-sm text-muted-foreground">{t("settings.reset.keeps")}</p>
       <Button
         type="button"
         variant="outline"
@@ -59,25 +59,25 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
           setOpen(true);
         }}
       >
-        Reset my data
+        {t("settings.reset.title")}
       </Button>
       <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pr-10">
-            <DialogTitle>Reset your data?</DialogTitle>
+          <div className="flex flex-col gap-1 pe-10">
+            <DialogTitle>{t("settings.reset.dialogTitle")}</DialogTitle>
             <DialogDescription>
-              {RESET_CLEARS} {RESET_KEEPS} This can&apos;t be undone.
+              {t("settings.reset.dialogBody", { clears: t("settings.reset.clears"), keeps: t("settings.reset.keeps") })}
             </DialogDescription>
           </div>
           <form
             className="flex flex-col gap-3"
             onSubmit={(e) => {
               e.preventDefault();
-              if (isResetWord(word) && !pending) reset();
+              if (isResetWord(t, word) && !pending) reset();
             }}
           >
             <label htmlFor={inputId} className="text-sm font-semibold">
-              Type &ldquo;{RESET_WORD}&rdquo; to confirm
+              {t("settings.typeToConfirm", { word: t("settings.reset.word") })}
             </label>
             <Input
               id={inputId}
@@ -91,10 +91,10 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
             {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2">
               <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => setOpen(false)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
-              <Button type="submit" variant="destructive" className="h-11 flex-1" disabled={pending || !isResetWord(word)}>
-                {pending ? "Resetting…" : "Reset"}
+              <Button type="submit" variant="destructive" className="h-11 flex-1" disabled={pending || !isResetWord(t, word)}>
+                {pending ? t("common.resetting") : t("common.reset")}
               </Button>
             </div>
           </form>

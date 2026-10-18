@@ -1,6 +1,7 @@
 import type { HabitCategory, HabitPeriod } from "@/lib/habit-schema";
 import { withQueuedTaps } from "@/lib/offline-sync";
 import { groupForToday, stateOf } from "@/lib/today";
+import type { T } from "@/supabase/functions/_shared/i18n";
 
 export type ProgressHabit = {
   habit_id: string;
@@ -63,11 +64,11 @@ export function withQueuedProgress<T extends ProgressHabit>(habits: T[], queued:
 }
 
 // Encouraging, never guilt (docs/design.md voice); at most one emoji.
-export function todayLine(done: number, total: number): string {
+export function todayLine(t: T, done: number, total: number): string {
   const left = total - done;
-  if (left <= 0) return "Today's all done 🎉";
-  if (done === 0) return `${left} to go today`;
-  if (left === 1) return "One more to go!";
-  if (done * 2 >= total) return "Halfway there 💪";
-  return `${left} to go`;
+  if (left <= 0) return t("today.line.allDone");
+  if (done === 0) return t("today.line.toGoToday", { n: left });
+  if (left === 1) return t("today.line.oneMore");
+  if (done * 2 >= total) return t("today.line.halfway");
+  return t("today.line.toGo", { n: left });
 }

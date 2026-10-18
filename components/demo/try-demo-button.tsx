@@ -5,9 +5,9 @@ import { useFormStatus } from "react-dom";
 import { unstable_rethrow, useSearchParams } from "next/navigation";
 import { startDemo } from "@/app/demo/actions";
 import { PrivacyConsent } from "@/components/privacy-consent";
-import { DEMO_FAILED, JUST_LOOKING, LOADING, SETTING_UP, TRY_DEMO } from "@/lib/demo-copy";
 import { createClient } from "@/lib/supabase/client";
 import { runTryIt } from "@/lib/try-demo";
+import { useT } from "@/lib/i18n/client";
 
 // "Try the demo" on the landing page, and on sign-in and sign-up (someone who followed a link or tapped
 // a step too far can still just look around): a quiet link-style button. The anonymous sign-in happens here, in the browser, so Supabase's per-IP
@@ -17,6 +17,7 @@ import { runTryIt } from "@/lib/try-demo";
 // try takes it out of the address (Next keeps useSearchParams in step), so the old failure goes.
 // consent: the landing shows the consent line here; the sign-in card shows its own under the card.
 export function TryDemoButton({ consent = true }: { consent?: boolean } = {}) {
+  const { t } = useT();
   const zone = useRef<HTMLInputElement>(null);
   const failedBefore = useSearchParams().get("demo") === "failed";
   const [failedHere, setFailedHere] = useState(false);
@@ -48,9 +49,9 @@ export function TryDemoButton({ consent = true }: { consent?: boolean } = {}) {
   return (
     <form action={tryIt} className="flex flex-col gap-1">
       <input ref={zone} type="hidden" name="timezone" defaultValue="" />
-      {failed && <p role="alert" className="text-sm text-destructive">{DEMO_FAILED}</p>}
+      {failed && <p role="alert" className="text-sm text-destructive">{t("demo.failed")}</p>}
       <p className="text-sm text-muted-foreground">
-        {JUST_LOOKING} <Submit ready={ready} />
+        {t("demo.justLooking")} <Submit ready={ready} />
       </p>
       {/* Same line as onboarding's: the seed onboards. */}
       {consent && <PrivacyConsent />}
@@ -66,6 +67,7 @@ function useHydrated(): boolean {
 
 // useFormStatus reads the form it's inside, so the button is its own component.
 function Submit({ ready }: { ready: boolean }) {
+  const { t } = useT();
   const { pending } = useFormStatus();
   const off = pending || !ready;
   return (
@@ -75,7 +77,7 @@ function Submit({ ready }: { ready: boolean }) {
       aria-disabled={off}
       className="font-semibold text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
     >
-      {!ready ? LOADING : pending ? SETTING_UP : TRY_DEMO}
+      {!ready ? t("demo.loading") : pending ? t("demo.settingUp") : t("demo.tryDemo")}
     </button>
   );
 }

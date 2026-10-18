@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { MOVED_PARAM, withoutMoved } from "@/lib/moved";
-import { MOVED_DISMISS, MOVED_HOW, MOVED_NOTICE } from "@/lib/moved-copy";
+import { useT } from "@/lib/i18n/client";
 
 // Arrived from the old address (proxy.ts adds ?moved=1, lib/moved.ts): an installed app can't follow
 // the move, so say how to install again. Shown on every screen (root layout) for this session until
@@ -29,6 +29,7 @@ function write(value: "show" | "dismissed") {
 }
 
 export function MovedNotice() {
+  const { t } = useT();
   const [show, setShow] = useState(false);
 
   useEffect(() => {
@@ -46,11 +47,11 @@ export function MovedNotice() {
 
   if (!show) return null;
   return (
-    <div className="mx-auto mt-2 flex w-[calc(100%-2rem)] max-w-[calc(28rem-2rem)] items-start gap-2 rounded-xl bg-muted py-2 pl-4 pr-1 text-sm font-semibold text-muted-foreground">
+    <div className="mx-auto mt-2 flex w-[calc(100%-2rem)] max-w-[calc(28rem-2rem)] items-start gap-2 rounded-xl bg-muted py-2 ps-4 pe-1 text-sm font-semibold text-muted-foreground">
       <p className="flex-1 py-1">
-        <span role="status">{MOVED_NOTICE}</span>{" "}
+        <span role="status">{t("moved.notice")}</span>{" "}
         <Link href="/install" className="text-primary underline underline-offset-4">
-          {MOVED_HOW}
+          {t("moved.how")}
         </Link>
       </p>
       <button
@@ -59,7 +60,7 @@ export function MovedNotice() {
           write("dismissed");
           setShow(false);
         }}
-        aria-label={MOVED_DISMISS}
+        aria-label={t("common.dismiss")}
         className="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-background/60"
       >
         <X aria-hidden className="size-4" />

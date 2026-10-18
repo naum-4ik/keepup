@@ -2,6 +2,7 @@
 import "server-only";
 import { requireUser } from "@/lib/auth";
 import { type CategoryKey, type Delivery, deliveryByCategory } from "@/lib/notification-categories";
+import { getT } from "@/lib/i18n/server";
 import { deviceLabel } from "@/lib/push-support";
 import { logError } from "@/lib/log";
 
@@ -16,6 +17,7 @@ export type NotificationSettings = {
 // Fails soft: during a deploy the app can run a moment before its migration (deploy order).
 export async function getNotificationSettings(): Promise<NotificationSettings> {
   const { supabase, userId } = await requireUser();
+  const { t } = await getT();
   const [profile, prefs, subs] = await Promise.all([
     supabase.from("profiles").select("reminder_hour, muted_until, timezone").eq("id", userId).single(),
     supabase.from("notification_prefs").select("category, delivery"),
@@ -27,6 +29,6 @@ export async function getNotificationSettings(): Promise<NotificationSettings> {
     mutedUntil: profile.data?.muted_until ?? null,
     timezone: profile.data?.timezone ?? "UTC",
     delivery: deliveryByCategory(prefs.data),
-    devices: (subs.data ?? []).map((s) => ({ endpoint: s.endpoint, label: deviceLabel(s.user_agent) })),
+    devices: (subs.data ?? []).map((s) => ({ endpoint: s.endpoint, label: deviceLabel(t, s.user_agent) })),
   };
 }

@@ -5,17 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isValidEmail } from "@/lib/email";
+import { useT } from "@/lib/i18n/client";
 import { requestPasswordReset, submitCredentials } from "./actions";
 import { PasswordInput } from "./password-input";
 import type { LoginState } from "./state";
 
 const initialState: LoginState = { status: "idle" };
-const NEED_EMAIL = "Type your email above, then tap Forgot password? again.";
 const FORGOT_STATUS_ID = "forgot-status";
 
 // Email first, then the password: one question at a time, and the email step works the same whether
 // or not the person remembers how they signed up.
 export function LoginForm({ next }: { next: string }) {
+  const { t } = useT();
   const [state, action, pending] = useActionState(submitCredentials, initialState);
   const [reset, resetAction] = useActionState(requestPasswordReset, initialState);
   const [resetPending, startReset] = useTransition();
@@ -58,13 +59,13 @@ export function LoginForm({ next }: { next: string }) {
         onClick={forgotPassword}
         className="min-h-11 self-start text-sm font-semibold text-primary hover:underline aria-disabled:opacity-60"
       >
-        {resetPending ? "Sending…" : "Forgot password?"}
+        {resetPending ? t("auth.login.sending") : t("auth.login.forgot")}
       </button>
       {/* One live region, always in the page, so the hint and the answer are announced when they appear. */}
       <p id={FORGOT_STATUS_ID} role="status" className={needEmail ? "text-sm text-muted-foreground" : "text-sm"}>
-        {needEmail ? NEED_EMAIL : sent ? reset.message : null}
+        {needEmail ? t("auth.login.needEmail", { forgot: t("auth.login.forgot") }) : sent ? reset.message : null}
       </p>
-      {sent && <p className="text-sm text-muted-foreground">Or sign in with Google using the same email.</p>}
+      {sent && <p className="text-sm text-muted-foreground">{t("auth.login.orGoogle")}</p>}
     </div>
   );
 
@@ -76,26 +77,27 @@ export function LoginForm({ next }: { next: string }) {
         onSubmit={(e) => {
           e.preventDefault(); // step 1 stays in the browser; only the password step talks to the server
           const trimmed = email.trim();
-          if (!isValidEmail(trimmed)) return setEmailError("Enter a valid email address.");
+          if (!isValidEmail(trimmed)) return setEmailError(t("auth.emailInvalid"));
           setEmail(trimmed);
           setEmailError(null);
           setStep("password");
         }}
       >
         <Label htmlFor="email" className="font-semibold">
-          Email
+          {t("auth.email")}
         </Label>
         <Input
           id="email"
           name="email"
           type="email"
+          dir="ltr"
           inputMode="email"
           autoComplete="username"
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
           autoFocus
-          placeholder="you@example.com"
+          placeholder={t("auth.emailPlaceholder")}
           className="h-11 rounded-xl px-3"
           ref={emailRef}
           value={email}
@@ -112,7 +114,7 @@ export function LoginForm({ next }: { next: string }) {
           </p>
         )}
         <Button type="submit" className="h-11">
-          Continue
+          {t("common.continue")}
         </Button>
         {forgot}
       </form>
@@ -127,7 +129,7 @@ export function LoginForm({ next }: { next: string }) {
         <input type="hidden" name="mode" value="signin" />
 
         <Label htmlFor="email" className="font-semibold">
-          Email
+          {t("auth.email")}
         </Label>
         <div className="flex items-center gap-2">
           {/* Read-only but real, so password managers pair the saved password with this email. */}
@@ -135,6 +137,7 @@ export function LoginForm({ next }: { next: string }) {
             id="email"
             name="email"
             type="email"
+            dir="ltr"
             autoComplete="username"
             readOnly
             value={email}
@@ -149,12 +152,12 @@ export function LoginForm({ next }: { next: string }) {
             }}
             className="min-h-11 rounded-lg px-2 text-sm font-semibold text-primary hover:bg-accent"
           >
-            Change
+            {t("common.change")}
           </button>
         </div>
 
         <Label htmlFor="password" className="font-semibold">
-          Password
+          {t("auth.password")}
         </Label>
         <PasswordInput
           autoComplete="current-password"
@@ -171,7 +174,7 @@ export function LoginForm({ next }: { next: string }) {
         )}
 
         <Button type="submit" disabled={pending} className="h-11">
-          {pending ? "Signing in…" : "Sign in"}
+          {pending ? t("auth.login.signingIn") : t("auth.signIn")}
         </Button>
       </form>
     </>

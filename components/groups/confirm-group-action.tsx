@@ -1,21 +1,23 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import type { GroupActionState } from "@/app/(app)/groups/actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ExportChildButton, MoveChildForm, type MoveTarget } from "@/components/kids/child-danger-zone";
 import { childrenDeletionNotice } from "@/lib/group-schema";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 const initialState: GroupActionState = { status: "idle" };
 
 type Copy = {
-  title: string;
-  description: string;
+  title: ReactNode;
+  description: ReactNode;
   confirmLabel: string;
   pendingLabel: string;
-  childrenNotice: string;
+  childrenNotice: ReactNode;
   // The group's children, for the step's Export first / Move to another group (moveTargets: other
   // groups where I'm admin; empty hides Move).
   groupChildren?: { id: string; name: string }[];
@@ -68,6 +70,9 @@ function ConfirmDialog({
   groupChildren = [],
   moveTargets = [],
 }: Copy & { open: boolean; onOpenChange: (open: boolean) => void; action: Action }) {
+  const { rich, locale } = useT();
+  const tc = useTranslations("groups.confirm");
+  const tm = useTranslations("common");
   // Children moved out from this step; the dialog isn't remounted by the refresh, so track them here.
   const [moved, setMoved] = useState<Set<string>>(() => new Set());
   const remaining = groupChildren.filter((c) => !moved.has(c.id));
@@ -80,7 +85,7 @@ function ConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={(next) => !pending && onOpenChange(next)}>
       <DialogContent>
-        <div className="flex flex-col gap-1 pr-10">
+        <div className="flex flex-col gap-1 pe-10">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </div>
@@ -88,15 +93,15 @@ function ConfirmDialog({
           <div className="flex flex-col gap-3">
             {remaining.length > 0 || groupChildren.length === 0 ? (
               <p role="alert" className="text-sm font-semibold text-destructive">
-                {groupChildren.length > 0 ? childrenDeletionNotice(remaining.map((c) => c.name)) : childrenNotice}
+                {groupChildren.length > 0 ? childrenDeletionNotice(rich, locale, remaining.map((c) => c.name)) : childrenNotice}
               </p>
             ) : (
-              <p role="status" className="text-sm font-semibold">All children were moved.</p>
+              <p role="status" className="text-sm font-semibold">{tc("allMoved")}</p>
             )}
             {remaining.map((c) => (
               <div key={c.id} role="group" aria-label={c.name} className="flex flex-col gap-2 rounded-2xl bg-muted/60 p-3">
                 <p className="font-semibold">{c.name}</p>
-                <ExportChildButton childId={c.id} childName={c.name} label="Export first" className="w-full" />
+                <ExportChildButton childId={c.id} childName={c.name} label={tc("exportFirst")} className="w-full" />
                 <MoveChildForm
                   childId={c.id}
                   childName={c.name}
@@ -112,10 +117,10 @@ function ConfirmDialog({
         <form action={formAction} className="flex gap-2">
           {askChildren && <input type="hidden" name="confirmChildren" value="1" />}
           <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => onOpenChange(false)}>
-            Cancel
+            {tm("cancel")}
           </Button>
           <Button type="submit" variant="destructive" className="h-11 flex-1" disabled={pending}>
-            {pending ? pendingLabel : askChildren && (remaining.length > 0 || groupChildren.length === 0) ? "Delete anyway" : confirmLabel}
+            {pending ? pendingLabel : askChildren && (remaining.length > 0 || groupChildren.length === 0) ? tc("deleteAnyway") : confirmLabel}
           </Button>
         </form>
       </DialogContent>

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { authErrorReason } from "@/lib/auth-errors";
+import { getT } from "@/lib/i18n/server";
 import { safeNextPath, withNext } from "@/lib/paths";
 import { AuthCard } from "./auth-card";
 import { LoginForm } from "./login-form";
@@ -11,6 +12,7 @@ export default async function LoginPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const params = await searchParams;
+  const { t } = await getT();
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   if (data?.claims) redirect("/today");
@@ -23,11 +25,11 @@ export default async function LoginPage({
 
   return (
     <AuthCard
-      title="Welcome back"
-      subtitle="Keep up your habits, and do the ones that matter with your family."
+      title={t("auth.login.title")}
+      subtitle={t("auth.login.subtitle")}
       next={nextPath}
       googleEnabled={googleEnabled}
-      footer={{ text: "Don't have an account?", linkLabel: "Sign up", href: withNext("/signup", nextPath) }}
+      footer={{ text: t("auth.login.noAccount"), linkLabel: t("auth.login.signUp"), href: withNext("/signup", nextPath) }}
     >
       <LoginForm next={nextPath} />
     </AuthCard>

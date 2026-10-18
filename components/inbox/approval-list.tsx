@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { approveAll, review } from "@/app/(app)/inbox/actions";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 import { alreadyReviewedNote } from "@/lib/habit-errors";
+import { useT } from "@/lib/i18n/client";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 import { cn } from "@/lib/utils";
 
 export type ApprovalRow = {
@@ -19,6 +22,9 @@ export type ApprovalRow = {
 };
 
 export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
+  const { t } = useT();
+  const tx = useTranslations("inbox.approvals");
+  const bdi = (c: ReactNode) => <bdi>{c}</bdi>;
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState<string | null>(null);
   // Per-row notes (e.g. someone else reviewed it first); the row leaves on the next refresh.
@@ -39,11 +45,11 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
       const r = await review(id, approve);
       if (r.ok) return;
       if (r.code === "already_reviewed" || r.code === "review_closed") {
-        setNotes((n) => ({ ...n, [id]: r.code === "already_reviewed" ? alreadyReviewedNote(r.reviewer) : r.message }));
+        setNotes((n) => ({ ...n, [id]: r.code === "already_reviewed" ? alreadyReviewedNote(t, r.reviewer) : r.message }));
       } else setError(r.message);
     });
 
-  if (rows.length === 0) return <p className="rounded-2xl bg-card p-6 text-center text-sm text-muted-foreground shadow-soft">Nothing waiting for you.</p>;
+  if (rows.length === 0) return <p className="rounded-2xl bg-card p-6 text-center text-sm text-muted-foreground shadow-soft">{tx("empty")}</p>;
 
   return (
     <div className="flex flex-col gap-3">
@@ -59,7 +65,7 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
             })
           }
         >
-          Approve all ({rows.length})
+          {tx("approveAll", { n: rows.length })}
         </Button>
       )}
       {error && (
@@ -73,7 +79,7 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
           return (
             <li
               key={a.check_in_id}
-              aria-label={`${a.author_name} did ${a.habit_title}`}
+              aria-label={tx("rowLabel", { name: isolate(a.author_name), habit: isolate(a.habit_title) })}
               className={cn(
                 "flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-soft transition-opacity duration-200 motion-reduce:transition-none",
                 note && "opacity-60",
@@ -83,7 +89,7 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
                 <Avatar name={a.author_name} emoji={a.author_avatar_emoji} color={a.author_avatar_color} size="md" />
                 <div className="flex min-w-0 flex-col">
                   <p className="font-semibold">
-                    {a.author_name} did {a.habit_title}
+                    {tx.rich("did", { name: a.author_name, habit: a.habit_title, bdi })}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {a.group_name} · {a.day}
@@ -98,10 +104,10 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   <Button type="button" variant="outline" className="h-11 rounded-xl" disabled={pending} onClick={() => decide(a.check_in_id, false)}>
-                    {busy === `${a.check_in_id}:no` ? "Saving…" : "Not approved"}
+                    {busy === `${a.check_in_id}:no` ? t("common.saving") : tx("notApproved")}
                   </Button>
                   <Button type="button" className="h-11 rounded-xl" disabled={pending} onClick={() => decide(a.check_in_id, true)}>
-                    {busy === `${a.check_in_id}:yes` ? "Saving…" : "Approve"}
+                    {busy === `${a.check_in_id}:yes` ? t("common.saving") : tx("approve")}
                   </Button>
                 </div>
               )}

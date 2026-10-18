@@ -1,9 +1,11 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Award, ChevronRight, Settings, Sparkles, Users, type LucideIcon } from "lucide-react";
 import { AvatarEdit } from "@/components/avatar-edit";
 import { LevelCard } from "@/components/profile/level-card";
 import { SignOutButton } from "@/components/sign-out-button";
 import { getProfile } from "@/lib/auth";
+import { getT } from "@/lib/i18n/server";
 import { isAvatarColor } from "@/lib/avatars";
 import { cityOf } from "@/lib/timezones";
 import { appVersion } from "@/lib/version";
@@ -12,14 +14,21 @@ import { saveAvatar } from "./actions";
 
 // Where to go from Profile, as one list. Self-contained, so cards can sit above it later.
 const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: "/profile/achievements", label: "Achievements", icon: Award },
-  { href: "/profile/settings", label: "Settings", icon: Settings },
-  { href: "/whats-new", label: "What's new", icon: Sparkles },
-  { href: "/groups", label: "Groups", icon: Users },
+  { href: "/profile/achievements", label: "achievements.title", icon: Award },
+  { href: "/profile/settings", label: "settings.title", icon: Settings },
+  { href: "/whats-new", label: "profile.links.whatsNew", icon: Sparkles },
+  { href: "/groups", label: "nav.groups", icon: Users },
 ];
 
+// profile.summary reads as one line here; the city is its own element, as on onboarding.
+const summaryTags = {
+  place: (c: ReactNode) => <span>{c}</span>,
+  dot: (c: ReactNode) => c,
+  week: (c: ReactNode) => c,
+};
+
 export default async function ProfilePage() {
-  const [{ profile }, level] = await Promise.all([getProfile(), getMyLevel()]);
+  const [{ profile }, level, { t, rich }] = await Promise.all([getProfile(), getMyLevel(), getT()]);
 
   return (
     <section className="flex flex-col gap-6 py-6">
@@ -29,18 +38,22 @@ export default async function ProfilePage() {
           emoji={profile.avatar_emoji}
           color={profile.avatar_color && isAvatarColor(profile.avatar_color) ? profile.avatar_color : null}
           action={saveAvatar}
-          title="Change your avatar"
-          description="Shown to your groups."
+          title={t("profile.avatar.title")}
+          description={t("profile.avatar.description")}
         />
         <div className="min-w-0">
           <h1 className="text-xl font-bold">{profile.display_name}</h1>
           <p className="text-sm text-muted-foreground">
-            {cityOf(profile.timezone)} · weeks start {profile.week_start === 0 ? "Sunday" : "Monday"}
+            {rich("profile.summary", {
+              city: cityOf(profile.timezone),
+              weekStart: profile.week_start === 0 ? "sun" : "mon",
+              ...summaryTags,
+            })}
           </p>
         </div>
       </div>
       {level && <LevelCard xp={level.xp} />}
-      <nav aria-label="Account">
+      <nav aria-label={t("profile.accountNav")}>
         <ul className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-soft">
           {LINKS.map(({ href, label, icon: Icon }) => (
             <li key={href} className="border-t border-border first:border-t-0">
@@ -48,8 +61,8 @@ export default async function ProfilePage() {
                 <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-primary">
                   <Icon className="size-5" />
                 </span>
-                <span className="flex-1 font-semibold">{label}</span>
-                <ChevronRight aria-hidden className="size-5 text-muted-foreground" />
+                <span className="flex-1 font-semibold">{t(label)}</span>
+                <ChevronRight aria-hidden className="size-5 text-muted-foreground rtl:-scale-x-100" />
               </Link>
             </li>
           ))}
@@ -61,10 +74,10 @@ export default async function ProfilePage() {
           {appVersion()}
         </Link>
         <Link href="/privacy" className="underline-offset-4 hover:underline">
-          Privacy Policy
+          {t("profile.footer.privacy")}
         </Link>
         <Link href="/install" className="underline-offset-4 hover:underline">
-          How to install
+          {t("profile.footer.install")}
         </Link>
       </footer>
     </section>

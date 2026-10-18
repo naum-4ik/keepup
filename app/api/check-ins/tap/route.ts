@@ -2,6 +2,7 @@
 import { trace, type Attributes } from "@opentelemetry/api";
 import { revalidatePath } from "next/cache";
 import { after, NextResponse } from "next/server";
+import { getT } from "@/lib/i18n/server";
 import { errorCode, habitErrorMessage, REFRESH_ON_ERROR } from "@/lib/habit-errors";
 import { parseTap, type OnlineTap } from "@/lib/offline-sync";
 import { parseJson, readBody } from "@/lib/request-body";
@@ -74,14 +75,15 @@ export async function POST(request: Request) {
     : await supabase.rpc("check_in", { p_habit_id: tap.habitId, p_client_id: tap.clientId });
   if (error) {
     const code = errorCode(error);
+    const { t } = await getT();
     event["check_in.outcome"] = code ? "refused" : "failed";
     event["check_in.reason"] = code ?? error.message;
     if (code === "not_authenticated") return NextResponse.json({ code }, { status: 401 });
     if (code && REFRESH_ON_ERROR.has(code)) refresh(tap);
     if (!code) console.error("check-in tap", error.message);
     return code
-      ? NextResponse.json({ code, message: habitErrorMessage(error) }, { status: 409 })
-      : NextResponse.json({ message: habitErrorMessage(error) }, { status: 503 });
+      ? NextResponse.json({ code, message: habitErrorMessage(t, error) }, { status: 409 })
+      : NextResponse.json({ message: habitErrorMessage(t, error) }, { status: 503 });
   }
   refresh(tap);
   // XP floats only for my own counted row this request inserted, not a resend's or a merge's (lib/xp.ts).

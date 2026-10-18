@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { markSeen } from "@/app/(app)/today/actions";
 import { Avatar } from "@/components/avatar";
 import { Confetti } from "@/components/celebrations/confetti";
@@ -20,6 +21,7 @@ type Props = { ids: string[]; habits: string[]; members: CardMember[] };
 // live update, coming back to the tab, Realtime's catch-up) sends no ids, so the card keeps what it
 // showed, confetti included, until the page is left: it stays while it's being read (`data-seen`).
 export function EveryoneDidIt(props: Props) {
+  const t = useTranslations("celebrations");
   const [kept, setKept] = useState<Props>(props);
   if (props.ids.length > 0 && props.ids.join(",") !== kept.ids.join(",")) setKept(props);
   const { ids, habits, members } = props.ids.length > 0 ? props : kept;
@@ -71,7 +73,15 @@ export function EveryoneDidIt(props: Props) {
     <div data-seen={props.ids.length === 0 ? "" : undefined} className="relative flex items-center gap-3 rounded-2xl bg-card p-4 shadow-soft">
       {/* Keyed by the rows: a new card (new ids while a kept one shows) bursts again. */}
       {shown && <Confetti key={key} />}
-      <p className="min-w-0 flex-1 font-bold">Everyone did it! {habits.map((h) => `${h} ✓`).join(" · ")}</p>
+      <p className="min-w-0 flex-1 font-bold">
+        {t("everyoneDidIt")}{" "}
+        {habits.map((h, i) => (
+          <Fragment key={i}>
+            {i > 0 && t("habitSeparator")}
+            {t.rich("everyoneDidItHabit", { habit: h, bdi: (c) => <bdi>{c}</bdi> })}
+          </Fragment>
+        ))}
+      </p>
       <AvatarRow members={members} />
     </div>
   );

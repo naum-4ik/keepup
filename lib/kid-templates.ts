@@ -1,33 +1,38 @@
+import type { T } from "@/supabase/functions/_shared/i18n";
+
 // ideas/templates-and-categories.md → "Kid templates" (flat list in M3), grouped since 2026-09-30.
-export const KID_TEMPLATE_GROUPS = ["Morning & evening", "Healthy", "Helping at home", "Learning & play", "Kind & calm"] as const;
+export const KID_TEMPLATE_GROUPS = ["morning-evening", "healthy", "helping", "learning-play", "kind-calm"] as const;
+// Titles and group names come from the catalog: templates.kid.<id> and templates.kidGroup.<id>.
+export const kidTemplateTitle = (t: T, id: string): string => t(`templates.kid.${id}`);
+export const kidGroupLabel = (t: T, group: KidTemplateGroup): string => t(`templates.kidGroup.${group}`);
 export type KidTemplateGroup = (typeof KID_TEMPLATE_GROUPS)[number];
 
 // The first 12 keep their M3 order (the add-child defaults and tests rely on it).
 export const KID_TEMPLATES = [
-  { id: "brush-teeth", emoji: "🪥", title: "Brush teeth", targetCount: 2, period: "day", group: "Morning & evening" },
-  { id: "read-together", emoji: "📖", title: "Read a book together", targetCount: 1, period: "day", group: "Learning & play" },
-  { id: "tidy-toys", emoji: "🧸", title: "Tidy my toys", targetCount: 1, period: "day", group: "Helping at home" },
-  { id: "bath", emoji: "🛁", title: "Bath time", targetCount: 1, period: "day", group: "Morning & evening" },
-  { id: "veggies", emoji: "🥦", title: "Eat vegetables", targetCount: 1, period: "day", group: "Healthy" },
-  { id: "bedtime", emoji: "😴", title: "Go to bed on time", targetCount: 1, period: "day", group: "Morning & evening" },
-  { id: "dressed", emoji: "👕", title: "Get dressed by myself", targetCount: 1, period: "day", group: "Morning & evening" },
-  { id: "wash-hands", emoji: "🧼", title: "Wash hands before eating", targetCount: 3, period: "day", group: "Healthy" },
-  { id: "water", emoji: "💧", title: "Drink water", targetCount: 4, period: "day", group: "Healthy" },
-  { id: "outside", emoji: "🌳", title: "Play outside", targetCount: 1, period: "day", group: "Healthy" },
-  { id: "please-thanks", emoji: "💛", title: "Say please and thank you", targetCount: 1, period: "day", group: "Kind & calm" },
-  { id: "chore", emoji: "🧺", title: "Help with a chore", targetCount: 1, period: "day", group: "Helping at home" },
-  { id: "make-bed", emoji: "🛏️", title: "Make my bed", targetCount: 1, period: "day", group: "Morning & evening" },
-  { id: "fruit", emoji: "🍎", title: "Eat a fruit", targetCount: 1, period: "day", group: "Healthy" },
-  { id: "clear-plate", emoji: "🍽️", title: "Clear my plate", targetCount: 1, period: "day", group: "Helping at home" },
-  { id: "laundry-basket", emoji: "🧦", title: "Clothes in the basket", targetCount: 1, period: "day", group: "Helping at home" },
-  { id: "feed-pet", emoji: "🐶", title: "Feed the pet", targetCount: 1, period: "day", group: "Helping at home" },
-  { id: "plants", emoji: "🌱", title: "Water the plants", targetCount: 2, period: "week", group: "Helping at home" },
-  { id: "homework", emoji: "📝", title: "Do my homework", targetCount: 1, period: "day", group: "Learning & play" },
-  { id: "school-bag", emoji: "🎒", title: "Pack my school bag", targetCount: 1, period: "day", group: "Learning & play" },
-  { id: "music", emoji: "🎹", title: "Practice music", targetCount: 3, period: "week", group: "Learning & play" },
-  { id: "sports", emoji: "⚽", title: "Sports practice", targetCount: 2, period: "week", group: "Learning & play" },
-  { id: "draw", emoji: "🖍️", title: "Draw or color", targetCount: 1, period: "day", group: "Kind & calm" },
-  { id: "screen-free", emoji: "📵", title: "A screen-free hour", targetCount: 1, period: "day", group: "Kind & calm" },
+  { id: "brush-teeth", emoji: "🪥", targetCount: 2, period: "day", group: "morning-evening" },
+  { id: "read-together", emoji: "📖", targetCount: 1, period: "day", group: "learning-play" },
+  { id: "tidy-toys", emoji: "🧸", targetCount: 1, period: "day", group: "helping" },
+  { id: "bath", emoji: "🛁", targetCount: 1, period: "day", group: "morning-evening" },
+  { id: "veggies", emoji: "🥦", targetCount: 1, period: "day", group: "healthy" },
+  { id: "bedtime", emoji: "😴", targetCount: 1, period: "day", group: "morning-evening" },
+  { id: "dressed", emoji: "👕", targetCount: 1, period: "day", group: "morning-evening" },
+  { id: "wash-hands", emoji: "🧼", targetCount: 3, period: "day", group: "healthy" },
+  { id: "water", emoji: "💧", targetCount: 4, period: "day", group: "healthy" },
+  { id: "outside", emoji: "🌳", targetCount: 1, period: "day", group: "healthy" },
+  { id: "please-thanks", emoji: "💛", targetCount: 1, period: "day", group: "kind-calm" },
+  { id: "chore", emoji: "🧺", targetCount: 1, period: "day", group: "helping" },
+  { id: "make-bed", emoji: "🛏️", targetCount: 1, period: "day", group: "morning-evening" },
+  { id: "fruit", emoji: "🍎", targetCount: 1, period: "day", group: "healthy" },
+  { id: "clear-plate", emoji: "🍽️", targetCount: 1, period: "day", group: "helping" },
+  { id: "laundry-basket", emoji: "🧦", targetCount: 1, period: "day", group: "helping" },
+  { id: "feed-pet", emoji: "🐶", targetCount: 1, period: "day", group: "helping" },
+  { id: "plants", emoji: "🌱", targetCount: 2, period: "week", group: "helping" },
+  { id: "homework", emoji: "📝", targetCount: 1, period: "day", group: "learning-play" },
+  { id: "school-bag", emoji: "🎒", targetCount: 1, period: "day", group: "learning-play" },
+  { id: "music", emoji: "🎹", targetCount: 3, period: "week", group: "learning-play" },
+  { id: "sports", emoji: "⚽", targetCount: 2, period: "week", group: "learning-play" },
+  { id: "draw", emoji: "🖍️", targetCount: 1, period: "day", group: "kind-calm" },
+  { id: "screen-free", emoji: "📵", targetCount: 1, period: "day", group: "kind-calm" },
 ] as const;
 
 export type KidTemplate = (typeof KID_TEMPLATES)[number];
@@ -42,4 +47,28 @@ export function kidTemplatesByGroup(templates: readonly KidTemplate[]): { group:
   return KID_TEMPLATE_GROUPS.map((group) => ({ group, templates: templates.filter((t) => t.group === group) })).filter(
     (g) => g.templates.length > 0,
   );
+}
+
+// Each template's title in every language that has a catalog (Partial: ru and he join as their files land).
+export type KidTemplateTitles = Record<string, string[]>;
+type Catalog = { templates?: { kid?: Record<string, string> } };
+export function kidTemplateTitlesIn(catalogs: Record<string, unknown>): KidTemplateTitles {
+  const out: KidTemplateTitles = {};
+  for (const c of Object.values(catalogs)) {
+    for (const [id, title] of Object.entries((c as Catalog | undefined)?.templates?.kid ?? {})) {
+      if (!(out[id] ??= []).includes(title)) out[id].push(title);
+    }
+  }
+  return out;
+}
+
+// The templates a child doesn't have yet: a habit counts as the template when its title is the
+// template's title in ANY language (so switching the app's language doesn't bring them back).
+export function templatesLeft<T extends { id: string }>(
+  templates: readonly T[],
+  titles: KidTemplateTitles,
+  have: ReadonlySet<string>,
+  currentTitle: (id: string) => string,
+): T[] {
+  return templates.filter((t) => !have.has(currentTitle(t.id)) && !(titles[t.id] ?? []).some((x) => have.has(x)));
 }

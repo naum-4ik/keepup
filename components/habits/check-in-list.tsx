@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { Undo2 } from "lucide-react";
 import { undoCheckIn } from "@/app/(app)/habits/actions";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n/client";
+import { INTL_LOCALE } from "@/supabase/functions/_shared/i18n";
 import type { HabitPeriod } from "@/lib/habit-schema";
 import type { HabitCheckIn } from "@/lib/habits";
 
@@ -18,11 +20,12 @@ export function CheckInList({
   timeZone: string;
   period: HabitPeriod;
 }) {
+  const { t, locale } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   // A daily habit only ever has today's check-ins in this period, so the weekday plus time is
   // enough; a week/month period spans several days, so show the date too.
-  const time = new Intl.DateTimeFormat("en-GB", {
+  const time = new Intl.DateTimeFormat(INTL_LOCALE[locale], {
     timeZone,
     weekday: "short",
     ...(period !== "day" ? { day: "numeric", month: "short" } : {}),
@@ -30,21 +33,21 @@ export function CheckInList({
     minute: "2-digit",
   });
 
-  if (checkIns.length === 0) return <p className="text-sm text-muted-foreground">No check-ins this period yet.</p>;
+  if (checkIns.length === 0) return <p className="text-sm text-muted-foreground">{t("habits.checkIns.empty")}</p>;
 
   return (
     <div className="flex flex-col gap-2">
       {/* One check-in: the card's "Done for today" (or "1 of 3 this week") already says it. */}
-      {checkIns.length > 1 && <p className="text-sm font-semibold">{checkIns.length} check-ins this period</p>}
+      {checkIns.length > 1 && <p className="text-sm font-semibold">{t("habits.checkIns.count", { n: checkIns.length, count: String(checkIns.length) })}</p>}
       <ul className="flex flex-col gap-2">
         {checkIns.map((c) => (
-          <li key={c.id} className="flex min-h-14 items-center justify-between rounded-xl bg-muted py-1.5 pr-1.5 pl-4 text-sm">
+          <li key={c.id} className="flex min-h-14 items-center justify-between rounded-xl bg-muted py-1.5 pe-1.5 ps-4 text-sm">
             <span>{time.format(new Date(c.created_at))}</span>
             <Button
               type="button"
               variant="outline"
               className="h-11 gap-1.5 rounded-full px-4 text-sm hover:border-primary/60 hover:bg-accent hover:text-foreground"
-              aria-label={`Undo check-in at ${time.format(new Date(c.created_at))}`}
+              aria-label={t("habits.checkIns.undoAt", { time: time.format(new Date(c.created_at)) })}
               disabled={pending}
               onClick={() =>
                 startTransition(async () => {
@@ -54,7 +57,7 @@ export function CheckInList({
               }
             >
               <Undo2 aria-hidden className="size-4" />
-              Undo
+              {t("offline.undo")}
             </Button>
           </li>
         ))}

@@ -1,6 +1,7 @@
 "use client";
 
 import { Minus, Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { TARGET_LIMITS, type HabitPeriod } from "@/lib/habit-schema";
 
 // The −/＋ count (posts `targetCount`), shared by the new-habit form and a child's own habit.
@@ -21,6 +22,7 @@ export function CountStepper({
   invalid?: boolean;
   describedBy?: string;
 }) {
+  const t = useTranslations("habits.countStepper");
   const count = Number(value);
   const limit = TARGET_LIMITS[period];
   const step = (delta: number) => onChange(String(Math.min(limit, Math.max(1, (count || 0) + delta))));
@@ -31,8 +33,8 @@ export function CountStepper({
         type="button"
         onClick={() => step(-1)}
         disabled={count <= 1}
-        aria-label="Decrease"
-        className="flex size-11 shrink-0 items-center justify-center rounded-l-xl text-primary enabled:hover:bg-accent disabled:text-muted-foreground/50"
+        aria-label={t("decrease")}
+        className="flex size-11 shrink-0 items-center justify-center rounded-s-xl text-primary enabled:hover:bg-accent disabled:text-muted-foreground/50"
       >
         <Minus aria-hidden className="size-4" />
       </button>
@@ -52,8 +54,8 @@ export function CountStepper({
         type="button"
         onClick={() => step(1)}
         disabled={count >= limit}
-        aria-label="Increase"
-        className="flex size-11 shrink-0 items-center justify-center rounded-r-xl text-primary enabled:hover:bg-accent disabled:text-muted-foreground/50"
+        aria-label={t("increase")}
+        className="flex size-11 shrink-0 items-center justify-center rounded-e-xl text-primary enabled:hover:bg-accent disabled:text-muted-foreground/50"
       >
         <Plus aria-hidden className="size-4" />
       </button>

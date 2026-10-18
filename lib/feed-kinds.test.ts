@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { tEn } from "@/lib/i18n/test-t";
 import { FEED_KINDS, feedCopy, isFeedKind, type FeedItem } from "./feed-copy";
 
 describe("feed kinds", () => {
@@ -15,62 +16,62 @@ describe("feed kinds", () => {
 
 const item = (o: Partial<FeedItem>): FeedItem => ({
   id: "n", kind: "private_streak_ended", created_at: "2026-10-05T18:00:00Z", read_at: null, seen_at: null,
-  group_id: null, group_name: null, habit_id: "h", habit_title: "Read", habit_emoji: "📖", check_in_id: null,
+  group_id: null, group_name: null, habit_id: "h", habit_title: "Read", habit_emoji: "📖", habit_template: null, check_in_id: null,
   actor_name: null, actor_avatar_emoji: null, actor_avatar_color: null, subject_id: null, subject_name: null, subject_avatar_emoji: null, payload: {}, ...o,
 });
 
 describe("#11 private streak ended (feed only)", () => {
   it("says how long it was and, gently, the best", () => {
-    expect(feedCopy(item({ payload: { streak: 12, period: "day", best: 21 } }))).toEqual({
-      title: "Read", body: "Read streak ended at 12 days. Your best is still 21.", href: "/habits/h" });
+    expect(feedCopy(tEn, "en", item({ payload: { streak: 12, period: "day", best: 21 } }))).toEqual({
+      title: "Read", body: "\u2068Read\u2069 streak ended at 12 days. Your best is still 21.", href: "/habits/h" });
   });
 
   it("when this was the best, it invites a new one", () => {
-    expect(feedCopy(item({ payload: { streak: 3, period: "week", best: 3 } })).body).toBe("Read streak ended at 3 weeks. Start a new one this week.");
+    expect(feedCopy(tEn, "en", item({ payload: { streak: 3, period: "week", best: 3 } })).body).toBe("\u2068Read\u2069 streak ended at 3 weeks. Start a new one this week.");
   });
 
   it("an unknown period reads as days", () => {
-    expect(feedCopy(item({ payload: { streak: 1, period: "fortnight" } })).body).toBe("Read streak ended at 1 day. Start a new one today.");
+    expect(feedCopy(tEn, "en", item({ payload: { streak: 1, period: "fortnight" } })).body).toBe("\u2068Read\u2069 streak ended at 1 day. Start a new one today.");
   });
 });
 
 describe("reminder kinds in the Inbox", () => {
   it("the daily summary and a habit's own reminder", () => {
-    expect(feedCopy(item({ kind: "daily_summary", habit_id: null, habit_title: null, payload: {
+    expect(feedCopy(tEn, "en", item({ kind: "daily_summary", habit_id: null, habit_title: null, payload: {
       todo: [{ title: "Read", done: 0, target: 1 }], at_risk: [{ title: "Run", done: 1, target: 3, period: "week", days_left: 2 }] } })))
-      .toEqual({ title: "Today", body: "Still to do: Read · Run: 1 of 3 this week, 2 days left 🌱", href: "/today" });
-    expect(feedCopy(item({ kind: "habit_reminder", habit_title: "Vitamins" })).body).toBe("Time for Vitamins.");
+      .toEqual({ title: "Today", body: "Still to do: \u2068Read\u2069 · \u2068Run\u2069: 1 of 3 this week, 2 days left 🌱", href: "/today" });
+    expect(feedCopy(tEn, "en", item({ kind: "habit_reminder", habit_title: "Vitamins" })).body).toBe("Time for \u2068Vitamins\u2069.");
   });
 
   it("a summary with nothing left says so, from the shared copy", () => {
-    expect(feedCopy(item({ kind: "daily_summary", habit_id: null, payload: { todo: [], at_risk: [] } })))
+    expect(feedCopy(tEn, "en", item({ kind: "daily_summary", habit_id: null, payload: { todo: [], at_risk: [] } })))
       .toEqual({ title: "Today", body: "All done for today 🎉", href: "/today" });
   });
 
   it("an approval about to close", () => {
-    expect(feedCopy(item({ kind: "approval_expiring", group_name: "Family", actor_name: "Anna", habit_title: "Gym" })))
-      .toEqual({ title: "Family", body: "Anna's Gym check-in needs a yes within 2 hours", href: "/inbox" });
+    expect(feedCopy(tEn, "en", item({ kind: "approval_expiring", group_name: "Family", actor_name: "Anna", habit_title: "Gym" })))
+      .toEqual({ title: "Family", body: "\u2068Anna\u2069's \u2068Gym\u2069 check-in needs a yes within 2 hours", href: "/inbox" });
   });
 });
 
 describe("sync notes in the Inbox (ideas/offline.md)", () => {
   it("streak is back, for a group and for a private habit", () => {
-    expect(feedCopy(item({ kind: "streak_back", group_name: "Family", habit_title: "Family dinner" }))).toMatchObject({
-      title: "Family", body: "A late check-in arrived. Family dinner streak is back 🔥" });
-    expect(feedCopy(item({ kind: "streak_back", habit_title: "Read" })).title).toBe("Read");
+    expect(feedCopy(tEn, "en", item({ kind: "streak_back", group_name: "Family", habit_title: "Family dinner" }))).toMatchObject({
+      title: "Family", body: "A late check-in arrived. \u2068Family dinner\u2069 streak is back 🔥" });
+    expect(feedCopy(tEn, "en", item({ kind: "streak_back", habit_title: "Read" })).title).toBe("Read");
   });
 
   it("a quiet merge, a dropped tap and a refused undo", () => {
-    expect(feedCopy(item({ kind: "already_logged", actor_name: "Anna", subject_name: "Mary", habit_title: "Brush teeth" })))
-      .toMatchObject({ title: "Mary", body: "Anna already logged Brush teeth for Mary ✓" });
-    expect(feedCopy(item({ kind: "sync_dropped", habit_title: "Read", payload: { tapped_on: "2026-10-05" } })).body)
+    expect(feedCopy(tEn, "en", item({ kind: "already_logged", actor_name: "Anna", subject_name: "Mary", habit_title: "Brush teeth" })))
+      .toMatchObject({ title: "Mary", body: "\u2068Anna\u2069 already logged \u2068Brush teeth\u2069 for \u2068Mary\u2069 ✓" });
+    expect(feedCopy(tEn, "en", item({ kind: "sync_dropped", habit_title: "Read", payload: { tapped_on: "2026-10-05" } })).body)
       .toBe("A check-in from Mon couldn't count: it was more than 3 days old when it synced.");
-    expect(feedCopy(item({ kind: "sync_dropped", habit_title: "Read", payload: {} })).body)
+    expect(feedCopy(tEn, "en", item({ kind: "sync_dropped", habit_title: "Read", payload: {} })).body)
       .toBe("A check-in from earlier couldn't count: it was more than 3 days old when it synced.");
-    expect(feedCopy(item({ kind: "undo_dropped", habit_title: "Gym", payload: { reason: "approved" } })).body)
-      .toBe("Couldn't undo Gym, it was already approved.");
-    expect(feedCopy(item({ kind: "undo_dropped", habit_title: "Gym", payload: { reason: "period_closed" } })).body)
-      .toBe("Couldn't undo Gym, its time has passed.");
+    expect(feedCopy(tEn, "en", item({ kind: "undo_dropped", habit_title: "Gym", payload: { reason: "approved" } })).body)
+      .toBe("Couldn't undo \u2068Gym\u2069, it was already approved.");
+    expect(feedCopy(tEn, "en", item({ kind: "undo_dropped", habit_title: "Gym", payload: { reason: "period_closed" } })).body)
+      .toBe("Couldn't undo \u2068Gym\u2069, its time has passed.");
   });
 });
 

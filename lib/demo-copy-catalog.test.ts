@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
-import * as copy from "./demo-copy";
 import { BANNED_PATTERNS, BANNED_WORDS } from "@/lib/notification-copy";
+import en from "@/supabase/functions/_shared/messages/en.json";
 
+// The demo's lines (M6 PR 3) are the catalog's `demo` section. Voice: short, warm, no hype.
 describe("demo copy", () => {
-  const strings: [string, string][] = Object.entries(copy);
+  const strings: [string, string][] = Object.entries(en.demo);
 
   it("has every line the demo shows", () => {
     expect(strings.map(([name]) => name).sort()).toEqual(
-      ["DEMO_BANNER", "DEMO_FAILED", "DEMO_OFF", "DEMO_SIGN_IN", "DEMO_SIGN_IN_TAIL", "JUST_LOOKING", "LOADING", "SETTING_UP", "TRY_DEMO"].sort(),
+      ["banner", "failed", "justLooking", "loading", "off", "settingUp", "signInLine", "tryDemo"].sort(),
     );
   });
 

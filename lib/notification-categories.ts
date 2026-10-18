@@ -1,31 +1,29 @@
 // lib/notification-categories.ts
-// Spec: Mute controls.
+// Spec: Mute controls. The words live in the catalog: `notificationCategories.<key>.label|hint`,
+// `notificationSettings.pauseChoice.<choice>`, `notificationSettings.delivery.<delivery>`.
+import type { T } from "@/supabase/functions/_shared/i18n";
+
 export const NOTIFICATION_CATEGORIES = [
-  { key: "reminders", label: "Reminders", hint: "Your daily summary and habit reminders." },
-  { key: "group_activity", label: "Group activity", hint: "Check-ins, “Everyone did it” and your kids' big moments in your groups." },
-  { key: "approvals", label: "Approvals", hint: "Check-ins waiting for your OK." },
-  { key: "nudges", label: "Nudges", hint: "When someone in your group thinks of you." },
-  { key: "group_updates", label: "Group updates", hint: "New habits, pauses, new members, streaks and milestones." },
-  { key: "achievements", label: "Achievements", hint: "Level-ups, badges, streak milestones, rest days and your weekly recap. Inbox only unless you change it." },
+  { key: "reminders" },
+  { key: "group_activity" },
+  { key: "approvals" },
+  { key: "nudges" },
+  { key: "group_updates" },
+  { key: "achievements" },
 ] as const;
 export type CategoryKey = (typeof NOTIFICATION_CATEGORIES)[number]["key"];
 
 // Shown under Approvals when it is set to Inbox only: no push, but the requests still arrive.
-export const APPROVALS_OFF_NOTE = "Approvals still wait in your Inbox.";
+// (catalog: notificationCategories.approvalsOffNote)
 
-export const PAUSE_CHOICES = [
-  { choice: "1h", label: "1 hour" },
-  { choice: "8h", label: "8 hours" },
-  { choice: "tomorrow", label: "Until tomorrow" },
-  { choice: "until_on", label: "Until I turn them back on" },
-] as const;
+export const PAUSE_CHOICES = [{ choice: "1h" }, { choice: "8h" }, { choice: "tomorrow" }, { choice: "until_on" }] as const;
 
 // How each category arrives (owner, 2026-10-01). Silent is the default: no sound, no vibration.
 // notification_prefs.delivery; the database checks it again (keepup:invalid_choice).
 export const DELIVERIES = [
-  { delivery: "sound", label: "Sound" },
-  { delivery: "silent", label: "Silent" },
-  { delivery: "inbox", label: "Inbox only" },
+  { delivery: "sound" },
+  { delivery: "silent" },
+  { delivery: "inbox" },
 ] as const;
 export type Delivery = (typeof DELIVERIES)[number]["delivery"];
 export const DEFAULT_DELIVERY: Delivery = "silent";
@@ -49,18 +47,20 @@ export function deliveryByCategory(rows: readonly { category: string; delivery: 
   return out;
 }
 
-export const IPHONE_SOUND_HINT = "On iPhone and iPad, sound is one switch for all of Keepup: Settings → Notifications → Keepup → Sounds.";
 
 // Settings → Daily reminder. Without a device the hour can still be set (it is asked for before
 // turning on), so its hint says when it starts to matter.
-export const reminderHourHint = (hasDevice: boolean) =>
-  hasDevice ? "When your daily summary arrives." : "When your daily summary arrives, once reminders are on.";
+export const reminderHourHint = (t: T, hasDevice: boolean) =>
+  t(hasDevice ? "notificationSettings.hourHintDevice" : "notificationSettings.hourHintNoDevice");
 
 // The line under Daily reminder once this device is on. Pause all wins (nothing arrives anywhere),
-// then Inbox only for Reminders (nothing arrives on the device). `pausedUntil`: "Mon 08:00", "you
-// turn them back on", or null when not paused. `arrivesAt`: just turned on, say when the summary comes.
-export function reminderStatus(o: { pausedUntil: string | null; delivery: Delivery; arrivesAt: string | null }): string {
-  if (o.pausedUntil) return `Reminders are paused until ${o.pausedUntil}.`;
-  if (o.delivery === "inbox") return "Reminders go to your Inbox.";
-  return o.arrivesAt ? `Reminders are on for this device ✓ Your daily summary arrives at ${o.arrivesAt}.` : "Reminders are on for this device ✓";
+// then Inbox only for Reminders (nothing arrives on the device). `paused`: null when not paused, else
+// until when ("Mon 08:00"), or until: null for "until you turn them back on". `arrivesAt`: just turned
+// on, say when the summary comes.
+export function reminderStatus(t: T, o: { paused: { until: string | null } | null; delivery: Delivery; arrivesAt: string | null }): string {
+  if (o.paused) {
+    return o.paused.until ? t("notificationSettings.status.paused", { until: o.paused.until }) : t("notificationSettings.status.pausedUntilOn");
+  }
+  if (o.delivery === "inbox") return t("notificationSettings.status.inbox");
+  return o.arrivesAt ? t("notificationSettings.status.onWithHour", { time: o.arrivesAt }) : t("notificationSettings.status.on");
 }

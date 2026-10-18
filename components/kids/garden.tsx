@@ -1,13 +1,15 @@
 import { SceneIdle } from "@/components/kids/scene-idle";
 import { SceneItems, type Idle, type Landed } from "@/components/kids/scene-items";
-import { kidTheme, nextStep, restartDay, restartLine, stageFor, stepLines } from "@/lib/garden";
+import { kidTheme, nextStep, restartDay, restartLine, stageFor, stageLabel, stepLines, type Gender } from "@/lib/garden";
 import { isFloatingTheme, sceneItems } from "@/lib/scene-items";
 import { cn } from "@/lib/utils";
+import type { T } from "@/supabase/functions/_shared/i18n";
 
 // The week's picture (ideas/kid-view-next.md §4): the stage's big emoji in the middle with a soft glow,
 // in front of the items the taps added, on the stage's own sky. The stage comes from the stars (same
 // thresholds as private.garden_stage). No characters, no mascots.
 export function GardenPicture({
+  t,
   stars,
   size = "md",
   theme,
@@ -20,6 +22,8 @@ export function GardenPicture({
   revealed,
   landed,
 }: {
+  // The translator of whoever renders this (a server page or a client component).
+  t: T;
   stars: number;
   size?: "sm" | "md" | "lg";
   theme?: string | null;
@@ -36,16 +40,16 @@ export function GardenPicture({
   revealed?: ReadonlySet<number>;
   landed?: Landed | null;
 }) {
-  const t = kidTheme(theme);
-  const stage = t.stages[stageFor(stars)];
-  const floating = isFloatingTheme(t.id);
+  const th = kidTheme(theme);
+  const stage = th.stages[stageFor(stars)];
+  const floating = isFloatingTheme(th.id);
   // The next picture shows faintly in the corner until the first star (not on album thumbnails: those
   // weeks are over).
-  const ghost = size !== "sm" && stars === 0 ? (nextStep(stars, t.id)?.icon ?? null) : null;
+  const ghost = size !== "sm" && stars === 0 ? (nextStep(t, stars, th.id)?.icon ?? null) : null;
   return (
     <div
       role="img"
-      aria-label={stage.label}
+      aria-label={stageLabel(t, th.id, stars)}
       data-scene
       // isolate: the items' and the hero's z-index order the scene only; without it they paint over the
       // fixed tab bar when the picture scrolls under it.
@@ -59,7 +63,7 @@ export function GardenPicture({
       {/* One item per star this week (not on album thumbnails, which show only the picture). */}
       {size !== "sm" && (
         <SceneItems
-          items={sceneItems(stars, t.id)}
+          items={sceneItems(stars, th.id)}
           size={size}
           interactive={interactive}
           dancing={dancing}
@@ -69,7 +73,7 @@ export function GardenPicture({
           landed={landed}
         />
       )}
-      {idle && size !== "sm" && <SceneIdle items={sceneItems(stars, t.id)} theme={t.id} paused={idle === "pause"} />}
+      {idle && size !== "sm" && <SceneIdle items={sceneItems(stars, th.id)} theme={th.id} paused={idle === "pause"} />}
       {ghost && (
         <span
           aria-hidden
@@ -111,26 +115,26 @@ export function GardenPicture({
       <span
         aria-hidden
         // Where things stand (garden, dino, town), the ground is a tall strip they stand on in rows.
-        className={cn("relative w-full", t.ground, size === "sm" ? "h-3" : floating ? { md: "h-5", lg: "h-7" }[size] : "h-[22%]")}
+        className={cn("relative w-full", th.ground, size === "sm" ? "h-3" : floating ? { md: "h-5", lg: "h-7" }[size] : "h-[22%]")}
       />
     </div>
   );
 }
 
-export function Garden({ stars, theme, weekStart }: { stars: number; theme?: string | null; weekStart?: string }) {
-  const t = kidTheme(theme);
-  const { now, next } = stepLines(stars, t.id);
-  const title = t.id === "garden" ? "This week's garden" : `This week's ${t.name.toLowerCase()}`;
+export function Garden({ t, stars, theme, weekStart, gender = null }: { t: T; stars: number; theme?: string | null; weekStart?: string; gender?: Gender }) {
+  const th = kidTheme(theme);
+  const { now, next } = stepLines(t, stars, th.id, gender);
+  const title = t(`kidThemes.${th.id}.thisWeek`);
   return (
     <section aria-label={title} className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
       <h2 className="text-sm font-bold text-muted-foreground">{title}</h2>
-      <GardenPicture stars={stars} theme={t.id} />
+      <GardenPicture t={t} stars={stars} theme={th.id} />
       <div className="flex items-baseline justify-between gap-2">
         <p className="font-bold">{now}</p>
-        <p className="text-sm font-semibold tabular-nums">⭐ {stars} this week</p>
+        <p className="text-sm font-semibold tabular-nums">{t("kids.garden.stars", { stars })}</p>
       </div>
       {next && <p className="text-sm text-muted-foreground">{next}</p>}
-      {weekStart && <p className="text-sm text-muted-foreground">{restartLine(t.id, restartDay(weekStart), false)}</p>}
+      {weekStart && <p className="text-sm text-muted-foreground">{restartLine(t, th.id, restartDay(weekStart), false, gender)}</p>}
     </section>
   );
 }

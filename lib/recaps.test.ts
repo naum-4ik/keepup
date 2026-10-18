@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { tEn } from "@/lib/i18n/test-t";
 import { heatLevel, parseRecap, recapLine, recapTitle, streakLabel } from "./recaps";
 
 const week = { kind: "week", start: "2026-09-28", end: "2026-10-05", done: 10, possible: 11,
@@ -15,24 +16,31 @@ describe("recaps", () => {
     expect(r.days.map((d) => d.rested)).toEqual([1, 0]);
   });
   it("titles a week by its first day and a month by name", () => {
-    expect(recapTitle(parseRecap(week)!)).toBe("Week of 28 Sep");
-    expect(recapTitle(parseRecap({ ...week, kind: "month", start: "2026-09-01", end: "2026-10-01" })!)).toBe("September 2026");
+    expect(recapTitle(tEn, "en", parseRecap(week)!)).toBe("Week of 28 Sep");
+    expect(recapTitle(tEn, "en", parseRecap({ ...week, kind: "month", start: "2026-09-01", end: "2026-10-01" })!)).toBe("September 2026");
+  });
+  it("week titles read as before in every month (day, then the fixed English abbreviation)", () => {
+    const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    mon.forEach((m, i) => {
+      const start = `2026-${String(i + 1).padStart(2, "0")}-0${(i % 9) + 1}`;
+      expect(recapTitle(tEn, "en", parseRecap({ ...week, start })!)).toBe(`Week of ${(i % 9) + 1} ${m}`);
+    });
   });
   it("uses the Inbox words, and stays gentle when nothing was due", () => {
-    expect(recapLine(parseRecap(week)!)).toBe("10 of 11 check-ins last week. Longest streak: Read 🔥 7 days");
-    expect(recapLine(parseRecap(week)!, "history")).toBe("10 of 11 check-ins. Longest streak: Read 🔥 7 days");
-    expect(recapLine(parseRecap({ ...week, longest: { title: "Gym", emoji: "", length: 1, period: "week" } })!)).toContain("Gym 🔥 1 week");
-    expect(recapLine(parseRecap({ ...week, kind: "month", start: "2026-09-01", longest: { title: "Gym", emoji: "", length: 3, period: "month" } })!, "history")).toContain("in September. Longest streak: Gym 🔥 3 months");
-    expect(recapLine(parseRecap({ ...week, done: 0, possible: 0, longest: null })!)).toBe("Nothing was due.");
+    expect(recapLine(tEn, "en", parseRecap(week)!)).toBe("10 of 11 check-ins last week. Longest streak: \u2068Read\u2069 🔥 7 days");
+    expect(recapLine(tEn, "en", parseRecap(week)!, "history")).toBe("10 of 11 check-ins. Longest streak: \u2068Read\u2069 🔥 7 days");
+    expect(recapLine(tEn, "en", parseRecap({ ...week, longest: { title: "Gym", emoji: "", length: 1, period: "week" } })!)).toContain("\u2068Gym\u2069 🔥 1 week");
+    expect(recapLine(tEn, "en", parseRecap({ ...week, kind: "month", start: "2026-09-01", longest: { title: "Gym", emoji: "", length: 3, period: "month" } })!, "history")).toContain("in September. Longest streak: \u2068Gym\u2069 🔥 3 months");
+    expect(recapLine(tEn, "en", parseRecap({ ...week, done: 0, possible: 0, longest: null })!)).toBe("Nothing was due.");
   });
   it("never writes 0 of N", () => {
-    expect(recapLine(parseRecap({ ...week, done: 0, possible: 5, longest: null })!)).toBe("A quiet week.");
-    expect(recapLine(parseRecap({ ...week, kind: "month", start: "2026-09-01", done: 0, possible: 5, longest: null })!)).toBe("A quiet month.");
+    expect(recapLine(tEn, "en", parseRecap({ ...week, done: 0, possible: 5, longest: null })!)).toBe("A quiet week.");
+    expect(recapLine(tEn, "en", parseRecap({ ...week, kind: "month", start: "2026-09-01", done: 0, possible: 5, longest: null })!)).toBe("A quiet month.");
   });
   it("shades a day by how much of it got done, never red", () => {
     expect([heatLevel(0, 0), heatLevel(0, 3), heatLevel(1, 3), heatLevel(2, 3), heatLevel(3, 3)]).toEqual([0, 1, 2, 3, 4]);
   });
   it("names a streak with its unit", () => {
-    expect(streakLabel({ title: "Gym", emoji: "🏋️", length: 1, period: "week" })).toBe("Gym 🔥 1 week");
+    expect(streakLabel(tEn, { title: "Gym", emoji: "🏋️", length: 1, period: "week" })).toBe("\u2068Gym\u2069 🔥 1 week");
   });
 });

@@ -1,13 +1,14 @@
-// Settings → Reset my data (owner 2026-10-06): its words in one place, and the confirm rule.
-// What it clears and keeps is decided by public.reset_my_data; these lines say the same in plain words.
-export const RESET_WORD = "reset";
-export const RESET_CLEARS = "This clears your own habits and their check-ins, your XP and level, your badges, recaps and your Inbox.";
-export const RESET_KEEPS = "Your account, settings, devices, groups and children stay, and so do your check-ins in group habits.";
-// Today, right after a reset.
-export const RESET_DONE = "Your data is reset. A fresh start 🌱";
+// Settings → Reset my data (owner 2026-10-06): the confirm rule.
+// What it clears and keeps is decided by public.reset_my_data; the catalog lines say the same in plain words.
+import type { T } from "@/supabase/functions/_shared/i18n";
+// The words live in the catalog (`settings.reset.*`).
 
-// The confirm field: "reset", in any case, spaces around it ignored.
-export const isResetWord = (typed: string) => typed.trim().toLowerCase() === RESET_WORD;
+// The confirm field: the word in the person's language or the English "reset" (a keyboard may not have
+// the other), in any case, spaces around it ignored.
+export function isResetWord(t: T, typed: string): boolean {
+  const word = typed.trim().toLowerCase();
+  return word === t("settings.reset.word").toLowerCase() || word === "reset";
+}
 
 // The confirm button's steps (components/profile/reset-my-data.tsx): the reset first; only once it
 // succeeded is the phone cleared (waiting taps on the private habits, saved pages), and a failure

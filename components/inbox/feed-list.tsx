@@ -5,12 +5,13 @@ import { Avatar } from "@/components/avatar";
 import { SproutIcon } from "@/components/sprout-icon";
 import { dayLabel, relativeTime, todayIn } from "@/lib/dates";
 import { feedCopy, type FeedItem } from "@/lib/feed-copy";
+import type { Locale, T } from "@/supabase/functions/_shared/i18n";
 import { cn } from "@/lib/utils";
 
 // Activity, newest first, under day headings in the viewer's time zone.
-export function FeedList({ items, timeZone, now }: { items: FeedItem[]; timeZone: string; now: Date }) {
+export function FeedList({ items, timeZone, now, t, locale }: { items: FeedItem[]; timeZone: string; now: Date; t: T; locale: Locale }) {
   if (items.length === 0) {
-    return <EmptyState icon={<Bell className="size-6" />}>Nothing yet. Activity from your groups shows up here.</EmptyState>;
+    return <EmptyState icon={<Bell className="size-6" />}>{t("inbox.feed.empty")}</EmptyState>;
   }
 
   const today = todayIn(timeZone, now);
@@ -23,11 +24,11 @@ export function FeedList({ items, timeZone, now }: { items: FeedItem[]; timeZone
   return (
     <div className="flex flex-col gap-4">
       {[...days].map(([day, rows]) => (
-        <section key={day} aria-label={dayLabel(day, today)} className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold text-muted-foreground">{dayLabel(day, today)}</h2>
+        <section key={day} aria-label={dayLabel(t, locale, day, today)} className="flex flex-col gap-2">
+          <h2 className="text-sm font-semibold text-muted-foreground">{dayLabel(t, locale, day, today)}</h2>
           <ul className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-soft">
             {rows.map((n) => {
-              const { title, body, href } = feedCopy(n);
+              const { title, body, href } = feedCopy(t, locale, n);
               // Unread: a dot and words, not just the tint (docs/design.md: colour is never the only signal).
               const inner = (
                 <>
@@ -35,7 +36,7 @@ export function FeedList({ items, timeZone, now }: { items: FeedItem[]; timeZone
                     {!n.read_at && (
                       <>
                         <span aria-hidden className="size-2 rounded-full bg-primary" />
-                        <span className="sr-only">Unread: </span>
+                        <span className="sr-only">{t("inbox.feed.unread")}</span>
                       </>
                     )}
                   </span>
@@ -54,7 +55,7 @@ export function FeedList({ items, timeZone, now }: { items: FeedItem[]; timeZone
                     <span className="truncate text-xs font-semibold text-muted-foreground">{title}</span>
                     <span className="text-sm">{body}</span>
                   </span>
-                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{relativeTime(n.created_at, timeZone, now)}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{relativeTime(t, locale, n.created_at, timeZone, now)}</span>
                 </>
               );
               const className = cn("flex min-h-14 items-start gap-3 px-4 py-3", !n.read_at && "bg-accent/50");

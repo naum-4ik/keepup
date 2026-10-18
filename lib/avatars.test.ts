@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  AVATAR_COLOR_LABEL, AVATAR_COLORS, AVATAR_EMOJI, GROUP_AVATAR_EMOJI, initialOf, isAvatarColor, isAvatarEmoji, isGroupAvatarEmoji, parseAvatar,
+  AVATAR_COLORS, AVATAR_EMOJI, GROUP_AVATAR_EMOJI, initialOf, isAvatarColor, isAvatarEmoji, isGroupAvatarEmoji, parseAvatar, type AvatarColor,
 } from "@/lib/avatars";
+import { tEn } from "@/lib/i18n/test-t";
 
 describe("avatars", () => {
   it("offers 24 distinct emoji and six pastel colors", () => {
@@ -10,7 +11,7 @@ describe("avatars", () => {
     expect(Object.keys(AVATAR_COLORS)).toEqual(["peach", "sage", "sky", "lilac", "butter", "rose"]);
   });
   it("names every color for people", () => {
-    expect(Object.values(AVATAR_COLOR_LABEL)).toEqual(["Peach", "Sage", "Sky", "Lilac", "Butter", "Rose"]);
+    expect((Object.keys(AVATAR_COLORS) as AvatarColor[]).map((c) => tEn(`avatars.colors.${c}`))).toEqual(["Peach", "Sage", "Sky", "Lilac", "Butter", "Rose"]);
   });
   it("validates colors", () => {
     expect(isAvatarColor("sage")).toBe(true);
@@ -37,10 +38,10 @@ describe("avatars", () => {
       f.set("avatarColor", color);
       return f;
     };
-    expect(parseAvatar(fd("🐼", "sage"), isAvatarEmoji)).toEqual({ ok: true, emoji: "🐼", color: "sage" });
-    expect(parseAvatar(fd("", "peach"), isAvatarEmoji)).toEqual({ ok: true, emoji: null, color: "peach" });
-    expect(parseAvatar(fd("🏡", "sage"), isAvatarEmoji)).toEqual({ ok: false, message: "Pick one of these avatars." });
-    expect(parseAvatar(fd("🏡", "sage"), isGroupAvatarEmoji)).toEqual({ ok: true, emoji: "🏡", color: "sage" });
-    expect(parseAvatar(fd("🐼", "neon"), isAvatarEmoji)).toEqual({ ok: false, message: "Pick a color." });
+    expect(parseAvatar(tEn, fd("🐼", "sage"), isAvatarEmoji)).toEqual({ ok: true, emoji: "🐼", color: "sage" });
+    expect(parseAvatar(tEn, fd("", "peach"), isAvatarEmoji)).toEqual({ ok: true, emoji: null, color: "peach" });
+    expect(parseAvatar(tEn, fd("🏡", "sage"), isAvatarEmoji)).toEqual({ ok: false, message: "Pick one of these avatars." });
+    expect(parseAvatar(tEn, fd("🏡", "sage"), isGroupAvatarEmoji)).toEqual({ ok: true, emoji: "🏡", color: "sage" });
+    expect(parseAvatar(tEn, fd("🐼", "neon"), isAvatarEmoji)).toEqual({ ok: false, message: "Pick a color." });
   });
 });

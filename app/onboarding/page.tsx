@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { DemoBanner } from "@/components/demo/demo-banner";
 import { getProfile } from "@/lib/auth";
+import { getT } from "@/lib/i18n/server";
 import { isGroupKind } from "@/lib/group-schema";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
@@ -10,6 +11,7 @@ import { AboutYouForm } from "./about-you-form";
 import { completeOnboarding } from "./actions";
 
 export default async function OnboardingPage({ searchParams }: { searchParams: Promise<{ joined?: string }> }) {
+  const { t, rich } = await getT();
   const { supabase, profile } = await getProfile();
   const { joined } = await searchParams;
   if (profile.onboarded_at) redirect(joined && isUuid(joined) ? `/today?joined=${joined}` : "/today");
@@ -26,9 +28,9 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
     <main className="mx-auto max-w-sm px-4 py-10">
       {/* A demo login whose seeding never ran (the tab closed mid-way): a way out to a real account. */}
       {(profile.is_demo || data?.claims?.is_anonymous) && <DemoBanner placement="top" />}
-      <h1 className="text-2xl font-bold">Welcome to Keepup</h1>
+      <h1 className="text-2xl font-bold">{t("onboarding.title")}</h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        {invitedTo ? `You're joining ${invitedTo.name}. A little about you first.` : "A little about you, then your first habits."}
+        {invitedTo ? rich("onboarding.subtitleInvited", { group: invitedTo.name }) : t("onboarding.subtitle")}
       </p>
       <div className="rounded-2xl bg-card p-6 shadow-soft">
         <AboutYouForm

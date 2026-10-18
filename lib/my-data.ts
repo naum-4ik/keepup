@@ -1,25 +1,20 @@
-// Settings → Your data: Export my data and Delete account (M6). Copy lives here, next to its helpers.
+// Settings → Your data: Export my data and Delete account (M6). The words live in the catalog
+// (`myData.*`): the delete word, title, body, hints, and the failed-delete line (a reload brings back
+// the check-in queue and push) and the note on the landing page right after a delete (?deleted=1).
 import { deviceTimeZone, todayIn } from "@/lib/dates";
-
-export const DELETE_WORD = "delete";
-export const DELETE_TITLE = "Delete your account?";
-export const DELETE_BODY =
-  "Your account, habits, check-ins, XP, badges and Inbox are deleted right away. This can't be undone.";
-export const EXPORT_HINT = "A file with everything Keepup keeps about you.";
-export const PREVIEW_RETRY = "Try again";
-export const EXPORT_FIRST = "Export your data first if you want a copy.";
-// A failed delete after the phone was cleared: a reload brings back the check-in queue and push.
-export const DELETE_FAILED = "Couldn't delete your account. Reload Keepup and try again.";
-// The landing page, right after a delete (app/page.tsx, ?deleted=1).
-export const DELETED_NOTE = "Your account and data are deleted.";
+import type { ReactNode } from "react";
+import { listNodes, type Rich } from "@/lib/list-nodes";
+import { type Locale, type T } from "@/supabase/functions/_shared/i18n";
 
 export type DeletePreview = {
   groups_deleted: { name: string; children: string[] }[];
   admin_handover: { group: string; new_admin: string }[];
 };
 
-export function isDeleteWord(typed: string): boolean {
-  return typed.trim().toLowerCase() === DELETE_WORD;
+// The word in the person's language, or the English one (a keyboard may not have the other).
+export function isDeleteWord(t: T, typed: string): boolean {
+  const word = typed.trim().toLowerCase();
+  return word === t("myData.deleteWord").toLowerCase() || word === "delete";
 }
 
 // The person's own date (the browser's time zone), not UTC's: a late-evening export isn't dated tomorrow.
@@ -27,19 +22,18 @@ export function myDataFileName(now: Date, timeZone = deviceTimeZone()): string {
   return `keepup-my-data-${todayIn(timeZone, now)}.json`;
 }
 
-function names(list: string[]): string {
-  if (list.length <= 1) return list.join("");
-  return `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
-}
-
-export function deletePreviewLines(p: DeletePreview): string[] {
+export function deletePreviewLines(rich: Rich, locale: Locale, p: DeletePreview): ReactNode[] {
   return [
     ...p.groups_deleted.map((g) =>
       g.children.length === 0
-        ? `${g.name} will be deleted.`
-        : `${g.name} will be deleted, with ${names(g.children.map((c) => `${c}'s`))} profile${g.children.length > 1 ? "s" : ""}.`,
+        ? rich("myData.groupDeleted", { group: g.name })
+        : rich("myData.groupDeletedWithProfiles", {
+            group: g.name,
+            n: g.children.length,
+            names: listNodes(locale, g.children, (c) => rich("myData.possessive", { name: c })),
+          }),
     ),
-    ...p.admin_handover.map((h) => `${h.new_admin} becomes the admin of ${h.group}.`),
+    ...p.admin_handover.map((h) => rich("myData.becomesAdmin", { admin: h.new_admin, group: h.group })),
   ];
 }
 
@@ -48,7 +42,7 @@ export function deletePreviewLines(p: DeletePreview): string[] {
 // cleared, before the delete, because a successful delete redirects and nothing runs after it.
 // remove resolves only on failure; its redirect reaches here as a rejection (Next 16), which
 // `rethrow` (next/navigation's unstable_rethrow) passes on. Returns the error to show, if any.
-export async function runDelete(steps: {
+export async function runDelete(t: T, steps: {
   flush: () => Promise<void>;
   clearPhone: () => Promise<void>;
   remove: () => Promise<{ ok: false; message: string } | undefined>;
@@ -62,11 +56,11 @@ export async function runDelete(steps: {
   try {
     await steps.clearPhone();
     const r = await steps.remove();
-    return r && !r.ok ? DELETE_FAILED : null;
+    return r && !r.ok ? t("myData.deleteFailed") : null;
   } catch (e) {
     steps.rethrow(e);
     console.error("delete account", e);
     // The phone may be cleared already: a reload brings the queue and push back.
-    return DELETE_FAILED;
+    return t("myData.deleteFailed");
   }
 }

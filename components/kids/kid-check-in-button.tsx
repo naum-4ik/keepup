@@ -4,18 +4,20 @@ import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Check, Clock, Plus, Snowflake, Undo2 } from "lucide-react";
 import { undoForChild } from "@/app/(app)/kids/actions";
 import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
-import { SAVING } from "@/lib/offline-copy";
 import { queueKey } from "@/lib/offline-queue";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/client";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 
-const LABEL: Record<CheckInState, string> = {
-  open: "Check in for",
-  done: "Done for",
-  pending: "Waiting for approval for",
-  "checked-today": "Checked in today for",
-  frozen: "Paused for",
-  "not-started": "Starts later for",
+// The select keys of kids.checkIn.label.
+const STATE_KEY: Record<CheckInState, string> = {
+  open: "open",
+  done: "done",
+  pending: "pending",
+  "checked-today": "checkedToday",
+  frozen: "frozen",
+  "not-started": "notStarted",
 };
 
 // An adult checks in for a child (Today's kid section, the kid page). On success a ⭐ bounces next
@@ -36,6 +38,7 @@ export function KidCheckInButton({
   state: CheckInState;
   multi: boolean;
 }) {
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [star, setStar] = useState(0);
@@ -60,7 +63,7 @@ export function KidCheckInButton({
       <div className="relative">
         <button
           type="button"
-          aria-label={`${LABEL[shown]} ${childName}: ${title}`}
+          aria-label={t("kids.checkIn.label", { state: STATE_KEY[shown], name: isolate(childName), title: isolate(title) })}
           aria-describedby={savingShown ? savingId : undefined}
           disabled={shown !== "open" || pending}
           onClick={() => {
@@ -95,19 +98,19 @@ export function KidCheckInButton({
           <Icon className="size-5" strokeWidth={2.5} aria-hidden />
         </button>
         {star > 0 && (
-          <span key={star} aria-hidden className="pointer-events-none absolute -top-3 -left-3 text-xl leading-none motion-safe:animate-star">
+          <span key={star} aria-hidden className="pointer-events-none absolute -top-3 -start-3 text-xl leading-none motion-safe:animate-star">
             ⭐
           </span>
         )}
       </div>
       {error && (
-        <p role="alert" className="max-w-40 text-right text-xs text-destructive">
+        <p role="alert" className="max-w-40 text-end text-xs text-destructive">
           {error}
         </p>
       )}
       {savingShown && (
         <p id={savingId} className="text-xs text-muted-foreground">
-          {SAVING}
+          {t("offline.saving")}
         </p>
       )}
     </div>
@@ -116,6 +119,7 @@ export function KidCheckInButton({
 
 // Any adult of the group may undo a child's check-in while its period is open.
 export function UndoForChildButton({ checkInId, habitId, childId, label }: { checkInId: string; habitId: string; childId: string; label: string }) {
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
@@ -133,7 +137,7 @@ export function UndoForChildButton({ checkInId, habitId, childId, label }: { che
         className="flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-60"
       >
         <Undo2 aria-hidden className="size-4" />
-        Undo
+        {t("offline.undo")}
       </button>
       {error && <span role="alert" className="text-xs text-destructive">{error}</span>}
     </span>

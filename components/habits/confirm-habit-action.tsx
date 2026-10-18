@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import type { FormActionState } from "@/app/(app)/habits/actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -20,13 +21,14 @@ export function ConfirmHabitAction({
   action,
 }: {
   triggerLabel: string;
-  title: string;
+  title: ReactNode;
   description: string;
   confirmLabel: string;
   pendingLabel: string;
   confirmVariant: "destructive" | "outline";
   action: (prev: FormActionState, formData: FormData) => Promise<FormActionState>;
 }) {
+  const t = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [state, formAction, pending] = useActionState(action, initialState);
 
@@ -37,14 +39,14 @@ export function ConfirmHabitAction({
       </Button>
       <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pr-10">
+          <div className="flex flex-col gap-1 pe-10">
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>
           </div>
           {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
           <form action={formAction} className="flex gap-2">
             <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => setOpen(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button type="submit" variant={confirmVariant} className="h-11 flex-1" disabled={pending}>
               {pending ? pendingLabel : confirmLabel}

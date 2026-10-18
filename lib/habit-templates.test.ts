@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CATEGORY_ORDER } from "./categories";
-import { EMOJI_SUGGESTIONS_MAX, emojiSuggestions, HABIT_TEMPLATES, onboardingTemplates } from "./habit-templates";
+import { EMOJI_SUGGESTIONS_MAX, emojiSuggestions, HABIT_TEMPLATES, onboardingTemplates, templateTitle } from "./habit-templates";
+import { tEn } from "@/lib/i18n/test-t";
 import { isOneEmoji, parseHabit } from "./habit-schema";
 
 describe("HABIT_TEMPLATES", () => {
@@ -14,7 +15,7 @@ describe("HABIT_TEMPLATES", () => {
   });
 
   it("Popular is the same 6 as before", () => {
-    expect(HABIT_TEMPLATES.filter((t) => t.popular).map((t) => t.title)).toEqual([
+    expect(HABIT_TEMPLATES.filter((t) => t.popular).map((t) => templateTitle(tEn, t.id))).toEqual([
       "Drink water", "Sleep by 23:00", "Walk 10,000 steps", "Work out", "Meditate", "Read 20 min",
     ]);
   });
@@ -25,7 +26,7 @@ describe("HABIT_TEMPLATES", () => {
   });
 
   it("the removed templates are gone", () => {
-    const titles = HABIT_TEMPLATES.map((t) => t.title);
+    const titles = HABIT_TEMPLATES.map((t) => templateTitle(tEn, t.id));
     expect(titles).not.toContain("Skincare routine");
     expect(titles).not.toContain("Take the stairs");
   });
@@ -33,7 +34,7 @@ describe("HABIT_TEMPLATES", () => {
   it("every template passes the habit rules, its emoji included", () => {
     for (const t of HABIT_TEMPLATES) {
       expect(isOneEmoji(t.emoji), t.id).toBe(true);
-      const r = parseHabit({ title: t.title, emoji: t.emoji, category: t.category, targetCount: String(t.targetCount), period: t.period, startsOn: "2026-10-05" });
+      const r = parseHabit({ title: templateTitle(tEn, t.id), emoji: t.emoji, category: t.category, targetCount: String(t.targetCount), period: t.period, startsOn: "2026-10-05" });
       expect(r.ok, t.id).toBe(true);
       if (r.ok) expect(r.value.emoji).toBe(t.emoji);
     }

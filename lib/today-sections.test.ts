@@ -1,25 +1,26 @@
 import { describe, expect, it } from "vitest";
+import { tEn } from "@/lib/i18n/test-t";
 import { everyoneDidIt, memberStatus, sectionsForToday } from "@/lib/today-sections";
 
 const h = (o: Record<string, unknown>) => ({ habit_id: crypto.randomUUID(), group_id: null, group_name: null, ...o }) as never;
 
 describe("sectionsForToday", () => {
   it("puts private habits under Mine, then one section per group by name", () => {
-    const s = sectionsForToday([h({ title: "Read" }), h({ title: "Dinner", group_id: "g2", group_name: "Family" }), h({ title: "Gym", group_id: "g1", group_name: "Buddies" })]);
+    const s = sectionsForToday(tEn, "en", [h({ title: "Read" }), h({ title: "Dinner", group_id: "g2", group_name: "Family" }), h({ title: "Gym", group_id: "g1", group_name: "Buddies" })]);
     expect(s.map((x) => x.title)).toEqual(["Mine", "Buddies", "Family"]);
   });
   it("drops empty sections", () => {
-    expect(sectionsForToday([h({ group_id: "g", group_name: "Family" })]).map((x) => x.title)).toEqual(["Family"]);
+    expect(sectionsForToday(tEn, "en", [h({ group_id: "g", group_name: "Family" })]).map((x) => x.title)).toEqual(["Family"]);
   });
   it("carries each group's avatar from my groups", () => {
-    const s = sectionsForToday(
+    const s = sectionsForToday(tEn, "en",
       [h({ title: "Read" }), h({ title: "Dinner", group_id: "g1", group_name: "Family" })],
       [{ group_id: "g1", avatar_emoji: "🏡", avatar_color: "sage" }],
     );
     expect(s.map((x) => x.avatar)).toEqual([undefined, { emoji: "🏡", color: "sage" }]);
   });
   it("has no avatar for a group missing from the list (my_groups failed soft)", () => {
-    expect(sectionsForToday([h({ group_id: "g1", group_name: "Family" })])[0].avatar).toBeUndefined();
+    expect(sectionsForToday(tEn, "en", [h({ group_id: "g1", group_name: "Family" })])[0].avatar).toBeUndefined();
   });
 });
 

@@ -1,18 +1,21 @@
 import { BadgeNotes, BadgeTile } from "@/components/profile/badge-tile";
 import type { BadgeGroup } from "@/lib/badges";
+import { getT } from "@/lib/i18n/server";
+import { INTL_LOCALE } from "@/supabase/functions/_shared/i18n";
 
 // All 24 badges by group (ideas/achievements-and-rewards.md §4). Earned: full colour. Locked: the same
 // icon, greyed. Just the icon and the name; the date or the hint shows on hover, tap or focus (owner,
 // 2026-10-06). No tiers, nothing to feel behind on.
-export function BadgeGrid({ groups, timeZone }: { groups: BadgeGroup[]; timeZone: string }) {
+export async function BadgeGrid({ groups, timeZone }: { groups: BadgeGroup[]; timeZone: string }) {
   if (groups.length === 0) return null;
-  const day = new Intl.DateTimeFormat("en-GB", { timeZone, day: "numeric", month: "short" });
+  const { t, locale } = await getT();
+  const day = new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone, day: "numeric", month: "short" });
   const earned = groups.reduce((n, g) => n + g.badges.filter((b) => b.earnedAt).length, 0);
   const total = groups.reduce((n, g) => n + g.badges.length, 0);
   return (
-    <section aria-label="Achievements" className="flex flex-col gap-3">
+    <section aria-label={t("achievements.title")} className="flex flex-col gap-3">
       <p className="text-sm text-muted-foreground tabular-nums">
-        {earned} of {total} earned
+        {t("achievements.earnedCount", { earned, total })}
       </p>
       <BadgeNotes>
         {groups.map((g) => (
@@ -27,8 +30,8 @@ export function BadgeGrid({ groups, timeZone }: { groups: BadgeGroup[]; timeZone
                     <BadgeTile
                       code={b.code}
                       name={b.name}
-                      label={date ? `${b.name}, earned ${date}` : `${b.name}, locked: ${b.hint}`}
-                      note={date ? `Earned ${date}` : b.hint}
+                      label={date ? t("achievements.earnedLabel", { name: b.name, date }) : t("achievements.lockedLabel", { name: b.name, hint: b.hint })}
+                      note={date ? t("achievements.earnedNote", { date }) : b.hint}
                       earned={Boolean(date)}
                       chip={g.chip}
                       ink={g.ink}

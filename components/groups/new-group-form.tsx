@@ -2,19 +2,23 @@
 
 import { useActionState, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { createGroup, type GroupActionState } from "@/app/(app)/groups/actions";
 import { AvatarPicker } from "@/components/avatar-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GROUP_AVATAR_EMOJI } from "@/lib/avatars";
-import { GROUP_KIND_LABEL, GROUP_KINDS, type GroupKind } from "@/lib/group-schema";
+import { groupKindLabel, GROUP_KINDS, type GroupKind } from "@/lib/group-schema";
+import { useT } from "@/lib/i18n/client";
 import { keepFormValues } from "@/lib/keep-form-values";
 
 const initialState: GroupActionState = { status: "idle" };
-const KIND_LABELS = new Set<string>(Object.values(GROUP_KIND_LABEL));
 
 export function NewGroupForm({ city }: { city: string }) {
+  const { t } = useT();
+  const tn = useTranslations("groups.new");
+  const tc = useTranslations("common");
   const [state, formAction, pending] = useActionState(createGroup, initialState);
   const [name, setName] = useState("");
   const [kind, setKind] = useState<GroupKind | "">("");
@@ -22,13 +26,13 @@ export function NewGroupForm({ city }: { city: string }) {
   const pick = (k: GroupKind) => {
     setKind(k);
     // Pre-fill only a name the person hasn't typed (empty, or another chip's label).
-    if (name.trim() === "" || KIND_LABELS.has(name.trim())) setName(GROUP_KIND_LABEL[k]);
+    if (name.trim() === "" || GROUP_KINDS.some((g) => groupKindLabel(t, g) === name.trim())) setName(groupKindLabel(t, k));
   };
 
   return (
     <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-5 rounded-2xl bg-card p-5 shadow-soft">
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-semibold">Who is it for?</legend>
+        <legend className="mb-2 text-sm font-semibold">{tn("whoFor")}</legend>
         <div className="flex flex-wrap gap-2">
           {GROUP_KINDS.map((k) => (
             <label
@@ -43,14 +47,14 @@ export function NewGroupForm({ city }: { city: string }) {
                 onChange={() => pick(k)}
                 className="absolute inset-0 cursor-pointer appearance-none rounded-full opacity-0"
               />
-              {GROUP_KIND_LABEL[k]}
+              {groupKindLabel(t, k)}
             </label>
           ))}
         </div>
       </fieldset>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="group-new-name" className="font-semibold">Name</Label>
+        <Label htmlFor="group-new-name" className="font-semibold">{tn("name")}</Label>
         <Input
           id="group-new-name"
           name="name"
@@ -58,7 +62,7 @@ export function NewGroupForm({ city }: { city: string }) {
           onChange={(e) => setName(e.target.value)}
           required
           autoComplete="off"
-          placeholder="The Levis, Book club…"
+          placeholder={tn("namePlaceholder")}
           className="h-11 rounded-xl px-3 text-base"
           aria-invalid={state.status === "error"}
           aria-describedby={state.status === "error" ? "group-new-name-error" : "group-new-name-help"}
@@ -72,22 +76,20 @@ export function NewGroupForm({ city }: { city: string }) {
           picker's hidden inputs still post (an empty emoji: the group shows its first letter). */}
       <details className="group/avatar">
         <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-semibold [&::-webkit-details-marker]:hidden">
-          <span>
-            Avatar <span className="font-normal text-muted-foreground">(optional)</span>
-          </span>
+          <span>{tn.rich("avatar", { muted: (c) => <span className="font-normal text-muted-foreground">{c}</span> })}</span>
           <ChevronDown aria-hidden className="size-4 text-muted-foreground transition-transform group-open/avatar:rotate-180" />
         </summary>
         <div className="pt-2">
-          <AvatarPicker name={name} options={GROUP_AVATAR_EMOJI} hint="Until you pick one, the group shows its first letter." />
+          <AvatarPicker name={name} options={GROUP_AVATAR_EMOJI} hint={tn("avatarHint")} />
         </div>
       </details>
 
       <p id="group-new-name-help" className="text-sm text-muted-foreground">
-        Your time zone ({city}) and week start are used for the group&apos;s habits. Admins can change them later.
+        {tn("timezoneHelp", { city })}
       </p>
 
       <Button type="submit" className="h-11" disabled={pending}>
-        {pending ? "Creating…" : "Create group"}
+        {pending ? tc("creating") : tn("create")}
       </Button>
     </form>
   );

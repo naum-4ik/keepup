@@ -1,7 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useT } from "@/lib/i18n/client";
 import { approvalsLabel, tabFromKey } from "@/lib/tabs";
+import { isRtl } from "@/supabase/functions/_shared/i18n";
 import { cn } from "@/lib/utils";
 
 type Tab = "approvals" | "activity";
@@ -18,14 +20,15 @@ export function InboxTabs({
   approvals: React.ReactNode;
   activity: React.ReactNode;
 }) {
+  const { t, locale } = useT();
   const [tab, setTab] = useState<Tab>(approvalsCount > 0 ? "approvals" : "activity");
   const tabs: [Tab, string][] = [
-    ["approvals", approvalsLabel(approvalsCount)],
-    ["activity", "Activity"],
+    ["approvals", approvalsLabel(t, approvalsCount)],
+    ["activity", t("tabs.activity")],
   ];
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const onKeyDown = (e: React.KeyboardEvent, i: number) => {
-    const next = tabFromKey(e.key, i, tabs.length);
+    const next = tabFromKey(e.key, i, tabs.length, isRtl(locale) ? "rtl" : "ltr");
     if (next === null) return;
     e.preventDefault();
     setTab(tabs[next][0]);
@@ -33,7 +36,7 @@ export function InboxTabs({
   };
   return (
     <div className="flex flex-col gap-4">
-      <div role="tablist" aria-label="Inbox" className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+      <div role="tablist" aria-label={t("inbox.title")} className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
         {tabs.map(([key, label], i) => (
           <button
             key={key}

@@ -4,10 +4,14 @@ import type { AvatarColor } from "@/lib/avatars";
 import { habitEmoji, normalizeCategory } from "@/lib/categories";
 import type { Database } from "@/lib/database.types";
 import type { HabitSummary } from "@/lib/habits";
+import { habitNameFor } from "@/lib/habit-title";
+import { getT } from "@/lib/i18n/server";
 import { logError } from "@/lib/log";
 
-export type MyChild = Omit<Database["public"]["Functions"]["my_children"]["Returns"][number], "avatar_color"> & {
+export type MyChild = Omit<Database["public"]["Functions"]["my_children"]["Returns"][number], "avatar_color" | "gender"> & {
   avatar_color: AvatarColor | null;
+  // null = not set (kid copy then uses neutral wording)
+  gender: "boy" | "girl" | null;
 };
 
 export type TreatGoal = {
@@ -49,12 +53,14 @@ export async function getChildSummaries(childId: string): Promise<HabitSummary[]
     logError("child_summaries failed", error.message);
     return [];
   }
-  // Same mapping as getHabitSummaries, except a kid habit's null category stays null (⭐ fallback).
+  const name = habitNameFor((await getT()).t);
+  // Same mapping as getHabitSummaries (title as the viewer reads it), except a kid habit's null category stays null (⭐ fallback).
   return (data ?? []).map((row) => {
     const raw = row.category as string | null;
     const category = raw == null ? null : normalizeCategory(raw);
     return {
       ...row,
+      title: name(row.title, row.template_id),
       category,
       emoji: category ? habitEmoji(category, row.emoji) : row.emoji?.trim() || "⭐",
       members: row.members ?? null,

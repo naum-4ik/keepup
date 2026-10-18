@@ -13,13 +13,13 @@ test("the weekly overview shows on Today and Progress", async ({ page }) => {
   // Day one: today's daily habits count as possible right away, so the strip shows 0 of 2.
   await expect(strip).toContainText("0 of 2");
 
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
   await expect(strip).toContainText("1 of 2");
   await expect(strip.getByRole("img", { name: "1 of 2 goals met this week" })).not.toHaveAttribute("data-complete", "");
 
-  await page.getByRole("button", { name: "Check in: Read" }).click();
-  await expect(page.getByRole("button", { name: "Done: Read" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: \u2068Read\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Done: \u2068Read\u2069" })).toBeVisible();
   // All done so far: the ring is replaced by the filled check.
   await expect(strip.getByRole("img", { name: "2 of 2 goals met this week" })).toHaveAttribute("data-complete", "");
   await expect(strip.locator("[data-complete] svg.lucide-check")).toBeVisible();
@@ -58,8 +58,8 @@ test("Progress → Calendar: the month, earlier months, and tap a day", async ({
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
   const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
   startHabitDaysAgo(id, 40);
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
 
   await page.goto("/progress");
   await page.getByRole("region", { name: "Your week" }).getByRole("link", { name: "Calendar" }).click();
@@ -95,8 +95,8 @@ test("Progress → Calendar counts a group habit you take part in, from the day 
   await createGroupHabitVia(page, "Family", "Walk");
   const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
   startHabitDaysAgo(id, 40);
-  await page.getByRole("button", { name: "Check in: Walk" }).click();
-  await expect(page.getByRole("button", { name: "Done: Walk" })).toBeVisible();
+  await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
 
   await page.goto("/progress/calendar");
   const month = page.getByRole("navigation", { name: "Month" });

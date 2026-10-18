@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { addDays, addMonths, formatLocalDate, formatMonth, monthGrid, nextWeekStart } from "@/lib/dates";
+import { INTL_LOCALE, type Locale } from "@/supabase/functions/_shared/i18n";
+import { useT } from "@/lib/i18n/client";
+import { fromWeekStart, weekdayLabels } from "@/lib/weekdays";
 import { cn } from "@/lib/utils";
 
-const shortDate = (date: string) => formatLocalDate(date).split(" ").slice(1).join(" ");
-const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const shortDate = (date: string, locale: Locale) => {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: "UTC", day: "numeric", month: "short" }).format(new Date(Date.UTC(y, m - 1, d)));
+};
 // The one chip for date choices: Starts here, Ends in EndPicker (same height, type and pressed state).
 export const dateChipClass =
   "flex h-11 items-center justify-center gap-1 rounded-full border border-input px-1.5 text-[0.8125rem] font-semibold whitespace-nowrap text-muted-foreground hover:border-primary/60 hover:bg-accent/60 hover:text-foreground aria-pressed:border-primary aria-pressed:bg-accent aria-pressed:text-foreground";
@@ -30,16 +35,18 @@ type Props = {
 // Quick picks cover the common case (start now); the month grid handles anything else.
 // Styled with the app's tokens instead of the browser's native date popup.
 export function StartDatePicker({ value, onChange, today, min = today, weekStart, errorId, quickPicks }: Props) {
+  const { t, locale } = useT();
+  const headers = useMemo(() => weekdayLabels(locale, "two"), [locale]);
   const quick =
     quickPicks ?? [
-      { label: "Today", date: today },
-      { label: "Tomorrow", date: addDays(today, 1) },
-      { label: `Next ${WEEKDAYS[weekStart]}`, date: nextWeekStart(today, weekStart) },
+      { label: t("dates.today"), date: today },
+      { label: t("habits.datePicker.tomorrow"), date: addDays(today, 1) },
+      { label: t("habits.datePicker.next", { day: weekStart }), date: nextWeekStart(today, weekStart) },
     ];
   const isQuick = quick.some((q) => q.date === value);
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(value.slice(0, 7));
-  const weekdays = [...WEEKDAYS.slice(weekStart), ...WEEKDAYS.slice(0, weekStart)];
+  const weekdays = fromWeekStart(headers, weekStart);
 
   return (
     <div className="flex flex-col gap-2">
@@ -50,30 +57,30 @@ export function StartDatePicker({ value, onChange, today, min = today, weekStart
             {q.label}
           </button>
         ))}
-        <button type="button" aria-pressed={!isQuick} aria-expanded={open} aria-label={isQuick ? "Pick a date" : `Pick a date, ${formatLocalDate(value)}`} className={dateChipClass}
+        <button type="button" aria-pressed={!isQuick} aria-expanded={open} aria-label={isQuick ? t("habits.datePicker.pick") : t("habits.datePicker.pickWith", { date: formatLocalDate(value, locale) })} className={dateChipClass}
           onClick={() => { setMonth(value.slice(0, 7)); setOpen((o) => !o); }}>
           <CalendarDays aria-hidden className="size-4" />
-          {isQuick ? "Date" : shortDate(value)}
+          {isQuick ? t("habits.datePicker.date") : shortDate(value, locale)}
         </button>
       </div>
 
       {open && (
         <div className="rounded-2xl border border-input p-3" aria-describedby={errorId}>
           <div className="mb-1 flex items-center justify-between">
-            <button type="button" aria-label="Previous month" disabled={month <= min.slice(0, 7)}
+            <button type="button" aria-label={t("habits.datePicker.previousMonth")} disabled={month <= min.slice(0, 7)}
               onClick={() => setMonth((m) => addMonths(m, -1))}
               className="flex size-11 items-center justify-center rounded-full text-primary hover:bg-muted disabled:text-muted-foreground/40">
-              <ChevronLeft className="size-5" />
+              <ChevronLeft className="size-5 rtl:-scale-x-100" />
             </button>
-            <span className="text-sm font-bold" aria-live="polite">{formatMonth(month)}</span>
-            <button type="button" aria-label="Next month" onClick={() => setMonth((m) => addMonths(m, 1))}
+            <span className="text-sm font-bold" aria-live="polite">{formatMonth(month, locale)}</span>
+            <button type="button" aria-label={t("habits.datePicker.nextMonth")} onClick={() => setMonth((m) => addMonths(m, 1))}
               className="flex size-11 items-center justify-center rounded-full text-primary hover:bg-muted">
-              <ChevronRight className="size-5" />
+              <ChevronRight className="size-5 rtl:-scale-x-100" />
             </button>
           </div>
           <div className="grid grid-cols-7 text-center">
-            {weekdays.map((d) => (
-              <span key={d} className="pb-1 text-xs font-semibold text-muted-foreground">{d.slice(0, 2)}</span>
+            {weekdays.map((d, i) => (
+              <span key={i} className="pb-1 text-xs font-semibold text-muted-foreground">{d}</span>
             ))}
             {monthGrid(month, weekStart).map((date, i) =>
               date === null ? (
@@ -84,7 +91,7 @@ export function StartDatePicker({ value, onChange, today, min = today, weekStart
                   type="button"
                   disabled={date < min}
                   aria-pressed={date === value}
-                  aria-label={formatLocalDate(date)}
+                  aria-label={formatLocalDate(date, locale)}
                   onClick={() => { onChange(date); setOpen(false); }}
                   className={cn(
                     "flex h-11 w-full items-center justify-center rounded-full text-sm tabular-nums",
