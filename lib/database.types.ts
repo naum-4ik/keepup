@@ -454,6 +454,31 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"push_deliveries": {
+                  Row: {
+                    "created_at": string,"endpoint_host": string | null,"id": string,"kind": string,"notification_id": string | null,"outcome": string,"reason": string | null,"status": number | null,"user_id": string
+                  }
+                  Insert: {
+                    "created_at"?: string,"endpoint_host"?: string | null,"id"?: string,"kind": string,"notification_id"?: string | null,"outcome": string,"reason"?: string | null,"status"?: number | null,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"endpoint_host"?: string | null,"id"?: string,"kind"?: string,"notification_id"?: string | null,"outcome"?: string,"reason"?: string | null,"status"?: number | null,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "push_deliveries_notification_id_fkey"
+      columns: ["notification_id"]
+isOneToOne: false
+      referencedRelation: "notifications"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "push_deliveries_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"push_subscriptions": {
                   Row: {
                     "auth": string,"created_at": string,"endpoint": string,"id": string,"p256dh": string,"user_agent": string | null,"user_id": string
@@ -872,7 +897,7 @@ isOneToOne: false
                            },
 "inbox_feed":
 { Args: { "p_limit"?: number }; Returns: {
-              "actor_avatar_color": string,"actor_avatar_emoji": string,"actor_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_template": string,"habit_title": string,"id": string,"kind": string,"payload": Json,"read_at": string,"seen_at": string,"subject_avatar_emoji": string,"subject_id": string,"subject_name": string
+              "actor_avatar_color": string,"actor_avatar_emoji": string,"actor_name": string,"check_in_id": string,"created_at": string,"group_id": string,"group_name": string,"habit_emoji": string,"habit_id": string,"habit_template": string,"habit_title": string,"id": string,"kind": string,"payload": Json,"read_at": string,"seen_at": string,"subject_avatar_emoji": string,"subject_gender": string,"subject_id": string,"subject_name": string
             }[]
                            },
 "invite_membership":
@@ -1133,7 +1158,7 @@ isOneToOne: false
         isSetofReturn: false
       } },
 "start_demo":
-{ Args: { "p_timezone": string }; Returns: undefined
+{ Args: { "p_group_name"?: string,"p_timezone": string,"p_treat_title"?: string }; Returns: undefined
                            },
 "undo_check_in":
 { Args: { "p_check_in_id": string }; Returns: undefined

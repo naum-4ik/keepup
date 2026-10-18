@@ -5,7 +5,9 @@ name: CI
 #   test (~3 min, not required, so it never holds up a merge);
 # - a push to develop or main (a merge): the database tests too, which gate the staging deploy;
 #   the full e2e suite runs after each merge in e2e.yml;
-# - a PR labelled `full-ci`, or a manual run: the database tests and the full e2e suite.
+# - a PR labelled `full-ci`, or a manual run: the database tests (~2 min). The full e2e suite is not
+#   part of any PR check (owner, 2026-10-18: every check within ~2 min); it runs after each merge in
+#   e2e.yml, or by hand on a branch: `gh workflow run e2e.yml --ref <branch>`.
 on:
   # Every PR, including stacked PRs that target another feature branch. `labeled` lets the
   # `full-ci` label start the full run on an open PR.
@@ -145,29 +147,13 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - name: Start Supabase
-        run: npx supabase start
+      # Only what the database tests and type generation need: Postgres, auth (its schema) and
+      # postgres-meta. Starting all 12 services took ~90 s.
+      - name: Start Supabase (database only)
+        run: npx supabase start -x realtime,storage-api,imgproxy,kong,mailpit,postgrest,studio,edge-runtime,logflare,vector,supavisor
       - name: Database tests
         run: npx supabase test db
       - name: Check generated DB types are up to date
         run: |
           npm run db:types
           git diff --exit-code lib/database.types.ts
-      # E2E runs here on `full-ci` PRs and manual runs; after a merge it runs in e2e.yml instead, so
-      # the staging deploy (which waits on this run) is gated by the DB tests above, not by e2e.
-      - if: github.event_name != 'push'
-        run: node scripts/local-env.mjs
-      - if: github.event_name != 'push'
-        run: npx playwright install --with-deps chromium
-      - name: End-to-end tests
-        if: github.event_name != 'push'
-        run: npm run e2e
-        env:
-          CI: "true"
-          KEEPUP_LOCALES: en,ru,he
-      - uses: actions/upload-artifact@v4
-        if: failure() && github.event_name != 'push'
-        with:
-          name: playwright-report
-          path: playwright-report
-          retention-days: 7

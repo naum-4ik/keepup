@@ -27,7 +27,7 @@ async function copyFor(locale: Locale): Promise<OfflinePageCopy | null> {
 
 // What the service worker shows for a page that isn't saved on this phone (ideas/offline.md §3).
 // Built once, so it can't read the visitor's language: it carries the words of every enabled language
-// (KEEPUP_LOCALES at build time) that has a catalog, and OfflineMessage picks one in the browser.
+// (KEEPUP_LOCALES at build time) that has a catalog, and an inline script (lib/offline-copy.ts offlineLocaleScript) picks one in the browser.
 export default async function OfflinePage() {
   const found = await Promise.all(enabledLocales().map(async (l) => [l, await copyFor(l)] as const));
   const copies = Object.fromEntries(found.filter(([, c]) => c)) as { en: OfflinePageCopy } & Partial<Record<Locale, OfflinePageCopy>>;

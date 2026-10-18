@@ -4,7 +4,7 @@ import type { FeedItem } from "@/lib/feed-copy";
 import { habitNameFor } from "@/lib/habit-title";
 import { getT } from "@/lib/i18n/server";
 import { namedFeedItem } from "@/lib/inbox";
-import type { FamilyRecap } from "@/lib/today-cards";
+import { namedRecap, type FamilyRecap } from "@/lib/today-cards";
 import { logError } from "@/lib/log";
 
 // Everything the cards at the top of Today (and the Inbox's recap) read. Each is extra around the
@@ -30,7 +30,7 @@ export async function getFamilyRecaps(): Promise<FamilyRecap[]> {
     return [];
   }
   const name = habitNameFor((await getT()).t);
-  return ((data ?? []) as FamilyRecap[]).map((r) => (r.best_title == null ? r : { ...r, best_title: name(r.best_title, r.best_template) }));
+  return ((data ?? []) as FamilyRecap[]).map((r) => namedRecap(r, name));
 }
 
 // RLS: a user reads only their own dismissals. null on an error: the caller then shows no

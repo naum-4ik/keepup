@@ -1,6 +1,5 @@
 import type { LucideIcon } from "lucide-react";
 import { badgeIcon } from "@/lib/badge-icons";
-import en from "@/supabase/functions/_shared/messages/en.json";
 import type { T } from "@/supabase/functions/_shared/i18n";
 
 // One pastel per group, from the category colours (lib/categories.ts).
@@ -18,8 +17,14 @@ export type Badge = { code: string; name: string; hint: string; icon: LucideIcon
 export type BadgeGroup = { key: string; label: string; chip: string; ink: string; badges: Badge[] };
 
 // The codes the catalog has words for (badges.<code>.name|description). A code from a newer database
-// isn't here yet: it shows the database's own text until the catalog catches up.
-export const BADGE_CODES: ReadonlySet<string> = new Set(Object.keys(en.badges));
+// isn't here yet: it shows the database's own text until the catalog catches up. A list, not
+// Object.keys(en.badges): this module reaches client pages, and importing en.json would ship the whole
+// English catalog in their scripts. lib/badges.test.ts keeps it equal to the catalog.
+export const BADGE_CODES: ReadonlySet<string> = new Set([
+  "all_together", "back_on_track", "bookworm", "calm_mind", "century", "cheerleader", "fair_judge", "first_step",
+  "first_week", "free", "full_day", "go_getter", "good_company", "home_keeper", "hydrated", "mover",
+  "perfect_week", "planted", "rest_well", "steady_month", "team_player", "two_weeks_strong", "unstoppable", "year_round",
+]);
 
 export function badgeText(t: T, code: string, fallback: { name: string; description: string }): { name: string; description: string } {
   return BADGE_CODES.has(code)

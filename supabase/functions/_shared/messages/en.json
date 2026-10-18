@@ -1567,7 +1567,7 @@
   "kidView": {
     "sound": "Sound",
     "starsThisWeek": "{count, plural, one {# star this week} other {# stars this week}}",
-    "done": ", done",
+    "doneTitle": "<title><bdi>{habit}</bdi></title><sr>, done</sr>",
     "exitLabel": "Hold to exit {name}'s view",
     "closing": "Closing…",
     "holdToExit": "Hold to exit",

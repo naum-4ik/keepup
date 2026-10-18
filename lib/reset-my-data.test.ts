@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { T } from "@/supabase/functions/_shared/i18n";
 import { tEn } from "@/lib/i18n/test-t";
 import { isResetWord, runReset } from "./reset-my-data";
 
@@ -12,6 +13,15 @@ describe("Reset my data", () => {
     expect(isResetWord(tEn, "")).toBe(false);
     expect(isResetWord(tEn, "rese")).toBe(false);
     expect(isResetWord(tEn, "reset please")).toBe(false);
+  });
+
+  it("accepts the word in the person's language too, and still the English one", () => {
+    const tRu = ((key: string) => (key === "settings.reset.word" ? "сброс" : key)) as unknown as T;
+    expect(isResetWord(tRu, "сброс")).toBe(true);
+    expect(isResetWord(tRu, " Сброс ")).toBe(true);
+    expect(isResetWord(tRu, "reset")).toBe(true);
+    expect(isResetWord(tRu, "rese")).toBe(false);
+    expect(isResetWord(tRu, "")).toBe(false);
   });
 
   it("says what goes and what stays, calmly: no guilt words, at most one emoji per line", () => {

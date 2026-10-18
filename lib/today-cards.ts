@@ -1,3 +1,4 @@
+import type { HabitName } from "@/supabase/functions/_shared/habit-title";
 import { isolate, type T } from "@/supabase/functions/_shared/i18n";
 
 export type GentleCardInput = {
@@ -37,6 +38,10 @@ export type FamilyRecap = {
   best_streak: number | null;
   best_period: string | null;
 };
+
+// The best habit as the viewer reads it: a template habit in their language (best_template), else the stored title.
+export const namedRecap = <R extends FamilyRecap>(r: R, name: HabitName): R =>
+  r.best_title == null ? r : { ...r, best_title: name(r.best_title, r.best_template) };
 
 export const recapKey = (r: Pick<FamilyRecap, "group_id" | "week_start">) => `family_recap:${r.group_id}:${r.week_start}`;
 

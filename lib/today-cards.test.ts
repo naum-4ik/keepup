@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { tEn } from "@/lib/i18n/test-t";
-import { chooseGentleCard, recapLine, recapKey, visibleRecaps } from "@/lib/today-cards";
+import { habitNameFor } from "@/lib/habit-title";
+import { tEn, tFor } from "@/lib/i18n/test-t";
+import { chooseGentleCard, namedRecap, recapLine, recapKey, visibleRecaps } from "@/lib/today-cards";
 
 const base = { purpose: "family" as const, hasCheckedIn: true, groups: [], dismissed: new Set<string>() };
 
@@ -41,6 +42,16 @@ describe("family recap", () => {
   it("reads as wins only", () => {
     expect(recapLine(tEn, recap)).toBe("Together last week: 34 check-ins · \u2068Family dinner\u2069 5 weeks 🔥");
     expect(recapLine(tEn, { ...recap, check_ins: 1, best_streak: 1, best_period: "day" })).toBe("Together last week: 1 check-in · \u2068Family dinner\u2069 1 day 🔥");
+  });
+  it("names a template best habit in the viewer's language; English unchanged", () => {
+    const tRu = tFor("ru");
+    const tmpl = { ...recap, best_template: "g-family-dinner" };
+    expect(recapLine(tEn, namedRecap(tmpl, habitNameFor(tEn)))).toBe("Together last week: 34 check-ins · \u2068Family dinner\u2069 5 weeks 🔥");
+    expect(recapLine(tRu, namedRecap(tmpl, habitNameFor(tRu)))).toContain("\u2068Семейный ужин\u2069");
+    // No template (an older recap) or an unknown one: the stored title.
+    expect(namedRecap(recap, habitNameFor(tRu)).best_title).toBe("Family dinner");
+    expect(namedRecap({ ...recap, best_template: "nope" }, habitNameFor(tRu)).best_title).toBe("Family dinner");
+    expect(namedRecap({ ...tmpl, best_title: null }, habitNameFor(tRu)).best_title).toBeNull();
   });
   it("leaves out the streak part when there is none", () => {
     expect(recapLine(tEn, { ...recap, best_title: null, best_emoji: null, best_streak: null, best_period: null })).toBe("Together last week: 34 check-ins");

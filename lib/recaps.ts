@@ -1,4 +1,4 @@
-import { formatMonth } from "@/lib/dates";
+import { formatLocalDate, formatMonth } from "@/lib/dates";
 import { recapCopy } from "@/lib/notification-copy";
 import { INTL_LOCALE, isolate, type Locale, type T } from "@/supabase/functions/_shared/i18n";
 
@@ -67,3 +67,14 @@ export function heatLevel(done: number, possible: number): 0 | 1 | 2 | 3 | 4 {
 }
 
 export const streakLabel = (t: T, s: Streak): string => t("recaps.streak", { title: isolate(s.title), span: t(`units.${s.period}`, { n: s.length }) });
+
+// A heatmap day's tooltip: the day as the viewer's language writes it ("Mon 5 Oct", read as a plain
+// date in UTC so it never shifts), then what was done. Days without a row have none.
+export function heatmapDayTitle(t: T, locale: Locale, d: RecapDay | undefined): string | undefined {
+  if (!d) return undefined;
+  const date = formatLocalDate(d.date, locale);
+  const rested = d.rested > 0;
+  return d.possible > 0
+    ? t("recaps.heatmap.dayCounts", { date, done: String(d.done), possible: String(d.possible), rested: rested ? "yes" : "no" })
+    : t(rested ? "recaps.heatmap.dayRest" : "recaps.heatmap.dayNothingDue", { date });
+}

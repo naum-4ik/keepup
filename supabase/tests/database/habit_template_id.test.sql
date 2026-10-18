@@ -135,7 +135,7 @@ select is((select string_agg(h.title || '=' || coalesce(h.template_id, '-'), ', 
                                   and p.group_id in (select m.group_id from public.group_members m where m.user_id = '00000000-0000-0000-0000-0000000085c1'))
                or h.owner_id in (select p.id from public.profiles p where p.kind = 'child'
                                   and p.group_id in (select m.group_id from public.group_members m where m.user_id = '00000000-0000-0000-0000-0000000085c1'))),
-  'Brush teeth=kid.brush-teeth, Drink water=water, Family dinner=g-family-dinner, Meditate=meditate, Read=-, Read a story=-, Tidy toys=-, Walk=-, Walk together=-',
+  'Brush teeth=kid.brush-teeth, Drink water=water, Family dinner=g-family-dinner, Family walk=g-family-walk, Meditate=meditate, Read 20 min=read, Read a book together=kid.read-together, Tidy my toys=kid.tidy-toys, Walk=-',
   'demo: template habits carry their template');
 
 -- Recaps (live, public.recaps → recap_impl): Sam's last week names Family dinner's template.

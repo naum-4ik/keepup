@@ -35,14 +35,20 @@ const deps: Deps = {
   async send(sub, payload) {
     // 12h TTL: a phone that's off for the night still gets the push in the morning. 10s timeout: a
     // hung push service must not keep the function running.
-    await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload, {
+    const res = await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload, {
       TTL: 12 * 60 * 60,
       timeout: 10_000,
     });
+    return res.statusCode;
   },
   async done(id, dead) {
     const { error } = await db.rpc("push_done", { p_id: id, p_dead_endpoints: dead });
     if (error) throw new Error(`push_done: ${error.message}`);
+  },
+  // The delivery log (public.push_deliveries): service role only. supabase-js returns errors, so throw.
+  async log(row) {
+    const { error } = await db.from("push_deliveries").insert(row);
+    if (error) throw new Error(`push_deliveries: ${error.message}`);
   },
 };
 

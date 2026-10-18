@@ -4,7 +4,8 @@ import type { Messages } from "next-intl";
 // these to NextIntlClientProvider; everything else (push, badges, recaps, progress, levels…) stays
 // on the server. Client code includes "use client" files, hook users (useTranslations/useT) and the
 // helpers they hand a translator to (kidTemplateTitle(t, …), <Garden t={t}>), plus validation keys that
-// server actions return untranslated (FieldError). lib/i18n/client-namespaces.test.ts keeps this list in step.
+// server actions return untranslated (FieldError). lib/i18n/client-namespaces.test.ts keeps this list in step;
+// its scan recognises translators by name only: t, tr, tx, tf, tt (auth is listed: the sign-in forms are client components).
 export const CLIENT_NAMESPACES = [
   "auth",
   "avatars",

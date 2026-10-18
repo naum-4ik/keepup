@@ -211,3 +211,15 @@ Deno.test("pending approvals, the daily summary and recaps name template habits 
   const recap = buildPush(job({ kind: "weekly_recap", habit_id: null, payload: { kind: "week", done: 3, possible: 7, longest: { title: "Drink water", template: "water", length: 3, period: "day" } } }), ru.t, ru.locale)!;
   assertEquals(recap.body.includes(isolate("Пить воду")), true);
 });
+
+Deno.test("the family recap names a template best habit in the recipient's language", () => {
+  const payload = (template?: string | null) => ({ check_ins: 34, best: { title: "Family dinner", template, length: 5, period: "week" } });
+  const ru = translatorFor("ru", ["en", "ru", "he"]);
+  assertEquals(buildPush(job({ kind: "family_recap", habit_id: null, payload: payload("g-family-dinner") }), ru.t, ru.locale)!.body.includes(isolate("Семейный ужин")), true);
+  // Absent (an older recap) or unknown template: the stored title.
+  assertEquals(buildPush(job({ kind: "family_recap", habit_id: null, payload: payload() }), ru.t, ru.locale)!.body.includes(isolate("Family dinner")), true);
+  assertEquals(buildPush(job({ kind: "family_recap", habit_id: null, payload: payload("treat.zoo") }), ru.t, ru.locale)!.body.includes(isolate("Family dinner")), true);
+  // English: unchanged.
+  assertEquals(buildPush(job({ kind: "family_recap", habit_id: null, payload: payload("g-family-dinner") }), t)!.body,
+    "Together last week: 34 check-ins · \u2068Family dinner\u2069 5 weeks 🔥");
+});

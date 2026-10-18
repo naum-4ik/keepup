@@ -1567,7 +1567,7 @@
   "kidView": {
     "sound": "צליל",
     "starsThisWeek": "{count, plural, one {כוכב אחד השבוע} two {# כוכבים השבוע} other {# כוכבים השבוע}}",
-    "done": ", בוצע",
+    "doneTitle": "<title><bdi>{habit}</bdi></title><sr>, בוצע</sr>",
     "exitLabel": "להחזיק כדי לצאת מהמסך של {name}",
     "closing": "סוגרים…",
     "holdToExit": "להחזיק כדי לצאת",

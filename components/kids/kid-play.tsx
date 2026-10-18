@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useOptimistic, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useMemo, useOptimistic, useRef, useState, useSyncExternalStore, useTransition, type ReactNode } from "react";
 import { Check, Volume2, VolumeX } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { Confetti } from "@/components/celebrations/confetti";
@@ -135,7 +135,7 @@ export function KidPlay({
   // Last week's stars, when it had any: the new-week card shows that picture going to the album.
   lastStars?: number;
 }) {
-  const { t } = useT();
+  const { t, rich } = useT();
   const [, startTransition] = useTransition();
   // Only the tapped habit waits for its save; the others stay tappable. The ref guards a quick
   // second tap on the same one before React re-renders it busy.
@@ -598,7 +598,17 @@ export function KidPlay({
                   {h.emoji}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-                  <span className="text-lg font-semibold leading-tight">{h.title}</span>
+                  {/* Done, the title carries ", done" for screen readers: one message, so a language can
+                      word (and order) it; the hidden part sits right after the title, as before. */}
+                  {done ? (
+                    rich("kidView.doneTitle", {
+                      habit: h.title,
+                      title: (c: ReactNode) => <span className="text-lg font-semibold leading-tight">{c}</span>,
+                      sr: (c: ReactNode) => <span className="sr-only">{c}</span>,
+                    })
+                  ) : (
+                    <span className="text-lg font-semibold leading-tight">{h.title}</span>
+                  )}
                   {h.target > 1 && (
                     // One dot per tap the day needs (24px): filled ones in the done green, empty ones a
                     // ring of it, so both read in light and dark (≥ 3:1 on the card).
@@ -619,12 +629,9 @@ export function KidPlay({
                 {/* Where the ✓ goes: a big empty circle says "tap here"; done, the same circle fills
                     with the ✓. Both the same size, so the title never re-wraps when a card turns done. */}
                 {done ? (
-                  <>
-                    <span aria-hidden data-mark="done" className="flex size-16 shrink-0 items-center justify-center rounded-full bg-done-foreground text-done">
-                      <Check className="size-10" strokeWidth={3} />
-                    </span>
-                    <span className="sr-only">{t("kidView.done")}</span>
-                  </>
+                  <span aria-hidden data-mark="done" className="flex size-16 shrink-0 items-center justify-center rounded-full bg-done-foreground text-done">
+                    <Check className="size-10" strokeWidth={3} />
+                  </span>
                 ) : (
                   <span aria-hidden data-mark="open" className="size-16 shrink-0 rounded-full border-4 border-done bg-background" />
                 )}
