@@ -1,5 +1,5 @@
 import { monthGrid } from "@/lib/calendar";
-import { heatLevel, type Recap } from "@/lib/recaps";
+import { heatLevel, heatmapDayTitle, type Recap } from "@/lib/recaps";
 import { cn } from "@/lib/utils";
 import { fromWeekStart, weekdayLabels } from "@/lib/weekdays";
 import type { Locale, T } from "@/supabase/functions/_shared/i18n";
@@ -49,11 +49,7 @@ export function MonthHeatmap({
         {weeks.flat().map((date, i) => {
           const d = date ? byDate.get(date) : undefined;
           const rested = (d?.rested ?? 0) > 0;
-          const title = d
-            ? d.possible > 0
-              ? t("recaps.heatmap.dayCounts", { date: date!, done: String(d.done), possible: String(d.possible), rested: rested ? "yes" : "no" })
-              : t(rested ? "recaps.heatmap.dayRest" : "recaps.heatmap.dayNothingDue", { date: date! })
-            : undefined;
+          const title = heatmapDayTitle(t, locale, d);
           return (
             <span
               key={date ?? `pad-${i}`}

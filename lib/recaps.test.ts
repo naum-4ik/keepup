@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { tEn } from "@/lib/i18n/test-t";
-import { heatLevel, parseRecap, recapLine, recapTitle, streakLabel } from "./recaps";
+import { tEn, tFor } from "@/lib/i18n/test-t";
+import { heatLevel, heatmapDayTitle, parseRecap, recapLine, recapTitle, streakLabel } from "./recaps";
 
 const week = { kind: "week", start: "2026-09-28", end: "2026-10-05", done: 10, possible: 11,
   longest: { title: "Read", emoji: "📚", length: 7, period: "day" }, top: [], badges: [], days: [] };
@@ -42,5 +42,22 @@ describe("recaps", () => {
   });
   it("names a streak with its unit", () => {
     expect(streakLabel(tEn, { title: "Gym", emoji: "🏋️", length: 1, period: "week" })).toBe("\u2068Gym\u2069 🔥 1 week");
+  });
+});
+
+describe("heatmapDayTitle", () => {
+  const day = { date: "2026-10-05", done: 2, possible: 3, rested: 0 };
+  it("writes the day in words, not as an ISO date", () => {
+    expect(heatmapDayTitle(tEn, "en", day)).toBe("Mon 5 Oct: 2 of 3");
+    expect(heatmapDayTitle(tEn, "en", { ...day, rested: 1 })).toBe("Mon 5 Oct: 2 of 3, Rest day");
+    expect(heatmapDayTitle(tEn, "en", { ...day, possible: 0, done: 0, rested: 1 })).toBe("Mon 5 Oct: Rest day");
+    expect(heatmapDayTitle(tEn, "en", { ...day, possible: 0, done: 0 })).toBe("Mon 5 Oct: nothing due");
+    expect(heatmapDayTitle(tEn, "en", undefined)).toBeUndefined();
+  });
+  it("in the viewer's language", () => {
+    const ru = heatmapDayTitle(tFor("ru"), "ru", day)!;
+    expect(ru).toMatch(/^пн 5 окт/);
+    expect(ru).not.toContain("2026-10-05");
+    expect(heatmapDayTitle(tFor("he"), "he", day)).not.toContain("2026-10-05");
   });
 });
