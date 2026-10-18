@@ -78,7 +78,7 @@ reset role;
 select is((select display_name from public.profiles where id = :sam), 'Sam', 'you are Sam');
 select ok((select onboarded_at is not null from public.profiles where id = :sam), 'onboarded');
 select is((select count(*)::int from public.habits where owner_id = :sam and group_id is null), 4, '4 private habits');
-select is((select current_streak from private.habit_streaks((select id from public.habits where owner_id = :sam and title = 'Read'), now())), 12, 'Read streak 12');
+select is((select current_streak from private.habit_streaks((select id from public.habits where owner_id = :sam and title = 'Read 20 min'), now())), 12, 'Read streak 12');
 select ok(exists (select 1 from public.habit_freezes f join public.habits h on h.id = f.habit_id where h.owner_id = :sam), 'a paused week');
 select is((select count(*)::int from public.group_members m join public.groups g on g.id = m.group_id where g.created_by = :sam and m.left_at is null), 2, 'Sam and Alex in Family');
 select is((select display_name from public.profiles where kind = 'child' and group_id = (select id from public.groups where created_by = :sam)), 'Nova', 'Nova');
@@ -102,10 +102,11 @@ select is((select count(*)::int from public.period_results x join public.habits 
 select is((select current_streak from private.habit_streaks((select id from public.habits where title = 'Family dinner'
             and group_id = (select id from public.groups where created_by = :sam)), now())), 5, 'Family dinner streak 5');
 select ok(exists (select 1 from public.period_results x join public.habits h on h.id = x.habit_id
-                   where h.title = 'Walk together' and h.id in (select id from seeded) and x.outcome = 'missed'), 'Walk together missed a week');
+                   where h.title = 'Family walk' and h.id in (select id from seeded) and x.outcome = 'missed'), 'Family walk missed a week');
 select is((select count(*)::int from public.check_ins c where c.user_id = (select id from public.profiles where display_name = 'Nova' and kind = 'child'
             and group_id = (select id from public.groups where created_by = :sam)) and c.created_at > now()), 0, 'no check-in in the future');
-select is((select count(*)::int from public.notifications where user_id = :sam), 1, 'one Inbox row: the approval request');
+select is((select string_agg(kind, ', ' order by created_at desc) from public.notifications where user_id = :sam),
+          'approval_needed, nudge, cheer', 'three Inbox rows: the approval request, a nudge and a cheer');
 select is((select count(*)::int from public.profiles where display_name = 'Alex' and is_demo
             and id in (select user_id from public.group_members where group_id = (select id from public.groups where created_by = :sam))), 1, 'Alex is a demo profile');
 -- Nothing left for the cron.
@@ -121,7 +122,7 @@ select is((select count(*)::int from public.habits where owner_id = :sam and gro
 -- First real tap: XP as expected, no surprise badges or level-ups.
 create temp table ach_before as select count(*) n from public.user_achievements where user_id = :sam;
 select tests.authenticate_as('00000000-0000-0000-0000-0000000005c1');
-select public.check_in((select id from public.habits where owner_id = :sam and title = 'Read'));
+select public.check_in((select id from public.habits where owner_id = :sam and title = 'Read 20 min'));
 reset role;
 select is((select amount from public.xp_events where user_id = :sam and reason = 'check_in' order by created_at desc limit 1), 22, 'day-13 check-in earns 10 + 12');
 select is((select count(*) from public.user_achievements where user_id = :sam), (select n from ach_before), 'no surprise badge');
@@ -155,7 +156,7 @@ begin
   create temp table run_seeded on commit drop as select h.id from public.habits h
    where h.owner_id in (p_user, v_nova) or h.group_id = v_group;
   return next is((select count(*)::int from run_seeded), 9, p_label || ': 9 seeded habits');
-  return next is((select current_streak from private.habit_streaks((select id from public.habits where owner_id = p_user and title = 'Read'), p_now)),
+  return next is((select current_streak from private.habit_streaks((select id from public.habits where owner_id = p_user and title = 'Read 20 min'), p_now)),
                  12, p_label || ': Read streak 12');
   return next is((select current_streak from private.habit_streaks((select id from public.habits where group_id = v_group and title = 'Family dinner'), p_now)),
                  5, p_label || ': Family dinner streak 5');
@@ -167,7 +168,7 @@ begin
                  p_label || ': every seeded result matches the real rule');
   v_rewards := private.child_rewards_impl(p_user, v_nova, p_now);
   return next is((v_rewards->>'week_start')::date, v_week, p_label || ': Nova''s week starts on Monday');
-  return next is((v_rewards->>'stars_this_week')::int, least(7, 4 * (v_today - v_week + 1)), p_label || ': Nova''s stars this week (4 a day, at most 7)');
+  return next is((v_rewards->>'stars_this_week')::int, 4 * (v_today - v_week), p_label || ': Nova''s stars this week (4 a day before today)');
   -- The goal starts at 0: no seeded star is at or after the seed moment (the goal is created then).
   return next is((v_rewards->'goal'->>'target')::int || ' ' || coalesce(v_rewards->'goal'->>'reached_at', 'open'), '20 open', p_label || ': treat goal of 20, not reached');
   return next is((select count(*)::int from public.check_ins c where c.user_id = v_nova and c.created_at >= p_now), 0,
