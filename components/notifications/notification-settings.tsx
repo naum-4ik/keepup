@@ -6,7 +6,10 @@ import { Loader2 } from "lucide-react";
 import { forgetPushSubscription, pauseAll, setDelivery, setReminderHour } from "@/app/(app)/profile/settings/notification-actions";
 import { currentEndpoint, TurnOnReminders } from "@/components/notifications/turn-on-reminders";
 import { InfoHint } from "@/components/info-hint";
+import { SettingStatus, useSettingSave } from "@/components/profile/setting-status";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
+import { Section } from "@/components/ui/section";
 import { useT } from "@/lib/i18n/client";
 import {
   DELIVERIES, NOTIFICATION_CATEGORIES, PAUSE_CHOICES, reminderHourHint, reminderStatus,
@@ -15,12 +18,14 @@ import {
 import type { NotificationSettings } from "@/lib/notification-settings";
 import { browserSubscription, iosVersion, removeDevice } from "@/lib/push-support";
 import { INTL_LOCALE, type Locale, type T } from "@/supabase/functions/_shared/i18n";
+import { reach } from "@/lib/reach";
 import { cn } from "@/lib/utils";
 
+// 12 px sides to match the 12 px radius (as Notice does).
 const selectClass = "h-11 rounded-xl border border-input bg-transparent px-3 text-base";
 // A segmented row of three pills (radios): fits 390px, each a 44px target. Same look as the habit form's chips.
 const pillClass =
-  "relative flex h-11 cursor-pointer items-center justify-center rounded-full border border-border px-2 text-sm font-semibold has-checked:border-primary has-checked:bg-accent has-checked:text-accent-foreground has-focus-visible:ring-2 has-focus-visible:ring-ring has-disabled:cursor-default has-disabled:opacity-60";
+  "relative flex h-11 cursor-pointer items-center justify-center rounded-full border border-border px-inner text-sm font-semibold has-checked:border-primary has-checked:bg-accent has-checked:text-accent-foreground has-focus-visible:ring-2 has-focus-visible:ring-ring has-disabled:cursor-default has-disabled:opacity-60";
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const hourLabel = (h: number) => `${String(h).padStart(2, "0")}:00`;
 
@@ -65,24 +70,39 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
     });
 
   const thisDeviceOn = here !== null && settings.devices.some((d) => d.endpoint === here);
+  // The reminder hour saves when it changes, and says so under it.
+  const hour = useSettingSave();
+  const [hourValue, setHourValue] = useState(settings.reminderHour);
+  const [hourSeen, setHourSeen] = useState(settings.reminderHour);
+  if (hourSeen !== settings.reminderHour) {
+    setHourSeen(settings.reminderHour);
+    setHourValue(settings.reminderHour);
+  }
 
   useEffect(() => {
     if (justOn && thisDeviceOn) confirmation.current?.focus();
   }, [justOn, thisDeviceOn]);
 
   return (
-    <section aria-label={t("notifications.card.title")} className="flex flex-col gap-5 rounded-2xl bg-card p-6 shadow-soft">
-      <h2 className="text-base font-bold">{t("notifications.card.title")}</h2>
-
-      <div className="flex flex-col gap-1.5">
+    // A settings group, not a card (docs/design.md "Surfaces"): a Section; its parts 24 px apart.
+    <Section title={t("notifications.card.title")} className="gap-section">
+      <div className="flex flex-col gap-inner">
+        {/* The label and its (i): one glyph pair, 4 px. */}
         <div className="flex flex-wrap items-center gap-1">
           <label htmlFor="reminderHour" className="text-sm font-semibold">{t("notifications.card.dailyReminder")}</label>
           <InfoHint text={reminderHourHint(t, settings.devices.length > 0)} />
         </div>
-        <select id="reminderHour" className={selectClass} defaultValue={settings.reminderHour} key={settings.reminderHour}
-          disabled={pending} onChange={(e) => run(() => setReminderHour(Number(e.target.value)))}>
+        <select id="reminderHour" className={selectClass} value={hourValue} aria-describedby="reminderHour-status"
+          disabled={pending || hour.pending}
+          onChange={(e) => {
+            const next = Number(e.target.value);
+            const before = hourValue;
+            setHourValue(next);
+            hour.save(() => setReminderHour(next), { failed: () => setHourValue(before) });
+          }}>
           {HOURS.map((h) => <option key={h} value={h}>{hourLabel(h)}</option>)}
         </select>
+        <SettingStatus state={hour.state} id="reminderHour-status" />
         {thisDeviceOn ? (
           <p ref={confirmation} tabIndex={-1} role="status" className="text-sm text-muted-foreground outline-none">
             {reminderStatus(t, {
@@ -104,15 +124,15 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
         )}
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-inner">
         <h3 className="text-sm font-semibold">{t("notifications.card.pauseAll")}</h3>
         {paused ? (
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-item">
             <p className="text-sm">{pausedLine(t, pausedUntil(locale, settings.mutedUntil!, settings.timezone))}</p>
             <Button type="button" variant="outline" className="h-11" disabled={pending} onClick={() => run(() => pauseAll("resume"))}>{t("notifications.card.resume")}</Button>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-inner">
             {PAUSE_CHOICES.map((c) => (
               <Button key={c.choice} type="button" variant="outline" className="h-11" disabled={pending} onClick={() => run(() => pauseAll(c.choice))}>
                 {t(`notificationSettings.pauseChoice.${c.choice}`)}
@@ -122,20 +142,20 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
         )}
       </div>
 
-      <fieldset className="flex flex-col gap-4">
-        <legend className="mb-1 text-sm font-semibold">{t("notifications.card.whatToSend")}</legend>
+      <fieldset className="flex flex-col gap-item">
+        <legend className="mb-inner text-sm font-semibold">{t("notifications.card.whatToSend")}</legend>
         {NOTIFICATION_CATEGORIES.map((c) => (
-          <DeliveryChoice key={c.key} category={c.key} label={t(`notificationCategories.${c.key}.label`)} hint={t(`notificationCategories.${c.key}.hint`)} saved={settings.delivery[c.key]} onError={setError} />
+          <DeliveryChoice key={c.key} category={c.key} label={t(`notificationCategories.${c.key}.label`)} hint={t(`notificationCategories.${c.key}.hint`)} saved={settings.delivery[c.key]} />
         ))}
         {iphone && <p className="text-sm text-muted-foreground">{t("notificationSettings.iphoneSoundHint")}</p>}
       </fieldset>
 
       {settings.devices.length > 0 && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-inner">
           <h3 className="text-sm font-semibold">{t("notifications.card.devices")}</h3>
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-inner">
             {settings.devices.map((d) => (
-              <li key={d.endpoint} className="flex min-h-11 items-center gap-3">
+              <li key={d.endpoint} className="flex min-h-11 items-center gap-item">
                 <span className="flex-1 text-sm">
                   {d.label}
                   {d.endpoint === here && <span className="text-muted-foreground"> · {t("notifications.card.thisDevice")}</span>}
@@ -158,8 +178,12 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
         </div>
       )}
 
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-    </section>
+      {error && (
+        <Notice tone="error" live>
+          {error}
+        </Notice>
+      )}
+    </Section>
   );
 }
 
@@ -168,18 +192,19 @@ export const DELIVERY_SAVE_DELAY_MS = 400;
 
 // One category's three pills. Arrow keys move through them (a radio group): the pill moved to is
 // checked at once and keeps focus. Nothing is disabled or remounted while saving (a disabled radio
-// drops focus); the save goes 400 ms after the last change, and a refused one goes back to what is
-// saved. A save still waiting when the page is left is sent then.
-function DeliveryChoice({ category, label, hint, saved, onError }: {
+// drops focus); the save goes 400 ms after the last change; then "Saved ✓" under it, or a refused
+// one goes back to what is saved with the reason there. A save still waiting when the page is left
+// is sent then.
+function DeliveryChoice({ category, label, hint, saved }: {
   category: CategoryKey;
   label: string;
   hint: string;
   saved: Delivery;
-  onError: (message: string | null) => void;
 }) {
   const { t } = useT();
   const [value, setValue] = useState<Delivery>(saved);
   const [saving, setSaving] = useState(false);
+  const [result, setResult] = useState<{ ok: true } | { ok: false; message: string } | null>(null);
   // Another category's save refreshes the page: follow what is saved, unless a change here is waiting.
   const [seen, setSeen] = useState(saved);
   if (seen !== saved) {
@@ -206,40 +231,39 @@ function DeliveryChoice({ category, label, hint, saved, onError }: {
   function choose(next: Delivery) {
     setValue(next);
     setSaving(true);
-    onError(null);
+    setResult(null);
     waiting.current = next;
     if (timer.current !== null) clearTimeout(timer.current);
     timer.current = setTimeout(async () => {
       timer.current = null;
       waiting.current = null;
       const n = ++latest.current;
-      const r = await setDelivery(category, next).catch(() => ({ ok: false as const, message: t("errors.generic") }));
+      const r = await reach(() => setDelivery(category, next), { offline: t("settings.status.offlinePick"), reload: t("settings.status.failedPick") });
       // A newer change took over: its own save decides.
       if (n !== latest.current || timer.current !== null) return;
-      if (!r.ok) {
-        onError(r.message);
-        setValue(savedRef.current);
-      }
+      if (!r.ok) setValue(savedRef.current);
+      setResult(r);
       setSaving(false);
     }, DELIVERY_SAVE_DELAY_MS);
   }
 
   return (
-    <fieldset className="flex flex-col gap-2" aria-describedby={`delivery-${category}-hint`} aria-busy={saving || undefined}>
+    <fieldset className="flex flex-col gap-inner" aria-describedby={`delivery-${category}-hint delivery-${category}-status`} aria-busy={saving || undefined}>
       <legend className="font-semibold">{label}</legend>
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-inner">
         <p id={`delivery-${category}-hint`} className="flex-1 text-xs text-muted-foreground">
           {category === "approvals" && value === "inbox" ? t("notificationCategories.approvalsOffNote") : hint}
         </p>
         {/* Seen while the change waits or is being saved (screen readers get aria-busy). */}
         {saving && (
+          // Spinner to its word: one glyph pair, 4 px.
           <span aria-hidden data-testid={`delivery-${category}-saving`} className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
             <Loader2 className="size-3 animate-spin motion-reduce:animate-none" />
             {t("common.saving")}
           </span>
         )}
       </div>
-      <div className={cn("grid grid-cols-3 gap-2 transition-opacity", saving && "opacity-70")}>
+      <div className={cn("grid grid-cols-3 gap-inner transition-opacity", saving && "opacity-70")}>
         {DELIVERIES.map((d) => (
           <label key={d.delivery} className={pillClass}>
             <input type="radio" name={`delivery-${category}`} value={d.delivery} checked={value === d.delivery}
@@ -249,6 +273,11 @@ function DeliveryChoice({ category, label, hint, saved, onError }: {
           </label>
         ))}
       </div>
+      {/* While it waits the cue above shows; then Saved ✓ or the reason (aria-busy covers the wait). */}
+      <SettingStatus
+        id={`delivery-${category}-status`}
+        state={saving || !result ? { status: "idle" } : result.ok ? { status: "saved" } : { status: "error", message: result.message }}
+      />
     </fieldset>
   );
 }

@@ -1,7 +1,7 @@
 {
   "settings": {
     "language": "Language",
-    "languageHint": "Keepup and its notifications use this language.",
+    "languageHint": "Used on this phone, your other devices, emails and notifications.",
     "languageNames": {
       "en": "English",
       "ru": "Русский",
@@ -10,7 +10,6 @@
     "title": "Settings",
     "typeToConfirm": "Type “{word}” to confirm",
     "celebrations": {
-      "label": "Celebrations settings",
       "title": "Celebrations",
       "hint": "How level-ups and new badges appear.",
       "full": "Full",
@@ -25,6 +24,17 @@
       "dialogTitle": "Reset your data?",
       "dialogBody": "{clears} {keeps} This can't be undone.",
       "word": "reset"
+    },
+    "sections": {
+      "profile": "Your profile"
+    },
+    "status": {
+      "saving": "Saving…",
+      "saved": "Saved ✓",
+      "offlinePick": "Not saved: no connection. Connect and pick it again.",
+      "failedPick": "Not saved. Reload the page and pick it again.",
+      "offlineSave": "Not saved: no connection. Connect and tap Save again.",
+      "failedSave": "Not saved. Reload the page and tap Save again."
     }
   },
   "push": {
