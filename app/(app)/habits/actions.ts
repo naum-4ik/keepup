@@ -214,11 +214,12 @@ export async function updateHabitDetails(habitId: string, _prev: DetailsFormStat
 // <form>), so a failure must come back as state the dialog can show, not a thrown error.
 // After archive or delete, a guardian lands back on the child's page; everyone else on their own list.
 // Read before the change (a deleted habit can't be read) from the habit's own row (RLS: what I can see).
-// `title`: for the toast that says what happened (read here too: a deleted habit can't be read after).
-async function backTo(supabase: Awaited<ReturnType<typeof requireUser>>["supabase"], userId: string, habitId: string, fallback: string) {
-  const { data } = await supabase.from("habits").select("owner_id, group_id, title").eq("id", habitId).maybeSingle();
+// `title`: for the toast that says what happened (read here too: a deleted habit can't be read after),
+// as the person reads it: a template habit's name in their language (habitNameFor).
+async function backTo(t: T, supabase: Awaited<ReturnType<typeof requireUser>>["supabase"], userId: string, habitId: string, fallback: string) {
+  const { data } = await supabase.from("habits").select("owner_id, group_id, title, template_id").eq("id", habitId).maybeSingle();
   const next = data && !data.group_id && data.owner_id && data.owner_id !== userId ? `/kids/${data.owner_id}` : fallback;
-  return { next, title: data?.title ?? "" };
+  return { next, title: data ? habitNameFor(t)(data.title, data.template_id) : "" };
 }
 
 // No redirect from here: the client goes to `next` and shows "Archived …" with Undo
@@ -227,7 +228,7 @@ export async function archiveHabit(habitId: string): Promise<ConfirmActionState>
   const { t } = await getT();
   if (!isUuid(habitId)) return { status: "error", message: t("errors.habit_not_found") };
   const { supabase, userId, who } = await requireUser();
-  const { next } = await backTo(supabase, userId, habitId, "/progress?view=archived");
+  const { next } = await backTo(t, supabase, userId, habitId, "/progress?view=archived");
   const { error } = await supabase.from("habits").update({ archived_at: new Date().toISOString() }).eq("id", habitId);
   if (error) return { status: "error", message: habitErrorMessage(t, error) };
   track("habit_archived", who, { "habit.id": habitId });
@@ -242,14 +243,14 @@ async function restore(habitId: string): Promise<{ ok: true; next: string; title
   const { t } = await getT();
   if (!isUuid(habitId)) return { ok: false, message: t("errors.habit_not_found") };
   const { supabase, userId, who } = await requireUser();
-  const { data, error } = await supabase.rpc("restore_habit", { p_habit_id: habitId });
+  const { error } = await supabase.rpc("restore_habit", { p_habit_id: habitId });
   if (error) return { ok: false, message: habitErrorMessage(t, error), code: errorCode(error) };
   track("habit_restored", who, { "habit.id": habitId });
   refresh(habitId);
   // A guardian restoring a child's habit goes back to the child's page.
-  const { next, title } = await backTo(supabase, userId, habitId, "/today");
+  const { next, title } = await backTo(t, supabase, userId, habitId, "/today");
   if (next.startsWith("/kids/")) revalidatePath(next);
-  return { ok: true, next, title: data?.title ?? title };
+  return { ok: true, next, title };
 }
 
 export async function restoreHabit(habitId: string): Promise<ActionResult> {
@@ -271,7 +272,7 @@ export async function deleteHabit(habitId: string): Promise<FormActionState> {
   const { t } = await getT();
   if (!isUuid(habitId)) return { status: "error", message: t("errors.habit_not_found") };
   const { supabase, userId, who } = await requireUser();
-  const { next, title } = await backTo(supabase, userId, habitId, "/today");
+  const { next, title } = await backTo(t, supabase, userId, habitId, "/today");
   const { error } = await supabase.rpc("delete_habit", { p_habit_id: habitId });
   if (error) return { status: "error", message: habitErrorMessage(t, error) };
   track("habit_deleted", who, { "habit.id": habitId });
@@ -437,7 +438,7 @@ export async function startAgain(habitId: string): Promise<StartAgainResult> {
     }
   }
   refresh();
-  await flashToast(startedAgainFlash({ id: newId, title: h.title }));
+  await flashToast(startedAgainFlash({ id: newId, title: habitNameFor(t)(h.title, h.template_id) }));
   redirect("/today");
 }
 
