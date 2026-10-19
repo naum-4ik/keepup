@@ -35,6 +35,9 @@ describe("an online tap", () => {
     expect(await client.submitTap({ habitId: "h3" }, async () => ({ ok: true, xp: 23 }))).toEqual({ ok: true, queued: false, xp: 23, clientId: expect.any(String) });
     // Counted, amount unknown (the ledger read failed): kept, so the float says "+XP".
     expect(await client.submitTap({ habitId: "h4" }, async () => ({ ok: true, xp: null }))).toEqual({ ok: true, queued: false, xp: null, clientId: expect.any(String) });
+    // Whether the server kept it waiting for approval comes through, when said.
+    expect(await client.submitTap({ habitId: "h5" }, async () => ({ ok: true, xp: 0, pending: true }))).toEqual({ ok: true, queued: false, clientId: expect.any(String), pending: true });
+    expect(await client.submitTap({ habitId: "h6" }, async () => ({ ok: true, xp: 10, pending: false }))).toEqual({ ok: true, queued: false, xp: 10, clientId: expect.any(String), pending: false });
   });
 
   it("is saved on the phone before it is tried, sent with its id only, and leaves the queue once it lands", async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { tEn, tFor } from "@/lib/i18n/test-t";
-import { checkedInText, showCheckedIn, undoCheckIn, type UndoDeps } from "@/lib/check-in-undo";
+import { checkedInText, showCheckedIn, showCheckedInWithout, undoCheckIn, type UndoDeps } from "@/lib/check-in-undo";
 import type { ToastAction } from "@/lib/toast";
 
 const FSI = "⁨";
@@ -47,6 +47,16 @@ describe("one toast at a time", () => {
     expect(closed).toContain(second.id);
     expect(closed).toContain(shown[2].id);
     expect(shown.at(-1)?.text).toBe(`${FSI}Walk${PDI}: check-in undone`);
+  });
+});
+
+describe("Me + Mary", () => {
+  it("says checked in, without Undo, and replaces the last check-in toast", () => {
+    const { deps, shown, closed } = setup(async () => ({ ok: true }));
+    showCheckedIn(deps, tap);
+    showCheckedInWithout(deps, "Family dinner");
+    expect(closed).toContain(shown[0].id);
+    expect(shown[1]).toEqual({ id: shown[1].id, text: `${FSI}Family dinner${PDI} checked in` });
   });
 });
 

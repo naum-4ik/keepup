@@ -18,8 +18,8 @@ export type UndoDeps = {
   newId?: () => string;
 };
 
-// A tap that landed online (lib/offline-client.ts submitTap's clientId). approval: it waits for
-// someone's yes, so the toast says "sent for approval".
+// A tap that landed online (lib/offline-client.ts submitTap's clientId). approval: the server kept it
+// waiting for someone's yes (TapResult.pending), so the toast says "sent for approval".
 export type LandedTap = { habitId: string; clientId: string; title: string; approval: boolean };
 
 let seq = 0;
@@ -29,7 +29,7 @@ const nextId = () => `check-in-${++seq}`;
 // show the latest "checked in", and "Undoing…" and its answer show at once instead of queueing behind
 // another tap's toast (lib/toast.ts queues and drops the oldest). Older taps undo on the habit page.
 const ours = new Set<string>();
-function replaceWith(deps: UndoDeps, toast: { id: string; text: string; action?: ToastAction }) {
+function replaceWith(deps: Pick<UndoDeps, "show" | "close">, toast: { id: string; text: string; action?: ToastAction }) {
   for (const id of ours) deps.close(id);
   ours.clear();
   ours.add(toast.id);
@@ -43,6 +43,12 @@ export function checkedInText(t: T, title: string, approval: boolean): string {
 export function showCheckedIn(deps: UndoDeps, tap: LandedTap): void {
   const id = (deps.newId ?? nextId)();
   replaceWith(deps, { id, text: checkedInText(deps.t, tap.title, tap.approval), action: undoAction(deps, tap) });
+}
+
+// "Me + Mary" (several check-ins in one call, none with a client id): confirmed without Undo (the
+// habit page undoes them one by one), still one toast at a time.
+export function showCheckedInWithout(deps: Pick<UndoDeps, "t" | "show" | "close" | "newId">, title: string): void {
+  replaceWith(deps, { id: (deps.newId ?? nextId)(), text: checkedInText(deps.t, title, false) });
 }
 
 const undoAction = (deps: UndoDeps, tap: LandedTap): ToastAction => ({

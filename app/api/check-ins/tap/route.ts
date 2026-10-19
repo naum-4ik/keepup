@@ -90,7 +90,10 @@ export async function POST(request: Request) {
   const row = data as { id: string; status: string; client_id: string | null; created_at: string } | null;
   event["check_in.outcome"] = "saved";
   event["check_in.status"] = row?.status;
-  if (tap.subjectId || !row || !countsNow(row, tap, startedAt)) return NextResponse.json({ xp: 0 });
+  // pending: the row waits for someone's yes. Approval habits only ask when the group had two or more
+  // adults at the period's start, so the habit's setting alone can't tell (Today's toast wording).
+  const pending = row?.status === "pending";
+  if (tap.subjectId || !row || !countsNow(row, tap, startedAt)) return NextResponse.json({ xp: 0, pending });
   // The amount the database granted (10, + the streak on the period's first, rewards_on_check_in), read
   // back from the ledger (RLS: own rows). Fails soft: "+XP" with no number.
   const { data: granted, error: readError } = await supabase
@@ -102,5 +105,5 @@ export async function POST(request: Request) {
     .maybeSingle();
   if (readError) logError("check-in XP read failed", readError.message);
   event["check_in.xp"] = granted?.amount;
-  return NextResponse.json({ xp: granted?.amount ?? null });
+  return NextResponse.json({ xp: granted?.amount ?? null, pending });
 }

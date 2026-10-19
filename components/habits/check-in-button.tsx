@@ -8,7 +8,7 @@ import { dismissFirstCheckinTip } from "@/components/first-checkin-tip";
 import { floatXp, useXpFloat } from "@/components/habits/xp-float";
 import { useOfflineQueue, useSubmitTap, useUndoQueuedTap } from "@/components/offline/offline-queue-provider";
 import { useToast } from "@/components/ui/toast";
-import { checkedInText, showCheckedIn } from "@/lib/check-in-undo";
+import { showCheckedIn, showCheckedInWithout } from "@/lib/check-in-undo";
 import { useT } from "@/lib/i18n/client";
 import { isolate } from "@/supabase/functions/_shared/i18n";
 import { undoLabel } from "@/lib/offline-copy";
@@ -104,7 +104,7 @@ export function CheckInButton({
             celebrate();
             // Several check-ins in one call, none with a client id: confirmed, without Undo (the
             // habit page undoes them one by one).
-            if (undoToast) showToast({ text: checkedInText(t, title, needsApproval) });
+            if (undoToast) showCheckedInWithout({ t, show: showToast, close: closeToast }, title);
           }
         } catch {
           setError(navigator.onLine ? tr("failed") : t("offline.needsConnection"));
@@ -124,7 +124,9 @@ export function CheckInButton({
       if (undoToast && !result.queued && result.clientId) {
         showCheckedIn(
           { t, show: showToast, close: closeToast, undo: undoCheckInByClient },
-          { habitId, clientId: result.clientId, title, approval: needsApproval },
+          // The server's word on approval (an approval habit with one adult is approved at once);
+          // the habit's setting only when an older server didn't say.
+          { habitId, clientId: result.clientId, title, approval: result.pending ?? needsApproval },
         );
       }
     });
