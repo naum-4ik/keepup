@@ -4,7 +4,7 @@ import { createHabit, endHabitYesterday } from "./helpers/habits";
 
 test("a new user adds a habit from a template", async ({ page }) => {
   await signUpAndOnboard(page);
-  await expect(page.getByText("Nothing to do yet")).toBeVisible();
+  await expect(page.getByText("Add one habit and check in today to start day 1 of your streak.")).toBeVisible();
   await page.getByRole("link", { name: "Add a habit, start day 1" }).click();
   await expect(page).toHaveURL(/\/habits\/new$/);
 
@@ -120,7 +120,7 @@ test("a template opens in a dialog that can be closed without adding", async ({ 
   await dialog.getByRole("button", { name: "Close" }).click();
   await expect(dialog).toBeHidden();
   await page.goto("/today");
-  await expect(page.getByText("Nothing to do yet")).toBeVisible();
+  await expect(page.getByText("Add one habit and check in today to start day 1 of your streak.")).toBeVisible();
 });
 
 test("the ＋ button opens a new habit", async ({ page }) => {
