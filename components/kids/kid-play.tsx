@@ -473,15 +473,11 @@ export function KidPlay({
 
   return (
     <div className="flex flex-1 flex-col gap-5">
-      {/* Her name is never cut short ("N" at 320): the grown-up's two controls wrap to their own row when
-          the name needs the width (on phones they do; the 448 px column fits both on one), and a name
-          longer than its row wraps instead of overflowing. */}
-      <header className="flex flex-wrap items-center gap-inner">
-        <div className="flex min-w-0 flex-[1_1_12rem] items-center gap-item">
-          <Avatar name={child.name} emoji={child.emoji} color={child.color} size="lg" />
-          <h1 className="min-w-0 flex-1 text-2xl font-bold wrap-break-word">{child.name}</h1>
-        </div>
-        <div className="ms-auto flex items-center gap-inner">
+      {/* Her name is never cut short ("N" at 320, "Alexan-drina" in a shared row): the grown-up's two
+          controls have their own row at the top, and the name the full width under it (a name longer
+          than that wraps instead of overflowing). */}
+      <header className="flex flex-col gap-inner">
+        <div className="flex items-center justify-end gap-inner">
           {/* For the grown-up: sound is on by default and remembered on this phone. */}
           <button
             type="button"
@@ -493,6 +489,10 @@ export function KidPlay({
             {muted ? <VolumeX aria-hidden className="size-5" /> : <Volume2 aria-hidden className="size-5" />}
           </button>
           <HoldToExit href={`/kids/${child.id}`} childName={child.name} />
+        </div>
+        <div className="flex items-center gap-item">
+          <Avatar name={child.name} emoji={child.emoji} color={child.color} size="lg" />
+          <h1 className="min-w-0 flex-1 text-2xl font-bold wrap-break-word">{child.name}</h1>
         </div>
       </header>
 
