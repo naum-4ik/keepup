@@ -30,7 +30,7 @@ test("a check-in on Today is confirmed in a toast, and its Undo takes it back", 
   await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
   // The toast's words are read from its polite live region (components/ui/toast.tsx); Undo is its button.
-  const toast = page.locator('p[role="status"][aria-live="polite"]');
+  const toast = page.getByTestId("toast-live");
   await expect(toast).toHaveText("\u2068Walk\u2069 checked in");
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(toast).toHaveText("\u2068Walk\u2069: check-in undone");
@@ -78,7 +78,7 @@ for (const viewport of [
     const first = page.getByRole("button", { name: /^Check in: / }).first();
     await expect(first).toBeVisible();
     const box = (await first.boundingBox())!;
-    const nav = (await page.locator("nav.fixed").boundingBox())!;
+    const nav = (await page.getByRole("navigation", { name: "Main", exact: true }).boundingBox())!;
     expect(box.width).toBeGreaterThanOrEqual(44);
     expect(box.height).toBeGreaterThanOrEqual(44);
     // At load, without scrolling: inside the viewport and clear of the nav.

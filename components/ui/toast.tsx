@@ -110,7 +110,7 @@ export function Toaster({ flash }: { flash?: string | null }) {
     >
       {/* The live region holds the words only, and is always in the page (a region that appears is not
           announced), so a new toast is read once without its buttons. */}
-      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+      <p data-testid="toast-live" role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {current?.text}
       </p>
       {current && <ToastView key={current.id} toast={current} dismissLabel={t("common.dismiss")} />}
