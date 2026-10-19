@@ -11,7 +11,7 @@ test("Settings → Export my data saves everything as one dated JSON file", asyn
   const [download] = await Promise.all([page.waitForEvent("download"), section.getByRole("button", { name: "Export my data" }).click()]);
   expect(download.suggestedFilename()).toMatch(/^keepup-my-data-\d{4}-\d{2}-\d{2}\.json$/);
   // It says which file it saved (a download can land unseen).
-  await expect(section.getByRole("status")).toHaveText(`Downloaded ${download.suggestedFilename()}.`);
+  await expect(section.getByRole("status")).toHaveText(`Download started: \u2068${download.suggestedFilename()}\u2069.`);
   const file = JSON.parse(readFileSync((await download.path())!, "utf8"));
   expect(file.format).toBe("keepup-export-v1");
 });
@@ -22,7 +22,7 @@ test("Settings → Export my data: Exporting… while it runs; offline it says w
   const section = page.getByRole("region", { name: "Your data" });
   await context.setOffline(true);
   await section.getByRole("button", { name: "Export my data" }).click();
-  await expect(section.getByRole("alert")).toHaveText("Needs a connection");
+  await expect(section.getByRole("alert")).toHaveText("Needs a connection. Connect and tap Export my data again.");
   await context.setOffline(false);
 
   let release!: () => void;
@@ -36,7 +36,7 @@ test("Settings → Export my data: Exporting… while it runs; offline it says w
   await expect(section.getByRole("button", { name: "Exporting…" })).toBeDisabled();
   release();
   await download;
-  await expect(section.getByRole("status")).toHaveText(/^Downloaded keepup-my-data-\d{4}-\d{2}-\d{2}\.json\.$/);
+  await expect(section.getByRole("status")).toHaveText(/^Download started: \u2068keepup-my-data-\d{4}-\d{2}-\d{2}\.json\u2069\.$/);
   await expect(section.getByRole("alert")).toHaveCount(0);
   await page.unrouteAll({ behavior: "ignoreErrors" });
 });

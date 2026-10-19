@@ -22,9 +22,10 @@ import { clearOfflineCaches, markPagesOwnerDeleted } from "@/lib/offline-pages";
 import { browserSubscription, signOutCleanup } from "@/lib/push-support";
 import { reach } from "@/lib/reach";
 import { cn } from "@/lib/utils";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 
-// Saves everything Keepup keeps about this person as keepup-my-data-{date}.json, then says which file
-// (a download can land unseen). Inline, not a toast: the button also sits in the delete dialog.
+// Saves everything Keepup keeps about this person as keepup-my-data-{date}.json, then says which file.
+// "Download started", not "Downloaded": an iPhone home-screen app can drop a download silently. Inline, not a toast: the button also sits in the delete dialog.
 function ExportMyDataButton() {
   const { t } = useT();
   const [pending, startTransition] = useTransition();
@@ -41,7 +42,7 @@ function ExportMyDataButton() {
           setError(null);
           setSaved(null);
           startTransition(async () => {
-            const r = await reach(exportMyData, { offline: t("offline.needsConnection"), reload: t("errors.generic") });
+            const r = await reach(exportMyData, { offline: t("myData.exportOffline"), reload: t("errors.generic") });
             if (!r.ok) return setError(r.message);
             const file = myDataFileName(new Date());
             downloadJson(file, r.data);
@@ -52,7 +53,7 @@ function ExportMyDataButton() {
         {pending ? t("common.exporting") : t("myData.export")}
       </Button>
       <p role="status" className={cn("text-sm font-semibold text-done", !saved && "sr-only")}>
-        {saved ? t("common.downloaded", { file: saved }) : ""}
+        {saved ? t("common.downloaded", { file: isolate(saved) }) : ""}
       </p>
       {error && (
         <Notice tone="error" live>

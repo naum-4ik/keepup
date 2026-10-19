@@ -310,7 +310,8 @@
     "becomesAdmin": "<bdi>{admin}</bdi> — новый администратор группы <bdi>{group}</bdi>.",
     "title": "Ваши данные",
     "export": "Скачать мои данные",
-    "deleteAccount": "Удалить аккаунт"
+    "deleteAccount": "Удалить аккаунт",
+    "exportOffline": "Нужно подключение. Подключитесь и нажмите «Скачать мои данные» ещё раз."
   },
   "errors": {
     "group_not_found": "Эта группа недоступна.",
@@ -1541,7 +1542,7 @@
     "listSeparator": ", ",
     "sectionSeparator": " · ",
     "tryAgain": "Попробовать снова",
-    "downloaded": "Файл скачан: {file}."
+    "downloaded": "Загрузка началась: {file}."
   },
   "inbox": {
     "title": "Входящие",

@@ -18,7 +18,8 @@ import { isolate } from "@/supabase/functions/_shared/i18n";
 export type MoveTarget = { id: string; name: string };
 const bdi = (c: ReactNode) => <bdi>{c}</bdi>;
 
-// Saves the file, then says which one (it may land in Downloads unseen). Inline, not a toast: the
+// Saves the file, then says which one (it may land in Downloads unseen; "Download started", as an
+// iPhone home-screen app can drop it silently). Inline, not a toast: the
 // button also sits in dialogs, where a toast can't be seen behind the overlay.
 export function ExportChildButton({ childId, childName, label, className }: { childId: string; childName: string; label?: ReactNode; className?: string }) {
   const t = useTranslations("kids.danger");
@@ -50,7 +51,7 @@ export function ExportChildButton({ childId, childName, label, className }: { ch
         <span className="truncate">{pending ? tc("exporting") : (label ?? t("export", { name: isolate(childName) }))}</span>
       </Button>
       <p role="status" className={cn("text-sm font-semibold text-done", !saved && "sr-only")}>
-        {saved ? tc("downloaded", { file: saved }) : ""}
+        {saved ? tc("downloaded", { file: isolate(saved) }) : ""}
       </p>
       {error && (
         <Notice tone="error" live>

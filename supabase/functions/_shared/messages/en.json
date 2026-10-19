@@ -310,7 +310,8 @@
     "becomesAdmin": "<bdi>{admin}</bdi> becomes the admin of <bdi>{group}</bdi>.",
     "title": "Your data",
     "export": "Export my data",
-    "deleteAccount": "Delete account"
+    "deleteAccount": "Delete account",
+    "exportOffline": "Needs a connection. Connect and tap Export my data again."
   },
   "errors": {
     "group_not_found": "That group isn't available.",
@@ -1541,7 +1542,7 @@
     "listSeparator": ", ",
     "sectionSeparator": " · ",
     "tryAgain": "Try again",
-    "downloaded": "Downloaded {file}."
+    "downloaded": "Download started: {file}."
   },
   "inbox": {
     "title": "Inbox",

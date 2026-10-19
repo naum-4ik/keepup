@@ -927,7 +927,7 @@ test("a child's data export has its own Data section, outside the danger zone", 
   const file = (await download).suggestedFilename();
   expect(file).toMatch(/^keepup-Mary-\d{4}-\d{2}-\d{2}\.json$/);
   // It says which file it saved (a download can land unseen).
-  await expect(data.getByRole("status")).toHaveText(`Downloaded ${file}.`);
+  await expect(data.getByRole("status")).toHaveText(`Download started: \u2068${file}\u2069.`);
 });
 
 test("the garden picture scrolls under the tab bar, never over it", async ({ page }) => {

@@ -310,7 +310,8 @@
     "becomesAdmin": "<bdi>{group}</bdi>: הניהול עובר אל <bdi>{admin}</bdi>.",
     "title": "הנתונים שלכם",
     "export": "הורדת הנתונים שלי",
-    "deleteAccount": "מחיקת החשבון"
+    "deleteAccount": "מחיקת החשבון",
+    "exportOffline": "צריך חיבור. התחברו ולחצו שוב על הורדת הנתונים שלי."
   },
   "errors": {
     "group_not_found": "הקבוצה הזו לא זמינה.",
@@ -1541,7 +1542,7 @@
     "listSeparator": ", ",
     "sectionSeparator": " · ",
     "tryAgain": "ניסיון חוזר",
-    "downloaded": "הקובץ הורד: {file}."
+    "downloaded": "ההורדה התחילה: {file}."
   },
   "inbox": {
     "title": "הודעות",
