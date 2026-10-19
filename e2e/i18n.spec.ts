@@ -29,7 +29,8 @@ const loadedFaces = (page: import("@playwright/test").Page) =>
 test("English pages load only Nunito's basic Latin file, not latin-ext, Cyrillic or Hebrew", async ({ page }) => {
   for (const path of ["/", "/login"]) {
     await page.goto(path);
-    const faces = (await loadedFaces(page)).join(" ");
+    // The size-adjusted fallback (a local Arial face, "… Fallback") counts as loaded too: not the file.
+    const faces = (await loadedFaces(page)).filter((f) => !/Fallback/i.test(f)).join(" ");
     expect(faces).toMatch(/nunito/i);
     expect(faces).not.toMatch(/LatinExt|Cyrillic|Hebrew/i);
   }
