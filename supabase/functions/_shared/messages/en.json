@@ -385,6 +385,8 @@
     "banner": "You're in the demo. Data resets after 24 hours.",
     "signInLine": "<signIn>Sign in</signIn> to start your own.",
     "failed": "The demo didn't start. Try again in a moment.",
+    "loadFailed": "Couldn't load the demo. Reload the page and try again.",
+    "reload": "Reload",
     "tryDemo": "Try a demo with sample habits (resets after 24 hours)",
     "settingUp": "Setting up…",
     "loading": "Loading…",

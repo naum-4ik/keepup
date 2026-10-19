@@ -86,6 +86,26 @@ test("a failed demo: trying again clears ?demo=failed from the address", async (
   await expect(failed).toHaveCount(1);
 });
 
+test("the demo's script fails to load: the next step is a reload, and after it the demo button works", async ({ page }) => {
+  const reload = page.getByRole("alert").filter({ hasText: "Couldn't load the demo. Reload the page and try again." });
+  // networkidle: the page's own scripts and link prefetches are done before the route goes in.
+  await page.goto("/", { waitUntil: "networkidle" });
+  await expect(page.getByRole("button", { name: TRY })).toBeEnabled();
+  // Every script the page needed has loaded; the next one is the Supabase client the button fetches. Abort it once.
+  let aborted = false;
+  await page.route("**/_next/static/**/*.js", (route) => {
+    if (aborted) return route.continue();
+    aborted = true;
+    return route.abort();
+  });
+  await page.getByRole("button", { name: TRY }).click();
+  await expect(reload).toHaveCount(1);
+  expect(aborted).toBe(true);
+  await page.getByRole("button", { name: "Reload", exact: true }).click();
+  await expect(reload).toHaveCount(0);
+  await expect(page.getByRole("button", { name: TRY })).toBeEnabled();
+});
+
 test("Try it on a stale landing tab keeps the real login", async ({ page, context }) => {
   const stale = await context.newPage();
   await stale.goto("/");

@@ -22,8 +22,10 @@ export function TryDemoButton() {
   const { t } = useT();
   const zone = useRef<HTMLInputElement>(null);
   const failedBefore = useSearchParams().get("demo") === "failed";
-  const [failedHere, setFailedHere] = useState(false);
-  const failed = failedHere || failedBefore;
+  // "failed": the demo didn't start (tap again). "reload": its script didn't load; the bundler keeps
+  // that failure for the page's lifetime, so tapping again can't help: the next step is a reload.
+  const [failedHere, setFailedHere] = useState<"failed" | "reload" | null>(null);
+  const failed = failedHere ?? (failedBefore ? "failed" : null);
   const ready = useHydrated();
   useEffect(() => {
     if (zone.current) zone.current.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -31,7 +33,7 @@ export function TryDemoButton() {
 
   // A form action: useFormStatus stays pending through both steps.
   async function tryIt(formData: FormData) {
-    setFailedHere(false);
+    setFailedHere(null);
     const url = new URL(window.location.href);
     if (url.searchParams.has("demo")) {
       url.searchParams.delete("demo");
@@ -41,7 +43,7 @@ export function TryDemoButton() {
     try {
       supabase = (await loadSupabase()).createClient();
     } catch {
-      setFailedHere(true); // the script didn't load (offline, a new deploy): the same "try again" line
+      setFailedHere("reload"); // the script didn't load (offline, a new deploy)
       return;
     }
     const result = await runTryIt({
@@ -51,15 +53,33 @@ export function TryDemoButton() {
       signOut: async () => void (await supabase.auth.signOut({ scope: "local" })),
       rethrow: unstable_rethrow,
     });
-    if (result === "failed") setFailedHere(true);
+    if (result === "failed") setFailedHere("failed");
   }
 
   return (
     <form action={tryIt} className="flex flex-col items-center gap-inner">
       <input ref={zone} type="hidden" name="timezone" defaultValue="" />
-      {failed && (
+      {failed === "failed" && (
         <Notice tone="error" live className="w-full text-start">
           {t("demo.failed")}
+        </Notice>
+      )}
+      {failed === "reload" && (
+        <Notice
+          tone="error"
+          live
+          className="w-full text-start"
+          action={
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="-my-2 flex min-h-11 items-center rounded-lg px-inner font-bold underline underline-offset-2 hover:bg-background/60"
+            >
+              {t("demo.reload")}
+            </button>
+          }
+        >
+          {t("demo.loadFailed")}
         </Notice>
       )}
       <Submit ready={ready} />
@@ -67,11 +87,10 @@ export function TryDemoButton() {
   );
 }
 
-// The module, fetched once; a failed fetch can be tried again.
+// The module, fetched once. A failed fetch isn't retried: the bundler caches the failed chunk.
 let supabaseModule: Promise<typeof import("@/lib/supabase/client")> | undefined;
 function loadSupabase() {
   supabaseModule ??= import("@/lib/supabase/client");
-  supabaseModule.catch(() => (supabaseModule = undefined));
   return supabaseModule;
 }
 const warmUp = () => void loadSupabase().catch(() => {});
