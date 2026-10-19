@@ -5,7 +5,7 @@ test("the manifest is served to signed-out visitors, with icons that load", asyn
   expect(res.status()).toBe(200);
   const manifest = await res.json();
   expect(manifest.display).toBe("standalone");
-  expect(manifest.icons).toHaveLength(3);
+  expect(manifest.icons).toHaveLength(4); // 192, 512, 1024 ("any") and the maskable 512
   for (const icon of manifest.icons) expect((await request.get(icon.src)).status()).toBe(200);
 });
 
