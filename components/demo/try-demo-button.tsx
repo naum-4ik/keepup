@@ -5,8 +5,8 @@ import { useFormStatus } from "react-dom";
 import { unstable_rethrow, useSearchParams } from "next/navigation";
 import { startDemo } from "@/app/demo/actions";
 import { PrivacyConsent } from "@/components/privacy-consent";
-import { createClient } from "@/lib/supabase/client";
 import { runTryIt } from "@/lib/try-demo";
+import { whenIdle } from "@/lib/when-idle";
 import { useT } from "@/lib/i18n/client";
 
 // "Try the demo" on the landing page, and on sign-in and sign-up (someone who followed a link or tapped
@@ -15,6 +15,8 @@ import { useT } from "@/lib/i18n/client";
 // server seeds the demo. The device's time zone goes along, so the demo's days match the visitor's.
 // ?demo=failed: the seed action couldn't start the demo (app/demo/actions.ts redirects here). A new
 // try takes it out of the address (Next keeps useSearchParams in step), so the old failure goes.
+// The Supabase browser client (about 60 KB gzipped) loads only when needed: on the first tap or once
+// the page is idle, never with the page itself, so it doesn't slow the landing's first paint.
 // consent: the landing shows the consent line here; the sign-in card shows its own under the card.
 export function TryDemoButton({ consent = true }: { consent?: boolean } = {}) {
   const { t } = useT();
@@ -25,6 +27,7 @@ export function TryDemoButton({ consent = true }: { consent?: boolean } = {}) {
   const ready = useHydrated();
   useEffect(() => {
     if (zone.current) zone.current.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return whenIdle(() => void loadSupabase().catch(() => {}));
   }, []);
 
   // A form action: useFormStatus stays pending through both steps.
@@ -35,7 +38,13 @@ export function TryDemoButton({ consent = true }: { consent?: boolean } = {}) {
       url.searchParams.delete("demo");
       window.history.replaceState(null, "", url.pathname + url.search + url.hash);
     }
-    const supabase = createClient();
+    let supabase: Awaited<ReturnType<typeof loadSupabase>>;
+    try {
+      supabase = await loadSupabase();
+    } catch {
+      setFailedHere(true); // the script didn't load (offline, a new deploy): the same "try again" line
+      return;
+    }
     const result = await runTryIt({
       hasSession: async () => Boolean((await supabase.auth.getSession()).data.session),
       signIn: () => supabase.auth.signInAnonymously(),
@@ -57,6 +66,14 @@ export function TryDemoButton({ consent = true }: { consent?: boolean } = {}) {
       {consent && <PrivacyConsent />}
     </form>
   );
+}
+
+// One client per page, created on first use.
+let supabaseClient: Promise<ReturnType<typeof import("@/lib/supabase/client").createClient>> | undefined;
+function loadSupabase() {
+  supabaseClient ??= import("@/lib/supabase/client").then((m) => m.createClient());
+  supabaseClient.catch(() => (supabaseClient = undefined)); // a failed load can be tried again
+  return supabaseClient;
 }
 
 // Before the page is ready (scripts still loading) a tap would do nothing: the button waits, off.
