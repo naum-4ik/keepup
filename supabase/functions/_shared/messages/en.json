@@ -245,7 +245,7 @@
     "ringLabel": "{goals} this week",
     "moreThanLastWeek": "{n, plural, other {# more than last week}}",
     "bestWeekYet": "Your best week yet",
-    "freshStart": "A fresh start this week",
+    "freshStart": "{start, select, yes {New week: check in today to meet your first goal.} other {Check in today to meet your first goal this week.}}",
     "dotsLabel": "Last {period, select, week {{n, plural, one {# week} other {# weeks}}} month {{n, plural, one {# month} other {# months}}} other {{n, plural, one {# day} other {# days}}}}: {counts}",
     "dotCount": "{status, select, done {{n, plural, other {# done}}} missed {{n, plural, other {# missed}}} paused {{n, plural, other {# paused}}} not_started {{n, plural, other {# not started}}} open {{n, plural, other {# in progress}}} rested {{n, plural, other {# rest day}}} other {{n, plural, other {#}}}}"
   },
@@ -1430,8 +1430,9 @@
     },
     "empty": {
       "finished": "No finished habits yet. Give a habit an end, like 30 days.",
-      "archived": "No archived habits.",
-      "showActive": "Show active habits"
+      "archived": "Archive a habit to keep its history and best streak here.",
+      "showActive": "Show active habits",
+      "active": "Add a habit to start tracking your streak here."
     },
     "habitLine": "{ended, select, yes {Ended · decide on Today · {schedule}} other {{schedule}}}{best, select, yes { · best {span}} other {}}",
     "calendar": {
@@ -1444,7 +1445,7 @@
   "overview": {
     "yourWeek": "Your week",
     "calendar": "Calendar",
-    "noStreak": "No streak yet",
+    "noStreak": "{kind, select, day {Meet today's goal to start a 1-day streak} week {Meet this week's goal to start a 1-week streak} month {Meet this month's goal to start a 1-month streak} other {Check in today to start a 1-day streak}}",
     "checkIns": "{n, plural, one {check-in} other {check-ins}}",
     "activeHabits": "{n, plural, one {active habit} other {active habits}}",
     "byDayLabel": "This week by day",

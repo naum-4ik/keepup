@@ -346,7 +346,7 @@ test.describe("Habit detail", () => {
     await expect(page).toHaveURL(/\/today$/);
     await expect(page.getByRole("button", { name: "Done: \u2068Make the bed\u2069" })).toBeVisible();
     await page.goto("/progress?view=archived");
-    await expect(page.getByText("No archived habits.")).toBeVisible();
+    await expect(page.getByText("Archive a habit to keep its history and best streak here.")).toBeVisible();
   });
 
   test("the delete confirmation can be cancelled", async ({ page }) => {
@@ -615,7 +615,7 @@ test("archiving says where the habit went, and Undo puts it back with its check-
 
   await page.locator("[data-toaster]").getByRole("button", { name: "Undo", exact: true }).click();
   await expect(live).toHaveText("\u2068Make the bed\u2069 is back, history kept.");
-  await expect(page.getByText("No archived habits.")).toBeVisible();
+  await expect(page.getByText("Archive a habit to keep its history and best streak here.")).toBeVisible();
   await page.goto("/today");
   await expect(page.getByRole("button", { name: "Done: \u2068Make the bed\u2069" })).toBeVisible();
 });

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { tEn } from "@/lib/i18n/test-t";
-import { comparisonLine, goalsMet, hasWeekData, outcomeLabel, ringDash, ringFraction, streakSpan, withTodayPending, type WeekOverview } from "./week-overview";
+import { tEn, tFor } from "@/lib/i18n/test-t";
+import { comparisonLine, goalsMet, hasWeekData, noStreakKind, noStreakLine, outcomeLabel, ringDash, ringFraction, streakSpan, withTodayPending, type WeekOverview } from "./week-overview";
 
+const tRu = tFor("ru");
+const tHe = tFor("he");
 const week = (done: number, possible: number, prev_done: number, prev_possible: number) => ({ done, possible, prev_done, prev_possible });
 
 describe("comparisonLine", () => {
@@ -20,15 +22,46 @@ describe("comparisonLine", () => {
   });
 
   it("needs a last week to compare with before calling it the best", () => {
-    expect(comparisonLine(tEn, week(0, 0, 0, 0))).toBe("A fresh start this week");
+    expect(comparisonLine(tEn, week(0, 0, 0, 0))).toBeNull();
     expect(comparisonLine(tEn, week(5, 5, 5, 0))).toBeNull();
   });
 
   it("stays neutral otherwise, never negative", () => {
     expect(comparisonLine(tEn, week(4, 10, 12, 14))).toBeNull();
-    expect(comparisonLine(tEn, week(0, 3, 9, 12))).toBe("A fresh start this week");
+    expect(comparisonLine(tEn, week(0, 3, 9, 12))).toBe("Check in today to meet your first goal this week.");
     expect(comparisonLine(tEn, week(6, 8, 6, 8))).toBeNull();
     expect(comparisonLine(tEn, week(6, 9, 6, 8))).toBeNull();
+  });
+});
+
+describe("comparisonLine with nothing done", () => {
+  it("names the first goal, and the new week only on its first day", () => {
+    expect(comparisonLine(tEn, { ...week(0, 3, 0, 0), today: "2026-10-19", week_start: "2026-10-19" })).toBe("New week: check in today to meet your first goal.");
+    expect(comparisonLine(tEn, { ...week(0, 3, 0, 0), today: "2026-10-21", week_start: "2026-10-19" })).toBe("Check in today to meet your first goal this week.");
+    expect(comparisonLine(tRu, { ...week(0, 3, 0, 0), today: "2026-10-19", week_start: "2026-10-19" })).toMatch(/^Новая неделя/);
+    expect(comparisonLine(tHe, { ...week(0, 3, 0, 0), today: "2026-10-21", week_start: "2026-10-19" })).not.toBe("weekOverview.freshStart");
+  });
+
+  it("says nothing while nothing is due", () => {
+    expect(comparisonLine(tEn, { ...week(0, 0, 0, 0), today: "2026-10-19", week_start: "2026-10-19" })).toBeNull();
+  });
+});
+
+describe("noStreakKind / noStreakLine", () => {
+  it("picks the shortest period, and whether one check-in finishes a day", () => {
+    expect(noStreakKind([{ period: "week", target_count: 3 }, { period: "day", target_count: 1 }])).toBe("once");
+    expect(noStreakKind([{ period: "day", target_count: 2 }])).toBe("day");
+    expect(noStreakKind([{ period: "month", target_count: 1 }, { period: "week", target_count: 1 }])).toBe("week");
+    expect(noStreakKind([{ period: "month", target_count: 4 }])).toBe("month");
+    expect(noStreakKind([])).toBe("once");
+  });
+
+  it("says what starts the streak, in each language", () => {
+    expect(noStreakLine(tEn, "once")).toBe("Check in today to start a 1-day streak");
+    expect(noStreakLine(tEn, "day")).toBe("Meet today's goal to start a 1-day streak");
+    expect(noStreakLine(tEn, "week")).toBe("Meet this week's goal to start a 1-week streak");
+    expect(noStreakLine(tEn, "month")).toBe("Meet this month's goal to start a 1-month streak");
+    for (const t of [tRu, tHe]) for (const k of ["once", "day", "week", "month"] as const) expect(noStreakLine(t, k)).not.toMatch(/overview\.|\{/);
   });
 });
 
