@@ -50,7 +50,7 @@ export function InviteLink({
   useEffect(() => {
     if (!done || !focusIsLost(document.activeElement, document.body)) return;
     (done === "created" ? linkRef : createRef).current?.focus();
-  }, [done]);
+  }, [done, url]);
 
   // Create "Creating…" / turn off "Turning off…"; offline or a request that died says what to do.
   const run = (call: () => Promise<GroupActionState>, next: "created" | "turnedOff") =>
@@ -76,14 +76,19 @@ export function InviteLink({
     }
   };
 
+  // One live region, mounted across both branches (the branch swaps when the link comes or goes, and
+  // a region that mounts with its text in it isn't announced reliably).
+  const status = (
+    <span role="status" className="sr-only">
+      {done === "created" ? t("createdStatus") : done === "turnedOff" ? t("turnedOffStatus") : ""}
+    </span>
+  );
+
   if (!url) {
     return (
       <div className="flex flex-col gap-item">
-        {done === "turnedOff" && (
-          <Notice tone="success" live>
-            {t("turnedOffStatus")}
-          </Notice>
-        )}
+        {status}
+        {done === "turnedOff" && <Notice tone="success">{t("turnedOffStatus")}</Notice>}
         <p className="text-sm text-muted-foreground">{t.rich("helpNone", { group: groupName, bdi })}</p>
         <Button ref={createRef} type="button" className="h-11" disabled={pending} autoFocus={autoFocus} onClick={() => run(() => createInvite(groupId), "created")}>
           {pending ? tc("creating") : t("create")}
@@ -100,7 +105,7 @@ export function InviteLink({
   return (
     <div className="flex flex-col gap-item">
       {/* The new link is on screen; a screen reader hears it was made. */}
-      <span role="status" className="sr-only">{done === "created" ? t("createdStatus") : ""}</span>
+      {status}
       <p className="text-sm text-muted-foreground">{t.rich("helpActive", { group: groupName, bdi })}</p>
       <div className="flex flex-col gap-inner">
         <label htmlFor="invite-link" className="text-sm font-semibold">
