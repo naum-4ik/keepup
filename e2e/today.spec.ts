@@ -62,3 +62,28 @@ test("the Today card's This week counts a group habit you take part in", async (
   await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect(card.getByRole("img", { name: "1 of 1 goal met this week" })).toBeVisible();
 });
+
+// Owner rule 4: the first check-in is on the first screen, at least 44×44, and above the bottom nav,
+// on small and common phones (design audit 2026-10-19: at 320×640 it was under the nav).
+for (const viewport of [
+  { width: 320, height: 640 },
+  { width: 375, height: 812 },
+  { width: 414, height: 896 },
+]) {
+  test(`at ${viewport.width}×${viewport.height} the first check-in is on the first screen, above the nav`, async ({ page }) => {
+    await signUpAndOnboard(page);
+    for (const title of ["Walk", "Read", "Stretch"]) await createHabit(page, { title, count: 1, period: "day" });
+    await page.setViewportSize(viewport);
+    await page.goto("/today");
+    const first = page.getByRole("button", { name: /^Check in: / }).first();
+    await expect(first).toBeVisible();
+    const box = (await first.boundingBox())!;
+    const nav = (await page.locator("nav.fixed").boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    // At load, without scrolling: inside the viewport and clear of the nav.
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(nav.y);
+  });
+}
