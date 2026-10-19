@@ -13,8 +13,10 @@ import { NeedsConnection } from "@/components/offline/needs-connection";
 import { RenderedTaps } from "@/components/offline/offline-queue-provider";
 import { GentleCard } from "@/components/today/gentle-card";
 import { ResetNote } from "@/components/today/reset-note";
-import { TodayCard } from "@/components/today/today-card";
+import { TodaySummary } from "@/components/today/today-summary";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
+import { Surface } from "@/components/ui/surface";
 import { getProfile } from "@/lib/auth";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
@@ -108,11 +110,11 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const tipFor = sections.map((s) => groupForToday(s.habits).todo[0]).find(Boolean)?.habit_id;
   // The first-check-in tip is for people who have never checked in (not for someone on a new device).
   const isNewUser = habits.every((h) => h.done_count === 0 && h.best_streak === 0);
-  // The Today card: every adult section's to-do and done habits (kids have their own stars).
+  // The Today summary: every adult section's to-do and done habits (kids have their own stars).
   const progressHabits = sections.flatMap((s) => s.habits).map((h) => ({
     habit_id: h.habit_id, title: h.title, emoji: h.emoji, category: h.category, target_count: h.target_count, period: h.period,
     done_count: h.done_count, checked_in_today: h.checked_in_today, frozen: h.frozen, not_started: h.not_started,
-    pending_count: h.pending_count, requires_approval: h.requires_approval,
+    pending_count: h.pending_count, requires_approval: h.requires_approval, current_streak: h.current_streak,
   }));
   const progress = todayProgress(progressHabits);
   const now = new Date();
@@ -149,58 +151,54 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
     dismissed,
   });
 
-  // Never two bursts at once: no finish-card confetti when "Everyone did it" or the Today card's
+  // Never two bursts at once: no finish-card confetti when "Everyone did it" or the Today summary's
   // all-done burst may play; finish cards take turns among themselves (FinishCard).
   const finishQuiet = everyone.length > 0 || (progress.total > 0 && progress.done >= progress.total);
   const checkedOffKey = withHeadings ? allCheckedOffKey(sections) : null;
 
+  const week = overview && hasWeekData(overview) ? { done: overview.done, possible: overview.possible, streak: overview.best_current_streak } : null;
+
+  // Spacing (docs/design.md): sections 24px apart, the title over its summary 8px. Kept short so the
+  // first check-in is on the first screen of a 320×640 phone, above the bottom nav.
   return (
-    <section className="flex flex-col gap-4 py-6">
+    <section className="flex flex-col gap-section py-section">
       <RenderedTaps ids={renderedTaps} periods={shownPeriods} />
-      <h1 className="text-xl font-bold">{tt("title")}</h1>
+      <div className="flex flex-col gap-inner">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-inner">
+          <h1 className="text-xl font-bold">{tt("title")}</h1>
+          <p className="text-sm font-semibold text-muted-foreground">{date}</p>
+        </div>
+        {progress.total > 0 && <TodaySummary dayKey={dayKey} habits={progressHabits} week={week} quiet={everyone.length > 0} />}
+      </div>
       {/* Right after Settings → Reset my data. */}
       {reset === "1" && <ResetNote />}
-      {progress.total > 0 && (
-        <TodayCard
-          date={date}
-          dayKey={dayKey}
-          habits={progressHabits}
-          week={overview && hasWeekData(overview) ? { done: overview.done, possible: overview.possible, streak: overview.best_current_streak } : null}
-          quiet={everyone.length > 0}
-        />
-      )}
       {/* Arriving from an invite (?joined=<group>): who's here, where the group's habits are, a way in. */}
       {joinedGroup && (
-        <div role="status" className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-soft">
-          <span aria-hidden className="shrink-0">
-            <Avatar name={joinedGroup.name} emoji={joinedGroup.avatar_emoji} color={joinedGroup.avatar_color} size="md" />
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate font-bold">{tt.rich("welcome.title", { name: joinedGroup.name, bdi: (c) => <bdi>{c}</bdi> })}</span>
-            <span className="text-sm text-muted-foreground">
-              {tt("welcome.people", { n: joinedGroup.member_count })} ·{" "}
-              {habits.some((h) => h.group_id === joinedGroup.group_id) ? tt("welcome.habitsBelow") : tt("welcome.noGroupHabits")}
-            </span>
-          </span>
-          <Link
-            href={`/groups/${joinedGroup.group_id}`}
-            aria-label={tt("welcome.openLabel", { name: isolate(joinedGroup.name) })}
-            className="flex h-11 shrink-0 items-center rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted"
-          >
-            {tt("welcome.open")}
-          </Link>
-        </div>
+        <Notice
+          live
+          action={
+            <Link
+              href={`/groups/${joinedGroup.group_id}`}
+              aria-label={tt("welcome.openLabel", { name: isolate(joinedGroup.name) })}
+              className="-my-3 flex min-h-11 items-center rounded-lg px-inner font-bold text-primary hover:bg-background/60"
+            >
+              {tt("welcome.open")}
+            </Link>
+          }
+        >
+          {tt.rich("welcome.title", { name: joinedGroup.name, bdi: (c) => <bdi>{c}</bdi> })} · {tt("welcome.people", { n: joinedGroup.member_count })} ·{" "}
+          {habits.some((h) => h.group_id === joinedGroup.group_id) ? tt("welcome.habitsBelow") : tt("welcome.noGroupHabits")}
+        </Notice>
       )}
+      {/* Opens the Inbox's approvals: a Surface (it opens something), one line. */}
       {approvals.length > 0 && (
-        <Link href="/inbox" className="flex min-h-14 items-center gap-3 rounded-2xl bg-card p-4 shadow-soft hover:bg-muted">
-          <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-pending-soft text-pending">
-            <Clock className="size-5" />
+        <Surface as="a" href="/inbox" className="flex items-center gap-inner">
+          <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-full bg-pending-soft text-pending">
+            <Clock className="size-4" />
           </span>
-          <span className="flex-1 font-semibold">
-            {tt("approvalsWaiting", { n: approvals.length })}
-          </span>
+          <span className="flex-1 font-semibold">{tt("approvalsWaiting", { n: approvals.length })}</span>
           <ChevronRight aria-hidden className="size-5 text-muted-foreground rtl:-scale-x-100" />
-        </Link>
+        </Surface>
       )}
       {/* Always rendered, so the card survives a refresh after it was seen (EveryoneDidIt). */}
       <EveryoneDidIt
@@ -230,9 +228,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         </NeedsConnection>
       ))}
       {/* Nothing due today: the week still shows on its own. */}
-      {progress.total === 0 && overview && hasWeekData(overview) && (
-        <TodayCard date={date} dayKey={dayKey} habits={[]} week={{ done: overview.done, possible: overview.possible, streak: overview.best_current_streak }} />
-      )}
+      {progress.total === 0 && week && <TodaySummary dayKey={dayKey} habits={[]} week={week} />}
       {habits.length === 0 && kids.length === 0 && finishes.length === 0 ? (
         <EmptyState
           icon={<SproutIcon className="size-6" />}
@@ -247,7 +243,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       ) : (
         sections.map((s) =>
           withHeadings ? (
-            <section key={s.key} aria-label={s.title} className="flex flex-col gap-3 pt-2">
+            <section key={s.key} aria-label={s.title} className="flex flex-col gap-item">
               <h2 className="text-base font-bold">
                 {s.key === "mine" ? (
                   s.title
@@ -255,7 +251,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
                   // A group section opens its group. The avatar is decoration: the link is named by the title.
                   <Link
                     href={`/groups/${s.key}`}
-                    className="-mx-2 flex min-h-11 w-fit max-w-full items-center gap-2 rounded-xl px-2 hover:bg-muted/60"
+                    className="-mx-inner flex min-h-11 w-fit max-w-full items-center gap-inner rounded-xl px-inner hover:bg-muted/60"
                   >
                     <span aria-hidden className="shrink-0">
                       <Avatar name={s.title} emoji={s.avatar?.emoji} color={s.avatar?.color} size="sm" />
@@ -283,7 +279,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
 
 // Inside each section: what's left to do, what's done, what isn't active yet.
 // `sectionDone`: say "All checked off" when this section is finished. Only one section says it
-// (allCheckedOffKey); off for a lone section, where the Today card already says "Today's all done".
+// (allCheckedOffKey); off for a lone section, where the Today summary already says "All 3 done".
 function TodayLists({
   t,
   habits,
@@ -303,7 +299,7 @@ function TodayLists({
       {todo.length > 0 ? (
         <HabitList habits={todo} tipFor={tipFor} endLines={endLines} />
       ) : done.length > 0 && sectionDone ? (
-        <p className="rounded-2xl bg-card p-4 text-center text-sm font-semibold shadow-soft">{t("today.sections.allCheckedOff")}</p>
+        <Notice tone="success">{t("today.sections.allCheckedOff", { total: done.length })}</Notice>
       ) : null}
       {done.length > 0 && <HabitList title={t("today.sections.doneForToday")} habits={done} endLines={endLines} />}
       {later.length > 0 && <HabitList title={t("today.sections.later")} habits={later} endLines={endLines} />}
@@ -324,7 +320,7 @@ function HabitList({
 }) {
   if (habits.length === 0) return null;
   const list = (
-    <ul className="flex flex-col gap-3">
+    <ul className="flex flex-col gap-item">
       {habits.map((h) => (
         <li key={h.habit_id}>
           <HabitCard habit={h} endLine={endLines?.get(h.habit_id)} />
@@ -335,7 +331,7 @@ function HabitList({
   );
   if (!title) return list;
   return (
-    <section aria-label={title} className="flex flex-col gap-2 pt-2">
+    <section aria-label={title} className="flex flex-col gap-inner">
       <h2 className="text-sm font-semibold text-muted-foreground">{title}</h2>
       {list}
     </section>

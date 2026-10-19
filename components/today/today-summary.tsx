@@ -1,33 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { Check, ChevronRight, Flame } from "lucide-react";
+import { ChevronRight, Flame } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Confetti } from "@/components/celebrations/confetti";
-import { HabitEmoji } from "@/components/habits/category-icon";
 import { useOfflineQueue } from "@/components/offline/offline-queue-provider";
 import { ProgressRing } from "@/components/overview/week-overview";
 import { useT } from "@/lib/i18n/client";
 import { goalsMet } from "@/lib/week-overview";
 import { takeBurstTurn } from "@/lib/burst-turns";
-import { isolate } from "@/supabase/functions/_shared/i18n";
-import { todayLine, todayProgress, withQueuedProgress, type ProgressHabit } from "@/lib/today-progress";
+import { todayLine, todayProgress, todayStreak, withQueuedProgress, type ProgressHabit } from "@/lib/today-progress";
 import { cn } from "@/lib/utils";
 
 const SEEN_KEY = "keepup:all-done-celebrated";
 
-// The top of Today (ideas/today-card.md): today's ring, a line that moves with you, the day's habits
-// as emoji that light up when done, and this week in one line. The last check-in of the day gets a
-// small confetti burst, once per day on this device (the day counts as celebrated even when quiet).
-// Taps still waiting on this phone (offline) count too, as the check-ins they will be.
-export function TodayCard({
-  date,
+// The top of Today (ideas/today-card.md), a line and not a card (docs/design.md "Surfaces": a single
+// stat is a line of text): today's ring and one sentence that moves with you ("1 of 3 done. Check in 2
+// more to finish today."), then this week in one link. Kept short so the first check-in sits high on a
+// small phone. The last check-in of the day gets a small confetti burst, once per day on this device
+// (the day counts as celebrated even when quiet). Taps still waiting on this phone (offline) count
+// too, as the check-ins they will be.
+export function TodaySummary({
   dayKey,
   habits,
   week,
   quiet = false,
 }: {
-  date: string;
   dayKey: string;
   // Today's adult habits, as the page lists them (lib/today-progress.ts todayProgress).
   habits: ProgressHabit[];
@@ -37,7 +35,7 @@ export function TodayCard({
 }) {
   const { t } = useT();
   const { delta } = useOfflineQueue();
-  const { done, total, items } = useMemo(() => todayProgress(withQueuedProgress(habits, delta)), [habits, delta]);
+  const { done, total } = useMemo(() => todayProgress(withQueuedProgress(habits, delta)), [habits, delta]);
   const allDone = total > 0 && done >= total;
   // The confetti waits for the server's word: a tap is queued for a moment even online (saved on the
   // phone first), and "Everyone did it" (quiet) only arrives with the page's refresh.
@@ -74,62 +72,35 @@ export function TodayCard({
     };
   }, [allSaved, dayKey, quiet]);
 
+  // "Your 5-day streak is safe" only once the server has every check-in (its streaks include today).
+  const streak = allSaved ? todayStreak(habits) : 0;
+
   return (
-    <section
-      aria-label={t("today.progressLabel")}
-      className={cn(
-        "relative flex flex-col gap-3 overflow-hidden rounded-2xl p-4 shadow-soft transition-colors",
-        allDone ? "bg-done-soft" : "bg-card",
-      )}
-    >
+    // overflow-x-clip: the confetti never widens the page (no sideways scroll on a phone). The box
+    // reaches 8px past the column on each side, so the week link's hover tint isn't clipped.
+    <section aria-label={t("today.progressLabel")} className="relative -mx-inner flex flex-col gap-inner overflow-x-clip px-inner">
       {celebrate && <Confetti />}
       {/* Nothing due today (e.g. every habit is paused or has ended): only the week line shows. */}
       {total > 0 && (
-      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-inner">
           <span className="relative flex shrink-0 items-center justify-center">
-            <ProgressRing done={done} possible={total} size={64} label={t("today.ringLabel", { done, total })} />
-            {!allDone && total > 0 && (
-              <span aria-hidden className="absolute text-sm font-bold tabular-nums">
+            <ProgressRing done={done} possible={total} size={44} label={t("today.ringLabel", { done, total })} />
+            {!allDone && (
+              <span aria-hidden className="absolute text-xs font-bold tabular-nums">
                 {Math.round((done / total) * 100)}%
               </span>
             )}
           </span>
-          <div className="flex min-w-0 flex-col">
-            <p className="text-sm font-semibold text-muted-foreground">{date}</p>
-            <p className="text-lg font-bold tabular-nums">
-              {t("today.doneOfTotal", { done, total })}
-            </p>
-            <p role="status" className={cn("text-sm font-semibold", allDone ? "text-done" : "text-primary")}>
-              {todayLine(t, done, total)}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {items.length > 0 && (
-        // One picture with one label: the habit cards below are the interactive part.
-        <div
-          role="img"
-          aria-label={t("today.habitsLabel", { list: items.map((i) => t(i.done ? "today.itemDone" : "today.itemTodo", { title: isolate(i.title) })).join(t("common.listSeparator")) })}
-          className="flex flex-wrap gap-1.5"
-        >
-          {items.map((i) => (
-            <span key={i.habitId} data-done={i.done || undefined} className="relative">
-              <HabitEmoji category={i.category} emoji={i.emoji} className={cn("size-9 transition", !i.done && "opacity-40 grayscale dark:opacity-60 dark:brightness-150")} />
-              {i.done && (
-                <span aria-hidden className="absolute -end-0.5 -bottom-0.5 flex size-4 items-center justify-center rounded-full bg-done text-done-foreground ring-2 ring-card">
-                  <Check className="size-2.5" strokeWidth={4} />
-                </span>
-              )}
-            </span>
-          ))}
+          <p role="status" className={cn("min-w-0 flex-1 font-bold tabular-nums", allDone && "text-done")}>
+            {todayLine(t, done, total, streak)}
+          </p>
         </div>
       )}
 
       {week && (
         <Link
           href="/progress"
-          className="-mx-2 -mb-2 flex min-h-11 items-center gap-2 rounded-xl px-2 text-sm text-muted-foreground hover:bg-muted/60"
+          className="-mx-inner flex min-h-11 items-center gap-inner rounded-xl px-inner text-sm text-muted-foreground hover:bg-muted/60"
         >
           <span className="font-semibold">{t("today.thisWeek")}</span>
           <span aria-hidden>·</span>
@@ -141,6 +112,7 @@ export function TodayCard({
           {week.streak > 0 && (
             <>
               <span aria-hidden>·</span>
+              {/* Icon to its number: one element, so 4px (off the scale on purpose, like the chip it was). */}
               <span className="flex items-center gap-1 font-bold text-flame tabular-nums">
                 <Flame className="size-4 fill-current" aria-hidden />
                 <span className="sr-only">{t("today.bestStreak")}</span>

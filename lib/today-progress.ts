@@ -16,6 +16,8 @@ export type ProgressHabit = {
   not_started: boolean;
   pending_count?: number | null;
   requires_approval?: boolean | null;
+  // The habit's running streak, in its own periods (todayStreak reads the daily ones).
+  current_streak?: number;
 };
 
 export type TodayItem = { habitId: string; title: string; emoji: string | null; category: HabitCategory | null; done: boolean };
@@ -63,12 +65,23 @@ export function withQueuedProgress<T extends ProgressHabit>(habits: T[], queued:
   });
 }
 
-// Encouraging, never guilt (docs/design.md voice); at most one emoji.
-export function todayLine(t: T, done: number, total: number): string {
+// The streak the day's check-ins kept going: the longest running streak among today's daily habits
+// that are done (a weekly habit's streak counts weeks, so it can't be said in days). 0: none.
+export function todayStreak(habits: ProgressHabit[]): number {
+  const doneIds = new Set(todayProgress(habits).items.filter((i) => i.done).map((i) => i.habitId));
+  return habits.reduce((best, h) => (h.period === "day" && doneIds.has(h.habit_id) ? Math.max(best, h.current_streak ?? 0) : best), 0);
+}
+
+// Action + result + the numbers (docs/design.md voice): what's done, what's left, and the streak it
+// keeps once all is done. Encouraging, never guilt; at most one emoji. `streak`: todayStreak, 0 for none.
+export function todayLine(t: T, done: number, total: number, streak = 0): string {
   const left = total - done;
-  if (left <= 0) return t("today.line.allDone");
+  if (left <= 0) {
+    const all = t("today.line.allDone", { total });
+    return streak > 0 ? `${all} ${t("today.line.streakSafe", { streak })}` : all;
+  }
   if (done === 0) return t("today.line.toGoToday", { n: left });
-  if (left === 1) return t("today.line.oneMore");
-  if (done * 2 >= total) return t("today.line.halfway");
-  return t("today.line.toGo", { n: left });
+  if (left === 1) return t("today.line.oneMore", { done, total });
+  if (done * 2 >= total) return t("today.line.halfway", { done, total, n: left });
+  return t("today.line.toGo", { done, total, n: left });
 }

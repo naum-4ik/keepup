@@ -70,7 +70,7 @@ export function EveryoneDidIt(props: Props) {
 
   if (ids.length === 0) return null;
   return (
-    <div data-seen={props.ids.length === 0 ? "" : undefined} className="relative flex items-center gap-3 rounded-2xl bg-card p-4 shadow-soft">
+    <div data-seen={props.ids.length === 0 ? "" : undefined} className="relative flex items-center gap-inner rounded-2xl bg-card p-item shadow-soft">
       {/* Keyed by the rows: a new card (new ids while a kept one shows) bursts again. */}
       {shown && <Confetti key={key} />}
       <p className="min-w-0 flex-1 font-bold">

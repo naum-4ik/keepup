@@ -83,11 +83,11 @@ export function FinishCard({
   return (
     <section
       aria-label={t("label", { title: isolate(title) })}
-      className="relative flex flex-col gap-3 overflow-hidden rounded-2xl bg-done-soft p-4 shadow-soft"
+      className="relative flex flex-col gap-item overflow-hidden rounded-2xl bg-done-soft p-item shadow-soft"
     >
       {confetti && <Confetti />}
       {/* Above the confetti, so the pieces pass behind the text. */}
-      <div className="relative z-10 flex items-center gap-3">
+      <div className="relative z-10 flex items-center gap-inner">
         <HabitEmoji category={category} emoji={emoji} />
         <div className="flex min-w-0 flex-col">
           <p className="truncate font-bold">{t.rich("reachedEnd", { title, celebrate: celebrate ? "yes" : "no", bdi: (c) => <bdi>{c}</bdi> })}</p>
@@ -95,7 +95,7 @@ export function FinishCard({
         </div>
       </div>
       {canDecide ? (
-        <div className="relative z-10 flex gap-2">
+        <div className="relative z-10 flex gap-inner">
           <Button type="button" variant="outline" className="h-11 flex-1 bg-card" disabled={pending} onClick={() => run(finishHabit)}>
             {t("finish")}
           </Button>

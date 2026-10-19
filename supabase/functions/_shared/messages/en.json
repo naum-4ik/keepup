@@ -1068,38 +1068,35 @@
     "resetDone": "Your data is reset. A fresh start 🌱",
     "progressLabel": "Today's progress",
     "ringLabel": "{done} of {total} done today",
-    "doneOfTotal": "{done} of {total} done",
-    "habitsLabel": "Today's habits: {list}",
-    "itemDone": "{title} done",
-    "itemTodo": "{title} to do",
     "thisWeek": "This week",
     "weekCount": "{done} of {possible}",
     "bestStreak": "Best streak:",
     "line": {
-      "allDone": "Today's all done 🎉",
-      "toGoToday": "{n, plural, other {# to go today}}",
-      "oneMore": "One more to go!",
-      "halfway": "Halfway there 💪",
-      "toGo": "{n, plural, other {# to go}}"
+      "allDone": "{total, plural, one {Done for today 🎉} other {All # done 🎉}}",
+      "toGoToday": "{n, plural, other {Check in # more to finish today.}}",
+      "oneMore": "Check in 1 more to finish today ({done} of {total}).",
+      "halfway": "{done} of {total} done. {n, plural, other {# more to finish today 💪}}",
+      "toGo": "{done} of {total} done. {n, plural, other {Check in # more to finish today.}}",
+      "streakSafe": "{streak, plural, one {Your #-day streak is safe.} other {Your #-day streak is safe.}}"
     },
     "welcome": {
       "title": "Welcome to <bdi>{name}</bdi> 👋",
       "people": "{n, plural, one {# person} other {# people}}",
       "habitsBelow": "your group habits are below",
-      "noGroupHabits": "no group habits yet",
+      "noGroupHabits": "add the group's first habit",
       "open": "Open",
       "openLabel": "Open {name}"
     },
     "approvalsWaiting": "{n, plural, one {# check-in waiting for you} other {# check-ins waiting for you}}",
     "habitFallback": "A habit",
     "empty": {
-      "text": "Nothing to do yet. Add a habit to get started.",
-      "action": "Add your first habit"
+      "text": "Add one habit and check in today to start day 1 of your streak.",
+      "action": "Add a habit, start day 1"
     },
     "sections": {
       "mine": "Mine",
       "groupFallback": "Group",
-      "allCheckedOff": "All checked off. Nice work.",
+      "allCheckedOff": "{total, plural, one {Checked off. Come back tomorrow to keep your streak.} other {All # checked off. Come back tomorrow to keep your streak.}}",
       "doneForToday": "Done for today",
       "later": "Later"
     },
@@ -1112,20 +1109,28 @@
     },
     "gentle": {
       "inviteFamily": {
-        "title": "Invite your family",
-        "body": "Share habits like family dinner. Done when everyone's done.",
-        "cta": "Invite"
+        "body": "Invite your family to a shared habit. The link works for 7 days.",
+        "cta": "Create invite link"
       },
       "inviteFriend": {
-        "title": "Invite a friend",
-        "body": "Do a habit together and cheer each other on.",
-        "cta": "Invite"
+        "body": "Invite a friend to a shared habit and cheer each check-in. The link works for 7 days.",
+        "cta": "Create invite link"
       },
       "addChild": {
-        "title": "Add a child? 🐼",
-        "body": "Track brushing teeth, reading together and more."
+        "body": "Add a child: each check-in earns 1 star toward a treat."
       },
-      "notNow": "Not now"
+      "notNow": "Not now",
+      "creating": "Creating link…"
+    },
+    "checkIn": {
+      "done": "{approval, select, yes {{habit}: sent for approval} other {{habit} checked in}}"
+    },
+    "undo": {
+      "undoing": "Undoing {habit}…",
+      "done": "{habit}: check-in undone",
+      "failed": "Couldn't undo {habit}. Check your connection and tap Undo again.",
+      "gone": "That check-in can't be undone anymore. Open the habit to see it.",
+      "openHabit": "Open habit"
     }
   },
   "nav": {
@@ -1184,7 +1189,9 @@
       "labelRing": "{state}: {title}, {done} of {target}",
       "whoDid": "Who did {title}?",
       "meAndChild": "Me + <bdi>{name}</bdi>",
-      "meAndEveryone": "Me + everyone"
+      "meAndEveryone": "Me + everyone",
+      "checking": "Checking in: {title}…",
+      "failed": "Couldn't save that. Check your connection and tap again."
     },
     "checkIns": {
       "empty": "No check-ins this period yet.",
