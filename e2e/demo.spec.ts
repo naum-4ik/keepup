@@ -2,7 +2,9 @@ import { expect, test } from "@playwright/test";
 import { completeOnboarding, signUp, TEST_PASSWORD, uniqueEmail } from "./helpers/auth";
 import { createGroup, inviteLink } from "./helpers/groups";
 
+// The full banner outside the app (invite, onboarding); the one-line note in the app header.
 const BANNER = "You're in the demo. Data resets after 24 hours.";
+const NOTE = "Demo, resets in 24 h.";
 const OFF = "That's off in the demo.";
 
 // One Try it per test: each spends one of the local anonymous sign-ins (30 an hour per IP).
@@ -23,11 +25,11 @@ test("Try it: a full account in under 5 seconds, with a check-in to approve", as
   await page.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(page.getByText("Nothing waiting for you.")).toBeVisible();
 
-  // The banner on every screen; what the demo can't do says so instead.
+  // The note on every app screen; what the demo can't do says so instead.
   await page.goto("/today");
-  await expect(page.getByText(BANNER)).toBeVisible();
+  await expect(page.getByText(NOTE)).toBeVisible();
   await page.goto("/profile");
-  await expect(page.getByText(BANNER)).toBeVisible();
+  await expect(page.getByText(NOTE)).toBeVisible();
   // The policy opens in the demo too (the consent line under Try the demo points at it).
   await page.getByRole("link", { name: "Privacy Policy" }).click();
   await expect(page).toHaveURL(/\/privacy$/);
@@ -36,14 +38,16 @@ test("Try it: a full account in under 5 seconds, with a check-in to approve", as
   await page.goto("/groups");
   await page.getByRole("link", { name: /Family/ }).first().click();
   await expect(page).toHaveURL(/\/groups\/[0-9a-f-]{36}/);
-  await expect(page.getByText(BANNER)).toBeVisible();
+  await expect(page.getByText(NOTE)).toBeVisible();
   await expect(page.getByText(OFF)).toBeVisible();
   await expect(page.getByRole("button", { name: /invite link/i })).toHaveCount(0);
 
   await page.getByRole("link", { name: /Nova/ }).first().click();
   await page.getByRole("link", { name: "Open \u2068Nova\u2069's view" }).click();
   await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}\/play$/);
-  await expect(page.getByText(BANNER)).toBeVisible();
+  // No demo note in the kid view: a child holds the phone.
+  await expect(page.getByRole("heading", { name: "Nova", level: 1 })).toBeVisible();
+  await expect(page.getByText(NOTE)).toHaveCount(0);
 
   await page.goto("/profile/settings");
   await expect(page.getByRole("region", { name: "Notifications" }).getByText(OFF)).toBeVisible();
@@ -51,7 +55,7 @@ test("Try it: a full account in under 5 seconds, with a check-in to approve", as
   await expect(page.getByRole("button", { name: "Delete account" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Export my data" })).toBeVisible();
 
-  // The banner's Sign in leaves the demo: the session is gone.
+  // The note's Sign in leaves the demo: the session is gone.
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(/\/login/);
   await page.goto("/today");
