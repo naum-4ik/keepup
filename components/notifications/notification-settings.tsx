@@ -18,7 +18,7 @@ import {
 } from "@/lib/notification-categories";
 import type { NotificationSettings } from "@/lib/notification-settings";
 import { browserSubscription, iosVersion, removeDevice } from "@/lib/push-support";
-import { INTL_LOCALE, type Locale, type T } from "@/supabase/functions/_shared/i18n";
+import { INTL_LOCALE, isolate, type Locale, type T } from "@/supabase/functions/_shared/i18n";
 import { reach } from "@/lib/reach";
 import { cn } from "@/lib/utils";
 
@@ -191,13 +191,13 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
                   type="button"
                   variant="outline"
                   className="h-11"
-                  aria-label={t(d.endpoint === here ? "notifications.card.removeThisLabel" : "notifications.card.removeLabel", { label: d.label })}
+                  aria-label={t(d.endpoint === here ? "notifications.card.removeThisLabel" : "notifications.card.removeLabel", { label: isolate(d.label) })}
                   disabled={pending}
                   onClick={() =>
                     run(
                       { where: "devices", key: d.endpoint },
                       () => removeDevice({ endpoint: d.endpoint, here, forget: forgetPushSubscription, getSubscription: browserSubscription }),
-                      t("notifications.card.removedDone", { label: d.label }),
+                      t("notifications.card.removedDone", { label: isolate(d.label) }),
                     )
                   }
                 >

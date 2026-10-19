@@ -136,7 +136,7 @@ test.describe("with push stood in for", () => {
     await expect(section.getByLabel("Daily reminder")).toHaveValue("7");
     await expect(section.getByText("Android · Chrome · this device")).toBeVisible();
 
-    await section.getByRole("button", { name: "Remove Android · Chrome (this device)" }).click();
+    await section.getByRole("button", { name: "Remove \u2068Android · Chrome\u2069 (this device)" }).click();
     await expect(section.getByRole("button", { name: "Turn on reminders" })).toBeVisible();
     await page.reload();
     await expect(section.getByRole("button", { name: "Turn on reminders" })).toBeVisible();
