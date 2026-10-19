@@ -7,7 +7,7 @@ import { MovedNotice } from "@/components/moved/moved-notice";
 import { Faro } from "@/components/observability/faro";
 import { ServiceWorker } from "@/components/pwa/service-worker";
 import "./globals.css";
-import { siteUrl as siteUrlFor } from "@/lib/site-url";
+import { deploymentSiteUrl } from "@/lib/site-url";
 import { isRtl } from "@/supabase/functions/_shared/i18n";
 import { CLIENT_NAMESPACES } from "@/i18n/client-namespaces";
 
@@ -76,10 +76,7 @@ const geistMono = localFont({
 
 // Shared links (LinkedIn, WhatsApp, Slack…) show a card: this title and text, and app/opengraph-image.png.
 // The card needs absolute URLs (lib/site-url.ts: production keepuphabits, else Vercel's address).
-const siteUrl = siteUrlFor({
-  deployEnv: process.env.NEXT_PUBLIC_DEPLOY_ENV,
-  vercelProductionUrl: process.env.VERCEL_PROJECT_PRODUCTION_URL,
-});
+const siteUrl = deploymentSiteUrl();
 // Words in the visitor's language (meta.*, common.tagline); "Keepup" is the name and stays. The image
 // (app/opengraph-image.png and its alt text) stays English.
 export async function generateMetadata(): Promise<Metadata> {

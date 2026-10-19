@@ -211,3 +211,22 @@ test("the 404 page shows the sprout and a way home", async ({ page }) => {
   await page.getByRole("link", { name: "Back home" }).click();
   await expect(page).not.toHaveURL(/no-such-page/);
 });
+
+test("signed out, an unknown address shows the 404 page (status 404), and app screens still ask to sign in", async ({ page }) => {
+  const res = await page.goto("/no-such-page");
+  expect(res?.status()).toBe(404);
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+  await expect(page).toHaveURL(/\/no-such-page$/);
+  await page.goto("/progress/recaps");
+  await expect(page).toHaveURL(/\/login\?next=%2Fprogress%2Frecaps$/);
+});
+
+test("robots.txt points to a sitemap that lists the public pages", async ({ request }) => {
+  const robots = await (await request.get("/robots.txt")).text();
+  expect(robots).toMatch(/^Sitemap: .+\/sitemap\.xml$/m);
+  const res = await request.get("/sitemap.xml");
+  expect(res.status()).toBe(200);
+  const xml = await res.text();
+  for (const path of ["/install", "/privacy", "/terms", "/whats-new"]) expect(xml).toContain(`${path}</loc>`);
+  expect(xml).not.toContain("/today");
+});
