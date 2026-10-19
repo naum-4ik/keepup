@@ -30,7 +30,8 @@ export function NewGroupForm({ city }: { city: string }) {
       return await createGroup(prev, formData);
     } catch (e) {
       unstable_rethrow(e);
-      return { status: "error", message: tn("failed"), code: "offline" };
+      // Online, the request still died (a deploy, a server error): the page itself may be stale.
+      return { status: "error", message: tn(navigator.onLine ? "reload" : "failed"), code: "offline" };
     }
   }, initialState);
   const offline = state.status === "error" && state.code === "offline";

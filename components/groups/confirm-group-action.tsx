@@ -87,7 +87,8 @@ function ConfirmDialog({
       return await action(formData.get("confirmChildren") === "1");
     } catch (e) {
       unstable_rethrow(e);
-      return { status: "error", message: tc("failed") };
+      // Online, the request still died (a deploy, a server error): the page itself may be stale.
+      return { status: "error", message: tc(navigator.onLine ? "reload" : "failed") };
     }
   }, initialState);
   const askChildren = state.status === "error" && state.code === "children_would_be_deleted";

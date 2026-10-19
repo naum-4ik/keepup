@@ -427,7 +427,8 @@
       "avatarHint": "Until you pick one, the group shows its first letter.",
       "timezoneHelp": "Your time zone ({city}) and week start are used for the group's habits. Admins can change them later.",
       "create": "Create group",
-      "failed": "Couldn't reach Keepup. Check your connection and tap Create group again."
+      "failed": "Couldn't reach Keepup. Check your connection and tap Create group again.",
+      "reload": "That didn't go through. Reload the page and tap Create group again."
     },
     "detail": {
       "avatarTitle": "Change the group avatar",
@@ -460,7 +461,8 @@
       "allMoved": "All children were moved.",
       "exportFirst": "Export first",
       "deleteAnyway": "Delete anyway",
-      "failed": "Couldn't reach Keepup. Check your connection and try again."
+      "failed": "Couldn't reach Keepup. Check your connection and try again.",
+      "reload": "That didn't go through. Reload the page and try again."
     },
     "rename": {
       "action": "Rename",
