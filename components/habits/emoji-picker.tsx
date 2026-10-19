@@ -55,15 +55,17 @@ export function EmojiPicker({
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-inner">
       <input type="hidden" name="emoji" value={value} />
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-inner">
         <button
           ref={buttonRef}
           type="button"
           aria-label={t("habits.emoji.choose", { emoji: shown })}
           aria-expanded={open}
           aria-describedby={error ? `${ownId}-error` : undefined}
+          // lib/focus-first-invalid.ts: a refused emoji takes focus here (aria-invalid isn't for buttons).
+          data-invalid={error ? "" : undefined}
           aria-controls={open ? panelId : undefined}
           onClick={() => (open ? close() : setOpen(true))}
           className={cn(
@@ -81,7 +83,7 @@ export function EmojiPicker({
         <div
           id={panelId}
           {...{ [EMOJI_PANEL_ATTR]: "" }}
-          className="flex flex-col gap-3 rounded-2xl border border-input p-2"
+          className="flex flex-col gap-item rounded-2xl border border-input p-inner"
           onKeyDown={(e) => {
             if (e.key === "Escape") {
               e.preventDefault();
@@ -89,6 +91,7 @@ export function EmojiPicker({
             }
           }}
         >
+          {/* 4px between emoji (off the scale): six 44px emoji fit the 232px panel at 320 only this close. */}
           <div role="group" aria-label={t("habits.emoji.suggested")} className="grid grid-cols-6 gap-1">
             {emojiSuggestions(category ?? "home").map((e) => (
               <button
@@ -102,7 +105,7 @@ export function EmojiPicker({
               </button>
             ))}
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-inner">
             <Label htmlFor={ownId} className="text-sm font-semibold">{t("habits.emoji.another")}</Label>
             <p id={`${ownId}-help`} className="text-sm text-muted-foreground">
               {t("habits.emoji.help")}
@@ -124,7 +127,7 @@ export function EmojiPicker({
                   if (!draftInvalid) close();
                 }
               }}
-              className="h-11 rounded-xl px-3 text-base"
+              className="h-11 rounded-xl px-3 text-base" // 12px inset: matches the radius
               aria-invalid={draftInvalid}
               aria-describedby={draftInvalid ? `${ownId}-help ${ownId}-hint` : `${ownId}-help`}
             />

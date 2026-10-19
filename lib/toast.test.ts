@@ -34,6 +34,15 @@ describe("toast queue", () => {
     expect(pushToast(s, toast("b"))).toBe(s);
   });
 
+  it("a fleeting toast (a flash) gives way to the next one instead of making it wait", () => {
+    const flash = pushToast(emptyToasts, toast("f", { fleeting: true }));
+    const next = pushToast(flash, toast("b"));
+    expect(next.current?.id).toBe("b");
+    expect(next.waiting).toEqual([]);
+    // A fleeting one that arrives behind another still waits its turn.
+    expect(pushToast(pushToast(emptyToasts, toast("a")), toast("f", { fleeting: true })).waiting.map((t) => t.id)).toEqual(["f"]);
+  });
+
   it(`keeps at most ${MAX_WAITING} waiting, dropping the oldest`, () => {
     let s = pushToast(emptyToasts, toast("a"));
     for (const id of ["b", "c", "d"]) s = pushToast(s, toast(id));

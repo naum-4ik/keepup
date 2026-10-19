@@ -20,10 +20,10 @@ export function EndPicker({ period, startsOn, name = "endsOn" }: { period: Habit
   const [date, setDate] = useState("");
   const endsOn = choice === "none" ? "" : choice === "date" ? date : endsOnFor(startsOn, period, choice);
   return (
-    <fieldset className="flex flex-col gap-1.5">
-      <legend className="mb-1.5 text-sm font-semibold">{t("habits.endPicker.legend")}</legend>
+    <fieldset className="flex flex-col gap-inner">
+      <legend className="mb-inner text-sm font-semibold">{t("habits.endPicker.legend")}</legend>
       <input type="hidden" name={name} value={endsOn} />
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-3 gap-inner">
         <button type="button" aria-pressed={choice === "none"} onClick={() => setChoice("none")} className={dateChipClass}>
           {t("habits.endPicker.noEnd")}
         </button>
@@ -43,7 +43,7 @@ export function EndPicker({ period, startsOn, name = "endsOn" }: { period: Habit
           min={startsOn}
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="h-11 w-48 rounded-xl px-3 text-base"
+          className="h-11 w-48 rounded-xl px-3 text-base" // 12px inset: matches the radius
         />
       )}
       <p className={cn("text-xs text-muted-foreground")}>

@@ -1,18 +1,20 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { updateHabitDetails, type FormActionState } from "@/app/(app)/habits/actions";
+import { updateHabitDetails, type DetailsFormState } from "@/app/(app)/habits/actions";
 import { EmojiPicker } from "@/components/habits/emoji-picker";
 import { StartDatePicker } from "@/components/habits/start-date-picker";
 import { SaveButton } from "@/components/save-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Notice } from "@/components/ui/notice";
+import { focusFirstInvalid } from "@/lib/focus-first-invalid";
 import { categoryLabel, CATEGORY_ORDER } from "@/lib/categories";
 import { useT } from "@/lib/i18n/client";
 import { isHabitCategory, type HabitCategory } from "@/lib/habit-schema";
 import { cn } from "@/lib/utils";
 
-const initialState: FormActionState = { status: "idle" };
+const initialState: DetailsFormState = { status: "idle" };
 // Matches the new-habit form: every control shares one 44px height.
 const fieldClass = "h-11 rounded-xl px-3 text-base";
 
@@ -44,28 +46,42 @@ export function HabitDetailsForm({
   const [values, setValues] = useState({ title, emoji, category: category ?? "", startsOn });
   const offerNone = category === null;
   const categoryRef = useRef<HTMLSelectElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const errors = state.status === "error" ? (state.errors ?? {}) : {};
 
   // <select> doesn't reliably resync from its `value` prop after that same reset, so force it
   // back to our own state (same workaround as HabitFields in habit-form.tsx).
   useEffect(() => {
     if (categoryRef.current) categoryRef.current.value = values.category;
   }, [state, values.category]);
+  // A refused field takes focus (after the select above is put back); a failed save is a live alert.
+  useEffect(() => {
+    if (state.status === "error" && state.errors) focusFirstInvalid(formRef.current);
+  }, [state]);
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1.5">
+    <form ref={formRef} action={formAction} className="flex flex-col gap-item">
+      <div className="flex flex-col gap-inner">
         <Label htmlFor="title">{t("habits.form.titleLabel")}</Label>
-        <EmojiPicker value={values.emoji} category={isHabitCategory(values.category) ? values.category : null} onChange={(e) => setValues((v) => ({ ...v, emoji: e }))}>
+        <EmojiPicker
+          value={values.emoji}
+          category={isHabitCategory(values.category) ? values.category : null}
+          onChange={(e) => setValues((v) => ({ ...v, emoji: e }))}
+          error={errors.emoji}
+        >
           <Input
             id="title"
             name="title"
             value={values.title}
             onChange={(e) => setValues((v) => ({ ...v, title: e.target.value }))}
             className={fieldClass}
+            aria-invalid={Boolean(errors.title)}
+            aria-describedby={errors.title ? "edit-title-error" : undefined}
           />
         </EmojiPicker>
+        {errors.title && <p id="edit-title-error" className="text-sm text-destructive">{errors.title}</p>}
       </div>
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-inner">
         <Label htmlFor="category">{t("habits.form.categoryLabel")}</Label>
         <select
           id="category"
@@ -74,6 +90,8 @@ export function HabitDetailsForm({
           value={values.category}
           onChange={(e) => setValues((v) => ({ ...v, category: e.target.value }))}
           className={cn(fieldClass, "w-full border border-input bg-transparent")}
+          aria-invalid={Boolean(errors.category)}
+          aria-describedby={errors.category ? "edit-category-error" : undefined}
         >
           {offerNone && <option value="">{t("habits.details.none")}</option>}
           {CATEGORY_ORDER.map((c) => (
@@ -82,21 +100,28 @@ export function HabitDetailsForm({
             </option>
           ))}
         </select>
+        {errors.category && <p id="edit-category-error" className="text-sm text-destructive">{errors.category}</p>}
       </div>
       {canEditStart && (
-        <fieldset className="flex flex-col gap-1.5">
-          <legend className="text-sm font-semibold">{t("habits.form.starts")}</legend>
+        <fieldset className="flex flex-col gap-inner">
+          <legend className="mb-inner text-sm font-semibold">{t("habits.form.starts")}</legend>
           <input type="hidden" name="startsOn" value={values.startsOn} />
           <StartDatePicker
             value={values.startsOn}
             onChange={(startsOn) => setValues((v) => ({ ...v, startsOn }))}
             today={today}
             weekStart={weekStart}
+            errorId={errors.startsOn ? "edit-startsOn-error" : undefined}
           />
+          {errors.startsOn && <p id="edit-startsOn-error" className="text-sm text-destructive">{errors.startsOn}</p>}
         </fieldset>
       )}
-      {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
-      <SaveButton state={state} pending={pending} variant="outline" />
+      {/* Pinned above the bottom nav while the form is on screen (as in Add a child), so Save is in
+          reach on a phone however far the date picker opens. The bar spans <main>'s 16px sides. */}
+      <div className="sticky bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom))] z-10 -mx-item flex flex-col gap-inner bg-background px-item py-inner">
+        {state.status === "error" && state.message && <Notice tone="error" live>{state.message}</Notice>}
+        <SaveButton state={state} pending={pending} />
+      </div>
     </form>
   );
 }

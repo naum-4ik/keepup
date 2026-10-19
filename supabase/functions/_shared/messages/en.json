@@ -284,7 +284,7 @@
   "habitFinish": {
     "did": "{together, select, yes {Together you did {done} of {span}} other {You did {done} of {span}}}",
     "withBest": "{main} · best streak {n} 🔥",
-    "anotherGo": "Want to give it another go?"
+    "anotherGo": "{streak, select, yes {Keep going and your streak of {span} carries on, or Finish and start again later.} other {Keep going to build a streak, or Finish and start again later.}}"
   },
   "myData": {
     "deleteWord": "delete",
@@ -1196,9 +1196,10 @@
       "notSaved": "Couldn't save that on this device. Reload the page and try again."
     },
     "checkIns": {
-      "empty": "No check-ins this period yet.",
+      "empty": "Check in to start {period, select, day {today} week {this week} other {this month}}: 0 of {target} done.",
       "count": "{n, plural, one {{count} check-in this period} other {{count} check-ins this period}}",
-      "undoAt": "Undo check-in at {time}"
+      "undoAt": "Undo check-in at {time}",
+      "undoing": "Undoing…"
     },
     "streak": {
       "label": "Streak:"
@@ -1287,13 +1288,21 @@
       "addReturn": "Add a return date",
       "until": "Until",
       "removeEnd": "Remove end date",
-      "pausing": "Pausing…"
+      "pausing": "Pausing…",
+      "saved": "{scheduled, select, yes {Saved. Check-ins stay open until the pause starts.} other {{me, select, yes {Saved. You aren't counted until you resume.} other {Saved. No check-ins are due, and the streak waits until you resume.}}}}",
+      "resumed": "{what, select, cancelled {Pause cancelled. Nothing changes: check in as usual.} other {{me, select, yes {Resumed. You're counted again from today.} other {Resumed. Check-ins count again from today.}}}}",
+      "resuming": "Resuming…",
+      "cancelling": "Cancelling…"
     },
     "end": {
       "lastDay": "Last day: {date}.",
       "noEnd": "No end: it keeps going until you stop it.",
       "reached": "It reached its end. Keep going removes the end; Finish moves it to Finished.",
-      "removeEnd": "Remove end"
+      "removeEnd": "Remove end",
+      "saved": "{end, select, none {Saved: no end now. It keeps going until you stop it.} other {Saved: the last day is {date}.}}",
+      "finishing": "Finishing…",
+      "finished": "{where, select, kid {{habit} is finished. Its history is in {name}'s Finished.} other {{habit} is finished. Its history is in Progress → Finished.}}",
+      "openFinished": "{where, select, kid {Open {name}'s page} other {Open Finished}}"
     },
     "endPicker": {
       "legend": "Ends",
@@ -1360,7 +1369,7 @@
           "title": "Ends",
           "hintReached": "Reached its end. Keep going or finish",
           "hintLastDay": "Last day {date}",
-          "hintNone": "No end yet"
+          "hintNone": "Add an end, like {span}, to see {progress}"
         },
         "pause": {
           "everyone": "Pause for everyone",
@@ -1385,6 +1394,10 @@
           "title": "Delete",
           "hint": "It has no check-ins yet, so nothing is lost"
         }
+      },
+      "finished": {
+        "title": "Finished",
+        "note": "Start again to build a new streak. This one keeps its history."
       }
     },
     "actions": {
@@ -1392,6 +1405,17 @@
       "pickGroup": "Pick a group.",
       "pickDate": "Pick a date.",
       "startedAgainNoEnd": "Started again, but the end couldn't be set. Set it on the habit page."
+    },
+    "toast": {
+      "added": "{starts, select, later {Added {habit}. It starts {date}.} other {Added {habit} · check in now to start {period, select, day {day 1} week {week 1} other {month 1}}}}",
+      "deleted": "Deleted {habit}. It had no check-ins, so nothing was lost.",
+      "restored": "Restored {habit}, history kept. The archived days don't count against you.",
+      "startedAgain": "Started {habit} again from today. The finished one keeps its history.",
+      "open": "Open",
+      "archived": "{where, select, kid {Archived {habit}. Its history is in {name}'s Archived.} other {Archived {habit}. Its history is in Progress → Archived.}}",
+      "restoring": "Restoring {habit}…",
+      "undone": "{habit} is back, history kept.",
+      "undoFailed": "Couldn't restore {habit}. Check your connection and tap Undo again."
     }
   },
   "progress": {

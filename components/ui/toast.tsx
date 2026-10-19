@@ -50,14 +50,25 @@ export function showToast({
   id,
   sticky,
   focusAction,
+  fleeting,
 }: {
   text: string;
   action?: ToastAction;
   id?: string;
   sticky?: boolean;
   focusAction?: boolean;
+  fleeting?: boolean;
 }): void {
-  setState(pushToast(state, { id: id ?? `toast-${++seq}`, text, action, ...(sticky ? { sticky } : {}), ...(focusAction ? { focusAction } : {}) }));
+  setState(
+    pushToast(state, {
+      id: id ?? `toast-${++seq}`,
+      text,
+      action,
+      ...(sticky ? { sticky } : {}),
+      ...(focusAction ? { focusAction } : {}),
+      ...(fleeting ? { fleeting } : {}),
+    }),
+  );
 }
 
 // Closes this toast if it is the one showing, or drops it if it waits (an "Undoing…" toast once the
@@ -87,10 +98,12 @@ export function Toaster({ flash }: { flash?: string | null }) {
       // Fail soft on a key this build doesn't have (or one outside the client namespaces).
       if (!f || !isFreshFlash(f, Date.now()) || shownFlashes.has(f.id) || !tr.has(f.text as never) || (f.action && !tr.has(f.action.label as never))) return;
       shownFlashes.add(f.id);
+      // Fleeting: what happened before the redirect gives way to the next answer on this page.
       showToast({
         id: f.id,
         text: t(f.text, f.values),
         action: f.action && { label: t(f.action.label), href: f.action.href },
+        fleeting: true,
       });
     },
     [t, tr],

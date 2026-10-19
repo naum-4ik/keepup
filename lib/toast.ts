@@ -24,17 +24,20 @@ export type ToastAction = { label: string; href: string } | { label: string; onA
 // state that must not vanish before its answer ("Undoing…"); the X still closes it.
 // focusAction: its action takes focus when it shows (a retry after an error, where focus was on the
 // button that went away).
-export type Toast = { id: string; text: string; action?: ToastAction; sticky?: boolean; focusAction?: boolean };
+// fleeting: it gives way to the next toast instead of making it wait. A flash (what happened on the
+// page before the redirect: "Added Read · check in now") is fleeting, so the answer to what the
+// person does next on this page ("Read checked in · Undo") shows at once.
+export type Toast = { id: string; text: string; action?: ToastAction; sticky?: boolean; focusAction?: boolean; fleeting?: boolean };
 
 export type ToastState = { current: Toast | null; waiting: Toast[] };
 
 export const emptyToasts: ToastState = { current: null, waiting: [] };
 
-// Shown at once when nothing is showing, else queued. The same id twice (a flash read on the server
-// render and again from the cookie) is shown once.
+// Shown at once when nothing is showing (or a fleeting one is), else queued. The same id twice (a
+// flash read on the server render and again from the cookie) is shown once.
 export function pushToast(state: ToastState, toast: Toast): ToastState {
   if (state.current?.id === toast.id || state.waiting.some((t) => t.id === toast.id)) return state;
-  if (!state.current) return { current: toast, waiting: state.waiting };
+  if (!state.current || state.current.fleeting) return { current: toast, waiting: state.waiting };
   return { current: state.current, waiting: [...state.waiting, toast].slice(-MAX_WAITING) };
 }
 

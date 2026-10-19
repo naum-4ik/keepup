@@ -23,7 +23,7 @@ export default async function NewHabitPage({ searchParams }: { searchParams: Pro
   );
   const initialGroupId = groups.find((g) => g.id === group)?.id;
   return (
-    <section className="flex flex-col gap-3 pt-4 pb-6">
+    <section className="flex flex-col gap-item py-section">
       <h1 className="text-xl font-bold">{t("title")}</h1>
       <HabitForm
         today={todayIn(profile.timezone)}

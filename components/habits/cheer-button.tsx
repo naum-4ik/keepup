@@ -16,12 +16,12 @@ export function CheerButton({ checkInId, habitId, name, cheered }: { checkInId: 
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-end gap-inner">
       <Button
         type="button"
         variant="outline"
         aria-pressed={done}
-        className="h-11 rounded-full px-4 aria-pressed:border-flame/40 aria-pressed:bg-accent aria-pressed:opacity-100"
+        className="h-11 rounded-full px-item aria-pressed:border-flame/40 aria-pressed:bg-accent aria-pressed:opacity-100"
         disabled={done || pending}
         onClick={() =>
           startTransition(async () => {

@@ -12,7 +12,11 @@ export function celebrates(s: { done: number; total: number }): boolean {
   return s.total > 0 && s.done * 2 >= s.total;
 }
 
-// The card invites another go with the catalog line `habitFinish.anotherGo`.
+// Below half: the card invites another go. Keep going carries the streak on, so it says so, with
+// the streak when there is one.
+export function anotherGoLine(t: T, streak: number, period: HabitPeriod): string {
+  return t("habitFinish.anotherGo", { streak: streak > 0 ? "yes" : "no", span: streak > 0 ? t(`units.${period}`, { n: streak }) : "" });
+}
 
 const toDate = (d: string) => new Date(`${d}T00:00:00Z`).getTime();
 
