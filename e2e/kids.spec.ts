@@ -893,7 +893,9 @@ test("a child's finished habit is listed under Finished, apart from Archived, wi
   const manage = page.getByRole("region", { name: "Manage habit" });
   await manage.getByText("Ends", { exact: true }).click();
   await manage.getByRole("button", { name: "Finish", exact: true }).click();
-  await expect(manage.getByRole("button", { name: "Finish", exact: true })).toBeHidden();
+  // Wait for the answer, not the button: it says Finishing… while the request runs.
+  await expect(page.getByTestId("toast-live")).toHaveText("\u2068Tidy my toys\u2069 is finished. Its history is in Progress → Finished.");
+  await expect(page.getByRole("region", { name: "Manage habit" })).toHaveCount(0);
   await page.goto(kidUrl);
   await expect(page.getByRole("region", { name: "Finished" })).toContainText("Tidy my toys");
   await expect(page.getByRole("region", { name: "Archived" })).toHaveCount(0);
