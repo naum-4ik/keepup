@@ -1,35 +1,50 @@
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { isPublicPath, safeNextPath, withNext } from "./paths";
+import { APP_PREFIXES, needsSignIn, safeNextPath, withNext } from "./paths";
 
-describe("isPublicPath", () => {
-  it.each(["/", "/login", "/signup", "/auth/callback", "/auth/confirm", "/auth/new-password", "/auth/error", "/whats-new", "/offline", "/privacy", "/terms", "/install"])("%s is public", (p) => {
-    expect(isPublicPath(p)).toBe(true);
-  });
-
-  it("lets the service worker and API routes answer for themselves", () => {
-    expect(isPublicPath("/sw.js")).toBe(true);
-    expect(isPublicPath("/api/check-ins/abc/review")).toBe(true);
-    expect(isPublicPath("/apix")).toBe(false);
-  });
-
-  it("serves the manifest to signed-out browsers (they fetch it without cookies)", () => {
-    expect(isPublicPath("/manifest.webmanifest")).toBe(true);
-  });
-
-  it("serves robots.txt to signed-out crawlers", () => {
-    expect(isPublicPath("/robots.txt")).toBe(true);
-  });
-
-  it("treats invite landings as public", () => {
-    expect(isPublicPath("/invite/abc")).toBe(true);
-  });
-
-  it.each(["/today", "/profile", "/profile/settings", "/onboarding", "/loginx", "/signupx", "/authx", "/invitex", "/privacyx", "/termsx", "/installx"])(
-    "%s is private",
+describe("needsSignIn", () => {
+  it.each(["/today", "/progress/recaps", "/habits/new", "/groups/abc", "/inbox", "/kids/abc/play", "/profile/settings", "/onboarding"])(
+    "%s is an app screen: signed out, it goes to /login",
     (p) => {
-      expect(isPublicPath(p)).toBe(false);
+      expect(needsSignIn(p)).toBe(true);
     },
   );
+
+  it.each(["/", "/login", "/signup", "/auth/callback", "/auth/new-password", "/whats-new", "/offline", "/privacy", "/terms", "/install", "/invite/abc"])(
+    "%s is public",
+    (p) => {
+      expect(needsSignIn(p)).toBe(false);
+    },
+  );
+
+  it("lets files and API routes answer for themselves", () => {
+    for (const p of ["/manifest.webmanifest", "/sw.js", "/robots.txt", "/sitemap.xml", "/api/check-ins/abc/review"]) {
+      expect(needsSignIn(p)).toBe(false);
+    }
+  });
+
+  it.each(["/nope", "/todayx", "/profiles", "/kidsx/1", "/wp-login.php"])("%s is unknown, so it gets the real 404", (p) => {
+    expect(needsSignIn(p)).toBe(false);
+  });
+
+  // A new screen under app/ must be either listed as an app screen or known to be public, so a
+  // signed-out visit never lands on a page that expects a session (or a public page behind a sign-in).
+  it("knows every top-level route under app/", () => {
+    const PUBLIC = new Set(["login", "signup", "auth", "whats-new", "privacy", "terms", "install", "invite", "offline", "api", "demo"]);
+    const segments = new Set<string>();
+    const collect = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (!entry.isDirectory() || entry.name.startsWith("_")) continue;
+        if (entry.name.startsWith("(")) collect(join(dir, entry.name));
+        else segments.add(entry.name);
+      }
+    };
+    collect(join(process.cwd(), "app"));
+    const NOT_ROUTES = new Set(["fonts"]); // next/font/local files, no page
+    const known = new Set([...PUBLIC, ...NOT_ROUTES, ...APP_PREFIXES.map((p) => p.slice(1))]);
+    expect([...segments].filter((s) => !known.has(s))).toEqual([]);
+  });
 });
 
 describe("safeNextPath", () => {

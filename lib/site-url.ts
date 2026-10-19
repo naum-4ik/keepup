@@ -9,3 +9,8 @@ export function siteUrl(env: { deployEnv?: string; vercelProductionUrl?: string 
   if (env.vercelProductionUrl) return `https://${env.vercelProductionUrl}`;
   return "http://localhost:3000";
 }
+
+// This deployment's address, from its environment (layout metadata, robots.txt, sitemap.xml).
+export function deploymentSiteUrl(): string {
+  return siteUrl({ deployEnv: process.env.NEXT_PUBLIC_DEPLOY_ENV, vercelProductionUrl: process.env.VERCEL_PROJECT_PRODUCTION_URL });
+}
