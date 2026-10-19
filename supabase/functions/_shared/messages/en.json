@@ -251,8 +251,8 @@
   },
   "recaps": {
     "weekOf": "Week of {date}",
-    "quietWeek": "A quiet week.",
-    "quietMonth": "A quiet month.",
+    "quietWeek": "A quiet week. Next week starts fresh.",
+    "quietMonth": "A quiet month. Next month starts fresh.",
     "nothingDue": "Nothing was due.",
     "streak": "{title} 🔥 {span}",
     "page": {

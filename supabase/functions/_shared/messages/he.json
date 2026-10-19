@@ -251,8 +251,8 @@
   },
   "recaps": {
     "weekOf": "שבוע מ-{date}",
-    "quietWeek": "שבוע שקט.",
-    "quietMonth": "חודש שקט.",
+    "quietWeek": "שבוע שקט. השבוע הבא מתחיל מחדש.",
+    "quietMonth": "חודש שקט. החודש הבא מתחיל מחדש.",
     "nothingDue": "שום דבר לא היה מתוכנן.",
     "streak": "{title} 🔥 {span}",
     "page": {
