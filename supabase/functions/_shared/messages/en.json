@@ -1301,8 +1301,8 @@
       "removeEnd": "Remove end",
       "saved": "{end, select, none {Saved: no end now. It keeps going until you stop it.} other {Saved: the last day is {date}.}}",
       "finishing": "Finishing…",
-      "finished": "{habit} is finished. Its history is in Progress → Finished.",
-      "openFinished": "Open Finished"
+      "finished": "{where, select, kid {{habit} is finished. Its history is in {name}'s Finished.} other {{habit} is finished. Its history is in Progress → Finished.}}",
+      "openFinished": "{where, select, kid {Open {name}'s page} other {Open Finished}}"
     },
     "endPicker": {
       "legend": "Ends",
@@ -1412,7 +1412,7 @@
       "restored": "Restored {habit}, history kept. The archived days don't count against you.",
       "startedAgain": "Started {habit} again from today. The finished one keeps its history.",
       "open": "Open",
-      "archived": "Archived {habit}. Its history is in Progress → Archived.",
+      "archived": "{where, select, kid {Archived {habit}. Its history is in {name}'s Archived.} other {Archived {habit}. Its history is in Progress → Archived.}}",
       "restoring": "Restoring {habit}…",
       "undone": "{habit} is back, history kept.",
       "undoFailed": "Couldn't restore {habit}. Check your connection and tap Undo again."

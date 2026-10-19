@@ -21,6 +21,7 @@ type Saved = { end: string | null } | null;
 export function EndControl({
   habitId,
   title,
+  child,
   period,
   startsOn,
   endsOn,
@@ -28,6 +29,8 @@ export function EndControl({
 }: {
   habitId: string;
   title: string;
+  // A child's own habit: its Finished list is on the child's page, not in Progress.
+  child?: { id: string; name: string } | null;
   period: HabitPeriod;
   startsOn: string;
   endsOn: string | null;
@@ -48,7 +51,11 @@ export function EndControl({
       setError(r.ok ? null : r.message);
       if (!r.ok) return;
       if (after === "finished") {
-        showToast({ text: t("habits.end.finished", { habit: isolate(title) }), action: { label: t("habits.end.openFinished"), href: "/progress?view=finished" } });
+        const where = { where: child ? "kid" : "progress", name: child ? isolate(child.name) : "" };
+        showToast({
+          text: t("habits.end.finished", { habit: isolate(title), ...where }),
+          action: { label: t("habits.end.openFinished", where), href: child ? `/kids/${child.id}` : "/progress?view=finished" },
+        });
       } else if (after) setSaved(after);
     });
   };

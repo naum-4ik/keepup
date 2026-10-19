@@ -27,6 +27,13 @@ describe("habit page copy", () => {
     expect(tEn("habits.end.saved", { end: "none", date: "" })).toBe("Saved: no end now. It keeps going until you stop it.");
   });
 
+  it("Finish says where the history went: Progress, or the child's page", () => {
+    expect(tEn("habits.end.finished", { habit: "Read", where: "progress", name: "" })).toBe("Read is finished. Its history is in Progress → Finished.");
+    expect(tEn("habits.end.finished", { habit: "Read", where: "kid", name: "Mary" })).toBe("Read is finished. Its history is in Mary's Finished.");
+    expect(tEn("habits.end.openFinished", { where: "kid", name: "Mary" })).toBe("Open Mary's page");
+    expect(tFor("he")("habits.end.openFinished", { where: "progress", name: "" })).toBe('פתיחת "הסתיימו"');
+  });
+
   it("finish lines point at the buttons that are there", () => {
     expect(tEn("habitFinish.anotherGo")).toBe("Keep going to build a new streak, or finish it and start again later.");
     expect(tEn("habits.detail.finished.note")).toBe("Start again to build a new streak. This one keeps its history.");

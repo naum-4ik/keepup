@@ -12,7 +12,8 @@ import { showArchived } from "@/lib/habit-toasts";
 // The next step runs right after the answer, in this function, not in an effect: the answer comes with
 // the habit page re-rendered as archived, which drops Manage and this button in the same update, so an
 // effect here would never run. The toast and its Undo live in the toast store, not in this component.
-export function ArchiveHabitButton({ habitId, title }: { habitId: string; title: string }) {
+// `child`: a child's own habit, whose Archived list is on the child's page.
+export function ArchiveHabitButton({ habitId, title, child }: { habitId: string; title: string; child?: { id: string; name: string } | null }) {
   const t = useTranslations("habits.archive");
   const { t: tr } = useT();
   const router = useRouter();
@@ -20,7 +21,7 @@ export function ArchiveHabitButton({ habitId, title }: { habitId: string; title:
     const r = await archiveHabit(habitId);
     if (r.status === "done") {
       router.push(r.next);
-      showArchived({ t: tr, show: showToast, close: closeToast, restore: undoArchive }, { habitId, title });
+      showArchived({ t: tr, show: showToast, close: closeToast, restore: undoArchive }, { habitId, title, child: child ?? undefined });
     }
     return r;
   };

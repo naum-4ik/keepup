@@ -305,7 +305,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                           : noEndHint(t, h.starts_on, today, h.period)
                   }
                 >
-                  <EndControl habitId={h.habit_id} title={h.title} period={h.period} startsOn={h.starts_on} endsOn={endsOn} today={today} />
+                  <EndControl habitId={h.habit_id} title={h.title} child={child && { id: child.id, name: child.name }} period={h.period} startsOn={h.starts_on} endsOn={endsOn} today={today} />
                 </Manage>
                 <Manage
                   title={
@@ -352,7 +352,7 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
                   />
                 </Manage>
                 <Manage title={t("habits.detail.manage.archive.title")} hint={t("habits.detail.manage.archive.hint")}>
-                  <ArchiveHabitButton habitId={h.habit_id} title={h.title} />
+                  <ArchiveHabitButton habitId={h.habit_id} title={h.title} child={child && { id: child.id, name: child.name }} />
                 </Manage>
                 {totalCheckIns === 0 && (
                   <Manage title={t("habits.detail.manage.delete.title")} hint={t("habits.detail.manage.delete.hint")} danger>

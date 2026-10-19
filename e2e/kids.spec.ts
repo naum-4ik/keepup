@@ -809,6 +809,7 @@ test("a guardian archives a child's habit that has a check-in, and it leaves the
   await manage.getByRole("button", { name: "Archive habit" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Archive", exact: true }).click();
   await expect(page).toHaveURL(kidUrl);
+  await expect(page.getByTestId("toast-live")).toHaveText("Archived \u2068Tidy my toys\u2069. Its history is in \u2068Mary\u2069's Archived.");
   await expect(list.getByRole("listitem")).toHaveCount(2);
   await expect(list).not.toContainText("Tidy my toys");
 });
@@ -894,7 +895,8 @@ test("a child's finished habit is listed under Finished, apart from Archived, wi
   await manage.getByText("Ends", { exact: true }).click();
   await manage.getByRole("button", { name: "Finish", exact: true }).click();
   // Wait for the answer, not the button: it says Finishing… while the request runs.
-  await expect(page.getByTestId("toast-live")).toHaveText("\u2068Tidy my toys\u2069 is finished. Its history is in Progress → Finished.");
+  await expect(page.getByTestId("toast-live")).toHaveText("\u2068Tidy my toys\u2069 is finished. Its history is in \u2068Mary\u2069's Finished.");
+  await expect(page.locator("[data-toaster]").getByRole("link", { name: "Open \u2068Mary\u2069's page" })).toHaveAttribute("href", new URL(kidUrl).pathname);
   await expect(page.getByRole("region", { name: "Manage habit" })).toHaveCount(0);
   await page.goto(kidUrl);
   await expect(page.getByRole("region", { name: "Finished" })).toContainText("Tidy my toys");

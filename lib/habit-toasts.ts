@@ -4,8 +4,10 @@
 //   and set by app/(app)/habits/actions.ts with lib/toast-server.ts flashToast. Its text and action
 //   label are catalog keys (client namespace `habits`), its values plain, the habit name isolated.
 // - Archive: no redirect from the server, so its toast can carry Undo (a callback can't cross a
-//   redirect). Undo restores it: archiving and restoring in the same period settles no days (the
-//   restore RPC marks only whole periods between, and those as skipped, never missed).
+//   redirect). Undo restores it. Within the same period nothing is settled. If Undo lands in the next
+//   period (archived 23:59, undone 00:00), the restore RPC settles the archive day's period as
+//   skipped (done if it was done), never missed: it marks every period from the archive's up to the
+//   one before today.
 import { formatLocalDate } from "@/lib/dates";
 import type { HabitPeriod } from "@/lib/habit-schema";
 import type { Flash, ToastAction } from "@/lib/toast";
@@ -82,16 +84,18 @@ function replaceWith(deps: Pick<ArchiveUndoDeps, "show" | "close">, toast: Shown
   deps.show(toast);
 }
 
-export type ArchivedHabit = { habitId: string; title: string };
+// child: a child's own habit; its Archived list is on the child's page, not in Progress.
+export type ArchivedHabit = { habitId: string; title: string; child?: { id: string; name: string } };
 
 const undoAction = (deps: ArchiveUndoDeps, h: ArchivedHabit): ToastAction => ({
   label: deps.t("offline.undo"),
   onAction: () => void undoArchive(deps, h),
 });
 
-// "Archived Read. Its history is in Progress → Archived." with Undo.
+// "Archived Read. Its history is in Progress → Archived." (or "in Mary's Archived") with Undo.
 export function showArchived(deps: ArchiveUndoDeps, h: ArchivedHabit): void {
-  replaceWith(deps, { id: (deps.newId ?? nextId)(), text: deps.t("habits.toast.archived", { habit: isolate(h.title) }), action: undoAction(deps, h) });
+  const text = deps.t("habits.toast.archived", { habit: isolate(h.title), where: h.child ? "kid" : "progress", name: h.child ? isolate(h.child.name) : "" });
+  replaceWith(deps, { id: (deps.newId ?? nextId)(), text, action: undoAction(deps, h) });
 }
 
 // Undo: "Restoring Read…" (sticky until it answers), then restored with a link to the habit, or what

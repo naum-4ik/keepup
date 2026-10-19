@@ -72,6 +72,14 @@ describe("archive toast with Undo", () => {
     expect(shown[0].action?.label).toBe("Undo");
   });
 
+  it("a child's own habit says it is in the child's Archived (isolated)", () => {
+    const { deps, shown } = setup(async () => ({ ok: true }));
+    showArchived(deps, { ...habit, child: { id: "k1", name: "Mary" } });
+    expect(shown[0].text).toBe(`Archived ${FSI}Read${PDI}. Its history is in ${FSI}Mary${PDI}'s Archived.`);
+    showArchived({ ...deps, t: tFor("ru") }, { ...habit, child: { id: "k1", name: "Маша" } });
+    expect(shown[1].text).toBe(`${FSI}Read${PDI}: в архиве. История — в разделе «Архив» у ${FSI}Маша${PDI}.`);
+  });
+
   it("Undo: Restoring… (sticky, replacing the archived toast), then back with a link to open it", async () => {
     const restore = vi.fn(async () => ({ ok: true as const }));
     const { deps, shown, closed } = setup(restore);
