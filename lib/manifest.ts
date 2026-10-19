@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import en from "@/supabase/functions/_shared/messages/en.json";
 
-// The installed app (ideas/installable-app.md, ideas/app-icon.md). Opens on Today; signed-out people
+// The installed app (ideas/installable-app.md, ideas/app-icon.md). Icons: scripts/gen-app-icons.mjs. Opens on Today; signed-out people
 // land on /login from there. English on purpose: a static file (reading the visitor's language would
 // make it per request), browsers fetch it without cookies, and an installed app keeps the copy it saw.
 export function webManifest(): MetadataRoute.Manifest {
@@ -19,6 +19,7 @@ export function webManifest(): MetadataRoute.Manifest {
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icons/icon-1024.png", sizes: "1024x1024", type: "image/png", purpose: "any" },
       { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };

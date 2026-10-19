@@ -175,7 +175,9 @@ Master artwork (`app/icon.svg`):
 </svg>
 ```
 
-- **Every size comes from the master.** `app/favicon.ico` (16, 32, 48), `app/apple-icon.png` (180), and `public/icons/` (192, 512, maskable 512) are rendered from it by a script, never drawn by hand.
+- **Every size comes from the master.** `app/favicon.ico` (16, 32, 48), `app/apple-icon.png` (180), and `public/icons/` are rendered from it by a script, never drawn by hand (`scripts/gen-app-icons.mjs` for the PNGs below).
+- **Installed-app icons ("any": Chrome/Edge desktop, macOS Dock, Windows):** `icon-192/512/1024.png` put the peach tile on the macOS icon grid: a transparent canvas, the tile 824 of 1024 px with a 100 px margin, corner radius 185 px, a soft shadow, and no drawn edge. An edge-to-edge tile with its own border looked like a box in a box next to native icons.
+- **In-app pictures** (landing, sign-in, invite, notifications) use `logo-192.png`, the full-bleed tile; CSS rounds the corners.
 - **The iOS icon is full-bleed; the OS rounds it.** `apple-icon.png` has no rounded corners and no edge.
 - **Maskable:** full-bleed peach, with the sprout at about 70% so it stays inside the safe zone.
 

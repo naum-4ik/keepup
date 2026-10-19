@@ -25,7 +25,7 @@ export async function AuthCard({ title, subtitle, next, googleEnabled, footer, c
     <main className="mx-auto flex w-full min-h-dvh max-w-sm flex-col justify-center gap-section px-4 py-section">
       <div className="flex flex-col items-center gap-inner text-center">
         {/* Decorative and small: loaded at once but not preloaded, so it doesn't compete with the CSS and the text. */}
-        <Image src="/icons/icon-192.png" alt="" width={56} height={56} loading="eager" className="rounded-2xl" />
+        <Image src="/icons/logo-192.png" alt="" width={56} height={56} loading="eager" className="rounded-2xl" />
         <h1 className="text-2xl font-bold">{title}</h1>
         <p className="text-sm text-muted-foreground">{subtitle}</p>
       </div>

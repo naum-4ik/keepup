@@ -17,10 +17,11 @@ describe("web app manifest", () => {
     expect(m.background_color).toBe("#FFF8F0");
   });
 
-  it("has the two sprout icons and the maskable one", () => {
+  it("has the sprout icons on the macOS grid (192, 512, 1024) and the maskable one", () => {
     expect(m.icons).toEqual([
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icons/icon-1024.png", sizes: "1024x1024", type: "image/png", purpose: "any" },
       { src: "/icons/maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ]);
   });

@@ -111,7 +111,7 @@ function InviteCard({ top, children }: { top?: React.ReactNode; children: React.
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-4 py-10">
       <div className="flex flex-col gap-5 rounded-2xl bg-card p-6 text-center shadow-soft">
-        {top ?? <Image src="/icons/icon-192.png" alt="" width={56} height={56} className="mx-auto rounded-2xl" priority />}
+        {top ?? <Image src="/icons/logo-192.png" alt="" width={56} height={56} className="mx-auto rounded-2xl" priority />}
         {children}
       </div>
     </main>
