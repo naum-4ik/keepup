@@ -1522,7 +1522,7 @@
       "notApproved": "Not approved",
       "emptyAction": "Check in on Today",
       "approving": "Approving…",
-      "declining": "Marking not approved…",
+      "declining": "Declining…",
       "approvingAll": "Approving {n}…",
       "approved": "Approved: {name} · {habit}. It counts toward the streak.",
       "declined": "Not approved: {name} · {habit}. It won't count toward the streak.",
