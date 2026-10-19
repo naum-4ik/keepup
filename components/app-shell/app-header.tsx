@@ -3,6 +3,8 @@ import { Bell } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 // Your avatar lives on the bottom nav's Profile tab (the header had the same link twice).
+// Kept short (design pass PR 1): 4px + the 44px bell row + 8px, and the demo note is one 32px line,
+// so a phone at 320×640 keeps at least 480px for the page between the header and the bottom nav.
 export async function AppHeader({
   unread = 0,
   children,
@@ -14,12 +16,12 @@ export async function AppHeader({
   const t = await getTranslations("nav");
   return (
     <header
-      className="sticky top-0 z-10 bg-background/95 pb-3 backdrop-blur"
-      style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+      className="sticky top-0 z-30 bg-background/95 pb-2 backdrop-blur"
+      style={{ paddingTop: "max(0.25rem, env(safe-area-inset-top))" }}
     >
       {/* Same column as the page, so on a wide screen the logo and bell sit above the content. */}
       <div className="mx-auto flex w-full max-w-md items-center justify-between px-4">
-        <Link href="/today" className="text-xl font-extrabold tracking-tight">
+        <Link href="/today" className="flex min-h-11 items-center text-xl font-extrabold tracking-tight">
           <span className="text-foreground">Keep</span>
           <span className="text-primary">up</span>
         </Link>

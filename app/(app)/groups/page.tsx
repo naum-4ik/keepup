@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { EmptyState } from "@/components/empty-state";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Plus, Users } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { getT } from "@/lib/i18n/server";
@@ -21,7 +21,7 @@ export default async function GroupsPage() {
         <EmptyState
           icon={<Users className="size-6" />}
           action={
-            <Button asChild className="h-11">
+            <Button asChild>
               <Link href="/groups/new">{t("list.create")}</Link>
             </Button>
           }

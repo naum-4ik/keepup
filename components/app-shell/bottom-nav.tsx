@@ -84,7 +84,8 @@ export function BottomNav({
   return (
     <nav
       aria-label={t("main")}
-      className="fixed inset-x-0 bottom-0 mx-auto max-w-md rounded-t-[24px] bg-card shadow-[0_-1px_2px_rgb(61_44_34_/_0.06),0_-4px_12px_rgb(61_44_34_/_0.05)]"
+      // z-40: above anything a page lifts (z-10/z-30 sticky parts); toasts and dialogs sit at z-50.
+      className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md rounded-t-[24px] bg-card shadow-[0_-1px_2px_rgb(61_44_34_/_0.06),0_-4px_12px_rgb(61_44_34_/_0.05)]"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <ul className="mx-auto flex max-w-md items-center px-1">

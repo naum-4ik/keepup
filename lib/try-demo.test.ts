@@ -58,6 +58,7 @@ describe("runLeaveDemo", () => {
       calls,
       deps: {
         clearPhone: vi.fn(async () => void calls.push("clear")),
+        forgetDemoNote: vi.fn(() => void calls.push("note")),
         leave: vi.fn(async () => {
           calls.push("leave");
           throw TO_LOGIN;
@@ -71,12 +72,22 @@ describe("runLeaveDemo", () => {
   it("clears the phone first, then signs out; the redirect to /login goes through", async () => {
     const { calls, deps } = leaveDeps();
     await expect(runLeaveDemo(deps)).rejects.toBe(TO_LOGIN);
-    expect(calls).toEqual(["clear", "leave"]);
+    expect(calls).toEqual(["clear", "note", "leave"]);
   });
 
   it("still signs out when clearing the phone breaks", async () => {
     const { deps } = leaveDeps({ clearPhone: vi.fn(async () => { throw new Error("no storage"); }) });
     await expect(runLeaveDemo(deps)).rejects.toBe(TO_LOGIN);
+    expect(deps.leave).toHaveBeenCalledOnce();
+  });
+
+  it("forgets the hidden demo note even when clearing the phone breaks, and still signs out if that breaks", async () => {
+    const { deps } = leaveDeps({
+      clearPhone: vi.fn(async () => { throw new Error("no storage"); }),
+      forgetDemoNote: vi.fn(() => { throw new Error("no cookies"); }),
+    });
+    await expect(runLeaveDemo(deps)).rejects.toBe(TO_LOGIN);
+    expect(deps.forgetDemoNote).toHaveBeenCalledOnce();
     expect(deps.leave).toHaveBeenCalledOnce();
   });
 

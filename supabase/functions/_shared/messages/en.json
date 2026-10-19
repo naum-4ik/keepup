@@ -262,7 +262,8 @@
       "firstWeekly": "Your first weekly recap arrives on the first day of next week.",
       "restDays": "{n, plural, other {Rest days: # (dashed)}}",
       "topStreaks": "Top streaks",
-      "badges": "Badges: {list}"
+      "badges": "Badges: {list}",
+      "goToday": "Check in on Today"
     },
     "heatmap": {
       "fullDays": "{n, plural, one {# day} other {# days}} with everything done",
@@ -376,7 +377,9 @@
     "justLooking": "Just looking?",
     "tryDemo": "Try the demo",
     "settingUp": "Setting up…",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "compact": "Demo, resets in 24 h. <signIn>Sign in</signIn>",
+    "dismiss": "Hide the demo note"
   },
   "validation": {
     "nameRequired": "Enter a name.",
@@ -1394,7 +1397,8 @@
     },
     "empty": {
       "finished": "No finished habits yet. Give a habit an end, like 30 days.",
-      "archived": "No archived habits."
+      "archived": "No archived habits.",
+      "showActive": "Show active habits"
     },
     "habitLine": "{ended, select, yes {Ended · decide on Today · {schedule}} other {{schedule}}}{best, select, yes { · best {span}} other {}}",
     "calendar": {
@@ -1471,7 +1475,8 @@
     },
     "feed": {
       "empty": "Nothing yet. Activity from your groups shows up here.",
-      "unread": "Unread: "
+      "unread": "Unread: ",
+      "emptyAction": "Open Groups"
     },
     "errors": {
       "pickMessage": "Pick one of the messages."

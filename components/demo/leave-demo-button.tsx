@@ -10,6 +10,7 @@ import { useT } from "@/lib/i18n/client";
 import { clearOfflineCaches, markPagesOwnerDeleted } from "@/lib/offline-pages";
 import { browserSubscription, signOutCleanup } from "@/lib/push-support";
 import { runLeaveDemo } from "@/lib/try-demo";
+import { forgetDemoNote } from "@/lib/demo-note";
 
 // The demo banner's "Sign in" (`children`: its words, from the banner's one sentence): the phone is cleared the way Delete account clears it, then leaveDemo
 // ends the session and opens /login (lib/try-demo.ts runLeaveDemo), with `next` when given. Outside
@@ -34,6 +35,7 @@ export function LeaveDemoButton({ next, children }: { next?: string; children: R
         });
         markPagesOwnerDeleted();
       },
+      forgetDemoNote,
       leave: () => leaveDemo(next),
       rethrow: unstable_rethrow,
     });
@@ -43,7 +45,8 @@ export function LeaveDemoButton({ next, children }: { next?: string; children: R
   return (
     <form action={leave} className="inline">
       <Submit>{children}</Submit>
-      {error && <span role="alert" className="block text-destructive">{error}</span>}
+      {/* whitespace-normal: inside the one-line demo note (nowrap) the error still wraps. */}
+      {error && <span role="alert" className="block whitespace-normal text-destructive">{error}</span>}
     </form>
   );
 }

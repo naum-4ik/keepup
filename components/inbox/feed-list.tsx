@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Bell } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Avatar } from "@/components/avatar";
 import { SproutIcon } from "@/components/sprout-icon";
 import { dayLabel, relativeTime, todayIn } from "@/lib/dates";
@@ -11,7 +12,19 @@ import { cn } from "@/lib/utils";
 // Activity, newest first, under day headings in the viewer's time zone.
 export function FeedList({ items, timeZone, now, t, locale }: { items: FeedItem[]; timeZone: string; now: Date; t: T; locale: Locale }) {
   if (items.length === 0) {
-    return <EmptyState icon={<Bell className="size-6" />}>{t("inbox.feed.empty")}</EmptyState>;
+    // The feed fills from groups: the way to join or create one.
+    return (
+      <EmptyState
+        icon={<Bell className="size-6" />}
+        action={
+          <Button asChild variant="outline">
+            <Link href="/groups">{t("inbox.feed.emptyAction")}</Link>
+          </Button>
+        }
+      >
+        {t("inbox.feed.empty")}
+      </EmptyState>
+    );
   }
 
   const today = todayIn(timeZone, now);

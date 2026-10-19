@@ -68,7 +68,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         </Button>
       ) : claims?.claims?.is_anonymous ? (
         // A demo login can't join a real group (keepup:demo): sign in first, then back here.
-        <DemoBanner placement="top" next={next} />
+        <DemoBanner next={next} />
       ) : claims?.claims ? (
         <JoinButton action={acceptInvite.bind(null, token)} label={t("invite.join", { group: isolate(group) })} pendingLabel={t("invite.joining")} />
       ) : (

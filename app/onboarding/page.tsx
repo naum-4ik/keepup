@@ -27,7 +27,7 @@ export default async function OnboardingPage({ searchParams }: { searchParams: P
   return (
     <main className="mx-auto max-w-sm px-4 py-10">
       {/* A demo login whose seeding never ran (the tab closed mid-way): a way out to a real account. */}
-      {(profile.is_demo || data?.claims?.is_anonymous) && <DemoBanner placement="top" />}
+      {(profile.is_demo || data?.claims?.is_anonymous) && <DemoBanner />}
       <h1 className="text-2xl font-bold">{t("onboarding.title")}</h1>
       <p className="mb-6 text-sm text-muted-foreground">
         {invitedTo ? rich("onboarding.subtitleInvited", { group: invitedTo.name }) : t("onboarding.subtitle")}
