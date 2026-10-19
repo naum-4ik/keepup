@@ -14,6 +14,8 @@ import { LocaleSync } from "@/components/profile/locale-sync";
 import { LOCALE_COOKIE, enabledLocales, pickLocale, type Locale } from "@/i18n/config";
 import { getProfile } from "@/lib/auth";
 import { DEMO_NOTE_COOKIE } from "@/lib/demo-note";
+import { TOAST_COOKIE } from "@/lib/toast";
+import { Toaster } from "@/components/ui/toast";
 import { getUnreadCount } from "@/lib/inbox";
 import { levelFraction } from "@/lib/levels";
 import { localeSync } from "@/lib/locale-sync";
@@ -52,6 +54,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         />
         {/* A demo login has no push devices (the database refuses them): no re-save on app open. */}
         {!profile.is_demo && <PushRefresh />}
+        {/* Status toasts: useToast() on the page, or flashToast() in a server action before redirect() (lib/toast.ts). */}
+        <Toaster flash={cookieStore.get(TOAST_COOKIE)?.value ?? null} />
         {/* Level-ups and new badges, once each, when a page opens (Settings → Celebrations). */}
         <CelebrationMoment />
         {(sync.saveToProfile || sync.setCookie) && (
