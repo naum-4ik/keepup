@@ -29,6 +29,10 @@ const pillClass =
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 const hourLabel = (h: number) => `${String(h).padStart(2, "0")}:00`;
 
+type Area = "pause" | "devices";
+// The button being run: a pause choice, "resume", or a device's endpoint.
+type Busy = { where: Area; key: string } | null;
+
 // Null: paused until turned back on (muted_until = infinity).
 function pausedUntil(locale: Locale, until: string, timeZone: string): string | null {
   if (until === "infinity") return null;
@@ -42,7 +46,6 @@ const pausedLine = (t: T, until: string | null) =>
 export function NotificationSettingsCard({ settings, isDemo = false }: { settings: NotificationSettings; isDemo?: boolean }) {
   const { t, locale } = useT();
   const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   const [here, setHere] = useState<string | null>(null);
   const [now, setNow] = useState<number | null>(null);
   const [iphone, setIphone] = useState(false);
@@ -59,15 +62,34 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
     void currentEndpoint().then(setHere);
   }, [settings]);
 
-  const run = (action: () => Promise<{ ok: true } | { ok: false; message: string }>, onRefused?: () => void) =>
+  // Pause, Resume and Remove: the tapped button says what it's doing, then a line beside it says what
+  // happened, or why it didn't and what to do (offline: nothing is sent).
+  const [busy, setBusy] = useState<Busy>(null);
+  const [done, setDone] = useState<{ where: Area; text: string } | null>(null);
+  const [failed, setFailed] = useState<{ where: Area; message: string } | null>(null);
+  const run = (b: NonNullable<Busy>, action: () => Promise<{ ok: true } | { ok: false; message: string }>, doneText: string) => {
+    setBusy(b);
+    setDone(null);
+    setFailed(null);
     startTransition(async () => {
-      setError(null);
-      const r = await action();
-      if (!r.ok) {
-        setError(r.message);
-        onRefused?.();
-      }
+      const r = await reach(action, { offline: t("notifications.card.offline"), reload: t("notifications.card.reload") });
+      setBusy(null);
+      if (r.ok) setDone({ where: b.where, text: doneText });
+      else setFailed({ where: b.where, message: r.message });
     });
+  };
+  const outcome = (where: Area) => (
+    <>
+      <p role="status" className={cn("text-sm font-semibold text-done", done?.where !== where && "sr-only")}>
+        {done?.where === where ? done.text : ""}
+      </p>
+      {failed?.where === where && (
+        <Notice tone="error" live>
+          {failed.message}
+        </Notice>
+      )}
+    </>
+  );
 
   const thisDeviceOn = here !== null && settings.devices.some((d) => d.endpoint === here);
   // The reminder hour saves when it changes, and says so under it.
@@ -128,17 +150,22 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
         {paused ? (
           <div className="flex flex-wrap items-center gap-item">
             <p className="text-sm">{pausedLine(t, pausedUntil(locale, settings.mutedUntil!, settings.timezone))}</p>
-            <Button type="button" variant="outline" className="h-11" disabled={pending} onClick={() => run(() => pauseAll("resume"))}>{t("notifications.card.resume")}</Button>
+            <Button type="button" variant="outline" className="h-11" disabled={pending}
+              onClick={() => run({ where: "pause", key: "resume" }, () => pauseAll("resume"), t("notifications.card.resumedDone"))}>
+              {busy?.key === "resume" ? t("notifications.card.resuming") : t("notifications.card.resume")}
+            </Button>
           </div>
         ) : (
           <div className="flex flex-wrap gap-inner">
             {PAUSE_CHOICES.map((c) => (
-              <Button key={c.choice} type="button" variant="outline" className="h-11" disabled={pending} onClick={() => run(() => pauseAll(c.choice))}>
-                {t(`notificationSettings.pauseChoice.${c.choice}`)}
+              <Button key={c.choice} type="button" variant="outline" className="h-11" disabled={pending}
+                onClick={() => run({ where: "pause", key: c.choice }, () => pauseAll(c.choice), t("notifications.card.pausedDone"))}>
+                {busy?.key === c.choice ? t("notifications.card.pausing") : t(`notificationSettings.pauseChoice.${c.choice}`)}
               </Button>
             ))}
           </div>
         )}
+        {outcome("pause")}
       </div>
 
       <fieldset className="flex flex-col gap-item">
@@ -166,22 +193,22 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
                   aria-label={t(d.endpoint === here ? "notifications.card.removeThisLabel" : "notifications.card.removeLabel", { label: d.label })}
                   disabled={pending}
                   onClick={() =>
-                    run(() => removeDevice({ endpoint: d.endpoint, here, forget: forgetPushSubscription, getSubscription: browserSubscription }))
+                    run(
+                      { where: "devices", key: d.endpoint },
+                      () => removeDevice({ endpoint: d.endpoint, here, forget: forgetPushSubscription, getSubscription: browserSubscription }),
+                      t("notifications.card.removedDone", { label: d.label }),
+                    )
                   }
                 >
-                  {t("notifications.card.remove")}
+                  {busy?.key === d.endpoint ? t("notifications.card.removing") : t("notifications.card.remove")}
                 </Button>
               </li>
             ))}
           </ul>
         </div>
       )}
-
-      {error && (
-        <Notice tone="error" live>
-          {error}
-        </Notice>
-      )}
+      {/* After the last device goes its list does too: the line stays, under the delivery choices. */}
+      {outcome("devices")}
     </Section>
   );
 }

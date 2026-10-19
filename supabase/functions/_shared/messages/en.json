@@ -1585,7 +1585,15 @@
       "thisDevice": "this device",
       "remove": "Remove",
       "removeLabel": "Remove {label}",
-      "removeThisLabel": "Remove {label} (this device)"
+      "removeThisLabel": "Remove {label} (this device)",
+      "pausing": "Pausing…",
+      "resuming": "Resuming…",
+      "removing": "Removing…",
+      "pausedDone": "Paused ✓. No pushes until then; your Inbox still gets everything.",
+      "resumedDone": "Notifications are back on ✓",
+      "removedDone": "Removed {label} ✓. It gets no more notifications.",
+      "offline": "Needs a connection. Connect and tap it again.",
+      "reload": "That didn't go through. Reload the page and tap it again."
     },
     "turnOn": {
       "label": "Turn on reminders",

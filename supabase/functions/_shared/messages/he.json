@@ -1585,7 +1585,15 @@
       "thisDevice": "המכשיר הזה",
       "remove": "הסרה",
       "removeLabel": "הסרה: {label}",
-      "removeThisLabel": "הסרה: {label} (המכשיר הזה)"
+      "removeThisLabel": "הסרה: {label} (המכשיר הזה)",
+      "pausing": "משהים…",
+      "resuming": "מחדשים…",
+      "removing": "מסירים…",
+      "pausedDone": "הושהה ✓. עד אז לא יישלחו התראות; תיבת ההודעות ממשיכה לקבל הכול.",
+      "resumedDone": "ההתראות חזרו לפעול ✓",
+      "removedDone": "{label} הוסר ✓. לא יישלחו אליו עוד התראות.",
+      "offline": "צריך חיבור. התחברו ולחצו שוב.",
+      "reload": "זה לא עבר. רעננו את הדף ולחצו שוב."
     },
     "turnOn": {
       "label": "הפעלת תזכורות",
