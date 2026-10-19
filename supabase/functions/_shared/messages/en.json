@@ -1228,12 +1228,14 @@
     },
     "cheer": {
       "done": "Cheered<sr> <bdi>{name}</bdi></sr>",
-      "cta": "Cheer ❤️<sr> <bdi>{name}</bdi></sr>"
+      "cta": "Cheer ❤️<sr> <bdi>{name}</bdi></sr>",
+      "sending": "Cheering…<sr> <bdi>{name}</bdi></sr>"
     },
     "nudge": {
       "done": "Nudged ✓<sr> <bdi>{name}</bdi></sr>",
       "cta": "Nudge<sr> <bdi>{name}</bdi></sr>",
-      "menuLabel": "Nudge {name}"
+      "menuLabel": "Nudge {name}",
+      "sending": "Nudging…<sr> <bdi>{name}</bdi></sr>"
     },
     "archive": {
       "trigger": "Archive habit",
@@ -1416,7 +1418,8 @@
       "restoring": "Restoring {habit}…",
       "undone": "{habit} is back, history kept.",
       "undoFailed": "Couldn't restore {habit}. Check your connection and tap Undo again."
-    }
+    },
+    "sendFailed": "Couldn't send that. Check your connection and tap again."
   },
   "progress": {
     "title": "Progress",
@@ -1500,15 +1503,23 @@
   "inbox": {
     "title": "Inbox",
     "approvals": {
-      "empty": "Nothing waiting for you.",
+      "empty": "All caught up: 0 check-ins waiting for your approval.",
       "approveAll": "Approve all ({n})",
       "rowLabel": "{name} did {habit}",
       "did": "<bdi>{name}</bdi> did <bdi>{habit}</bdi>",
       "approve": "Approve",
-      "notApproved": "Not approved"
+      "notApproved": "Not approved",
+      "emptyAction": "Check in on Today",
+      "approving": "Approving…",
+      "declining": "Marking not approved…",
+      "approvingAll": "Approving {n}…",
+      "approved": "Approved: {name} · {habit}. It counts toward the streak.",
+      "declined": "Not approved: {name} · {habit}. It won't count toward the streak.",
+      "approvedAll": "{n, plural, =0 {Nothing left to approve: someone reviewed them first.} one {Approved # check-in. It counts toward the streak.} other {Approved # check-ins. They count toward the streaks.}}",
+      "failed": "Couldn't reach Keepup. Check your connection and tap again."
     },
     "feed": {
-      "empty": "Nothing yet. Activity from your groups shows up here.",
+      "empty": "{groups, select, yes {Your groups' check-ins, cheers and nudges show up here.} other {Join or create a group to see members' check-ins here.}}",
       "unread": "Unread: ",
       "emptyAction": "Open Groups"
     },

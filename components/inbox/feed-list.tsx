@@ -10,7 +10,8 @@ import type { Locale, T } from "@/supabase/functions/_shared/i18n";
 import { cn } from "@/lib/utils";
 
 // Activity, newest first, under day headings in the viewer's time zone.
-export function FeedList({ items, timeZone, now, t, locale }: { items: FeedItem[]; timeZone: string; now: Date; t: T; locale: Locale }) {
+// `hasGroups`: the empty line says what fills the feed, and for someone with no group, how to get one.
+export function FeedList({ items, timeZone, now, t, locale, hasGroups }: { items: FeedItem[]; timeZone: string; now: Date; t: T; locale: Locale; hasGroups: boolean }) {
   if (items.length === 0) {
     // The feed fills from groups: the way to join or create one.
     return (
@@ -22,7 +23,7 @@ export function FeedList({ items, timeZone, now, t, locale }: { items: FeedItem[
           </Button>
         }
       >
-        {t("inbox.feed.empty")}
+        {t("inbox.feed.empty", { groups: hasGroups ? "yes" : "no" })}
       </EmptyState>
     );
   }
@@ -35,16 +36,18 @@ export function FeedList({ items, timeZone, now, t, locale }: { items: FeedItem[
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-section">
       {[...days].map(([day, rows]) => (
-        <section key={day} aria-label={dayLabel(t, locale, day, today)} className="flex flex-col gap-2">
+        <section key={day} aria-label={dayLabel(t, locale, day, today)} className="flex flex-col gap-inner">
           <h2 className="text-sm font-semibold text-muted-foreground">{dayLabel(t, locale, day, today)}</h2>
-          <ul className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-soft">
+          {/* A list, not a card: rows with dividers on the page (docs/design.md "Surfaces"). */}
+          <ul className="flex flex-col">
             {rows.map((n) => {
               const { title, body, href } = feedCopy(t, locale, n);
               // Unread: a dot and words, not just the tint (docs/design.md: colour is never the only signal).
               const inner = (
                 <>
+                  {/* 6 px down: the 8 px dot sits on the first line of text. */}
                   <span className="mt-1.5 flex w-2 shrink-0">
                     {!n.read_at && (
                       <>
@@ -71,7 +74,8 @@ export function FeedList({ items, timeZone, now, t, locale }: { items: FeedItem[
                   <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{relativeTime(t, locale, n.created_at, timeZone, now)}</span>
                 </>
               );
-              const className = cn("flex min-h-14 items-start gap-3 px-4 py-3", !n.read_at && "bg-accent/50");
+              // -mx-inner px-inner: the unread tint and the hover reach past the text, which stays on the page edge.
+              const className = cn("-mx-inner flex min-h-14 items-start gap-inner rounded-xl px-inner py-inner", !n.read_at && "bg-accent/50");
               return (
                 <li key={n.id} className="border-t border-border first:border-t-0">
                   {href ? (

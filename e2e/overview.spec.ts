@@ -136,5 +136,5 @@ test("a new user's empty lists say what's next, in one card style", async ({ pag
   await page.goto("/groups");
   await expect(page.getByText("Share habits with the people you live and hang out with.")).toBeVisible();
   await page.goto("/inbox");
-  await expect(page.getByText("Nothing yet. Activity from your groups shows up here.")).toBeVisible();
+  await expect(page.getByText("Join or create a group to see members' check-ins here.")).toBeVisible();
 });

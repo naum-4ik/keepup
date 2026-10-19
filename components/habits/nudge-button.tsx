@@ -4,6 +4,7 @@ import { useState, useTransition, type ReactNode } from "react";
 import { DropdownMenu } from "radix-ui";
 import { nudge } from "@/app/(app)/inbox/actions";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import { NUDGE_KINDS } from "@/lib/nudge-kinds";
 import { useT } from "@/lib/i18n/client";
 import { isolate } from "@/supabase/functions/_shared/i18n";
@@ -33,7 +34,7 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
           <Button type="button" variant="outline" className="h-11 rounded-full px-item" disabled={pending || closed}>
-            {rich("habits.nudge.cta", { name, sr: srOnly })}
+            {rich(pending ? "habits.nudge.sending" : "habits.nudge.cta", { name, sr: srOnly })}
           </Button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
@@ -50,7 +51,7 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
                   startTransition(async () => {
                     setError(null);
                     // Offline, or the request never came back (a thrown action): it needs the server.
-                    if (!navigator.onLine) return setError(t("offline.needsConnection"));
+                    if (!navigator.onLine) return setError(t("habits.sendFailed"));
                     try {
                       const r = await nudge(habitId, recipientId, k.kind);
                       if (r.ok || r.code === "already_nudged") setDone(true);
@@ -59,7 +60,7 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
                         setError(r.message ?? null);
                       } else setError(r.message ?? null);
                     } catch {
-                      setError(t("offline.needsConnection"));
+                      setError(t("habits.sendFailed"));
                     }
                   })
                 }
@@ -72,9 +73,9 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
       {error && (
-        <p role="alert" className="max-w-48 text-end text-xs text-destructive">
+        <Notice tone="error" live className="max-w-56">
           {error}
-        </p>
+        </Notice>
       )}
     </div>
   );

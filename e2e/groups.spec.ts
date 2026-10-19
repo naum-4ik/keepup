@@ -351,12 +351,12 @@ test("approval: check-ins wait, each approves the other in the Inbox, both see E
   await guest.getByRole("link", { name: /Inbox/ }).click();
   // exact: "Approve" is also a substring of "Not approved".
   await guest.getByRole("button", { name: "Approve", exact: true }).click();
-  await expect(guest.getByText("Nothing waiting for you.")).toBeVisible();
+  await expect(guest.getByText("All caught up: 0 check-ins waiting for your approval.")).toBeVisible();
 
   await page.goto("/inbox");
   await page.getByRole("button", { name: "Approve", exact: true }).click();
   // Let the approval land before leaving the page (a navigation can cut the action short).
-  await expect(page.getByText("Nothing waiting for you.")).toBeVisible();
+  await expect(page.getByText("All caught up: 0 check-ins waiting for your approval.")).toBeVisible();
   await page.goto("/today");
   await expect(page.getByText("Everyone did it ✓")).toBeVisible();
   await guest.goto("/today");
@@ -498,9 +498,10 @@ test("the weekly family recap tops the Inbox's Activity tab, not Today, and Dism
   await expect(page.getByText(/Together last week/)).toHaveCount(0);
   await page.goto("/inbox");
   await page.getByRole("tab", { name: "Activity" }).click();
-  const recap = page.getByText(/^Together last week: 1 check-in/);
+  // A Notice: the group's name, then the line.
+  const recap = page.getByText(/^\u2068?Family\u2069? · Together last week: 1 check-in/);
   await expect(recap).toBeVisible();
-  await recap.locator("../..").getByRole("button", { name: "Dismiss" }).click();
+  await page.getByRole("tabpanel").getByRole("button", { name: "Dismiss" }).click();
   await expect(recap).toHaveCount(0);
   await page.waitForLoadState("networkidle"); // the dismissal has been saved
   await page.reload();
@@ -589,9 +590,44 @@ test("approving a check-in someone just reviewed says who did, and the note stay
   await eve.goto("/inbox");
   await dan.goto("/inbox");
   await dan.getByRole("button", { name: "Approve", exact: true }).click();
-  await expect(dan.getByText("Nothing waiting for you.")).toBeVisible();
+  await expect(dan.getByText("All caught up: 0 check-ins waiting for your approval.")).toBeVisible();
   await eve.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(eve.getByRole("listitem", { name: "\u2068Ana\u2069 did \u2068Gym\u2069" }).getByRole("status")).toHaveText("\u2068Dan\u2069 already reviewed this.");
+});
+
+test("approve says Approving… while it saves, then a toast says what it did", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Gym buddies", "Friends");
+  const url = await inviteLink(page);
+  const dan = await (await browser.newContext()).newPage();
+  await joinByLink(dan, url, "Dan");
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: "Create your own" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Title").fill("Gym");
+  await dialog.getByLabel("Category").selectOption("fitness");
+  await dialog.getByRole("radio", { name: "Gym buddies" }).check();
+  await dialog.getByRole("switch", { name: "Needs approval" }).click();
+  await dialog.getByRole("button", { name: /^Add habit/ }).click();
+  await expect(page).toHaveURL(/\/today$/);
+  await page.getByRole("button", { name: "Check in: \u2068Gym\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Waiting for approval: \u2068Gym\u2069" })).toBeVisible();
+
+  // Hold the review (a server action: a POST to the page with a Next-Action header) until the
+  // in-progress label has been seen.
+  let release!: () => void;
+  const held = new Promise<void>((r) => (release = r));
+  await dan.route("**/inbox", async (route) => {
+    if (route.request().method() === "POST" && route.request().headers()["next-action"]) await held;
+    await route.continue();
+  });
+  await dan.goto("/inbox");
+  await dan.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(dan.getByRole("button", { name: "Approving…" })).toBeDisabled();
+  await expect(dan.getByRole("button", { name: "Not approved", exact: true })).toBeDisabled();
+  release();
+  await expect(dan.getByTestId("toast-live")).toHaveText("Approved: \u2068Ana\u2069 · \u2068Gym\u2069. It counts toward the streak.");
+  await expect(dan.getByRole("main").getByText("All caught up: 0 check-ins waiting for your approval.")).toBeVisible();
 });
 
 test("an undo by another member shows up live", async ({ page, browser }) => {
