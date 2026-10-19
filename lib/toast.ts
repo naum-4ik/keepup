@@ -43,6 +43,14 @@ export function dismissToast(state: ToastState, id: string): ToastState {
   return { current: next, waiting: rest };
 }
 
+// A toast closed by its owner (an "Undoing…" toast once the undo answered): the showing one closes
+// as dismissToast does, a waiting one is dropped. An unknown id changes nothing.
+export function removeToast(state: ToastState, id: string): ToastState {
+  if (state.current?.id === id) return dismissToast(state, id);
+  if (!state.waiting.some((t) => t.id === id)) return state;
+  return { current: state.current, waiting: state.waiting.filter((t) => t.id !== id) };
+}
+
 // How long a toast stays: longer with an action, so there is time to reach it (WCAG 2.2.1; the
 // toast also pauses while hovered or focused).
 export function toastDuration(toast: Pick<Toast, "action">): number {

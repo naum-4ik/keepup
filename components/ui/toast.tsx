@@ -14,6 +14,7 @@ import {
   isFreshFlash,
   parseFlash,
   pushToast,
+  removeToast,
   toastDuration,
   type Flash,
   type Toast,
@@ -46,8 +47,14 @@ export function showToast({ text, action, id }: { text: string; action?: ToastAc
   setState(pushToast(state, { id: id ?? `toast-${++seq}`, text, action }));
 }
 
-export function useToast(): { showToast: typeof showToast } {
-  return { showToast };
+// Closes this toast if it is the one showing, or drops it if it waits (an "Undoing…" toast once the
+// undo has answered, so the answer shows at once instead of queueing behind it).
+export function closeToast(id: string): void {
+  setState(removeToast(state, id));
+}
+
+export function useToast(): { showToast: typeof showToast; closeToast: typeof closeToast } {
+  return { showToast, closeToast };
 }
 
 // In the app layout. `flash`: the flash cookie as the server read it (after a server action that set

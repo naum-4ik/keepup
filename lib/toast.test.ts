@@ -10,6 +10,7 @@ import {
   isSafeHref,
   parseFlash,
   pushToast,
+  removeToast,
   serializeFlash,
   toastDuration,
   type Toast,
@@ -37,6 +38,13 @@ describe("toast queue", () => {
     for (const id of ["b", "c", "d"]) s = pushToast(s, toast(id));
     expect(s.current?.id).toBe("a");
     expect(s.waiting.map((t) => t.id)).toEqual(["c", "d"]);
+  });
+
+  it("removing the showing one shows the next; a waiting one is dropped; an unknown id changes nothing", () => {
+    const s = pushToast(pushToast(pushToast(emptyToasts, toast("a")), toast("b")), toast("c"));
+    expect(removeToast(s, "a")).toEqual({ current: toast("b"), waiting: [toast("c")] });
+    expect(removeToast(s, "b")).toEqual({ current: toast("a"), waiting: [toast("c")] });
+    expect(removeToast(s, "x")).toBe(s);
   });
 
   it("dismissing the current one shows the next, then nothing", () => {
