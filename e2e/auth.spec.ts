@@ -55,6 +55,7 @@ test("public pages have their own titles", async ({ page }) => {
     ["/install", "How to install · Keepup"],
     ["/privacy", "Privacy Policy · Keepup"],
     ["/terms", "Terms of use · Keepup"],
+    ["/offline", "Keepup"], // a page without its own title keeps the plain name
   ]) {
     await page.goto(path);
     await expect(page).toHaveTitle(title);

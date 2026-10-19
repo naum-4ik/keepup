@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -8,6 +9,12 @@ import { Notice } from "@/components/ui/notice";
 import { createClient } from "@/lib/supabase/server";
 import { authErrorReason } from "@/lib/auth-errors";
 import { getT } from "@/lib/i18n/server";
+
+// What a search result and the browser tab say about the landing; other pages keep "Keepup" or their own.
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getT();
+  return { title: t("meta.title") };
+}
 
 export default async function Home({
   searchParams,
