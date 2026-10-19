@@ -16,7 +16,8 @@ test("a new user adds a habit from a template", async ({ page }) => {
 
   await page.getByRole("button", { name: "Add habit" }).click();
   await expect(page).toHaveURL(/\/today$/);
-  await expect(page.getByText("Drink water")).toBeVisible();
+  // In the page: the "Added …" toast (outside <main>) names it too.
+  await expect(page.getByRole("main").getByText("Drink water")).toBeVisible();
 });
 
 test("custom habits are validated", async ({ page }) => {
@@ -41,7 +42,7 @@ test("custom habits are validated", async ({ page }) => {
   await page.getByLabel("Times").fill("2");
   await page.getByRole("button", { name: "Add habit" }).click();
   await expect(page).toHaveURL(/\/today$/);
-  await expect(page.getByText("Stretch")).toBeVisible();
+  await expect(page.getByRole("main").getByText("Stretch")).toBeVisible();
 });
 
 test("category tabs show more templates and 'Create your own'", async ({ page }) => {
@@ -248,7 +249,7 @@ test.describe("Habit detail", () => {
     await expect(page.getByRole("region", { name: "Streaks" })).toContainText("Your streak");
     // In the page: Today's "checked in" toast (outside <main>) may still offer its own Undo.
     await page.getByRole("main").getByRole("button", { name: /^Undo check-in at / }).click();
-    await expect(page.getByText("No check-ins this period yet.")).toBeVisible();
+    await expect(page.getByText("Check in to start today: 0 of 1 done.")).toBeVisible();
 
     await page.goto("/today");
     await expect(page.getByText("Not done yet")).toBeVisible();
@@ -262,12 +263,14 @@ test.describe("Habit detail", () => {
     await openSection(page, "Pause");
     await page.getByRole("button", { name: "Pause habit" }).click();
     await expect(page.getByText(/^Paused from /)).toBeVisible();
+    await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved. No check-ins are due, and the streak waits until you resume.");
     await page.goto("/today");
     await expect(page.getByRole("button", { name: "Paused: \u2068Meditate\u2069" })).toBeDisabled();
     await page.getByRole("link", { name: /Meditate/ }).click();
     await openSection(page, "Paused");
     await page.getByRole("button", { name: "Resume" }).click();
     await expect(page.getByRole("button", { name: "Pause habit" })).toBeVisible();
+    await expect(page.getByRole("main").getByRole("status")).toHaveText("Resumed. Check-ins count again from today.");
   });
 
   test("a habit without check-ins can be deleted; one with history is archived", async ({ page }) => {
@@ -280,7 +283,8 @@ test.describe("Habit detail", () => {
     await expect(confirmDialog).toBeVisible();
     await confirmDialog.getByRole("button", { name: "Delete", exact: true }).click();
     await expect(page).toHaveURL(/\/today$/);
-    await expect(page.getByText("Tidy up")).toHaveCount(0);
+    await expect(page.getByTestId("toast-live")).toHaveText("Deleted \u2068Tidy up\u2069. It had no check-ins, so nothing was lost.");
+    await expect(page.getByRole("main").getByText("Tidy up")).toHaveCount(0);
 
     await createHabit(page, { template: "Make the bed", tab: "Home" });
     await page.getByRole("button", { name: "Check in: \u2068Make the bed\u2069" }).click();
@@ -454,7 +458,8 @@ test("a habit with an end: 30 days on create, Day 1 of 30, then extend and remov
   await manage.getByRole("button", { name: "+30 days" }).click();
   await expect(manage).toContainText("Day 1 of 60");
   await manage.getByRole("button", { name: "Remove end" }).click();
-  await expect(manage).toContainText("No end yet");
+  await expect(manage).toContainText("Add an end, like 30 days, to see Day 1 of 30");
+  await expect(manage.getByRole("status")).toHaveText("Saved: no end now. It keeps going until you stop it.");
   await page.goto("/today");
   await expect(page.getByRole("link", { name: /Read/ })).not.toContainText("Day 1 of");
 });
@@ -474,7 +479,7 @@ test("a habit that ended: the finish card, Keep going, Finish, and Start again",
   // Nothing done: no 🎉, an invitation instead of a count.
   await expect(readCard).toContainText("Read reached its end");
   await expect(readCard).not.toContainText("🎉");
-  await expect(readCard).toContainText("Want to give it another go?");
+  await expect(readCard).toContainText("Keep going to build a new streak, or finish it and start again later.");
   await expect(page.getByRole("button", { name: "Check in: \u2068Read\u2069" })).toHaveCount(0); // no more check-ins
 
   await readCard.getByRole("button", { name: "Keep going" }).click();
@@ -491,9 +496,13 @@ test("a habit that ended: the finish card, Keep going, Finish, and Start again",
   await expect(page.getByRole("button", { name: "Restore \u2068Stretch\u2069" })).toHaveCount(0); // Start again instead
   await page.goto(`/habits/${stretch}`);
   await expect(page.getByRole("region", { name: "Archived" })).toHaveCount(0);
+  // Its page offers Start again too, as Progress → Finished does.
+  await expect(page.getByRole("region", { name: "Finished" })).toContainText("Start again to build a new streak.");
+  await expect(page.getByRole("region", { name: "Finished" }).getByRole("button", { name: "Start \u2068Stretch\u2069 again" })).toBeVisible();
   await page.goto("/progress?view=finished");
   await page.getByRole("button", { name: "Start \u2068Stretch\u2069 again" }).click();
   await expect(page).toHaveURL(/\/today$/);
+  await expect(page.getByTestId("toast-live")).toHaveText("Started \u2068Stretch\u2069 again from today. The finished one keeps its history.");
   await expect(page.getByRole("link", { name: /Stretch/ })).toContainText("Day 1 of 3");
 });
 
@@ -530,7 +539,8 @@ test("after the end, the habit page offers only Keep going or Finish", async ({ 
   await expect(manage.getByRole("button", { name: /^\+/ })).toHaveCount(0);
   await expect(manage.getByRole("button", { name: "Remove end" })).toHaveCount(0);
   await manage.getByRole("button", { name: "Keep going" }).click();
-  await expect(manage).toContainText("No end yet");
+  // endHabitYesterday started it 3 days ago: today is its day 4.
+  await expect(manage).toContainText("Add an end, like 30 days, to see Day 4 of 30");
 });
 
 test("every add button has one dashed look", async ({ page }) => {
@@ -577,4 +587,54 @@ test("Starts and Ends chips share one style and grid at 360px", async ({ page })
   expect(await fontOf(ends.first())).toBe(await fontOf(today));
   // Nothing scrolls sideways.
   expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+});
+
+test("a new habit lands on Today with a toast that says to check in and opens the habit", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createHabit(page, { template: "Read 20 min" });
+  await expect(page.getByTestId("toast-live")).toHaveText("Added \u2068Read 20 min\u2069 · check in now to start day 1");
+  await page.locator("[data-toaster]").getByRole("link", { name: "Open" }).click();
+  await expect(page).toHaveURL(/\/habits\/[0-9a-f-]{36}$/);
+  await expect(page.getByRole("heading", { name: "Read 20 min" })).toBeVisible();
+});
+
+test("archiving says where the habit went, and Undo puts it back with its check-in", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createHabit(page, { template: "Make the bed", tab: "Home" });
+  await page.getByRole("button", { name: "Check in: \u2068Make the bed\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Done: \u2068Make the bed\u2069" })).toBeVisible();
+  // A fresh load of the habit page: the check-in's own toast (with its Undo) must not be the one showing.
+  await page.goto((await page.getByRole("link", { name: /Make the bed/ }).getAttribute("href"))!);
+  await openSection(page, "Archive");
+  await page.getByRole("button", { name: "Archive habit" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Archive", exact: true }).click();
+  await expect(page).toHaveURL(/\/progress\?view=archived$/);
+  const live = page.getByTestId("toast-live");
+  await expect(live).toHaveText("Archived \u2068Make the bed\u2069. Its history is in Progress → Archived.");
+
+  await page.locator("[data-toaster]").getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(live).toHaveText("\u2068Make the bed\u2069 is back, history kept.");
+  await expect(page.getByText("No archived habits.")).toBeVisible();
+  await page.goto("/today");
+  await expect(page.getByRole("button", { name: "Done: \u2068Make the bed\u2069" })).toBeVisible();
+});
+
+test("the Create your own sheet keeps its add button in reach at 320×640", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await signUpAndOnboard(page);
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: "Create your own" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
+  const submit = dialog.getByRole("button", { name: /^Add habit/ });
+  const [box, sheet] = await Promise.all([submit.boundingBox(), dialog.boundingBox()]);
+  // Without scrolling the sheet: at least 44px tall, inside the sheet and the screen.
+  expect(await dialog.evaluate((el) => el.scrollTop)).toBe(0);
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+  expect(box!.y).toBeGreaterThanOrEqual(sheet!.y);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(sheet!.y + sheet!.height + 0.5);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(640);
+  // A refused title shows by the pinned button's form, and focus goes to the field.
+  await submit.click();
+  await expect(dialog.getByLabel("Title")).toBeFocused();
 });
