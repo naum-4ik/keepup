@@ -25,6 +25,32 @@ export function releaseLabel(r: Release, appVersion: string, locale: Locale, t: 
 
 export const RELEASES: Release[] = [
   {
+    version: "1.8.0",
+    notes: {
+      en: [
+        "A calmer, cleaner look: fewer boxes, even spacing, and the first check-in fits on small phones without scrolling.",
+        "Every action now tells you what happened: after a check-in you get a short note with Undo, and if something fails, it says what to do next.",
+        "Settings save as you change them and show \"Saved ✓\", so there's no Save button to look for.",
+        "A kid's name always shows in full in the kid's view, and themes are easier to pick.",
+        "The start page loads faster and has one clear button: Start your first streak.",
+      ],
+      ru: [
+        "Спокойнее и чище: меньше рамок, ровные отступы, а первая отметка помещается на маленьком телефоне без прокрутки.",
+        "Каждое действие теперь говорит, что произошло: после отметки появляется короткое сообщение с кнопкой «Отменить», а если что-то не получилось, вы увидите, что делать дальше.",
+        "Настройки сохраняются сразу, как только вы их меняете, и показывают «Сохранено ✓». Искать кнопку «Сохранить» больше не нужно.",
+        "Имя ребёнка в детском режиме всегда видно целиком, а тему стало проще выбрать.",
+        "Стартовая страница грузится быстрее, и на ней одна понятная кнопка: «Начать первую серию».",
+      ],
+      he: [
+        "מראה רגוע ונקי יותר: פחות מסגרות, מרווחים אחידים, והסימון הראשון נכנס גם בטלפון קטן בלי לגלול.",
+        "כל פעולה מספרת מה קרה: אחרי סימון מופיעה הודעה קצרה עם „ביטול”, ואם משהו נכשל, תראו מה לעשות עכשיו.",
+        "ההגדרות נשמרות מיד כשמשנים אותן ומציגות „נשמר ✓”. אין יותר כפתור שמירה שצריך לחפש.",
+        "שם הילד מוצג תמיד במלואו בתצוגת הילד, ונעשה קל יותר לבחור ערכת נושא.",
+        "דף הפתיחה נטען מהר יותר ויש בו כפתור אחד ברור: „התחילו את הרצף הראשון”.",
+      ],
+    },
+  },
+  {
     version: "1.7.0",
     date: "2026-10-19",
     notes: {
