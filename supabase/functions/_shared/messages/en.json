@@ -284,7 +284,7 @@
   "habitFinish": {
     "did": "{together, select, yes {Together you did {done} of {span}} other {You did {done} of {span}}}",
     "withBest": "{main} · best streak {n} 🔥",
-    "anotherGo": "{streak, select, yes {Keep going and your streak of {span} carries on, or Finish and start again later.} other {Keep going and your streak carries on, or Finish and start again later.}}"
+    "anotherGo": "{streak, select, yes {Keep going and your streak of {span} carries on, or Finish and start again later.} other {Keep going to build a streak, or Finish and start again later.}}"
   },
   "myData": {
     "deleteWord": "delete",

@@ -36,7 +36,7 @@ describe("habit page copy", () => {
   });
 
   it("finish lines point at the buttons that are there", () => {
-    expect(anotherGoLine(tEn, 0, "day")).toBe("Keep going and your streak carries on, or Finish and start again later.");
+    expect(anotherGoLine(tEn, 0, "day")).toBe("Keep going to build a streak, or Finish and start again later.");
     expect(anotherGoLine(tEn, 3, "day")).toBe("Keep going and your streak of 3 days carries on, or Finish and start again later.");
     expect(anotherGoLine(tFor("ru"), 2, "week")).toBe("Продолжайте — и ваша серия (2 недели) не прервётся, или завершите и начните заново позже.");
     expect(anotherGoLine(tFor("he"), 1, "day")).toContain("המשיכו");
