@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { tEn } from "@/lib/i18n/test-t";
-import { END_PRESETS, endLabel, endOptions, endProgress, endsOnFor, extendEnd, hasEnded, presetLabel, withoutEnded } from "./habit-end";
+import { tEn, tFor } from "@/lib/i18n/test-t";
+import { END_PRESETS, endExample, endLabel, endOptions, endProgress, endsOnFor, extendEnd, hasEnded, noEndHint, presetLabel, withoutEnded } from "./habit-end";
 
 describe("END_PRESETS", () => {
   it("offers days, weeks or months to match the habit's period", () => {
@@ -88,5 +88,30 @@ describe("hasEnded / withoutEnded", () => {
     // "a" runs on a calendar that's already on the 4th; "b" on one still on the 3rd; "c" has no end.
     const today = { a: "2026-10-04", b: "2026-10-03", c: "2026-10-04" } as Record<string, string>;
     expect(withoutEnded(habits, ends, (h) => today[h.habit_id]).map((h) => h.habit_id)).toEqual(["b", "c"]);
+  });
+});
+
+describe("noEndHint (no end yet)", () => {
+  it("gives an example end and the count it would show from the start", () => {
+    expect(noEndHint(tEn, "2026-10-19", "2026-10-19", "day")).toBe("Add an end, like 30 days, to see Day 1 of 30");
+    expect(noEndHint(tEn, "2026-10-19", "2026-10-19", "week")).toBe("Add an end, like 8 weeks, to see Week 1 of 8");
+    expect(noEndHint(tEn, "2026-10-19", "2026-10-19", "month")).toBe("Add an end, like 6 months, to see Month 1 of 6");
+  });
+
+  it("counts from the start for a habit already running, and from 1 before it starts", () => {
+    expect(endExample("2026-10-09", "2026-10-19", "day")).toEqual({ n: 11, total: 30 });
+    expect(endExample("2026-10-25", "2026-10-19", "week")).toEqual({ n: 1, total: 8 });
+  });
+
+  it("takes the next length the chips still offer once the example has passed, and says no end when none is left", () => {
+    expect(endExample("2026-09-01", "2026-10-19", "day")).toEqual({ n: 49, total: 60 });
+    expect(endExample("2026-01-01", "2026-10-19", "day")).toBeNull();
+    expect(noEndHint(tEn, "2026-01-01", "2026-10-19", "day")).toBe("No end: it keeps going until you stop it.");
+  });
+
+  it("is written in ru and he with their plurals", () => {
+    expect(noEndHint(tFor("ru"), "2026-10-19", "2026-10-19", "day")).toBe("Добавьте окончание, например 30 дней, чтобы видеть «День 1 из 30»");
+    expect(noEndHint(tFor("ru"), "2026-10-19", "2026-10-19", "month")).toBe("Добавьте окончание, например 6 месяцев, чтобы видеть «Месяц 1 из 6»");
+    expect(noEndHint(tFor("he"), "2026-10-19", "2026-10-19", "week")).toContain("8");
   });
 });

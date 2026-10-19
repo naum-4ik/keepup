@@ -27,8 +27,10 @@ import { ReminderControl } from "@/components/habits/reminder-control";
 import { getHabitSettings } from "@/lib/habit-settings";
 import { reminderHint } from "@/lib/reminder-mode";
 import { RestoreHabitButton } from "@/components/habits/restore-habit-button";
+import { StartAgainButton } from "@/components/habits/start-again-button";
+import { Section } from "@/components/ui/section";
 import { EndControl } from "@/components/habits/end-control";
-import { endLabel, endProgress, hasEnded } from "@/lib/habit-end";
+import { endLabel, endProgress, hasEnded, noEndHint } from "@/lib/habit-end";
 import { formatLocalDate } from "@/lib/dates";
 import { getT } from "@/lib/i18n/server";
 import type { T } from "@/supabase/functions/_shared/i18n";
@@ -38,28 +40,22 @@ import { stateOf } from "@/lib/today";
 import { getMyChildren } from "@/lib/kids";
 import { currentPeriods, renderedTapIds, tapPeriods } from "@/lib/rendered-taps";
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section aria-label={title} className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
-      <h2 className="text-sm font-bold text-muted-foreground">{title}</h2>
-      {children}
-    </section>
-  );
-}
-
-// Settings the user rarely needs sit behind a row they can open, so the page leads with today.
+// Settings the user rarely needs sit behind a row they can open, so the page leads with today. A row
+// of the Manage list (no card): the title and its hint, the control under it once open.
 function Manage({ title, hint, danger, children }: { title: string; hint: React.ReactNode; danger?: boolean; children: React.ReactNode }) {
   return (
-    <details className="group border-t border-border first:border-t-0">
-      <summary className="flex min-h-14 list-none items-center gap-3 px-5 py-3 hover:bg-muted/60 [&::-webkit-details-marker]:hidden">
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className={danger ? "font-bold text-destructive" : "font-bold"}>{title}</span>
-          <span className="text-xs text-muted-foreground">{hint}</span>
-        </span>
-        <ChevronDown aria-hidden className="size-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
-      </summary>
-      <div className="px-5 pt-1 pb-5">{children}</div>
-    </details>
+    <li>
+      <details className="group">
+        <summary className="-mx-inner flex min-h-14 list-none items-center gap-item rounded-xl px-inner py-inner hover:bg-muted/60 [&::-webkit-details-marker]:hidden">
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className={danger ? "font-bold text-destructive" : "font-bold"}>{title}</span>
+            <span className="text-xs text-muted-foreground">{hint}</span>
+          </span>
+          <ChevronDown aria-hidden className="size-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="pt-inner pb-item">{children}</div>
+      </details>
+    </li>
   );
 }
 
@@ -122,6 +118,9 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const endsOn = ends.get(h.habit_id) ?? null;
   const endNow = endsOn ? endProgress(h.starts_on, endsOn, today, h.period) : null;
   const restorable = archived && canManage && !finishedIds?.has(h.habit_id);
+  // A finished habit starts again from here, as from Progress → Finished. Not a child's own habit:
+  // startAgain makes the copy for whoever taps it, and needs a category (kid templates have none).
+  const canStartAgain = archived && canManage && !child && Boolean(h.category) && Boolean(finishedIds?.has(h.habit_id));
   const progress = describeProgress(t, locale, {
     targetCount: h.target_count,
     period: h.period,
@@ -150,41 +149,51 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const isDone = h.done_count >= h.target_count || everyone;
 
   return (
-    <section className="flex flex-col gap-4 pt-2 pb-6">
+    <div className="flex flex-col gap-section py-section">
       <RenderedTaps ids={renderedTaps} periods={tapPeriods([h], () => group?.timezone ?? profile.timezone)} />
-      <Link
-        href={child ? `/kids/${child.id}` : "/today"}
-        className="-ms-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
-      >
-        <ChevronLeft aria-hidden className="size-4 shrink-0 rtl:-scale-x-100" />
-        <span className="truncate">{child ? child.name : t("today.title")}</span>
-      </Link>
+      <div className="flex flex-col gap-inner">
+        <Link
+          href={child ? `/kids/${child.id}` : "/today"}
+          // 4px icon-to-label (off the scale): the chevron is part of the word, like a text link's arrow.
+          className="-ms-inner flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-inner text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <ChevronLeft aria-hidden className="size-4 shrink-0 rtl:-scale-x-100" />
+          <span className="truncate">{child ? child.name : t("today.title")}</span>
+        </Link>
 
-      <header className="flex items-center gap-4">
-        <HabitEmoji category={h.category} emoji={h.emoji} size="lg" />
-        <div className="flex min-w-0 flex-col">
-          <h1 className="truncate text-xl font-bold">{h.title}</h1>
-          <p className="text-sm text-muted-foreground">
-            {h.group_id
-              ? tr.rich("habits.detail.groupLine", { group: h.group_name, schedule: describeSchedule(t, h.target_count, h.period), approval: h.requires_approval ? "yes" : "no", archived: archived ? "yes" : "no", bdi })
-              : h.category
-                ? t("habits.detail.categoryLine", { schedule: describeSchedule(t, h.target_count, h.period), category: categoryLabel(t, h.category), archived: archived ? "yes" : "no" })
-                : t("habits.detail.scheduleLine", { schedule: describeSchedule(t, h.target_count, h.period), archived: archived ? "yes" : "no" })}
-          </p>
-        </div>
-      </header>
+        <header className="flex items-center gap-item">
+          <HabitEmoji category={h.category} emoji={h.emoji} size="lg" />
+          <div className="flex min-w-0 flex-col">
+            <h1 className="truncate text-xl font-bold">{h.title}</h1>
+            <p className="text-sm text-muted-foreground">
+              {h.group_id
+                ? tr.rich("habits.detail.groupLine", { group: h.group_name, schedule: describeSchedule(t, h.target_count, h.period), approval: h.requires_approval ? "yes" : "no", archived: archived ? "yes" : "no", bdi })
+                : h.category
+                  ? t("habits.detail.categoryLine", { schedule: describeSchedule(t, h.target_count, h.period), category: categoryLabel(t, h.category), archived: archived ? "yes" : "no" })
+                  : t("habits.detail.scheduleLine", { schedule: describeSchedule(t, h.target_count, h.period), archived: archived ? "yes" : "no" })}
+            </p>
+          </div>
+        </header>
+      </div>
 
       {restorable && (
-        <Card title={t("habits.detail.archived.title")}>
+        <Section title={t("habits.detail.archived.title")}>
           <p className="text-sm text-muted-foreground">{tr.rich("habits.detail.archived.note", { who: child ? "child" : "you", name: child?.name ?? "", bdi })}</p>
           <RestoreHabitButton habitId={h.habit_id} title={h.title} />
-        </Card>
+        </Section>
+      )}
+
+      {canStartAgain && (
+        <Section title={t("habits.detail.finished.title")}>
+          <p className="text-sm text-muted-foreground">{t("habits.detail.finished.note")}</p>
+          <StartAgainButton habitId={h.habit_id} title={h.title} />
+        </Section>
       )}
 
       {!archived && (
-        <Card title={t(`habits.detail.periodTitle.${h.period}`)}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 flex-col gap-1.5">
+        <Section title={t(`habits.detail.periodTitle.${h.period}`)}>
+          <div className="flex items-center justify-between gap-item">
+            <div className="flex min-w-0 flex-col gap-inner">
               <p className={isDone ? "font-bold text-done" : "font-bold"}>{everyone ? t("habits.common.everyoneDidIt") : progress.text}</p>
               {h.target_count > 1 && (
                 <div className="h-2 w-40 overflow-hidden rounded-full bg-muted" aria-hidden>
@@ -213,17 +222,19 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
               />
             )}
           </div>
-          {!child && <CheckInList habitId={h.habit_id} checkIns={checkIns} timeZone={profile.timezone} period={h.period} />}
-        </Card>
+          {!child && (
+            <CheckInList habitId={h.habit_id} checkIns={checkIns} timeZone={profile.timezone} period={h.period} targetCount={h.target_count} open={stateOf(h) === "open"} />
+          )}
+        </Section>
       )}
 
       {members && !archived && (
-        <Card title={t("habits.form.together")}>
-          <ul className="flex flex-col gap-2">
+        <Section title={t("habits.form.together")}>
+          <ul className="flex flex-col gap-inner">
             {members.map((m) => {
               const status = memberStatus(m, h.target_count);
               return (
-                <li key={m.profile_id} className="flex min-h-11 items-center gap-3">
+                <li key={m.profile_id} className="flex min-h-11 items-center gap-inner">
                   <MemberAvatar member={m} status={status} size="md" />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate font-semibold">
@@ -237,120 +248,123 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
               );
             })}
           </ul>
-        </Card>
+        </Section>
       )}
 
-      <section aria-label={t("habits.detail.streaksLabel")} className="grid grid-cols-2 divide-x divide-border rounded-2xl bg-card py-4 shadow-soft">
-        <div className="flex flex-col items-center gap-0.5">
-          <p className="flex items-center gap-1 text-2xl font-extrabold tabular-nums text-flame">
-            <Flame aria-hidden className="size-5" />
-            {h.current_streak}
-            <span className="text-sm font-bold">{unit(t, h.current_streak, h.period)}</span>
-          </p>
-          <p className="text-xs font-semibold text-muted-foreground">{members ? t("habits.form.together") : child ? tr.rich("habits.detail.childStreak", { name: child.name, bdi }) : t("habits.detail.yourStreak")}</p>
-        </div>
-        <div className="flex flex-col items-center gap-0.5">
-          <p className="flex items-center gap-1 text-2xl font-extrabold tabular-nums">
-            <Trophy aria-hidden className="size-5 text-muted-foreground" />
-            {h.best_streak}
-            <span className="text-sm font-bold">{unit(t, h.best_streak, h.period)}</span>
-          </p>
-          <p className="text-xs font-semibold text-muted-foreground">{t("habits.detail.bestStreak")}</p>
-        </div>
+      {/* One line, not a card: two numbers are a stat, not something to open. */}
+      <section aria-label={t("habits.detail.streaksLabel")}>
+        <p className="flex flex-wrap items-center gap-x-inner text-sm">
+          <span className="font-semibold text-muted-foreground">
+            {members ? t("habits.form.together") : child ? tr.rich("habits.detail.childStreak", { name: child.name, bdi }) : t("habits.detail.yourStreak")}
+          </span>
+          {/* 4px icon-to-number (off the scale), as in StreakBadge: the icon belongs to the number. */}
+          <span className="flex items-center gap-1 font-bold tabular-nums text-flame">
+            <Flame aria-hidden className="size-4" />
+            {h.current_streak} {unit(t, h.current_streak, h.period)}
+          </span>
+          <span aria-hidden className="text-muted-foreground">·</span>
+          <span className="font-semibold text-muted-foreground">{t("habits.detail.bestStreak")}</span>
+          <span className="flex items-center gap-1 font-bold tabular-nums">
+            <Trophy aria-hidden className="size-4 text-muted-foreground" />
+            {h.best_streak} {unit(t, h.best_streak, h.period)}
+          </span>
+        </p>
       </section>
 
-      <Card title={t("habits.detail.history")}>
+      <Section title={t("habits.detail.history")}>
         <HistoryGrid t={t} locale={locale} cells={history} period={h.period} />
-      </Card>
+      </Section>
 
       {!archived && (
-        <section aria-label={t("habits.detail.manage.label")} className="overflow-hidden rounded-2xl bg-card shadow-soft">
-          {takesPart && (
-            <Manage title={t("habits.detail.manage.reminders")} hint={reminderHint(t, settings)}>
-              <ReminderControl habitId={h.habit_id} settings={settings} isDemo={profile.is_demo} />
-            </Manage>
-          )}
-          {members && (
-            <Manage
-              title={t("habits.detail.manage.pauseMe.title")}
-              hint={myFreeze ? (me?.paused ? t("habits.detail.manage.pauseMe.hintPaused") : t("habits.detail.manage.pauseMe.hintScheduled")) : t("habits.detail.manage.pauseMe.hintIdle")}
-            >
-              <PauseMeForm habitId={h.habit_id} today={today} weekStart={weekStart} activeFreeze={myFreeze} paused={Boolean(me?.paused)} />
-            </Manage>
-          )}
-          {canManage && (
-            <>
+        <Section title={t("habits.detail.manage.label")}>
+          <ul className="flex flex-col divide-y divide-border">
+            {takesPart && (
+              <Manage title={t("habits.detail.manage.reminders")} hint={reminderHint(t, settings)}>
+                <ReminderControl habitId={h.habit_id} settings={settings} isDemo={profile.is_demo} />
+              </Manage>
+            )}
+            {members && (
               <Manage
-                title={t("habits.detail.manage.ends.title")}
-                hint={
-                  endNow
-                    ? endLabel(t, endNow, h.period)
-                    : hasEnded(endsOn, today)
-                      ? t("habits.detail.manage.ends.hintReached")
-                      : endsOn
-                        ? t("habits.detail.manage.ends.hintLastDay", { date: formatLocalDate(endsOn, locale) })
-                        : t("habits.detail.manage.ends.hintNone")
-                }
+                title={t("habits.detail.manage.pauseMe.title")}
+                hint={myFreeze ? (me?.paused ? t("habits.detail.manage.pauseMe.hintPaused") : t("habits.detail.manage.pauseMe.hintScheduled")) : t("habits.detail.manage.pauseMe.hintIdle")}
               >
-                <EndControl habitId={h.habit_id} period={h.period} startsOn={h.starts_on} endsOn={endsOn} today={today} />
+                <PauseMeForm habitId={h.habit_id} today={today} weekStart={weekStart} activeFreeze={myFreeze} paused={Boolean(me?.paused)} />
               </Manage>
-              <Manage
-                title={
-                  members
-                    ? t("habits.detail.manage.pause.everyone")
-                    : wholePaused
-                      ? t("habits.detail.manage.pause.paused")
-                      : activeFreeze
-                        ? t("habits.detail.manage.pause.scheduled")
-                        : t("habits.detail.manage.pause.title")
-                }
-                hint={
-                  activeFreeze
-                    ? t("habits.detail.manage.pause.hintResume")
-                    : members
-                      ? t("habits.detail.manage.pause.hintGroup")
-                      : child
-                        ? tr.rich("habits.detail.manage.pause.hintChild", { name: child.name, bdi })
-                        : t("habits.detail.manage.pause.hintOwn")
-                }
-              >
-                <FreezeForm
-                  habitId={h.habit_id}
-                  today={today}
-                  weekStart={weekStart}
-                  activeFreeze={activeFreeze}
-                  paused={wholePaused}
-                  submitLabel={members ? t("habits.detail.manage.pause.everyone") : undefined}
-                />
-              </Manage>
-              <Manage
-                title={t("habits.detail.manage.edit.title")}
-                hint={totalCheckIns === 0 ? t("habits.detail.manage.edit.hintWithStart") : t("habits.detail.manage.edit.hintNoStart")}
-              >
-                <HabitDetailsForm
-                  habitId={h.habit_id}
-                  title={h.title}
-                  emoji={h.emoji}
-                  category={h.category}
-                  startsOn={h.starts_on}
-                  canEditStart={totalCheckIns === 0}
-                  today={today}
-                  weekStart={weekStart}
-                />
-              </Manage>
-              <Manage title={t("habits.detail.manage.archive.title")} hint={t("habits.detail.manage.archive.hint")}>
-                <ArchiveHabitButton habitId={h.habit_id} title={h.title} />
-              </Manage>
-              {totalCheckIns === 0 && (
-                <Manage title={t("habits.detail.manage.delete.title")} hint={t("habits.detail.manage.delete.hint")} danger>
-                  <DeleteHabitButton habitId={h.habit_id} title={h.title} />
+            )}
+            {canManage && (
+              <>
+                <Manage
+                  title={t("habits.detail.manage.ends.title")}
+                  hint={
+                    endNow
+                      ? endLabel(t, endNow, h.period)
+                      : hasEnded(endsOn, today)
+                        ? t("habits.detail.manage.ends.hintReached")
+                        : endsOn
+                          ? t("habits.detail.manage.ends.hintLastDay", { date: formatLocalDate(endsOn, locale) })
+                          : noEndHint(t, h.starts_on, today, h.period)
+                  }
+                >
+                  <EndControl habitId={h.habit_id} title={h.title} period={h.period} startsOn={h.starts_on} endsOn={endsOn} today={today} />
                 </Manage>
-              )}
-            </>
-          )}
-        </section>
+                <Manage
+                  title={
+                    members
+                      ? t("habits.detail.manage.pause.everyone")
+                      : wholePaused
+                        ? t("habits.detail.manage.pause.paused")
+                        : activeFreeze
+                          ? t("habits.detail.manage.pause.scheduled")
+                          : t("habits.detail.manage.pause.title")
+                  }
+                  hint={
+                    activeFreeze
+                      ? t("habits.detail.manage.pause.hintResume")
+                      : members
+                        ? t("habits.detail.manage.pause.hintGroup")
+                        : child
+                          ? tr.rich("habits.detail.manage.pause.hintChild", { name: child.name, bdi })
+                          : t("habits.detail.manage.pause.hintOwn")
+                  }
+                >
+                  <FreezeForm
+                    habitId={h.habit_id}
+                    today={today}
+                    weekStart={weekStart}
+                    activeFreeze={activeFreeze}
+                    paused={wholePaused}
+                    submitLabel={members ? t("habits.detail.manage.pause.everyone") : undefined}
+                  />
+                </Manage>
+                <Manage
+                  title={t("habits.detail.manage.edit.title")}
+                  hint={totalCheckIns === 0 ? t("habits.detail.manage.edit.hintWithStart") : t("habits.detail.manage.edit.hintNoStart")}
+                >
+                  <HabitDetailsForm
+                    habitId={h.habit_id}
+                    title={h.title}
+                    emoji={h.emoji}
+                    category={h.category}
+                    startsOn={h.starts_on}
+                    canEditStart={totalCheckIns === 0}
+                    today={today}
+                    weekStart={weekStart}
+                  />
+                </Manage>
+                <Manage title={t("habits.detail.manage.archive.title")} hint={t("habits.detail.manage.archive.hint")}>
+                  <ArchiveHabitButton habitId={h.habit_id} title={h.title} />
+                </Manage>
+                {totalCheckIns === 0 && (
+                  <Manage title={t("habits.detail.manage.delete.title")} hint={t("habits.detail.manage.delete.hint")} danger>
+                    <DeleteHabitButton habitId={h.habit_id} title={h.title} />
+                  </Manage>
+                )}
+              </>
+            )}
+          </ul>
+        </Section>
       )}
       {h.group_id && <LiveRefresh table="check_ins" filter={`habit_id=eq.${h.habit_id}`} />}
-    </section>
+    </div>
   );
 }

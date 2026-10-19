@@ -284,7 +284,7 @@
   "habitFinish": {
     "did": "{together, select, yes {Together you did {done} of {span}} other {You did {done} of {span}}}",
     "withBest": "{main} · best streak {n} 🔥",
-    "anotherGo": "Want to give it another go?"
+    "anotherGo": "Keep going to build a new streak, or finish it and start again later."
   },
   "myData": {
     "deleteWord": "delete",
@@ -1196,9 +1196,10 @@
       "notSaved": "Couldn't save that on this device. Reload the page and try again."
     },
     "checkIns": {
-      "empty": "No check-ins this period yet.",
+      "empty": "Check in to start {period, select, day {today} week {this week} other {this month}}: 0 of {target} done.",
       "count": "{n, plural, one {{count} check-in this period} other {{count} check-ins this period}}",
-      "undoAt": "Undo check-in at {time}"
+      "undoAt": "Undo check-in at {time}",
+      "undoing": "Undoing…"
     },
     "streak": {
       "label": "Streak:"
@@ -1287,13 +1288,21 @@
       "addReturn": "Add a return date",
       "until": "Until",
       "removeEnd": "Remove end date",
-      "pausing": "Pausing…"
+      "pausing": "Pausing…",
+      "saved": "{scheduled, select, yes {Saved. Check-ins stay open until the pause starts.} other {{me, select, yes {Saved. You aren't counted until you resume.} other {Saved. No check-ins are due, and the streak waits until you resume.}}}}",
+      "resumed": "{what, select, cancelled {Pause cancelled. Nothing changes: check in as usual.} other {{me, select, yes {Resumed. You're counted again from today.} other {Resumed. Check-ins count again from today.}}}}",
+      "resuming": "Resuming…",
+      "cancelling": "Cancelling…"
     },
     "end": {
       "lastDay": "Last day: {date}.",
       "noEnd": "No end: it keeps going until you stop it.",
       "reached": "It reached its end. Keep going removes the end; Finish moves it to Finished.",
-      "removeEnd": "Remove end"
+      "removeEnd": "Remove end",
+      "saved": "{end, select, none {Saved: no end now. It keeps going until you stop it.} other {Saved: the last day is {date}.}}",
+      "finishing": "Finishing…",
+      "finished": "{habit} is finished. Its history is in Progress → Finished.",
+      "openFinished": "Open Finished"
     },
     "endPicker": {
       "legend": "Ends",
@@ -1360,7 +1369,7 @@
           "title": "Ends",
           "hintReached": "Reached its end. Keep going or finish",
           "hintLastDay": "Last day {date}",
-          "hintNone": "No end yet"
+          "hintNone": "Add an end, like {span}, to see {progress}"
         },
         "pause": {
           "everyone": "Pause for everyone",
@@ -1385,6 +1394,10 @@
           "title": "Delete",
           "hint": "It has no check-ins yet, so nothing is lost"
         }
+      },
+      "finished": {
+        "title": "Finished",
+        "note": "Start again to build a new streak. This one keeps its history."
       }
     },
     "actions": {
