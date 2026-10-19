@@ -52,8 +52,21 @@ test("Pause all, then resume", async ({ page }) => {
   const section = page.getByRole("region", { name: "Notifications" });
   await section.getByRole("button", { name: "Until I turn them back on" }).click();
   await expect(section.getByText("Paused until you turn them back on")).toBeVisible();
+  await expect(section.getByRole("status").filter({ hasText: "Paused ✓" })).toHaveText("Paused ✓. Turn them back on here any time; your Inbox still gets everything.");
   await section.getByRole("button", { name: "Resume" }).click();
   await expect(section.getByRole("button", { name: "8 hours" })).toBeVisible();
+  await expect(section.getByRole("status").filter({ hasText: "back on" })).toHaveText("Notifications are back on ✓");
+});
+
+test("Pause all offline says what to do and pauses nothing", async ({ page, context }) => {
+  await signUpAndOnboard(page);
+  await page.goto("/profile/settings");
+  const section = page.getByRole("region", { name: "Notifications" });
+  await context.setOffline(true);
+  await section.getByRole("button", { name: "8 hours" }).click();
+  await expect(section.getByRole("alert")).toHaveText("Needs a connection. Connect and tap it again.");
+  await context.setOffline(false);
+  await expect(section.getByRole("button", { name: "Resume" })).toHaveCount(0);
 });
 
 test.describe("on an iPhone", () => {
@@ -123,7 +136,7 @@ test.describe("with push stood in for", () => {
     await expect(section.getByLabel("Daily reminder")).toHaveValue("7");
     await expect(section.getByText("Android · Chrome · this device")).toBeVisible();
 
-    await section.getByRole("button", { name: "Remove Android · Chrome (this device)" }).click();
+    await section.getByRole("button", { name: "Remove \u2068Android · Chrome\u2069 (this device)" }).click();
     await expect(section.getByRole("button", { name: "Turn on reminders" })).toBeVisible();
     await page.reload();
     await expect(section.getByRole("button", { name: "Turn on reminders" })).toBeVisible();

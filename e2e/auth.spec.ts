@@ -174,8 +174,8 @@ test("settings changes show on the profile", async ({ page }) => {
   await expect(page.getByLabel("Time zone").locator("option:checked")).toHaveText(/^\d\d:\d\d \(Rome\)$/);
   await chooseTimezone(page, "Asia/Tokyo");
   await expect(page.getByText("Changes apply from your next day and week.")).toBeVisible();
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");
+  // Saved on change, said under the field (no Save button for it).
+  await expect(page.getByRole("region", { name: "Your profile" }).getByRole("status").filter({ hasText: "Saved ✓" })).toBeVisible();
 
   await page.goto("/profile");
   await expect(page.getByText("Tokyo · weeks start Sunday")).toBeVisible();
@@ -207,8 +207,7 @@ test("the first day of the week can be changed in settings", async ({ page }) =>
   await page.goto("/profile/settings");
   await expect(page.getByLabel("Week starts on")).toHaveValue("0"); // detected from the browser locale (en-US)
   await page.getByLabel("Week starts on").selectOption("1");
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");
+  await expect(page.getByRole("region", { name: "Your profile" }).getByRole("status").filter({ hasText: "Saved ✓" })).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Week starts on")).toHaveValue("1");
 });
@@ -275,18 +274,21 @@ test("a signed-in user clicking a stale link still lands on Today", async ({ pag
   await expect(page).toHaveURL(/\/today$/);
 });
 
-test("saving settings twice confirms both saves", async ({ page }) => {
+test("saving the display name twice confirms both saves", async ({ page }) => {
   await signUpAndOnboard(page);
   await page.goto("/profile/settings");
+  const profile = page.getByRole("region", { name: "Your profile" });
+  const saved = profile.getByRole("status").filter({ hasText: "Saved ✓" });
   await page.getByLabel("Display name").fill("Bea");
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("button", { name: "Saved" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeVisible({ timeout: 5000 });
+  await profile.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(saved).toBeVisible();
 
   await page.getByLabel("Display name").fill("Bee");
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("button", { name: "Saved" })).toBeVisible();
-  await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");
+  await page.getByLabel("Display name").press("Enter"); // Enter saves too
+  await expect(profile.getByRole("status").filter({ hasText: "Saving…" })).toHaveCount(0);
+  await expect(saved).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Display name")).toHaveValue("Bee");
 });
 
 test("Profile is a list: Achievements, Settings, What's new and Groups, then Sign out", async ({ page }) => {

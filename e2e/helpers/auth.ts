@@ -35,9 +35,12 @@ export function quietCelebrations(rawEmail: string): void {
 
 export async function setCelebrations(page: Page, mode: "full" | "subtle"): Promise<void> {
   await page.goto("/profile/settings");
-  const section = page.getByRole("region", { name: "Celebrations settings" });
-  await section.getByRole("radiogroup", { name: "Celebrations" }).getByRole("radio", { name: mode === "full" ? "Full" : "Subtle" }).check();
-  await expect(section).toContainText("Saved");
+  const section = page.getByRole("region", { name: "Celebrations", exact: true });
+  const radio = section.getByRole("radiogroup", { name: "Celebrations" }).getByRole("radio", { name: mode === "full" ? "Full" : "Subtle" });
+  // Already picked: nothing to save.
+  if (await radio.isChecked()) return;
+  await radio.check();
+  await expect(section.getByRole("status")).toHaveText("Saved ✓");
 }
 
 // Email first, then the password (the sign-in screen asks one at a time).

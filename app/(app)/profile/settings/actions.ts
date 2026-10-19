@@ -9,49 +9,55 @@ import { isCelebrationMode } from "@/lib/celebrations";
 import { genericError } from "@/lib/habit-errors";
 import { getT } from "@/lib/i18n/server";
 import type { DeletePreview } from "@/lib/my-data";
-import { parseProfile, readProfileForm, type ProfileFormState } from "@/lib/profile-schema";
-import { saveProfile } from "@/lib/profile-update";
+import { errorText } from "@/lib/field-error";
+import { parseProfileSetting } from "@/lib/profile-schema";
 import { listTimezones } from "@/lib/timezones";
 import { logError, track } from "@/lib/log";
 import { LOCALES } from "@/supabase/functions/_shared/i18n";
 
 const COOKIE_OPTIONS = { maxAge: 60 * 60 * 24 * 365, path: "/", sameSite: "lax" } as const;
 
-export async function updateProfile(_prev: ProfileFormState, formData: FormData): Promise<ProfileFormState> {
+export type SettingResult = { ok: true } | { ok: false; message: string };
+
+// Settings → Your profile: one field at a time, saved as it changes (the name with its Save).
+export async function saveProfileSetting(field: string, value: string): Promise<SettingResult> {
   const { t } = await getT();
-  const values = readProfileForm(formData);
-  const parsed = parseProfile(values, new Set(listTimezones()));
-  if (!parsed.ok) return { status: "error", errors: parsed.errors, values };
-
+  const parsed = parseProfileSetting(field, value, new Set(listTimezones()));
+  if (!parsed.ok) return { ok: false, message: errorText(t, parsed.error) };
   const { supabase, userId } = await requireUser();
-  const message = await saveProfile(t, supabase, userId, parsed.value, { markOnboarded: false });
-  if (message) return { status: "error", message, values };
-
+  const { error } = await supabase.from("profiles").update(parsed.update).eq("id", userId);
+  if (error) {
+    logError("save profile setting", error.message);
+    // 23514 = check_violation: a zone the list has but Postgres doesn't know.
+    if (error.code === "23514") return { ok: false, message: t("profile.errors.timezoneUnsupported") };
+    return { ok: false, message: t(field === "displayName" ? "settings.status.failedSave" : "settings.status.failedPick") };
+  }
   revalidatePath("/", "layout");
-  return { status: "saved" };
+  return { ok: true };
 }
 
 // Settings → Celebrations (§9): Full or Subtle.
-export async function setCelebrations(mode: string): Promise<{ ok: true } | { ok: false; message: string }> {
+export async function setCelebrations(mode: string): Promise<SettingResult> {
   const { t } = await getT();
-  if (!isCelebrationMode(mode)) return { ok: false, message: genericError(t) };
+  if (!isCelebrationMode(mode)) return { ok: false, message: t("errors.invalid_choice") };
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("set_celebrations", { p_mode: mode });
-  if (error) return { ok: false, message: genericError(t) };
+  if (error) return { ok: false, message: t("settings.status.failedPick") };
   revalidatePath("/profile/settings");
   return { ok: true };
 }
 
 // Settings → Language: saved on the profile (the truth, for every device and for pushes), on the login
 // for emails, and in this device's cookie (what the next page renders in).
-export async function setLanguage(locale: string): Promise<{ ok: boolean }> {
+export async function setLanguage(locale: string): Promise<SettingResult> {
+  const { t } = await getT();
   const chosen = asLocale(locale, enabledLocales());
-  if (!chosen) return { ok: false };
+  if (!chosen) return { ok: false, message: t("errors.invalid_choice") };
   const { supabase, userId } = await requireUser();
   const { error } = await supabase.from("profiles").update({ locale: chosen }).eq("id", userId);
   if (error) {
     logError("set language", error.message);
-    return { ok: false };
+    return { ok: false, message: t("settings.status.failedPick") };
   }
   // Emails read the login's metadata; a failure here mustn't undo the change.
   try {

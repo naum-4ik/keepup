@@ -30,8 +30,21 @@ export async function KidSection({ child, habits, stars }: { child: MyChild; hab
           ))}
         </ul>
       ) : (
-        // A sentence, not a card (docs/design.md "Notices").
-        <Notice>{t("common.noHabits")}</Notice>
+        // A sentence, not a card (docs/design.md "Notices"), with the step that fills it: her page, where
+        // her habits are added.
+        <Notice
+          action={
+            <Link
+              href={`/kids/${child.child_id}`}
+              // A 44px target kept to the Notice's line height by negative margins (docs/design.md "Buttons").
+              className="-my-3 flex min-h-11 items-center rounded-lg px-inner font-bold text-primary hover:bg-background/60"
+            >
+              {t("common.addHabit")}
+            </Link>
+          }
+        >
+          {t.rich("kids.detail.noHabits", { name: child.name, bdi: (c) => <bdi>{c}</bdi> })}
+        </Notice>
       )}
     </section>
   );

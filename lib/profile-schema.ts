@@ -5,11 +5,11 @@ export const DISPLAY_NAME_MAX = 40;
 export const PURPOSES = ["me", "family", "friends"] as const;
 export type Purpose = (typeof PURPOSES)[number];
 
-// Fields both forms share; onboarding adds the purpose. The reminder hour returns to Settings with reminders (M4).
+// Fields onboarding and Settings share; onboarding adds the purpose. Settings saves each one on its own
+// (parseProfileSetting).
 type BaseValues = { displayName: string; timezone: string; weekStart: string };
 type BaseInput = { displayName: string; timezone: string; weekStart: 0 | 1 };
 
-export type ProfileFormValues = BaseValues;
 export type ProfileInput = BaseInput;
 export type OnboardingFormValues = BaseValues & { purpose: string };
 export type OnboardingInput = BaseInput & { purpose: Purpose | null };
@@ -19,14 +19,9 @@ type FormState<V> =
   | { status: "idle" }
   | { status: "saved" }
   | { status: "error"; errors?: ProfileErrors; message?: string; values?: V };
-export type ProfileFormState = FormState<ProfileFormValues>;
 export type OnboardingFormState = FormState<OnboardingFormValues>;
 
 type Parsed<T> = { ok: true; value: T } | { ok: false; errors: ProfileErrors };
-
-export function readProfileForm(formData: FormData): ProfileFormValues {
-  return readBase(formData);
-}
 
 export function readOnboardingForm(formData: FormData): OnboardingFormValues {
   return { ...readBase(formData), purpose: String(formData.get("purpose") ?? "") };
@@ -40,25 +35,54 @@ function readBase(formData: FormData): BaseValues {
   };
 }
 
+// One field each: the error for a bad value, or null.
+function nameError(displayName: string): FieldError | null {
+  const nameLength = [...displayName].length; // code points, like Postgres char_length
+  if (nameLength === 0) return { key: "validation.nameRequired" };
+  if (nameLength > DISPLAY_NAME_MAX) return { key: "validation.maxChars", values: { max: DISPLAY_NAME_MAX } };
+  return null;
+}
+const timezoneError = (timezone: string, timezones: ReadonlySet<string>): FieldError | null => (timezones.has(timezone) ? null : { key: "validation.timezone" });
+const weekStartError = (weekStart: string): FieldError | null => (weekStart === "0" || weekStart === "1" ? null : { key: "validation.weekStart" });
+
 function parseBase(values: BaseValues, timezones: ReadonlySet<string>, errors: ProfileErrors): BaseInput {
   const displayName = values.displayName.trim();
-  const nameLength = [...displayName].length; // code points, like Postgres char_length
-
-  if (nameLength === 0) errors.displayName = { key: "validation.nameRequired" };
-  else if (nameLength > DISPLAY_NAME_MAX) errors.displayName = { key: "validation.maxChars", values: { max: DISPLAY_NAME_MAX } };
-
-  if (!timezones.has(values.timezone)) errors.timezone = { key: "validation.timezone" };
-
-  if (values.weekStart !== "0" && values.weekStart !== "1") errors.weekStart = { key: "validation.weekStart" };
-
+  const name = nameError(displayName);
+  if (name) errors.displayName = name;
+  const timezone = timezoneError(values.timezone, timezones);
+  if (timezone) errors.timezone = timezone;
+  const weekStart = weekStartError(values.weekStart);
+  if (weekStart) errors.weekStart = weekStart;
   return { displayName, timezone: values.timezone, weekStart: Number(values.weekStart) as 0 | 1 };
 }
 
-export function parseProfile(values: ProfileFormValues, timezones: ReadonlySet<string>): Parsed<ProfileInput> {
-  const errors: ProfileErrors = {};
-  const base = parseBase(values, timezones, errors);
-  if (Object.keys(errors).length > 0) return { ok: false, errors };
-  return { ok: true, value: base };
+// Settings saves each setting on its own: one field, one column (profiles).
+export const PROFILE_SETTINGS = ["displayName", "timezone", "weekStart"] as const;
+export type ProfileSetting = (typeof PROFILE_SETTINGS)[number];
+export type ProfileUpdate = { display_name: string } | { timezone: string } | { week_start: 0 | 1 };
+
+export function parseProfileSetting(
+  field: string,
+  raw: string,
+  timezones: ReadonlySet<string>,
+): { ok: true; update: ProfileUpdate } | { ok: false; error: FieldError } {
+  switch (field) {
+    case "displayName": {
+      const value = raw.trim();
+      const error = nameError(value);
+      return error ? { ok: false, error } : { ok: true, update: { display_name: value } };
+    }
+    case "timezone": {
+      const error = timezoneError(raw, timezones);
+      return error ? { ok: false, error } : { ok: true, update: { timezone: raw } };
+    }
+    case "weekStart": {
+      const error = weekStartError(raw);
+      return error ? { ok: false, error } : { ok: true, update: { week_start: Number(raw) as 0 | 1 } };
+    }
+    default:
+      return { ok: false, error: { key: "errors.invalid_choice" } };
+  }
 }
 
 // Empty means "not answered" (null); anything else must be one of the three answers.

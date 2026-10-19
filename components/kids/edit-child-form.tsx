@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Pencil } from "lucide-react";
+import { unstable_rethrow } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { updateChild, type KidFormState } from "@/app/(app)/kids/actions";
 import { AvatarPicker } from "@/components/avatar-picker";
@@ -10,9 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Notice } from "@/components/ui/notice";
 import type { AvatarColor } from "@/lib/avatars";
 import { GenderField } from "@/components/kids/gender-field";
 import { keepFormValues } from "@/lib/keep-form-values";
+import { reach } from "@/lib/reach";
 import { CHILD_NAME_MAX, type KidGender } from "@/lib/kid-schema";
 
 const initialState: KidFormState = { status: "idle" };
@@ -35,13 +38,13 @@ export function EditChildButton({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button type="button" variant="outline" className="h-11 gap-1.5 rounded-full px-4" onClick={() => setOpen(true)}>
+      <Button type="button" variant="outline" className="h-11 gap-inner rounded-full px-item" onClick={() => setOpen(true)}>
         <Pencil aria-hidden className="size-4" />
         {t("edit.button")}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pe-10">
+          <div className="flex flex-col pe-10">
             <DialogTitle>{t.rich("edit.title", { name, bdi: (c) => <bdi>{c}</bdi> })}</DialogTitle>
             <DialogDescription>{t("form.nicknameHelp")}</DialogDescription>
           </div>
@@ -54,11 +57,16 @@ export function EditChildButton({
 
 function EditChildForm({ childId, name, emoji, color, gender }: { childId: string; name: string; emoji: string | null; color: AvatarColor | null; gender: KidGender | null }) {
   const t = useTranslations("kids.form");
-  const [state, formAction, pending] = useActionState(updateChild.bind(null, childId), initialState);
+  const tk = useTranslations("kids.errors");
+  // Offline, nothing is sent; a request that dies on the way says to reload. The input is kept.
+  const [state, formAction, pending] = useActionState(async (prev: KidFormState, formData: FormData): Promise<KidFormState> => {
+    const r = await reach(() => updateChild(childId, prev, formData), { offline: tk("offline"), reload: tk("reload") }, { rethrow: unstable_rethrow });
+    return "ok" in r ? { status: "error", message: r.message } : r;
+  }, initialState);
   const [value, setValue] = useState(name);
   return (
-    <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1.5">
+    <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-item">
+      <div className="flex flex-col gap-inner">
         <Label htmlFor="child-edit-name" className="font-semibold">{t("nickname")}</Label>
         <Input
           id="child-edit-name"
@@ -74,7 +82,11 @@ function EditChildForm({ childId, name, emoji, color, gender }: { childId: strin
       <input type="hidden" name="previousGender" value={gender ?? ""} />
       <GenderField defaultValue={gender} />
       <AvatarPicker name={value.trim()} emoji={emoji} color={color} />
-      {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
+      {state.status === "error" && (
+        <Notice tone="error" live>
+          {state.message}
+        </Notice>
+      )}
       <SaveButton state={state} pending={pending} />
     </form>
   );

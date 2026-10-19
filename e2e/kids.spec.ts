@@ -9,7 +9,7 @@ async function openGroup(page: Page, groupName: string) {
   await expect(page).toHaveURL(/\/groups\/[0-9a-f-]{36}$/);
 }
 
-async function addChild(page: Page, groupName: string, name: string, gender?: "Boy" | "Girl") {
+async function addChild(page: Page, groupName: string, name: string, gender?: "Boy" | "Girl", opts: { toast?: string } = {}) {
   await openGroup(page, groupName);
   await page.getByRole("link", { name: "Add a child" }).click();
   await page.getByLabel("Nickname").fill(name);
@@ -19,6 +19,23 @@ async function addChild(page: Page, groupName: string, name: string, gender?: "B
   await page.getByLabel("I'm this child's parent or guardian").check();
   await page.getByRole("button", { name: `Add ${name}` }).click();
   await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/);
+  await closeAddedToast(page, name, opts.toast);
+}
+
+// Her page opens with "Added Mary with 3 habits…" above the nav for 5 s: check it if it is still there,
+// then close it, so it can't cover what the test taps next (Danger zone, Add a habit) or repeat her
+// name. Gone already (a slow step): nothing to close. `text`: the whole line, when the test is about it.
+async function closeAddedToast(page: Page, name: string, text?: string) {
+  const live = page.getByTestId("toast-live");
+  const close = page.locator("[data-toaster]").getByRole("button", { name: "Dismiss" });
+  // The flash shows as the page settles: give it a moment to appear before deciding it's gone.
+  const shown = await close.waitFor({ state: "visible", timeout: 2000 }).then(() => true, () => false);
+  if (text) expect(shown, "the Added toast").toBe(true); // the test is about this line: it must be there
+  if (shown) {
+    await expect(live).toHaveText(text ?? new RegExp(`^Added \u2068${name}\u2069`));
+    await close.click().catch(() => {}); // it may time out between the check and the tap
+  }
+  await expect(live).toHaveText("");
 }
 
 test("add a child with the three starter habits, check in for her on Today, and see a star", async ({ page }) => {
@@ -263,8 +280,10 @@ test("add a habit for a child from the dialog: a suggestion, then your own", asy
   await own.getByRole("group", { name: "Picture" }).getByRole("button", { name: "🐶" }).click();
   await own.getByRole("button", { name: "Add habit" }).click();
   await expect(own).toBeHidden();
-  await expect(page.getByText("Feed the fish")).toBeVisible();
-  await expect(page.getByText("Make my bed")).toBeVisible();
+  // The dialog closed; the toast says what a check-in earns (it repeats the title: scope to main).
+  await expect(page.getByTestId("toast-live")).toHaveText("Added \u2068Feed the fish\u2069 for \u2068Mary\u2069. Each check-in earns 1 star.");
+  await expect(page.getByRole("main").getByText("Feed the fish")).toBeVisible();
+  await expect(page.getByRole("main").getByText("Make my bed")).toBeVisible();
 });
 
 test("a treat goal from an idea, with a quick star target", async ({ page }) => {
@@ -286,7 +305,8 @@ test("a treat goal from an idea, with a quick star target", async ({ page }) => 
   await expect(goal.getByRole("button", { name: "Picture: 🎈. Change" })).toBeVisible();
   await goal.getByRole("button", { name: "⭐ 30" }).click();
   await goal.getByRole("button", { name: "Set goal" }).click();
-  await expect(goal).toContainText("Pizza night with grandma");
+  // Said where it happened (the form gave way to the goal).
+  await expect(goal.getByRole("status")).toHaveText("Goal set: Pizza night with grandma. Each check-in earns 1 star toward it.");
   await expect(goal).toContainText("⭐ 0 of 30");
 });
 
@@ -313,6 +333,7 @@ test("a treat goal of our own, with another star count", async ({ page }) => {
   await goal.getByRole("button", { name: "Cancel goal" }).click();
   await dialog.getByRole("button", { name: "Cancel goal" }).click();
   await expect(goal.getByRole("button", { name: "Set a goal" })).toBeVisible();
+  await expect(goal.getByRole("status")).toHaveText("Cancelled Trip to the aquarium. Mary keeps all the stars.");
 });
 
 test("choose what grows with the child: the kid page and the kid view switch theme", async ({ page }) => {
@@ -323,10 +344,13 @@ test("choose what grows with the child: the kid page and the kid view switch the
   await expect(picker.getByRole("button", { name: /Garden/ })).toHaveAttribute("aria-pressed", "true");
   await picker.getByRole("button", { name: /Aquarium/ }).click();
   await expect(picker.getByRole("button", { name: /Aquarium/ })).toHaveAttribute("aria-pressed", "true");
+  // Saved: a line under the tiles, with the kid view a tap away (where the change shows).
+  await expect(picker.getByRole("status")).toContainText("Changed to Aquarium. This week's stars stay the same.");
+  await expect(picker.getByRole("link", { name: "Open view (\u2068Mary\u2069)", exact: true })).toHaveAttribute("href", /\/kids\/[0-9a-f-]{36}\/play$/);
   await expect(page.getByRole("region", { name: "This week's aquarium" })).toBeVisible();
   await page.reload(); // saved
   await expect(page.getByRole("region", { name: "What grows" }).getByRole("button", { name: /Aquarium/ })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
+  await page.getByRole("main").getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   await expect(page.getByRole("img", { name: "Clear water" })).toBeVisible();
 });
 
@@ -345,7 +369,10 @@ test("reset a child's profile: export first is offered, and only the nickname an
   await dialog.getByRole("button", { name: "Reset", exact: true }).click();
   await expect(dialog).toBeHidden();
   await expect(zone.getByRole("status")).toHaveText("Mary's profile is reset. A fresh start 🌱");
-  await expect(page.getByText("No habits yet.")).toBeVisible();
+  // The empty list says what fills it, with Add a habit right under it.
+  const habits = page.getByRole("region", { name: "Habits" });
+  await expect(habits).toContainText("Add a habit for Mary: each check-in earns 1 star.");
+  await expect(habits.getByRole("button", { name: "Add a habit" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Mary" })).toBeVisible();
 });
 
@@ -439,6 +466,7 @@ async function addChildWithFiveHabits(page: Page, groupName: string, name: strin
   await page.getByLabel("I'm this child's parent or guardian").check();
   await page.getByRole("button", { name: `Add ${name}` }).click();
   await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/);
+  await closeAddedToast(page, name, `Added \u2068${name}\u2069 with 5 habits. Each check-in earns 1 star.`);
 }
 
 test("the kid view with five habits: a done card slides to the bottom, and the picture stays in sight", async ({ page }) => {
@@ -912,8 +940,12 @@ test("a child's data export has its own Data section, outside the danger zone", 
   await addChild(page, "Family", "Mary");
   await expect(page.getByRole("region", { name: "Danger zone" }).getByRole("button", { name: /^Export/ })).toHaveCount(0);
   const download = page.waitForEvent("download");
-  await page.getByRole("region", { name: "Data", exact: true }).getByRole("button", { name: "Export \u2068Mary\u2069's data" }).click();
-  expect((await download).suggestedFilename()).toMatch(/^keepup-Mary-\d{4}-\d{2}-\d{2}\.json$/);
+  const data = page.getByRole("region", { name: "Data", exact: true });
+  await data.getByRole("button", { name: "Export \u2068Mary\u2069's data" }).click();
+  const file = (await download).suggestedFilename();
+  expect(file).toMatch(/^keepup-Mary-\d{4}-\d{2}-\d{2}\.json$/);
+  // It says which file it saved (a download can land unseen).
+  await expect(data.getByRole("status")).toHaveText(`Download started: \u2068${file}\u2069.`);
 });
 
 test("the garden picture scrolls under the tab bar, never over it", async ({ page }) => {
@@ -939,4 +971,74 @@ test("the garden picture scrolls under the tab bar, never over it", async ({ pag
       );
     })
     .toBe(true);
+});
+
+test("adding a child says what she starts with; deleting her goes back to Groups and says so", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary", undefined, { toast: "Added \u2068Mary\u2069 with 3 habits. Each check-in earns 1 star." });
+
+  const zone = page.getByRole("region", { name: "Danger zone" });
+  await zone.getByRole("button", { name: "Delete ⁨Mary⁩'s profile" }).click();
+  const dialog = page.getByRole("dialog", { name: "Delete Mary's profile?" });
+  // The POST is held, so the in-progress label can be seen.
+  let release!: () => void;
+  const held = new Promise<void>((r) => (release = r));
+  await page.route("**/kids/*", async (route) => {
+    if (route.request().method() === "POST" && route.request().headers()["next-action"]) await held;
+    await route.fallback();
+  });
+  await dialog.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(dialog.getByRole("button", { name: "Deleting…" })).toBeDisabled();
+  release();
+  await expect(page).toHaveURL(/\/groups$/);
+  await expect(page.getByTestId("toast-live")).toHaveText("Deleted ⁨Mary⁩'s profile and history.");
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+});
+
+test("the kid view at 320, 375, 414 and 430 wide: a long name is shown whole on one line, and the first card is big and on screen", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Alexandrina");
+  const play = page.getByRole("main").getByRole("link", { name: "Open \u2068Alexandrina\u2069's view" });
+  await play.click();
+  await expect(page).toHaveURL(/\/play$/);
+  for (const [width, height] of [[320, 640], [375, 812], [414, 896], [430, 932]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.reload();
+    const name = page.getByRole("heading", { name: "Alexandrina", level: 1 });
+    await expect(name).toBeVisible();
+    // Not cut short (it was "N…" beside Sound and Hold to exit), and on one line, not broken inside the word.
+    expect(await name.evaluate((el) => el.scrollWidth <= el.clientWidth && getComputedStyle(el).textOverflow !== "ellipsis"), `${width}`).toBe(true);
+    expect((await name.boundingBox())!.height, `${width}`).toBeLessThanOrEqual(40); // one 32 px line
+    await expect(page.getByRole("button", { name: "Hold to exit \u2068Alexandrina\u2069's view" })).toBeInViewport();
+    const first = page.getByRole("listitem").first().getByRole("button");
+    await expect(first).toBeInViewport({ ratio: 1 });
+    const box = (await first.boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
+});
+
+test("the theme picker at 320: three tiles a row, each at least 44 px, names never broken inside a word", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  await addChild(page, "Family", "Mary");
+  await page.setViewportSize({ width: 320, height: 640 });
+  const tiles = page.getByRole("region", { name: "What grows" }).getByRole("group", { name: "Theme" }).getByRole("button");
+  await expect(tiles).toHaveCount(5);
+  const boxes = await Promise.all([0, 1, 2, 3, 4].map(async (i) => (await tiles.nth(i).boundingBox())!));
+  for (const b of boxes) {
+    expect(b.width).toBeGreaterThanOrEqual(44);
+    expect(b.height).toBeGreaterThanOrEqual(44);
+  }
+  expect(boxes[1].y).toBe(boxes[0].y);
+  expect(boxes[2].y).toBe(boxes[0].y);
+  expect(boxes[3].y).toBeGreaterThan(boxes[0].y); // the fourth starts the second row
+  // Names wrap between words only ("Garde/n" at 320 before): a word that didn't fit would overflow.
+  for (let i = 0; i < 5; i++) {
+    expect(await tiles.nth(i).evaluate((el) => getComputedStyle(el).overflowWrap === "normal" && el.scrollWidth <= el.clientWidth)).toBe(true);
+  }
+  // The picked one is marked with more than colour.
+  await expect(tiles.filter({ hasText: "Garden" })).toHaveAttribute("aria-pressed", "true");
 });

@@ -47,12 +47,15 @@ export function NewWeekCard({
 
   if (!show) return null;
   return (
-    <section aria-label={t("kidView.newWeek.label")} className="flex items-center gap-3 rounded-2xl bg-accent p-3 shadow-soft">
+    // A tinted note, not a card (nothing here to open but its own links): no shadow, 12 px padding
+    // to match its 12 px radius (as Notice does).
+    <section aria-label={t("kidView.newWeek.label")} className="flex items-center gap-item rounded-xl bg-accent p-3">
       <GardenPicture t={t} stars={lastStars} size="sm" theme={theme} className="shrink-0" />
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-inner">
         <p className="text-sm font-semibold">{newWeekLine(t, theme, gender)}</p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-inner">
           {albumHref && (
+            // 12 px sides: the pill's radius.
             <Link href={albumHref} onClick={dismiss} className="flex min-h-11 items-center rounded-full bg-card px-3 text-sm font-semibold text-primary hover:bg-muted">
               {t("kidView.newWeek.album")}
             </Link>

@@ -11,6 +11,9 @@ import { getT } from "@/lib/i18n/server";
 import { isOneEmoji, isUuid, parseHabit } from "@/lib/habit-schema";
 import { isKidTheme } from "@/lib/garden";
 import { isKidTemplateId, KID_TEMPLATES, kidTemplateTitle } from "@/lib/kid-templates";
+import { addedFlash, deletedFlash } from "@/lib/kid-toasts";
+import { getMyChildren } from "@/lib/kids";
+import { flashToast } from "@/lib/toast-server";
 import { parseChildName, parseGender, parseGoal } from "@/lib/kid-schema";
 import { logError, track } from "@/lib/log";
 
@@ -94,6 +97,7 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
   }
 
   let habitsFailed = false;
+  let habitsAdded = 0;
   // In template order, so her habit list reads like the picker.
   for (const tpl of KID_TEMPLATES.filter((x) => picked.has(x.id))) {
     const title = kidTemplateTitle(t, tpl.id);
@@ -109,11 +113,14 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
       logError("create_child_habit failed", habitError.message);
       habitsFailed = true;
     } else {
+      habitsAdded++;
       track("child_habit_added", who, { "child.id": childId, "child.nickname": name.value, "habit.title": title, "habit.template_id": tpl.id, "habit.period": tpl.period, "habit.target_count": tpl.targetCount });
     }
   }
   refresh(childId);
   revalidatePath(`/groups/${groupId}`);
+  // Her page shows her; the toast says what she starts with (a failed habit: the page's own note).
+  await flashToast(addedFlash(name.value, habitsAdded));
   redirect(`/kids/${childId}${habitsFailed ? "?habitsFailed=1" : ""}`);
 }
 
@@ -244,13 +251,17 @@ export async function moveChild(childId: string, toGroupId: string): Promise<Kid
   return call(childId, () => supabase.rpc("move_child", { p_child_id: childId, p_to_group_id: toGroupId }));
 }
 
-// Driven by a confirm dialog; on success the page is gone, so go to the group list.
+// Driven by a confirm dialog; on success the page is gone, so go to the group list with a toast. Her
+// name is read before: afterwards she is gone from my_children(). Without it, no toast (fails soft).
 export async function deleteChild(childId: string): Promise<KidActionResult> {
   if (!isUuid(childId)) return notAvailable();
   const { supabase } = await requireUser();
+  // getMyChildren logs a failed read and answers [].
+  const name = (await getMyChildren()).find((c) => c.child_id === childId)?.name ?? null;
   const result = await call(undefined, () => supabase.rpc("delete_child", { p_child_id: childId }));
   if (!result.ok) return result;
   revalidatePath("/groups");
+  if (name) await flashToast(deletedFlash(name));
   redirect("/groups");
 }
 

@@ -1,7 +1,7 @@
 {
   "settings": {
     "language": "שפה",
-    "languageHint": "Keepup וההתראות שלו יוצגו בשפה הזו.",
+    "languageHint": "בטלפון הזה, במכשירים האחרים שלכם, במיילים ובהתראות.",
     "languageNames": {
       "en": "English",
       "ru": "Русский",
@@ -10,7 +10,6 @@
     "title": "הגדרות",
     "typeToConfirm": "כדי לאשר, הקלידו \"{word}\"",
     "celebrations": {
-      "label": "הגדרות חגיגות",
       "title": "חגיגות",
       "hint": "איך יופיעו רמות חדשות ותגים חדשים.",
       "full": "מלא",
@@ -25,6 +24,17 @@
       "dialogTitle": "לאפס את הנתונים שלכם?",
       "dialogBody": "{clears} {keeps} אי אפשר לבטל את זה.",
       "word": "איפוס"
+    },
+    "sections": {
+      "profile": "הפרופיל שלכם"
+    },
+    "status": {
+      "saving": "שומרים…",
+      "saved": "נשמר ✓",
+      "offlinePick": "לא נשמר: אין חיבור. התחברו ובחרו שוב.",
+      "failedPick": "לא נשמר. רעננו את הדף ובחרו שוב.",
+      "offlineSave": "לא נשמר: אין חיבור. התחברו ולחצו שוב על שמירה.",
+      "failedSave": "לא נשמר. רעננו את הדף ולחצו שוב על שמירה."
     }
   },
   "push": {
@@ -300,7 +310,8 @@
     "becomesAdmin": "<bdi>{group}</bdi>: הניהול עובר אל <bdi>{admin}</bdi>.",
     "title": "הנתונים שלכם",
     "export": "הורדת הנתונים שלי",
-    "deleteAccount": "מחיקת החשבון"
+    "deleteAccount": "מחיקת החשבון",
+    "exportOffline": "צריך חיבור. התחברו ולחצו שוב על הורדת הנתונים שלי."
   },
   "errors": {
     "group_not_found": "הקבוצה הזו לא זמינה.",
@@ -357,7 +368,7 @@
     "invalid_subscription": "לא הצלחנו להגדיר התראות במכשיר הזה.",
     "invalid_time": "נא לבחור שעה בקפיצות של רבע שעה.",
     "tap_in_future": "נראה שהשעון בטלפון מקדים. בדקו את השעה ונסו שוב.",
-    "generic": "משהו השתבש. נסו שוב.",
+    "generic": "זה לא עבר. נסו שוב; אם זה חוזר, רעננו את הדף.",
     "endsAfterStart": "היום האחרון לא יכול להיות לפני היום הראשון.",
     "alreadyReviewedBy": "{reviewer}: כבר נבדק.",
     "alreadyReviewedSomeone": "מישהו כבר בדק את זה.",
@@ -935,7 +946,9 @@
     },
     "errors": {
       "pickHabit": "נא לבחור הרגל.",
-      "themeFailed": "השינוי לא הצליח. נסו שוב."
+      "themeFailed": "לא הצלחנו לשנות את מה שגדל. רעננו את הדף ולחצו שוב.",
+      "offline": "לא הצלחנו להתחבר ל-Keepup. בדקו את החיבור ונסו שוב.",
+      "reload": "זה לא עבר. רעננו את הדף ונסו שוב."
     },
     "new": {
       "askAdmin": "בקשו ממנהלי הקבוצה <bdi>{group}</bdi> להוסיף ילד/ה."
@@ -967,7 +980,8 @@
       "titlePlaceholder": "להאכיל את הדגים",
       "picture": "תמונה",
       "period": "{period, select, day {יום} week {שבוע} other {חודש}}",
-      "back": "חזרה"
+      "back": "חזרה",
+      "adding": "מוסיפים: {title}…"
     },
     "detail": {
       "habitsFailed": "חלק מההרגלים לא נוספו. אפשר להוסיף אותם מכאן.",
@@ -977,7 +991,8 @@
       "logged": "{by, select, child {{gender, select, boy {<bdi>{name}</bdi> עשה את זה} girl {<bdi>{name}</bdi> עשתה את זה} other {<bdi>{name}</bdi>: בוצע}}} you {סומן על ידיכם} member {סומן על ידי <bdi>{name}</bdi>} other {סומן על ידי מי שכבר לא בקבוצה}} · {time}",
       "undo": "ביטול הסימון: {title}, {time}",
       "data": "נתונים",
-      "dataText": "כל מה ש-Keepup שומר על <bdi>{name}</bdi>, בקובץ אחד."
+      "dataText": "כל מה ש-Keepup שומר על <bdi>{name}</bdi>, בקובץ אחד.",
+      "noHabits": "הוסיפו הרגל ל-<bdi>{name}</bdi>: כל סימון שווה כוכב אחד."
     },
     "danger": {
       "title": "אזור סכנה",
@@ -1018,7 +1033,12 @@
       "other": "אחר",
       "stars": "כוכבים",
       "earns": "כל סימון שווה כוכב אחד.",
-      "submit": "הצבת היעד"
+      "submit": "הצבת היעד",
+      "setting": "מציבים…",
+      "marking": "מסמנים…",
+      "setDone": "היעד הוצב: <bdi>{treat}</bdi>. כל סימון מקרב אליו בכוכב אחד.",
+      "receivedDone": "סימנתם שהפינוק <bdi>{treat}</bdi> התקבל. בחרו יחד את הפינוק הבא כשתהיו מוכנים.",
+      "cancelledDone": "היעד <bdi>{treat}</bdi> בוטל. כל הכוכבים נשארים אצל <bdi>{name}</bdi>."
     },
     "garden": {
       "stars": "⭐ {stars} השבוע",
@@ -1028,11 +1048,23 @@
     "theme": {
       "title": "מה גדל",
       "hint": "בחרו את זה יחד עם <bdi>{name}</bdi>. הכוכבים לא משתנים.",
-      "group": "נושא"
+      "group": "נושא",
+      "changing": "מחליפים ל-{theme}…",
+      "changed": "הנושא הוחלף ל-{theme}. הכוכבים של השבוע נשארים.",
+      "openView": "פתיחת המסך",
+      "openViewLabel": "פתיחת המסך ({name})"
     },
     "checkIn": {
       "label": "{state, select, open {לסמן} done {בוצע} pending {מחכה לאישור} checkedToday {סומן היום} frozen {בהפסקה} other {יתחיל בהמשך}} — {name}: {title}",
-      "checking": "מסמנים עבור {name}: {title}…"
+      "checking": "מסמנים עבור {name}: {title}…",
+      "undoing": "מבטלים…",
+      "undoingLabel": "מבטלים את הסימון: {title}…"
+    },
+    "toast": {
+      "added": "{habits, plural, =0 {הפרופיל של {name} נוסף. הוסיפו הרגל למטה: כל סימון שווה כוכב אחד.} one {הפרופיל של {name} נוסף עם הרגל אחד. כל סימון שווה כוכב אחד.} two {הפרופיל של {name} נוסף עם # הרגלים. כל סימון שווה כוכב אחד.} other {הפרופיל של {name} נוסף עם # הרגלים. כל סימון שווה כוכב אחד.}}",
+      "deleted": "הפרופיל של {name} נמחק יחד עם ההיסטוריה.",
+      "moved": "הפרופיל של {name} הועבר לקבוצה {group}.",
+      "habitAdded": "ההרגל {title} נוסף ל-{name}. כל סימון שווה כוכב אחד."
     }
   },
   "garden": {
@@ -1511,7 +1543,9 @@
     "tagline": "הרגלים, ביחד.",
     "listSeparator": ", ",
     "sectionSeparator": " · ",
-    "tryAgain": "ניסיון חוזר"
+    "tryAgain": "ניסיון חוזר",
+    "downloaded": "ההורדה התחילה: {file}.",
+    "loading": "טוענים…"
   },
   "inbox": {
     "title": "הודעות",
@@ -1555,7 +1589,16 @@
       "thisDevice": "המכשיר הזה",
       "remove": "הסרה",
       "removeLabel": "הסרה: {label}",
-      "removeThisLabel": "הסרה: {label} (המכשיר הזה)"
+      "removeThisLabel": "הסרה: {label} (המכשיר הזה)",
+      "pausing": "משהים…",
+      "resuming": "מחדשים…",
+      "removing": "מסירים…",
+      "pausedDone": "הושהה ✓. עד אז לא יישלחו התראות; תיבת ההודעות ממשיכה לקבל הכול.",
+      "resumedDone": "ההתראות חזרו לפעול ✓",
+      "removedDone": "{label} הוסר ✓. לא יישלחו אליו עוד התראות.",
+      "offline": "צריך חיבור. התחברו ולחצו שוב.",
+      "reload": "זה לא עבר. רעננו את הדף ולחצו שוב.",
+      "pausedUntilOnDone": "הושהה ✓. אפשר להפעיל שוב מכאן בכל רגע; תיבת ההודעות ממשיכה לקבל הכול."
     },
     "turnOn": {
       "label": "הפעלת תזכורות",
@@ -1650,7 +1693,7 @@
     "earnedLabel": "{name}, הושג ב-{date}",
     "lockedLabel": "{name}, עוד לא הושג: {hint}",
     "earnedNote": "הושג ב-{date}",
-    "unavailable": "אי אפשר להציג את התגים כרגע. נסו שוב מאוחר יותר."
+    "unavailable": "התגים לא נטענו. נסו שוב; שום דבר שהרווחתם לא אבד."
   },
   "landing": {
     "getStarted": "בואו נתחיל"

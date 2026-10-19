@@ -64,8 +64,8 @@ describe("passwordAuthMessage", () => {
   });
 
   it("falls back to a generic message", () => {
-    expect(passwordAuthMessage(tEn, { code: "unexpected_failure" })).toBe("Something went wrong. Try again.");
-    expect(passwordAuthMessage(tEn, {})).toBe("Something went wrong. Try again.");
+    expect(passwordAuthMessage(tEn, { code: "unexpected_failure" })).toBe("That didn't go through. Try again; if it keeps happening, reload the page.");
+    expect(passwordAuthMessage(tEn, {})).toBe("That didn't go through. Try again; if it keeps happening, reload the page.");
   });
 });
 

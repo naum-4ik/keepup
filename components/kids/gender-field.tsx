@@ -10,11 +10,11 @@ export function GenderField({ defaultValue = null }: { defaultValue?: KidGender 
   const { t } = useT();
   const hintId = useId();
   return (
-    <fieldset aria-describedby={hintId} className="flex flex-col gap-1.5">
-      <legend className="mb-1.5 text-sm font-semibold">{t("kids.gender.label")}</legend>
-      <div className="flex flex-wrap gap-2">
+    <fieldset aria-describedby={hintId} className="flex flex-col gap-inner">
+      <legend className="mb-inner text-sm font-semibold">{t("kids.gender.label")}</legend>
+      <div className="flex flex-wrap gap-inner">
         {(["boy", "girl", ""] as const).map((g) => (
-          <label key={g} className="flex min-h-11 flex-1 cursor-pointer items-center gap-2 rounded-xl bg-muted/60 px-3 text-sm font-semibold has-[:checked]:bg-accent has-[:checked]:ring-2 has-[:checked]:ring-primary">
+          <label key={g} className="flex min-h-11 flex-1 cursor-pointer items-center gap-inner rounded-xl bg-muted/60 px-3 text-sm font-semibold has-[:checked]:bg-accent has-[:checked]:ring-2 has-[:checked]:ring-primary">
             <input type="radio" name="gender" value={g} defaultChecked={(defaultValue ?? "") === g} className="size-5 shrink-0 accent-primary" />
             {t(g === "" ? "kids.gender.unset" : `kids.gender.${g}`)}
           </label>
