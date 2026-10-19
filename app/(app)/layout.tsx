@@ -44,7 +44,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </AppHeader>
         {/* wrap-anywhere (inherited): a long name with no spaces wraps instead of widening the page. The bottom
             padding clears the fixed nav, its safe-area inset (the iPhone home bar) and 2rem more. */}
-        <main className="mx-auto w-full max-w-md flex-1 px-4 pb-[calc(var(--spacing-nav)+env(safe-area-inset-bottom)+2rem)] wrap-anywhere">{children}</main>
+        <main className="mx-auto w-full max-w-md flex-1 px-4 pb-[calc(var(--nav-height)+env(safe-area-inset-bottom)+2rem)] wrap-anywhere">{children}</main>
         <BottomNav
           displayName={profile.display_name}
           avatarEmoji={profile.avatar_emoji}

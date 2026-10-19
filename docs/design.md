@@ -101,7 +101,7 @@ A title over its meta line is line-height, not a gap. A value off the scale (12,
 ### App shell
 
 - **Header:** sticky, 4 px + the 44 px logo/bell row + 8 px. In the demo, one more 32 px line (the demo note: "Demo, resets in 24 h. Sign in", dismissible until the browser closes). At 320×640 that leaves at least 480 px of page between the header and the bottom nav.
-- **Bottom nav:** fixed, `z-40` (above anything a page lifts; dialogs and toasts are `z-50`). Height `--spacing-nav` (64 px) plus the safe-area inset; `<main>` pads its bottom by that plus 32 px.
+- **Bottom nav:** fixed, `z-40` (above anything a page lifts; dialogs and toasts are `z-50`). Its real height is `--nav-height` (60 px on phones, 74 px from `md`; `app/globals.css`), plus the safe-area inset. Everything that clears the nav uses it: `<main>`'s bottom padding (+32 px), the status toast (+8 px), the Subtle celebration, pinned form buttons. Change it together with the nav.
 - **Kid view:** no header, no nav, no demo note (a child holds the phone).
 
 ### Surfaces (cards)

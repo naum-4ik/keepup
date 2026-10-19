@@ -198,7 +198,7 @@ export function AddChildForm({ groupId }: { groupId: string }) {
       {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
 
       {/* Sticky above the bottom nav (about 4rem), so the button is always in reach. */}
-      <div className="sticky bottom-[calc(4.25rem+env(safe-area-inset-bottom))] -mx-4 bg-gradient-to-t from-background from-70% to-transparent px-4 pt-4 pb-2">
+      <div className="sticky bottom-[calc(var(--nav-height)+0.5rem+env(safe-area-inset-bottom))] -mx-4 bg-gradient-to-t from-background from-70% to-transparent px-4 pt-4 pb-2">
         <Button type="submit" className="h-12 w-full text-base" disabled={!guardian || pending}>
           <span className="truncate">{pending ? tr("habits.form.adding") : tf.rich("submit", { named: nickname ? "yes" : "no", name: nickname, bdi: (c) => <bdi>{c}</bdi> })}</span>
         </Button>

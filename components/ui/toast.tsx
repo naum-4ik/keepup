@@ -91,7 +91,7 @@ export function Toaster({ flash }: { flash?: string | null }) {
       role="status"
       aria-live="polite"
       aria-atomic="true"
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--spacing-nav)+env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-md justify-center px-4"
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-md justify-center px-4"
     >
       {current && <ToastView key={current.id} toast={current} dismissLabel={t("common.dismiss")} />}
     </div>

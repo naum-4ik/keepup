@@ -123,7 +123,7 @@ export function CelebrationMoment() {
 
   if (state.mode === "subtle") {
     return (
-      <div role="status" aria-label={t("celebrations.label")} className="pointer-events-none fixed inset-x-0 bottom-24 z-50 mx-auto flex max-w-md justify-center px-4">
+      <div role="status" aria-label={t("celebrations.label")} className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom)+2.25rem)] z-50 mx-auto flex max-w-md justify-center px-4">
         <div className="flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-soft">
           <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-primary">
             <CelebrationIcon item={current} className="size-5" />

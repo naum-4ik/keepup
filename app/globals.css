@@ -82,8 +82,6 @@
   --spacing-inner: 0.5rem;
   --spacing-item: 1rem;
   --spacing-section: 1.5rem;
-  /* The fixed bottom nav's height (without the safe-area inset): page padding and toasts clear it. */
-  --spacing-nav: 4rem;
   --animate-checkin: checkin 220ms ease-out;
   --animate-xp-float: xp-float 900ms ease-out forwards;
   --animate-star: star-bounce 250ms ease-out;
@@ -235,6 +233,10 @@
 }
 
 :root {
+  /* The fixed bottom nav's real height, without its safe-area inset (components/app-shell/bottom-nav.tsx:
+     the 48px + button with 6px margins = 60px; from md the tabs' 36px icon boxes make it 74px). Page
+     padding, toasts, celebrations and pinned form buttons clear it. Change it with the nav. */
+  --nav-height: 3.75rem;
   color-scheme: light;
   --background: #FFF8F0;
   --foreground: #3D2C22;
@@ -345,6 +347,12 @@
     --cat-work-money-soft: #3D3124;
     --cat-break-habit: #B5AAA0;
     --cat-break-habit-soft: #3D352E;
+  }
+}
+
+@media (min-width: 48rem) {
+  :root {
+    --nav-height: 4.625rem;
   }
 }
 

@@ -16,6 +16,7 @@ export const surfaceChecks = [
   // @ts-expect-error a button does something: onClick or type="submit"
   <Surface key="g" as="button">does nothing</Surface>,
 ];
+
 export const emptyStateChecks = [
   <EmptyState key="a" icon={null} action={<a href="/today">Add</a>}>ok</EmptyState>,
   // @ts-expect-error the action is required
