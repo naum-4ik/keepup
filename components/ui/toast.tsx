@@ -43,8 +43,20 @@ let seq = 0;
 // cookie read twice) never shows twice.
 const shownFlashes = new Set<string>();
 // `text`: already translated. `action`: a link ({ label, href }) or a callback ({ label, onAction }).
-export function showToast({ text, action, id, sticky }: { text: string; action?: ToastAction; id?: string; sticky?: boolean }): void {
-  setState(pushToast(state, { id: id ?? `toast-${++seq}`, text, action, ...(sticky ? { sticky } : {}) }));
+export function showToast({
+  text,
+  action,
+  id,
+  sticky,
+  focusAction,
+}: {
+  text: string;
+  action?: ToastAction;
+  id?: string;
+  sticky?: boolean;
+  focusAction?: boolean;
+}): void {
+  setState(pushToast(state, { id: id ?? `toast-${++seq}`, text, action, ...(sticky ? { sticky } : {}), ...(focusAction ? { focusAction } : {}) }));
 }
 
 // Closes this toast if it is the one showing, or drops it if it waits (an "Undoing…" toast once the
@@ -124,6 +136,11 @@ function ToastView({ toast, dismissLabel }: { toast: Toast; dismissLabel: string
   }, [paused, close]);
 
   const action = toast.action;
+  // focusAction: the action takes focus once it shows (it then also pauses the timer, onFocus).
+  const actionRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (toast.focusAction) actionRef.current?.focus();
+  }, [toast.focusAction]);
   const actionClass = "-my-2 flex min-h-11 shrink-0 items-center rounded-lg px-2 font-bold underline underline-offset-2 hover:bg-background/10";
   return (
     <div
@@ -139,11 +156,12 @@ function ToastView({ toast, dismissLabel }: { toast: Toast; dismissLabel: string
       </p>
       {action &&
         ("href" in action ? (
-          <Link href={action.href} onClick={close} className={actionClass}>
+          <Link ref={(el) => void (actionRef.current = el)} href={action.href} onClick={close} className={actionClass}>
             {action.label}
           </Link>
         ) : (
           <button
+            ref={(el) => void (actionRef.current = el)}
             type="button"
             onClick={() => {
               close();

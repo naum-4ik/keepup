@@ -22,7 +22,9 @@ export type ToastAction = { label: string; href: string } | { label: string; onA
 
 // A toast ready to show: translated text. sticky: stays until its owner closes it (closeToast), for a
 // state that must not vanish before its answer ("Undoing…"); the X still closes it.
-export type Toast = { id: string; text: string; action?: ToastAction; sticky?: boolean };
+// focusAction: its action takes focus when it shows (a retry after an error, where focus was on the
+// button that went away).
+export type Toast = { id: string; text: string; action?: ToastAction; sticky?: boolean; focusAction?: boolean };
 
 export type ToastState = { current: Toast | null; waiting: Toast[] };
 

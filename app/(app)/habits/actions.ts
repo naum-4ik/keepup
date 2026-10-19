@@ -19,6 +19,7 @@ import { getT } from "@/lib/i18n/server";
 import { reminderError } from "@/lib/reminder-mode";
 import { isUuid, LOCAL_DATE, parseDetailsEdit, parseHabit, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 import { logError, track } from "@/lib/log";
+import { undoOutcome } from "@/lib/check-in-undo";
 import type { T } from "@/supabase/functions/_shared/i18n";
 
 const notFound = (t: T): ActionResult => ({ ok: false, message: t("errors.habit_not_found") });
@@ -107,8 +108,10 @@ export async function undoCheckIn(checkInId: string, habitId: string): Promise<A
 }
 
 // Undo from Today's "checked in" toast: the tap is known by its client id (lib/offline-client.ts
-// submitTap), not its row. The RPC answers false when there is nothing it may take back (already
-// undone, approved meanwhile, or its period closed): that is said, not passed off as done.
+// submitTap), not its row. The RPC answers false both when the row is gone (already undone: an earlier
+// Undo whose answer was lost) and when it refuses (approved meanwhile, or its period closed; it then
+// also leaves an undo_dropped row in the Inbox). The row tells them apart (lib/check-in-undo.ts
+// undoOutcome): gone counts as undone, a refusal is said as "can't be undone anymore".
 export async function undoCheckInByClient(clientId: string, habitId: string): Promise<ActionResult> {
   const { t } = await getT();
   if (!isUuid(clientId) || !isUuid(habitId)) return notFound(t);
@@ -116,8 +119,15 @@ export async function undoCheckInByClient(clientId: string, habitId: string): Pr
   const { data, error } = await supabase.rpc("undo_check_in_by_client", { p_client_id: clientId });
   if (error) return { ok: false, message: habitErrorMessage(t, error) };
   refresh(habitId);
-  if (data !== true) return { ok: false, message: t("today.undo.gone"), code: "undo_gone" };
-  track("check_in_undone", who, { "check_in.client_id": clientId, "habit.id": habitId });
+  let stillThere: boolean | null = null;
+  if (data !== true) {
+    const { data: row, error: readError } = await supabase.from("check_ins").select("id").eq("client_id", clientId).maybeSingle();
+    if (readError) logError("undo check: reading the check-in failed", readError.message);
+    stillThere = readError ? null : Boolean(row);
+  }
+  const outcome = undoOutcome(data === true, stillThere);
+  if (outcome === "refused") return { ok: false, message: t("today.undo.gone"), code: "undo_gone" };
+  if (outcome === "undone") track("check_in_undone", who, { "check_in.client_id": clientId, "habit.id": habitId });
   return { ok: true };
 }
 

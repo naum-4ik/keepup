@@ -1,18 +1,22 @@
 import { describe, expect, it, vi } from "vitest";
 import { tEn, tFor } from "@/lib/i18n/test-t";
-import { checkedInText, showCheckedIn, showCheckedInWithout, undoCheckIn, type UndoDeps } from "@/lib/check-in-undo";
+import { checkedInText, showCheckedIn, showCheckedInWithout, undoCheckIn, undoOutcome, type UndoDeps } from "@/lib/check-in-undo";
 import type { ToastAction } from "@/lib/toast";
 
 const FSI = "⁨";
 const PDI = "⁩";
 const tap = { habitId: "h1", clientId: "c1", title: "Walk", approval: false };
 
-type Shown = { id: string; text: string; action?: ToastAction };
-function setup(undo: UndoDeps["undo"]) {
+type Shown = { id: string; text: string; action?: ToastAction; sticky?: boolean; focusAction?: boolean };
+// The module keeps the ids it showed across calls; each setup's ids are its own, so one test's leftovers
+// never match another's ids.
+let run = 0;
+function setup(undo: UndoDeps["undo"], onUndone?: UndoDeps["onUndone"]) {
+  const r = ++run;
   const shown: Shown[] = [];
   const closed: string[] = [];
   let n = 0;
-  const deps: UndoDeps = { t: tEn, show: (x) => void shown.push(x), close: (id) => void closed.push(id), undo, newId: () => `t${++n}` };
+  const deps: UndoDeps = { t: tEn, show: (x) => void shown.push(x), close: (id) => void closed.push(id), undo, onUndone, newId: () => `r${r}t${++n}` };
   return { deps, shown, closed };
 }
 
@@ -65,11 +69,11 @@ describe("undoCheckIn", () => {
     let answer!: (r: { ok: true }) => void;
     const { deps, shown, closed } = setup(() => new Promise((r) => (answer = r)));
     const done = undoCheckIn(deps, tap);
-    expect(shown).toEqual([{ id: "t1", text: `Undoing ${FSI}Walk${PDI}…`, sticky: true }]);
+    expect(shown).toEqual([{ id: expect.stringMatching(/t1$/), text: `Undoing ${FSI}Walk${PDI}…`, sticky: true }]);
     answer({ ok: true });
     expect(await done).toBe("undone");
-    expect(closed.at(-1)).toBe("t1");
-    expect(shown[1]).toEqual({ id: "t2", text: `${FSI}Walk${PDI}: check-in undone` });
+    expect(closed.at(-1)).toBe(shown[0].id);
+    expect(shown[1]).toEqual({ id: expect.stringMatching(/t2$/), text: `${FSI}Walk${PDI}: check-in undone` });
   });
 
   it("no answer (offline): says what to do and offers Undo again", async () => {
@@ -95,6 +99,45 @@ describe("undoCheckIn", () => {
     const message = tEn("today.undo.gone");
     const { deps, shown } = setup(async () => ({ ok: false, message, code: "undo_gone" }));
     expect(await undoCheckIn(deps, tap)).toBe("gone");
-    expect(shown[1]).toEqual({ id: "t2", text: message, action: { label: "Open habit", href: "/habits/h1" } });
+    expect(shown[1]).toEqual({ id: expect.stringMatching(/t2$/), text: message, action: { label: "Open habit", href: "/habits/h1" }, focusAction: true });
+  });
+
+  it("undone: gives focus back to the habit's check-in button", async () => {
+    const onUndone = vi.fn();
+    const { deps } = setup(async () => ({ ok: true }), onUndone);
+    await undoCheckIn(deps, tap);
+    expect(onUndone).toHaveBeenCalledWith("h1");
+  });
+
+  it("failed or refused: the next step's action takes focus; nothing is focused back", async () => {
+    const onUndone = vi.fn();
+    const failed = setup(async () => { throw new Error("network"); }, onUndone);
+    await undoCheckIn(failed.deps, tap);
+    expect(failed.shown[1].focusAction).toBe(true);
+    const gone = setup(async () => ({ ok: false, message: "x", code: "undo_gone" }), onUndone);
+    await undoCheckIn(gone.deps, tap);
+    expect(gone.shown[1].focusAction).toBe(true);
+    expect(onUndone).not.toHaveBeenCalled();
+  });
+
+  it("an answer that comes after a newer check-in's toast doesn't close that toast", async () => {
+    let answer!: (r: { ok: true }) => void;
+    const { deps, shown, closed } = setup(() => new Promise((r) => (answer = r)));
+    const done = undoCheckIn(deps, tap);
+    showCheckedIn(deps, { ...tap, habitId: "h2", clientId: "c2", title: "Read" }); // a new tap meanwhile
+    const newer = shown.at(-1)!;
+    answer({ ok: true });
+    await done;
+    expect(closed).not.toContain(newer.id);
+    expect(shown.at(-1)?.text).toBe(`${FSI}Walk${PDI}: check-in undone`);
+  });
+});
+
+describe("undoOutcome", () => {
+  it("true is undone; false with the row gone is already undone; false with the row there, or unknown, is refused", () => {
+    expect(undoOutcome(true, null)).toBe("undone");
+    expect(undoOutcome(false, false)).toBe("already");
+    expect(undoOutcome(false, true)).toBe("refused");
+    expect(undoOutcome(false, null)).toBe("refused");
   });
 });

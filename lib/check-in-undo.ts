@@ -11,12 +11,25 @@ type UndoResult = { ok: true } | { ok: false; message: string; code?: string };
 
 export type UndoDeps = {
   t: T;
-  show: (toast: { id: string; text: string; action?: ToastAction; sticky?: boolean }) => void;
+  // focusAction: the toast's action takes focus (a retry after an error, where focus was on the Undo
+  // that just went away).
+  show: (toast: { id: string; text: string; action?: ToastAction; sticky?: boolean; focusAction?: boolean }) => void;
   close: (id: string) => void;
   // app/(app)/habits/actions.ts undoCheckInByClient
   undo: (clientId: string, habitId: string) => Promise<UndoResult>;
+  // Undone: focus goes back to the habit's check-in button once the page shows it open again
+  // (components/habits/check-in-focus.ts). The toast's own Undo, which had it, is gone.
+  onUndone?: (habitId: string) => void;
   newId?: () => string;
 };
+
+// The server's answer to an undo by client id (app/(app)/habits/actions.ts undoCheckInByClient): the
+// RPC's true, or else whether the row is still there. Gone (an earlier undo whose answer was lost) is
+// as good as undone; still there, or unknown, means it was refused (approved, or its period closed).
+export function undoOutcome(undone: boolean, stillThere: boolean | null): "undone" | "already" | "refused" {
+  if (undone) return "undone";
+  return stillThere === false ? "already" : "refused";
+}
 
 // A tap that landed online (lib/offline-client.ts submitTap's clientId). approval: the server kept it
 // waiting for someone's yes (TapResult.pending), so the toast says "sent for approval".
@@ -29,7 +42,8 @@ const nextId = () => `check-in-${++seq}`;
 // show the latest "checked in", and "Undoing…" and its answer show at once instead of queueing behind
 // another tap's toast (lib/toast.ts queues and drops the oldest). Older taps undo on the habit page.
 const ours = new Set<string>();
-function replaceWith(deps: Pick<UndoDeps, "show" | "close">, toast: { id: string; text: string; action?: ToastAction; sticky?: boolean }) {
+type Shown = { id: string; text: string; action?: ToastAction; sticky?: boolean; focusAction?: boolean };
+function replaceWith(deps: Pick<UndoDeps, "show" | "close">, toast: Shown) {
   for (const id of ours) deps.close(id);
   ours.clear();
   ours.add(toast.id);
@@ -71,15 +85,23 @@ export async function undoCheckIn(deps: UndoDeps, tap: LandedTap): Promise<UndoO
   } catch {
     result = null; // no answer: offline, or the request failed on the way
   }
+  // A newer check-in's toast took over while this undo ran: the answer waits its turn behind it
+  // rather than closing it.
+  const show = (toast: Shown) => {
+    if (ours.has(busy)) return replaceWith(deps, toast);
+    ours.add(toast.id);
+    deps.show(toast);
+  };
   if (result?.ok) {
-    replaceWith(deps, { id: newId(), text: t("today.undo.done", { habit }) });
+    show({ id: newId(), text: t("today.undo.done", { habit }) });
+    deps.onUndone?.(tap.habitId);
     return "undone";
   }
   // Nothing left to take back (approved meanwhile, or its period closed): the habit page shows why.
   if (result?.code === "undo_gone") {
-    replaceWith(deps, { id: newId(), text: result.message, action: { label: t("today.undo.openHabit"), href: `/habits/${tap.habitId}` } });
+    show({ id: newId(), text: result.message, action: { label: t("today.undo.openHabit"), href: `/habits/${tap.habitId}` }, focusAction: true });
     return "gone";
   }
-  replaceWith(deps, { id: newId(), text: result ? result.message : t("today.undo.failed", { habit }), action: undoAction(deps, tap) });
+  show({ id: newId(), text: result ? result.message : t("today.undo.failed", { habit }), action: undoAction(deps, tap), focusAction: true });
   return "failed";
 }

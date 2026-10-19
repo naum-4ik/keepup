@@ -8,6 +8,7 @@ import { dismissFirstCheckinTip } from "@/components/first-checkin-tip";
 import { floatXp, useXpFloat } from "@/components/habits/xp-float";
 import { useOfflineQueue, useSubmitTap, useUndoQueuedTap } from "@/components/offline/offline-queue-provider";
 import { useToast } from "@/components/ui/toast";
+import { focusCheckInWhenOpen } from "@/components/habits/check-in-focus";
 import { showCheckedIn, showCheckedInWithout } from "@/lib/check-in-undo";
 import { useT } from "@/lib/i18n/client";
 import { isolate } from "@/supabase/functions/_shared/i18n";
@@ -123,7 +124,7 @@ export function CheckInButton({
       // own Undo below instead.
       if (undoToast && !result.queued && result.clientId) {
         showCheckedIn(
-          { t, show: showToast, close: closeToast, undo: undoCheckInByClient },
+          { t, show: showToast, close: closeToast, undo: undoCheckInByClient, onUndone: focusCheckInWhenOpen },
           // The server's word on approval (an approval habit with one adult is approved at once);
           // the habit's setting only when an older server didn't say.
           { habitId, clientId: result.clientId, title, approval: result.pending ?? needsApproval },
@@ -144,6 +145,8 @@ export function CheckInButton({
         key={burst}
         ref={buttonRef}
         type="button"
+        // Found by Undo from Today's toast, to give focus back (components/habits/check-in-focus.ts).
+        data-check-in={habitId}
         aria-label={
           pending
             ? tr("checking", { title: isolate(title) })
