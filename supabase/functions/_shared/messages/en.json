@@ -385,8 +385,10 @@
     "banner": "You're in the demo. Data resets after 24 hours.",
     "signInLine": "<signIn>Sign in</signIn> to start your own.",
     "failed": "The demo didn't start. Try again in a moment.",
-    "justLooking": "Just looking?",
-    "tryDemo": "Try the demo",
+    "loadFailed": "Couldn't load the demo. Reload the page and try again.",
+    "reload": "Reload",
+    "tryDemo": "Try a demo with sample habits",
+    "resetsNote": "Resets after 24 hours, no sign-up.",
     "settingUp": "Setting up…",
     "loading": "Loading…",
     "compact": "Demo, resets in 24 h. <signIn>Sign in</signIn>",
@@ -540,8 +542,8 @@
     "or": "OR",
     "continueGoogle": "Continue with Google",
     "login": {
-      "title": "Welcome back",
-      "subtitle": "Keep up your habits, and do the ones that matter with your family.",
+      "title": "Sign in to Keepup",
+      "subtitle": "Check in daily, keep your streak, share habits with family.",
       "noAccount": "Don't have an account?",
       "signUp": "Sign up",
       "forgot": "Forgot password?",
@@ -1696,10 +1698,13 @@
     "unavailable": "Badges didn't load. Try again; nothing you earned is lost."
   },
   "landing": {
-    "getStarted": "Get started"
+    "start": "Start your first streak"
   },
   "meta": {
+    "title": "Keepup — habit tracker for families",
     "pageTitle": "{page} · Keepup",
+    "signInPage": "Sign in",
+    "signUpPage": "Sign up",
     "shareTitle": "Keepup: Habits, together",
     "shareText": "A habit tracker for one person or a whole family, kids included."
   },

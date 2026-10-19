@@ -26,10 +26,25 @@ const loadedFaces = (page: import("@playwright/test").Page) =>
     return [...document.fonts].filter((f) => f.status === "loaded").map((f) => f.family);
   });
 
-test("English pages don't load the Cyrillic or Hebrew fonts", async ({ page }) => {
+test("English pages load only Nunito's basic Latin file, not latin-ext, Cyrillic or Hebrew", async ({ page }) => {
+  for (const path of ["/", "/login"]) {
+    await page.goto(path);
+    // The size-adjusted fallback (a local Arial face, "… Fallback") counts as loaded too: not the file.
+    const faces = (await loadedFaces(page)).filter((f) => !/Fallback/i.test(f)).join(" ");
+    expect(faces).toMatch(/nunito/i);
+    expect(faces).not.toMatch(/LatinExt|Cyrillic|Hebrew/i);
+  }
+});
+
+test("a latin-ext name (Łukasz) loads Nunito's latin-ext file", async ({ page }) => {
   await page.goto("/login");
-  const faces = await loadedFaces(page);
-  expect(faces.join(" ")).not.toMatch(/Cyrillic|Hebrew/i);
+  await page.evaluate(() => {
+    const el = document.createElement("p");
+    el.style.fontFamily = "var(--font-sans)";
+    el.textContent = "Łukasz Gülşen";
+    document.body.appendChild(el);
+  });
+  await expect.poll(async () => (await loadedFaces(page)).join(" ")).toMatch(/LatinExt/i);
 });
 
 test("Russian and Hebrew text load their own fonts, not the Arial fallback", async ({ page }) => {

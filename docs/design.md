@@ -73,7 +73,7 @@ Icons come from `lucide-react` (rounded line style). **Kid habits** use picture 
 
 ## Typography
 
-- **Font:** Nunito (rounded, friendly) for all UI text via `next/font/google`; Geist Mono only for the version label.
+- **Font:** Nunito (rounded, friendly) for all UI text, self-hosted via `next/font/local` (basic Latin preloaded; latin-ext, Cyrillic and Rubik for Hebrew fetched only when a page uses those letters); Geist Mono only for the version label.
 - **Scale:** 12 (captions) · 14 (secondary) · 16 (body, inputs) · 20 (section titles) · 24 (page titles) · 32 (big numbers: streaks, level).
 - **Numbers** that change (streaks, XP, progress) use `tabular-nums` so they don't jump.
 - **Weights:** 400 body, 600 labels and buttons, 700 titles.
