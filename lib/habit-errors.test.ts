@@ -3,7 +3,7 @@ import { alreadyReviewedNote, ERROR_CODES, errorCode, habitErrorMessage, reviewe
 import { tEn } from "@/lib/i18n/test-t";
 import en from "@/supabase/functions/_shared/messages/en.json";
 
-const GENERIC_ERROR = "Something went wrong. Try again.";
+const GENERIC_ERROR = "That didn't go through. Try again; if it keeps happening, reload the page.";
 
 describe("habitErrorMessage", () => {
   it("maps database rule errors to friendly copy", () => {

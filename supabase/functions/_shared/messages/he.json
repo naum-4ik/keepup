@@ -367,7 +367,7 @@
     "invalid_subscription": "לא הצלחנו להגדיר התראות במכשיר הזה.",
     "invalid_time": "נא לבחור שעה בקפיצות של רבע שעה.",
     "tap_in_future": "נראה שהשעון בטלפון מקדים. בדקו את השעה ונסו שוב.",
-    "generic": "משהו השתבש. נסו שוב.",
+    "generic": "זה לא עבר. נסו שוב; אם זה חוזר, רעננו את הדף.",
     "endsAfterStart": "היום האחרון לא יכול להיות לפני היום הראשון.",
     "alreadyReviewedBy": "{reviewer}: כבר נבדק.",
     "alreadyReviewedSomeone": "מישהו כבר בדק את זה.",
@@ -1680,7 +1680,7 @@
     "earnedLabel": "{name}, הושג ב-{date}",
     "lockedLabel": "{name}, עוד לא הושג: {hint}",
     "earnedNote": "הושג ב-{date}",
-    "unavailable": "אי אפשר להציג את התגים כרגע. נסו שוב מאוחר יותר."
+    "unavailable": "התגים לא נטענו. נסו שוב; שום דבר שהרווחתם לא אבד."
   },
   "landing": {
     "getStarted": "בואו נתחיל"

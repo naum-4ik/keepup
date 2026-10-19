@@ -367,7 +367,7 @@
     "invalid_subscription": "This device couldn't be set up for notifications.",
     "invalid_time": "Pick a time on the quarter hour.",
     "tap_in_future": "This phone's clock seems to be ahead. Check the time and try again.",
-    "generic": "Something went wrong. Try again.",
+    "generic": "That didn't go through. Try again; if it keeps happening, reload the page.",
     "endsAfterStart": "The last day can't be before the first day.",
     "alreadyReviewedBy": "{reviewer} already reviewed this.",
     "alreadyReviewedSomeone": "Someone already reviewed this.",
@@ -1680,7 +1680,7 @@
     "earnedLabel": "{name}, earned {date}",
     "lockedLabel": "{name}, locked: {hint}",
     "earnedNote": "Earned {date}",
-    "unavailable": "Badges can't be shown right now. Try again later."
+    "unavailable": "Badges didn't load. Try again; nothing you earned is lost."
   },
   "landing": {
     "getStarted": "Get started"
