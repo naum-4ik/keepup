@@ -55,7 +55,7 @@ export default async function Home({
       </div>
       <div className="flex flex-col gap-item">
         {params.deleted === "1" && (
-          <Notice tone="success" live>
+          <Notice tone="success" live className="text-start">
             {t("myData.deletedNote")}
           </Notice>
         )}
