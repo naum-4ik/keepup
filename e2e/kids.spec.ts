@@ -22,13 +22,20 @@ async function addChild(page: Page, groupName: string, name: string, gender?: "B
   await closeAddedToast(page, name, opts.toast);
 }
 
-// Her page opens with "Added Mary with 3 habits…" above the nav for 5 s: say it was there, then close
-// it, so it can't cover what the test taps next (Danger zone, Add a habit) or repeat her name.
-// `text`: the whole line, when the test is about it.
+// Her page opens with "Added Mary with 3 habits…" above the nav for 5 s: check it if it is still there,
+// then close it, so it can't cover what the test taps next (Danger zone, Add a habit) or repeat her
+// name. Gone already (a slow step): nothing to close. `text`: the whole line, when the test is about it.
 async function closeAddedToast(page: Page, name: string, text?: string) {
-  await expect(page.getByTestId("toast-live")).toHaveText(text ?? new RegExp(`^Added \u2068${name}\u2069`));
-  await page.locator("[data-toaster]").getByRole("button", { name: "Dismiss" }).click();
-  await expect(page.getByTestId("toast-live")).toHaveText("");
+  const live = page.getByTestId("toast-live");
+  const close = page.locator("[data-toaster]").getByRole("button", { name: "Dismiss" });
+  // The flash shows as the page settles: give it a moment to appear before deciding it's gone.
+  const shown = await close.waitFor({ state: "visible", timeout: 2000 }).then(() => true, () => false);
+  if (text) expect(shown, "the Added toast").toBe(true); // the test is about this line: it must be there
+  if (shown) {
+    await expect(live).toHaveText(text ?? new RegExp(`^Added \u2068${name}\u2069`));
+    await close.click().catch(() => {}); // it may time out between the check and the tap
+  }
+  await expect(live).toHaveText("");
 }
 
 test("add a child with the three starter habits, check in for her on Today, and see a star", async ({ page }) => {

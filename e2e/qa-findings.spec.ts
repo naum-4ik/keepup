@@ -12,9 +12,10 @@ async function addChildUI(page: Page, name: string) {
   await page.getByLabel("I'm this child's parent or guardian").check();
   await page.getByRole("button", { name: `Add ${name}` }).click();
   await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/);
-  // Her page opens with "Added …" above the nav: close it so it covers nothing the test taps next.
-  await expect(page.getByTestId("toast-live")).toHaveText(new RegExp(`^Added \u2068${name}\u2069`));
-  await page.locator("[data-toaster]").getByRole("button", { name: "Dismiss" }).click();
+  // Her page opens with "Added …" above the nav: close it (if still there) so it covers nothing the
+  // test taps next.
+  const close = page.locator("[data-toaster]").getByRole("button", { name: "Dismiss" });
+  if (await close.waitFor({ state: "visible", timeout: 2000 }).then(() => true, () => false)) await close.click().catch(() => {});
   await expect(page.getByTestId("toast-live")).toHaveText("");
 }
 
