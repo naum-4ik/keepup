@@ -32,18 +32,19 @@ export function ReminderControl({ habitId, settings, isDemo = false }: { habitId
     });
 
   return (
-    <div role="group" aria-label={t("habits.reminders.group")} className="flex flex-col gap-3">
-      <fieldset className="flex flex-col gap-2">
+    <div role="group" aria-label={t("habits.reminders.group")} className="flex flex-col gap-item">
+      <fieldset className="flex flex-col gap-inner">
         <legend className="sr-only">{t("habits.reminders.legend")}</legend>
         {MODES.map((m) => (
-          <div key={m} className="flex flex-col gap-2">
-            <label className="flex min-h-11 items-center gap-3">
+          <div key={m} className="flex flex-col gap-inner">
+            <label className="flex min-h-11 items-center gap-inner">
               <input type="radio" name={`remind-${habitId}`} className="size-5 accent-primary" checked={mode === m} onChange={() => setMode(m)} />
               <span className="font-semibold">{t(`habits.reminders.${m}`)}</span>
             </label>
             {m === "time" && mode === "time" && (
               // A select, not a time input: the scheduler works in quarter hours and iOS ignores `step`.
               <select aria-label={t("habits.reminders.timeLabel")} value={time} onChange={(e) => setTime(e.target.value)}
+                // 12px inset (off the scale): matches the 12px radius, as the form fields do.
                 className="h-11 w-36 rounded-xl border border-input bg-transparent px-3 text-base">
                 {QUARTER_HOURS.map((q) => <option key={q} value={q}>{q}</option>)}
               </select>
@@ -55,7 +56,8 @@ export function ReminderControl({ habitId, settings, isDemo = false }: { habitId
         </Button>
       </fieldset>
 
-      <label className="flex min-h-11 items-start gap-3">
+      {/* mt-1 (off the scale): the 20px box sits on the first 24px text line. */}
+      <label className="flex min-h-11 items-start gap-inner">
         <input type="checkbox" className="mt-1 size-5 accent-primary" checked={muted} disabled={pending}
           onChange={(e) => {
             const next = e.target.checked;

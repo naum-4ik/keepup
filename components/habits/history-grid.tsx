@@ -21,7 +21,8 @@ export function HistoryGrid({ t, locale, cells, period }: { t: T; locale: Locale
   // "Rest day" joins the legend only when there is one to explain.
   const legend = ["done", "missed", "skipped", ...(cells.some((c) => c.outcome === "rested") ? ["rested"] : []), "open"];
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-item">
+      {/* 6px between squares (off the scale): the squares read as one picture of the weeks. */}
       <ol className="flex flex-wrap gap-1.5">
         {cells.map((c) => {
           const text = t("habits.history.cell", { date: formatLocalDate(c.period_start, locale), outcome: outcomeLabel(t, c.outcome as Outcome) });
@@ -32,9 +33,9 @@ export function HistoryGrid({ t, locale, cells, period }: { t: T; locale: Locale
           );
         })}
       </ol>
-      <ul className="flex flex-wrap gap-3 text-xs text-muted-foreground" aria-hidden>
+      <ul className="flex flex-wrap gap-x-item gap-y-inner text-xs text-muted-foreground" aria-hidden>
         {legend.map((k) => (
-          <li key={k} className="flex items-center gap-1.5">
+          <li key={k} className="flex items-center gap-inner">
             <span className={cn("size-3 rounded-sm", STYLE[k])} />
             {outcomeLabel(t, k as Outcome)}
           </li>
