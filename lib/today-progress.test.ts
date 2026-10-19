@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { queuedDelta, type QueuedCheckIn } from "./offline-queue";
 import { tEn } from "@/lib/i18n/test-t";
-import { todayLine, todayProgress, withQueuedProgress } from "./today-progress";
+import { tFor } from "@/lib/i18n/test-t";
+import { todayLine, todayProgress, todayStreak, withQueuedProgress } from "./today-progress";
 
 const h = (id: string, state: "open" | "done" | "later", period: "day" | "week" = "day") => ({
   habit_id: id,
@@ -29,7 +30,7 @@ describe("todayProgress", () => {
     const p = todayProgress([h("read", "done"), waiting]);
     expect(p).toMatchObject({ done: 1, total: 2 });
     expect(p.items.map((i) => `${i.habitId}:${i.done}`)).toEqual(["read:true", "walk:false"]);
-    expect(todayLine(tEn, p.done, p.total)).not.toBe("Today's all done 🎉");
+    expect(todayLine(tEn, p.done, p.total)).toBe("Check in 1 more to finish today (1 of 2).");
   });
 
   it("counts a weekly check-in waiting for approval as not done yet", () => {
@@ -46,23 +47,50 @@ describe("todayProgress", () => {
 
 describe("todayLine", () => {
   it.each([
-    [0, 5, "5 to go today"],
-    [1, 5, "4 to go"],
-    [2, 4, "Halfway there 💪"],
-    [3, 5, "Halfway there 💪"],
-    [4, 5, "One more to go!"],
-    [0, 1, "1 to go today"],
-    [0, 2, "2 to go today"],
-    [0, 0, "Today's all done 🎉"],
-    [1, 6, "5 to go"],
-    [5, 5, "Today's all done 🎉"],
+    [0, 5, "Check in 5 more to finish today."],
+    [0, 1, "Check in 1 more to finish today."],
+    [1, 5, "1 of 5 done. Check in 4 more to finish today."],
+    [1, 6, "1 of 6 done. Check in 5 more to finish today."],
+    [2, 4, "2 of 4 done. 2 more to finish today 💪"],
+    [3, 5, "3 of 5 done. 2 more to finish today 💪"],
+    [4, 5, "Check in 1 more to finish today (4 of 5)."],
+    [1, 1, "Done for today 🎉"],
+    [5, 5, "All 5 done 🎉"],
   ])("%i of %i → %s", (done, total, line) => {
     expect(todayLine(tEn, done, total)).toBe(line);
+  });
+
+  it("all done with a running streak: says it is safe", () => {
+    expect(todayLine(tEn, 3, 3, 5)).toBe("All 3 done 🎉 Your 5-day streak is safe.");
+    expect(todayLine(tEn, 3, 3, 0)).toBe("All 3 done 🎉");
+  });
+
+  it("ru and he: plural forms for the counts", () => {
+    const ru = tFor("ru");
+    expect(todayLine(ru, 0, 2)).toBe("Отметьте ещё 2, чтобы закончить день.");
+    expect(todayLine(ru, 5, 5, 21)).toBe("Все 5 сделаны 🎉 Серия в 21 день сохранена.");
+    expect(todayLine(ru, 3, 3, 5)).toBe("Все 3 сделаны 🎉 Серия в 5 дней сохранена.");
+    const he = tFor("he");
+    expect(todayLine(he, 2, 2, 2)).toBe("שניהם בוצעו 🎉 הרצף של יומיים נשמר.");
+    expect(todayLine(he, 1, 3)).toBe("בוצעו 1 מתוך 3. סמנו עוד 2 כדי לסיים את היום.");
   });
 
   it("never uses guilt words", () => {
     const lines = [0, 1, 2, 3, 4, 5].map((d) => todayLine(tEn, d, 5)).join(" ").toLowerCase();
     for (const w of ["failed", "missed", "don't lose", "hurry", "last chance", "only", "lazy"]) expect(lines).not.toContain(w);
+  });
+});
+
+describe("todayStreak", () => {
+  it("the longest running streak among today's done daily habits", () => {
+    const habits = [
+      { ...h("read", "done"), current_streak: 4 },
+      { ...h("walk", "done"), current_streak: 9 },
+      { ...h("run", "open"), current_streak: 30 }, // not done today: not what today kept
+      { ...h("gym", "done", "week"), current_streak: 12 }, // weeks, not days
+    ];
+    expect(todayStreak(habits)).toBe(9);
+    expect(todayStreak([h("read", "done")])).toBe(0);
   });
 });
 

@@ -4,12 +4,14 @@ import {
   TOAST_COOKIE,
   dismissToast,
   emptyToasts,
+  focusIsLost,
   flashFromCookieString,
   TOAST_COOKIE_MAX_AGE,
   isFreshFlash,
   isSafeHref,
   parseFlash,
   pushToast,
+  removeToast,
   serializeFlash,
   toastDuration,
   type Toast,
@@ -39,6 +41,13 @@ describe("toast queue", () => {
     expect(s.waiting.map((t) => t.id)).toEqual(["c", "d"]);
   });
 
+  it("removing the showing one shows the next; a waiting one is dropped; an unknown id changes nothing", () => {
+    const s = pushToast(pushToast(pushToast(emptyToasts, toast("a")), toast("b")), toast("c"));
+    expect(removeToast(s, "a")).toEqual({ current: toast("b"), waiting: [toast("c")] });
+    expect(removeToast(s, "b")).toEqual({ current: toast("a"), waiting: [toast("c")] });
+    expect(removeToast(s, "x")).toBe(s);
+  });
+
   it("dismissing the current one shows the next, then nothing", () => {
     let s = pushToast(pushToast(emptyToasts, toast("a")), toast("b"));
     s = dismissToast(s, "a");
@@ -57,6 +66,12 @@ describe("toast queue", () => {
   it("stays longer when it has an action", () => {
     expect(toastDuration(toast("a"))).toBe(5000);
     expect(toastDuration(toast("a", { action: { label: "Undo", onAction: () => {} } }))).toBe(8000);
+  });
+
+  it("a sticky toast has no timer: it stays until its owner closes it", () => {
+    expect(toastDuration(toast("a", { sticky: true }))).toBeNull();
+    const s = pushToast(emptyToasts, toast("a", { sticky: true }));
+    expect(removeToast(s, "a").current).toBeNull();
   });
 });
 
@@ -124,3 +139,20 @@ describe("flash cookie", () => {
     expect(flashFromCookieString(`${TOAST_COOKIE}-other=x`)).toBeNull();
   });
 });
+
+describe("focusIsLost", () => {
+  const body = { closest: () => null };
+  const inToaster = { closest: (sel: string) => (sel === "[data-toaster]" ? {} : null) };
+  const elsewhere = { closest: () => null };
+
+  it("is lost with nothing focused, on the body, or inside the toasts (the toast that just closed)", () => {
+    expect(focusIsLost(null, body)).toBe(true);
+    expect(focusIsLost(body, body)).toBe(true);
+    expect(focusIsLost(inToaster, body)).toBe(true);
+  });
+
+  it("is not lost where the person put it since (a field, another button)", () => {
+    expect(focusIsLost(elsewhere, body)).toBe(false);
+  });
+});
+

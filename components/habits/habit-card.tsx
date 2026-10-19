@@ -53,17 +53,18 @@ export async function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; 
   const metaId = `habit-meta-${habit.habit_id}`;
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-soft">
+    <div className="flex items-center gap-inner rounded-2xl bg-card p-item shadow-soft">
       <Link
         href={`/habits/${habit.habit_id}`}
         aria-labelledby={titleId}
         aria-describedby={metaId}
-        className="group flex min-w-0 flex-1 items-center gap-3"
+        className="group flex min-w-0 flex-1 items-center gap-inner"
       >
         <HabitEmoji category={habit.category} emoji={habit.emoji} />
-        <span className="flex min-w-0 flex-1 flex-col gap-1">
+        {/* Title over its meta: line-height, not a gap (docs/design.md "Spacing"). */}
+        <span className="flex min-w-0 flex-1 flex-col">
           <span id={titleId} className="truncate font-bold group-hover:underline">{habit.title}</span>
-          <span id={metaId} className="flex min-w-0 flex-col gap-1">
+          <span id={metaId} className="flex min-w-0 flex-col">
             <span
               className={cn(
                 "text-sm",
@@ -79,14 +80,18 @@ export async function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; 
               </span>
             )}
             {showBar && (
-              <span className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+              <span className="mt-inner h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
                 <span
                   className={cn("block h-full rounded-full bg-current", habit.category ? CATEGORIES[habit.category].iconClass : "text-primary")}
                   style={{ width: `${Math.min(100, (habit.done_count / habit.target_count) * 100)}%` }}
                 />
               </span>
             )}
-            {members && members.length > 0 && <MemberStatusRow members={members} target={habit.target_count} />}
+            {members && members.length > 0 && (
+              <span className="mt-inner">
+                <MemberStatusRow members={members} target={habit.target_count} />
+              </span>
+            )}
           </span>
         </span>
       </Link>
@@ -99,6 +104,7 @@ export async function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; 
         withChildren={openChildrenOf(habit)}
         progress={{ period: habit.period, target_count: habit.target_count, done_count: habit.done_count }}
         needsApproval={habit.requires_approval}
+        undoToast
       />
     </div>
   );
@@ -107,9 +113,9 @@ export async function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; 
 function KidHabitCard({ t, locale, habit, kid }: { t: T; locale: Locale; habit: HabitSummary; kid: Kid }) {
   const state = stateOf(habit);
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-card p-3.5 shadow-soft">
+    <div className="flex items-center gap-inner rounded-2xl bg-card p-item shadow-soft">
       <HabitEmoji category={habit.category} emoji={habit.emoji} size="lg" />
-      <span className="flex min-w-0 flex-1 flex-col gap-1">
+      <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate font-bold">{habit.title}</span>
         <span className={cn("text-sm", state === "done" ? "font-semibold text-done" : "text-muted-foreground")}>
           {kidProgressText(t, locale, habit)}

@@ -13,7 +13,9 @@ import {
   flashFromCookieString,
   isFreshFlash,
   parseFlash,
+  focusIsLost,
   pushToast,
+  removeToast,
   toastDuration,
   type Flash,
   type Toast,
@@ -42,12 +44,30 @@ let seq = 0;
 // cookie read twice) never shows twice.
 const shownFlashes = new Set<string>();
 // `text`: already translated. `action`: a link ({ label, href }) or a callback ({ label, onAction }).
-export function showToast({ text, action, id }: { text: string; action?: ToastAction; id?: string }): void {
-  setState(pushToast(state, { id: id ?? `toast-${++seq}`, text, action }));
+export function showToast({
+  text,
+  action,
+  id,
+  sticky,
+  focusAction,
+}: {
+  text: string;
+  action?: ToastAction;
+  id?: string;
+  sticky?: boolean;
+  focusAction?: boolean;
+}): void {
+  setState(pushToast(state, { id: id ?? `toast-${++seq}`, text, action, ...(sticky ? { sticky } : {}), ...(focusAction ? { focusAction } : {}) }));
 }
 
-export function useToast(): { showToast: typeof showToast } {
-  return { showToast };
+// Closes this toast if it is the one showing, or drops it if it waits (an "Undoing…" toast once the
+// undo has answered, so the answer shows at once instead of queueing behind it).
+export function closeToast(id: string): void {
+  setState(removeToast(state, id));
+}
+
+export function useToast(): { showToast: typeof showToast; closeToast: typeof closeToast } {
+  return { showToast, closeToast };
 }
 
 // In the app layout. `flash`: the flash cookie as the server read it (after a server action that set
@@ -87,11 +107,14 @@ export function Toaster({ flash }: { flash?: string | null }) {
 
   return (
     // Above the bottom nav and its safe-area inset; z-50 like dialogs.
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-md justify-center px-4"
+    // data-toaster (lib/toast.ts TOASTER_ATTR): focus inside it counts as lost for focusIsLost.
+    <div
+      data-toaster=""
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-md justify-center px-4"
     >
       {/* The live region holds the words only, and is always in the page (a region that appears is not
           announced), so a new toast is read once without its buttons. */}
-      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+      <p data-testid="toast-live" role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {current?.text}
       </p>
       {current && <ToastView key={current.id} toast={current} dismissLabel={t("common.dismiss")} />}
@@ -104,18 +127,25 @@ function ToastView({ toast, dismissLabel }: { toast: Toast; dismissLabel: string
   const left = useRef(toastDuration(toast));
   const close = useCallback(() => setState(dismissToast(state, toast.id)), [toast.id]);
 
-  // Counts down while not hovered or focused; picks up where it left off.
+  // Counts down while not hovered or focused; picks up where it left off. A sticky toast never does.
   useEffect(() => {
-    if (paused) return;
+    const ms = left.current;
+    if (paused || ms === null) return;
     const started = Date.now();
-    const timer = setTimeout(close, left.current);
+    const timer = setTimeout(close, ms);
     return () => {
       clearTimeout(timer);
-      left.current -= Date.now() - started;
+      left.current = ms - (Date.now() - started);
     };
   }, [paused, close]);
 
   const action = toast.action;
+  // focusAction: the action takes focus once it shows (it then also pauses the timer, onFocus), but
+  // only when focus is lost (lib/toast.ts focusIsLost): never away from where the person put it.
+  const actionRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (toast.focusAction && focusIsLost(document.activeElement, document.body)) actionRef.current?.focus();
+  }, [toast.focusAction]);
   const actionClass = "-my-2 flex min-h-11 shrink-0 items-center rounded-lg px-2 font-bold underline underline-offset-2 hover:bg-background/10";
   return (
     <div
@@ -131,11 +161,12 @@ function ToastView({ toast, dismissLabel }: { toast: Toast; dismissLabel: string
       </p>
       {action &&
         ("href" in action ? (
-          <Link href={action.href} onClick={close} className={actionClass}>
+          <Link ref={(el) => void (actionRef.current = el)} href={action.href} onClick={close} className={actionClass}>
             {action.label}
           </Link>
         ) : (
           <button
+            ref={(el) => void (actionRef.current = el)}
             type="button"
             onClick={() => {
               close();

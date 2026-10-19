@@ -184,19 +184,19 @@ test("Today reached by client-side navigation is saved for offline use, and kept
   await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
 });
 
-test("offline: the Today card counts a queued tap; Undo takes it back and nothing is sent", async ({ page, context }) => {
+test("offline: the Today summary counts a queued tap; Undo takes it back and nothing is sent", async ({ page, context }) => {
   await signUpAndOnboard(page);
   await createHabit(page, { title: "Walk", count: 1, period: "day" });
   await createHabit(page, { title: "Read", count: 1, period: "day" });
   const id = (await page.getByRole("link", { name: /Walk/ }).getAttribute("href"))!.split("/").pop()!;
   await waitForWorker(page, "/today", "Check in: \u2068Read\u2069");
   const card = page.getByRole("region", { name: "Today's progress" });
-  await expect(card.getByText("0 of 2 done")).toBeVisible();
+  await expect(card.getByRole("status")).toHaveText("Check in 2 more to finish today.");
 
   await context.setOffline(true);
   await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect(page.getByText("Saving… ☁️")).toBeVisible();
-  await expect(card.getByText("1 of 2 done")).toBeVisible();
+  await expect(card.getByRole("status")).toHaveText("Check in 1 more to finish today (1 of 2).");
   await expect(card.getByRole("img", { name: "1 of 2 done today" })).toBeVisible();
 
   const undo = page.getByRole("button", { name: "Undo check-in for \u2068Walk\u2069" });
@@ -206,7 +206,7 @@ test("offline: the Today card counts a queued tap; Undo takes it back and nothin
   await undo.click();
   await expect(page.getByText("Saving… ☁️")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Check in: \u2068Walk\u2069" })).toBeVisible();
-  await expect(card.getByText("0 of 2 done")).toBeVisible();
+  await expect(card.getByRole("status")).toHaveText("Check in 2 more to finish today.");
 
   // Nothing is sent at all (not a check-in followed by an undo).
   const syncs: string[] = [];

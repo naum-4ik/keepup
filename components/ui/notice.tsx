@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 import { CircleAlert, CircleCheck, Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +16,11 @@ const tones: Record<NoticeTone, { box: string; icon: typeof Info }> = {
 // 8/16/24 scale on purpose: it matches the 12px corner radius (rounded-xl), so text never meets the curve.
 // `live`: the line appears after something the person did (an error after a tap), so screen readers
 // announce it: errors as alert, the rest as status. Leave it off for a line that is there on load.
+// `ref` + `focusable`: a client component can move focus to the line when it appears after a redirect
+// (Today's reset note), so a screen reader reads it; focusable makes it a focus target (tabIndex -1).
 export function Notice({
+  ref,
+  focusable = false,
   tone = "info",
   action,
   dismiss,
@@ -24,6 +28,8 @@ export function Notice({
   className,
   children,
 }: {
+  ref?: Ref<HTMLDivElement>;
+  focusable?: boolean;
   tone?: NoticeTone;
   action?: ReactNode;
   // Client components only (a function can't cross from the server). `label`: the X's name.
@@ -35,8 +41,10 @@ export function Notice({
   const { box, icon: Icon } = tones[tone];
   return (
     <div
+      ref={ref}
+      tabIndex={focusable ? -1 : undefined}
       role={live ? (tone === "error" ? "alert" : "status") : undefined}
-      className={cn("flex items-center gap-inner rounded-xl px-3 py-2 text-sm font-semibold", box, className)}
+      className={cn("flex items-center gap-inner rounded-xl px-3 py-2 text-sm font-semibold", focusable && "outline-none", box, className)}
     >
       <Icon aria-hidden className="size-4 shrink-0" />
       <p className="min-w-0 flex-1">{children}</p>

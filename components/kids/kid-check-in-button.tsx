@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, useTransition } from "react";
-import { Check, Clock, Plus, Snowflake, Undo2 } from "lucide-react";
+import { Check, Clock, LoaderCircle, Plus, Snowflake, Undo2 } from "lucide-react";
 import { undoForChild } from "@/app/(app)/kids/actions";
 import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
 import { queueKey } from "@/lib/offline-queue";
@@ -59,11 +59,15 @@ export function KidCheckInButton({
   }, []);
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-end gap-inner">
       <div className="relative">
         <button
           type="button"
-          aria-label={t("kids.checkIn.label", { state: STATE_KEY[shown], name: isolate(childName), title: isolate(title) })}
+          aria-label={
+            pending
+              ? t("kids.checkIn.checking", { name: isolate(childName), title: isolate(title) })
+              : t("kids.checkIn.label", { state: STATE_KEY[shown], name: isolate(childName), title: isolate(title) })
+          }
           aria-describedby={savingShown ? savingId : undefined}
           disabled={shown !== "open" || pending}
           onClick={() => {
@@ -95,7 +99,12 @@ export function KidCheckInButton({
             pending && "opacity-60",
           )}
         >
-          <Icon className="size-5" strokeWidth={2.5} aria-hidden />
+          {pending ? (
+            // In progress: the label says "Checking in…", and the icon spins (held still under reduced motion).
+            <LoaderCircle className="size-5 motion-safe:animate-spin" strokeWidth={2.5} aria-hidden />
+          ) : (
+            <Icon className="size-5" strokeWidth={2.5} aria-hidden />
+          )}
         </button>
         {star > 0 && (
           <span key={star} aria-hidden className="pointer-events-none absolute -top-3 -start-3 text-xl leading-none motion-safe:animate-star">

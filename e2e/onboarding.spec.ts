@@ -31,7 +31,7 @@ test("step 1 pre-fills the name, shows the detected line, and has no reminder ho
   await finishStepOne(page);
   await page.getByRole("link", { name: "Skip for now" }).click();
   await expect(page).toHaveURL(/\/today$/);
-  await expect(page.getByText("Nothing to do yet")).toBeVisible();
+  await expect(page.getByText("Add one habit and check in today to start day 1 of your streak.")).toBeVisible();
 
   await page.goto("/profile/settings");
   await expect(page.getByLabel("Daily reminder")).toBeVisible(); // back with reminders (M4)

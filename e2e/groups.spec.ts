@@ -160,7 +160,7 @@ test("an invited person joins from the link and lands on the group's habits", as
   await completeOnboarding(guest, { name: "Grandma", invited: true });
   const welcome = guest.getByRole("main").getByRole("status");
   await expect(welcome).toContainText("Welcome to Family");
-  await expect(welcome).toContainText("2 people · no group habits yet");
+  await expect(welcome).toContainText("2 people · add the group's first habit");
   await expect(welcome.getByRole("link", { name: "Open \u2068Family\u2069" })).toHaveAttribute("href", /^\/groups\/[0-9a-f-]{36}$/);
 
   await page.goto("/groups");
@@ -405,20 +405,20 @@ test("after the first check-in, a family user gets one gentle Invite card, and c
   await signUp(page, uniqueEmail());
   await completeOnboarding(page, { purpose: "My family" });
   await createHabit(page, { template: "Drink water" });
-  await expect(page.getByText("Invite your family")).toBeHidden();
+  await expect(page.getByText("Invite your family to a shared habit")).toBeHidden();
   await page.getByRole("button", { name: "Check in: \u2068Drink water\u2069" }).click();
   await expect(page.getByRole("link", { name: "Drink water", exact: true })).toHaveAccessibleDescription(/1 \/ 8 today/);
   await page.reload();
-  await expect(page.getByText("Invite your family")).toBeVisible();
-  await expect(page.getByText("Invite a friend")).toBeHidden(); // one card at a time
+  await expect(page.getByText("Invite your family to a shared habit")).toBeVisible();
+  await expect(page.getByText("Invite a friend to a shared habit")).toBeHidden(); // one card at a time
   // The card hides at once and the dismissal is saved in the background: wait for it before reloading.
   const saved = page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes("/today"));
   await page.getByRole("button", { name: "Not now" }).click();
-  await expect(page.getByText("Invite your family")).toBeHidden();
+  await expect(page.getByText("Invite your family to a shared habit")).toBeHidden();
   await saved;
   await page.reload();
   await expect(page.getByRole("link", { name: "Drink water", exact: true })).toHaveAccessibleDescription(/1 \/ 8 today/);
-  await expect(page.getByText("Invite your family")).toBeHidden();
+  await expect(page.getByText("Invite your family to a shared habit")).toBeHidden();
 });
 
 test("Invite a friend: one tap creates the group and opens its invite link", async ({ page }) => {
@@ -428,13 +428,13 @@ test("Invite a friend: one tap creates the group and opens its invite link", asy
   await page.getByRole("button", { name: "Check in: \u2068Drink water\u2069" }).click();
   await expect(page.getByRole("link", { name: "Drink water", exact: true })).toHaveAccessibleDescription(/1 \/ 8 today/);
   await page.reload();
-  await page.getByRole("button", { name: "Invite", exact: true }).click();
+  await page.getByRole("button", { name: "Create invite link" }).click();
   await expect(page).toHaveURL(/\/groups\/[0-9a-f-]{36}\?invite=1$/);
   await expect(page.getByRole("heading", { name: "Friends" })).toBeVisible();
   expect(await inviteLink(page)).toMatch(/\/invite\/[A-Za-z0-9_-]{24}$/);
   // With a group, the Invite card is done.
   await page.goto("/today");
-  await expect(page.getByText("Invite a friend")).toBeHidden();
+  await expect(page.getByText("Invite a friend to a shared habit")).toBeHidden();
 });
 
 test("Everyone did it shows once, with confetti, then not again", async ({ page }) => {
@@ -477,7 +477,7 @@ test("a group milestone is an Inbox row, not a card on Today", async ({ page }) 
   await expect(page.getByRole("button", { name: "Done: \u2068Family dinner\u2069" })).toBeVisible();
   await expect(page.getByText("🔥 \u2068Family dinner\u2069: 7 days in a row, together")).toHaveCount(0);
   // No milestone card any more, so no "milestone day" rule: the gentle card may show.
-  await expect(page.getByText("Add a child? 🐼")).toBeVisible();
+  await expect(page.getByText("Add a child: each check-in earns 1 star toward a treat.")).toBeVisible();
   await page.goto("/inbox");
   await page.getByRole("tab", { name: "Activity" }).click();
   await expect(page.getByText("🔥 \u2068Family dinner\u2069: 7 days in a row, together")).toBeVisible();

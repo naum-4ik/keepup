@@ -171,6 +171,9 @@ describe("an online tap (app/api/check-ins/tap)", () => {
 
   it("reads the answer: counted with its XP, a rule's refusal (final), or something that keeps it queued", () => {
     expect(tapAnswer(tEn, 200, { xp: 12 })).toEqual({ ok: true, xp: 12 });
+    expect(tapAnswer(tEn, 200, { xp: 0, pending: true })).toEqual({ ok: true, xp: 0, pending: true });
+    expect(tapAnswer(tEn, 200, { xp: 12, pending: false })).toEqual({ ok: true, xp: 12, pending: false });
+    expect(tapAnswer(tEn, 200, { xp: 12, pending: "yes" })).toEqual({ ok: true, xp: 12 }); // not a boolean: not said
     expect(tapAnswer(tEn, 200, { xp: null })).toEqual({ ok: true, xp: null });
     expect(tapAnswer(tEn, 409, { code: "habit_frozen", message: "This habit is paused." })).toEqual({ ok: false, message: "This habit is paused.", code: "habit_frozen" });
     expect(tapAnswer(tEn, 401, { code: "not_authenticated" })).toMatchObject({ ok: false, code: "not_authenticated" });

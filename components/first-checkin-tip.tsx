@@ -43,14 +43,15 @@ export function FirstCheckinTip() {
   if (dismissed) return null;
 
   return (
-    <div className="flex justify-end pt-2.5">
+    <div className="flex justify-end pt-inner">
       <button
         type="button"
         onClick={dismissFirstCheckinTip}
-        className="relative flex min-h-11 items-center gap-2 rounded-xl bg-primary py-2 pe-3 ps-4 text-sm font-semibold text-primary-foreground shadow-soft hover:brightness-95"
+        className="relative flex min-h-11 items-center gap-inner rounded-xl bg-primary py-inner pe-3 ps-item text-sm font-semibold text-primary-foreground shadow-soft hover:brightness-95"
       >
-        {/* Points up at the check-in button (card padding + half the 44px button, minus half the arrow). */}
-        <span aria-hidden className="absolute -top-1.5 end-[1.875rem] size-3 rotate-45 rounded-[2px] bg-primary" />
+        {/* Points up at the check-in button (16px card padding + half the 44px button, minus half the
+            arrow: 32px). The pill's end padding is 12px, like a Notice's, to match its 12px corners. */}
+        <span aria-hidden className="absolute -top-1.5 end-8 size-3 rotate-45 rounded-[2px] bg-primary" />
         <span className="sr-only">{t("dismiss")}</span>
         <span>{t("text")}</span>
         <X aria-hidden className="size-4 opacity-80" />

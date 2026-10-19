@@ -1018,7 +1018,8 @@
       "group": "נושא"
     },
     "checkIn": {
-      "label": "{state, select, open {לסמן} done {בוצע} pending {מחכה לאישור} checkedToday {סומן היום} frozen {בהפסקה} other {יתחיל בהמשך}} — {name}: {title}"
+      "label": "{state, select, open {לסמן} done {בוצע} pending {מחכה לאישור} checkedToday {סומן היום} frozen {בהפסקה} other {יתחיל בהמשך}} — {name}: {title}",
+      "checking": "מסמנים עבור {name}: {title}…"
     }
   },
   "garden": {
@@ -1068,38 +1069,35 @@
     "resetDone": "הנתונים שלכם אופסו. התחלה חדשה 🌱",
     "progressLabel": "ההתקדמות של היום",
     "ringLabel": "היום בוצעו {done} מתוך {total}",
-    "doneOfTotal": "בוצעו {done} מתוך {total}",
-    "habitsLabel": "ההרגלים של היום: {list}",
-    "itemDone": "{title}: בוצע",
-    "itemTodo": "{title}: עוד לא בוצע",
     "thisWeek": "השבוע",
     "weekCount": "{done} מתוך {possible}",
     "bestStreak": "הרצף הארוך ביותר:",
     "line": {
-      "allDone": "הכול בוצע להיום 🎉",
-      "toGoToday": "{n, plural, one {נשאר עוד אחד להיום} two {נשארו עוד # להיום} other {נשארו עוד # להיום}}",
-      "oneMore": "עוד אחד!",
-      "halfway": "באמצע הדרך 💪",
-      "toGo": "{n, plural, one {נשאר עוד אחד} two {נשארו עוד #} other {נשארו עוד #}}"
+      "allDone": "{total, plural, one {הכול בוצע להיום 🎉} two {שניהם בוצעו 🎉} other {כל ה-# בוצעו 🎉}}",
+      "toGoToday": "{n, plural, one {סמנו עוד אחד כדי לסיים את היום.} two {סמנו עוד # כדי לסיים את היום.} other {סמנו עוד # כדי לסיים את היום.}}",
+      "oneMore": "סמנו עוד אחד כדי לסיים את היום ({done} מתוך {total}).",
+      "halfway": "בוצעו {done} מתוך {total}. {n, plural, one {עוד אחד לסיום היום 💪} two {עוד # לסיום היום 💪} other {עוד # לסיום היום 💪}}",
+      "toGo": "בוצעו {done} מתוך {total}. {n, plural, one {סמנו עוד אחד כדי לסיים את היום.} two {סמנו עוד # כדי לסיים את היום.} other {סמנו עוד # כדי לסיים את היום.}}",
+      "streakSafe": "{streak, plural, one {הרצף של יום אחד נשמר.} two {הרצף של יומיים נשמר.} other {הרצף של # ימים נשמר.}}"
     },
     "welcome": {
       "title": "ברוכים הבאים לקבוצה <bdi>{name}</bdi> 👋",
       "people": "{n, plural, one {אדם אחד} two {# אנשים} other {# אנשים}}",
       "habitsBelow": "ההרגלים של הקבוצה מופיעים למטה",
-      "noGroupHabits": "עוד אין הרגלים לקבוצה",
+      "noGroupHabits": "הוסיפו את ההרגל הראשון של הקבוצה",
       "open": "פתיחה",
       "openLabel": "פתיחת הקבוצה {name}"
     },
     "approvalsWaiting": "{n, plural, one {סימון אחד מחכה לכם} two {# סימונים מחכים לכם} other {# סימונים מחכים לכם}}",
     "habitFallback": "הרגל",
     "empty": {
-      "text": "עוד אין מה לעשות. הוסיפו הרגל כדי להתחיל.",
-      "action": "הוספת ההרגל הראשון"
+      "text": "הוסיפו הרגל אחד וסמנו אותו היום כדי להתחיל את היום הראשון ברצף.",
+      "action": "הוספת הרגל, יום 1"
     },
     "sections": {
       "mine": "שלי",
       "groupFallback": "קבוצה",
-      "allCheckedOff": "הכול סומן. כל הכבוד.",
+      "allCheckedOff": "{total, plural, one {סומן. חזרו מחר כדי לשמור על הרצף.} two {שניהם סומנו. חזרו מחר כדי לשמור על הרצף.} other {כל ה-# סומנו. חזרו מחר כדי לשמור על הרצף.}}",
       "doneForToday": "בוצע להיום",
       "later": "בהמשך"
     },
@@ -1112,20 +1110,28 @@
     },
     "gentle": {
       "inviteFamily": {
-        "title": "הזמינו את המשפחה",
-        "body": "שתפו הרגלים כמו ארוחת ערב משפחתית. ההרגל בוצע כשכולם עשו אותו.",
-        "cta": "הזמנה"
+        "body": "הזמינו את המשפחה להרגל משותף. הקישור תקף 7 ימים.",
+        "cta": "יצירת קישור הזמנה"
       },
       "inviteFriend": {
-        "title": "הזמינו חבר או חברה",
-        "body": "עשו הרגל ביחד ועודדו זה את זה.",
-        "cta": "הזמנה"
+        "body": "הזמינו חבר או חברה להרגל משותף ועודדו כל סימון. הקישור תקף 7 ימים.",
+        "cta": "יצירת קישור הזמנה"
       },
       "addChild": {
-        "title": "להוסיף ילד/ה? 🐼",
-        "body": "צחצוח שיניים, קריאה ביחד ועוד."
+        "body": "הוסיפו ילד/ה: כל סימון מזכה בכוכב אחד לקראת פינוק."
       },
-      "notNow": "לא עכשיו"
+      "notNow": "לא עכשיו",
+      "creating": "יוצרים קישור…"
+    },
+    "checkIn": {
+      "done": "{approval, select, yes {{habit}: נשלח לאישור} other {{habit}: סומן}}"
+    },
+    "undo": {
+      "undoing": "מבטלים את {habit}…",
+      "done": "{habit}: הסימון בוטל",
+      "failed": "לא הצלחנו לבטל את {habit}. בדקו את החיבור ולחצו שוב על \"ביטול\".",
+      "gone": "כבר אי אפשר לבטל את הסימון הזה. פתחו את ההרגל כדי לראות אותו.",
+      "openHabit": "פתיחת ההרגל"
     }
   },
   "nav": {
@@ -1184,7 +1190,10 @@
       "labelRing": "{state}: {title}, {done} מתוך {target}",
       "whoDid": "מי עשה את {title}?",
       "meAndChild": "אני + <bdi>{name}</bdi>",
-      "meAndEveryone": "אני + כולם"
+      "meAndEveryone": "אני + כולם",
+      "checking": "מסמנים: {title}…",
+      "failed": "לא הצלחנו לשמור. בדקו את החיבור ולחצו שוב.",
+      "notSaved": "לא הצלחנו לשמור את זה במכשיר. טענו מחדש את הדף ונסו שוב."
     },
     "checkIns": {
       "empty": "עוד אין סימונים בתקופה הזו.",

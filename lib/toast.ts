@@ -20,8 +20,11 @@ export const MAX_WAITING = 2;
 
 export type ToastAction = { label: string; href: string } | { label: string; onAction: () => void };
 
-// A toast ready to show: translated text.
-export type Toast = { id: string; text: string; action?: ToastAction };
+// A toast ready to show: translated text. sticky: stays until its owner closes it (closeToast), for a
+// state that must not vanish before its answer ("Undoing…"); the X still closes it.
+// focusAction: its action takes focus when it shows (a retry after an error, where focus was on the
+// button that went away).
+export type Toast = { id: string; text: string; action?: ToastAction; sticky?: boolean; focusAction?: boolean };
 
 export type ToastState = { current: Toast | null; waiting: Toast[] };
 
@@ -43,9 +46,28 @@ export function dismissToast(state: ToastState, id: string): ToastState {
   return { current: next, waiting: rest };
 }
 
+// A toast closed by its owner (an "Undoing…" toast once the undo answered): the showing one closes
+// as dismissToast does, a waiting one is dropped. An unknown id changes nothing.
+export function removeToast(state: ToastState, id: string): ToastState {
+  if (state.current?.id === id) return dismissToast(state, id);
+  if (!state.waiting.some((t) => t.id === id)) return state;
+  return { current: state.current, waiting: state.waiting.filter((t) => t.id !== id) };
+}
+
+// Focus may be moved for the person only when it is lost: nothing focused, the page body (the focused
+// button was removed), or still inside the toasts (the toast that just closed). Anywhere else they put
+// it themselves since, and a late answer must not pull it away. `active`: document.activeElement.
+export const TOASTER_ATTR = "data-toaster";
+export function focusIsLost(active: { closest?: (selector: string) => unknown } | null, body: unknown): boolean {
+  if (!active || active === body) return true;
+  return Boolean(active.closest?.(`[${TOASTER_ATTR}]`));
+}
+
 // How long a toast stays: longer with an action, so there is time to reach it (WCAG 2.2.1; the
 // toast also pauses while hovered or focused).
-export function toastDuration(toast: Pick<Toast, "action">): number {
+// null: sticky, no timer.
+export function toastDuration(toast: Pick<Toast, "action" | "sticky">): number | null {
+  if (toast.sticky) return null;
   return toast.action ? 8000 : 5000;
 }
 

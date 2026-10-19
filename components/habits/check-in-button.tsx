@@ -2,11 +2,14 @@
 
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { Check, Clock, Plus, Snowflake } from "lucide-react";
-import { checkInWith } from "@/app/(app)/habits/actions";
+import { Check, Clock, LoaderCircle, Plus, Snowflake } from "lucide-react";
+import { checkInWith, undoCheckInByClient } from "@/app/(app)/habits/actions";
 import { dismissFirstCheckinTip } from "@/components/first-checkin-tip";
 import { floatXp, useXpFloat } from "@/components/habits/xp-float";
 import { useOfflineQueue, useSubmitTap, useUndoQueuedTap } from "@/components/offline/offline-queue-provider";
+import { useToast } from "@/components/ui/toast";
+import { focusCheckInWhenOpen } from "@/components/habits/check-in-focus";
+import { showCheckedIn, showCheckedInWithout } from "@/lib/check-in-undo";
 import { useT } from "@/lib/i18n/client";
 import { isolate } from "@/supabase/functions/_shared/i18n";
 import { undoLabel } from "@/lib/offline-copy";
@@ -25,6 +28,7 @@ export function CheckInButton({
   withChildren = [],
   progress = null,
   needsApproval = false,
+  undoToast = false,
 }: {
   habitId: string;
   title: string;
@@ -39,6 +43,9 @@ export function CheckInButton({
   // The habit's check-ins wait for someone else's approval (habits.requires_approval): a tap waiting on
   // this phone floats no XP then (lib/xp.ts tapXp).
   needsApproval?: boolean;
+  // Today: a check-in that landed says so in a toast with Undo (lib/check-in-undo.ts). The habit page
+  // lists its check-ins with their own Undo, so it doesn't.
+  undoToast?: boolean;
 }) {
   const { t } = useT();
   const tr = useTranslations("habits.checkIn");
@@ -56,6 +63,7 @@ export function CheckInButton({
   const { queued, delta } = useOfflineQueue();
   const submitTap = useSubmitTap();
   const undoQueued = useUndoQueuedTap();
+  const { showToast, closeToast } = useToast();
   const savingId = useId();
   // A tap waiting on this phone (ideas/offline.md §1): it looks checked and says it's saving. While
   // the online try runs, the button's own busy state says enough.
@@ -93,9 +101,14 @@ export function CheckInButton({
         try {
           const result = await checkInWith(habitId, childIds);
           if (!result.ok) setError(result.message);
-          else celebrate();
+          else {
+            celebrate();
+            // Several check-ins in one call, none with a client id: confirmed, without Undo (the
+            // habit page undoes them one by one).
+            if (undoToast) showCheckedInWithout({ t, show: showToast, close: closeToast }, title);
+          }
         } catch {
-          setError(navigator.onLine ? t("errors.generic") : t("offline.needsConnection"));
+          setError(navigator.onLine ? tr("failed") : t("offline.needsConnection"));
         }
         return;
       }
@@ -107,6 +120,16 @@ export function CheckInButton({
       }
       // "Me + Mary" above keeps celebrate(): several check-ins, no single number.
       celebrate(tapXp(result, needsApproval));
+      // Landed online: confirmed with Undo. A tap still waiting on the phone shows "Saving…" and its
+      // own Undo below instead.
+      if (undoToast && !result.queued && result.clientId) {
+        showCheckedIn(
+          { t, show: showToast, close: closeToast, undo: undoCheckInByClient, onUndone: focusCheckInWhenOpen },
+          // The server's word on approval (an approval habit with one adult is approved at once);
+          // the habit's setting only when an older server didn't say.
+          { habitId, clientId: result.clientId, title, approval: result.pending ?? needsApproval },
+        );
+      }
     });
   }
 
@@ -117,13 +140,17 @@ export function CheckInButton({
   }, []);
 
   return (
-    <div className="relative flex flex-col items-end gap-1">
+    <div className="relative flex flex-col items-end gap-inner">
       <button
         key={burst}
         ref={buttonRef}
         type="button"
+        // Found by Undo from Today's toast, to give focus back (components/habits/check-in-focus.ts).
+        data-check-in={habitId}
         aria-label={
-          shownRing
+          pending
+            ? tr("checking", { title: isolate(title) })
+            : shownRing
             ? tr("labelRing", { state: tr(`state.${shown}`), title: isolate(title), done: shownRing.done, target: shownRing.target })
             : tr("label", { state: tr(`state.${shown}`), title: isolate(title) })
         }
@@ -152,7 +179,14 @@ export function CheckInButton({
           pending && "opacity-60",
         )}
       >
-        {shownRing ? <Ring done={shownRing.done} target={shownRing.target} /> : <Icon className="size-5" strokeWidth={2.5} aria-hidden />}
+        {pending ? (
+          // In progress: the label says "Checking in…", and the icon spins (held still under reduced motion).
+          <LoaderCircle className="size-5 motion-safe:animate-spin" strokeWidth={2.5} aria-hidden />
+        ) : shownRing ? (
+          <Ring done={shownRing.done} target={shownRing.target} />
+        ) : (
+          <Icon className="size-5" strokeWidth={2.5} aria-hidden />
+        )}
       </button>
       {xpFloat && (
         // Decorative: the level on Profile says it in words. Hidden under reduced motion.
@@ -164,7 +198,7 @@ export function CheckInButton({
         <div
           role="group"
           aria-label={tr("whoDid", { title: isolate(title) })}
-          className="flex max-w-56 flex-wrap justify-end gap-1.5"
+          className="flex max-w-56 flex-wrap justify-end gap-inner"
           onKeyDown={(e) => e.key === "Escape" && setChoosing(false)}
         >
           <ChoiceButton onClick={() => run([])}>{t("habits.form.justMe")}</ChoiceButton>
@@ -182,7 +216,7 @@ export function CheckInButton({
         </p>
       )}
       {savingShown && (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-inner">
           <p id={savingId} className="text-xs text-muted-foreground">
             {t("offline.saving")}
           </p>
@@ -195,7 +229,7 @@ export function CheckInButton({
               // The Undo button goes away with the tap: focus goes back to the check-in button.
               requestAnimationFrame(() => buttonRef.current?.focus());
             }}
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-full px-2 text-xs font-semibold text-primary underline-offset-2 hover:underline"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-full px-inner text-xs font-semibold text-primary underline-offset-2 hover:underline"
           >
             {t("offline.undo")}
           </button>
@@ -210,7 +244,7 @@ function ChoiceButton({ onClick, children }: { onClick: () => void; children: Re
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-11 items-center rounded-full border-2 border-input bg-card px-3.5 text-sm font-semibold text-primary hover:bg-accent"
+      className="flex min-h-11 items-center rounded-full border-2 border-input bg-card px-item text-sm font-semibold text-primary hover:bg-accent"
     >
       {children}
     </button>
