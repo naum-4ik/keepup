@@ -86,24 +86,32 @@ test("a failed demo: trying again clears ?demo=failed from the address", async (
   await expect(failed).toHaveCount(1);
 });
 
-test("the demo's script fails to load: the next step is a reload, and after it the demo button works", async ({ page }) => {
-  const reload = page.getByRole("alert").filter({ hasText: "Couldn't load the demo. Reload the page and try again." });
-  // networkidle: the page's own scripts and link prefetches are done before the route goes in.
-  await page.goto("/", { waitUntil: "networkidle" });
-  await expect(page.getByRole("button", { name: TRY })).toBeEnabled();
-  // Every script the page needed has loaded; the next one is the Supabase client the button fetches. Abort it once.
-  let aborted = false;
-  await page.route("**/_next/static/**/*.js", (route) => {
-    if (aborted) return route.continue();
-    aborted = true;
-    return route.abort();
+test.describe("the demo's script fails to load", () => {
+  // The app's service worker fetches /_next/static itself, and page.route never sees what it fetches
+  // (the CI trace: the Supabase chunks loaded 200 and a real anonymous sign-in ran). Without it, every
+  // chunk request reaches the route.
+  test.use({ serviceWorkers: "block" });
+
+  test("the next step is a reload, and after it the demo button works", async ({ page }) => {
+    const reload = page.getByRole("alert").filter({ hasText: "Couldn't load the demo. Reload the page and try again." });
+    // networkidle: the page's own scripts and link prefetches are done before the route goes in.
+    await page.goto("/", { waitUntil: "networkidle" });
+    await expect(page.getByRole("button", { name: TRY })).toBeEnabled();
+    // From here, every script request is the demo's (the Supabase client, on hover or tap): abort them all.
+    const aborted: string[] = [];
+    await page.route("**/_next/static/**/*.js", (route) => {
+      aborted.push(route.request().url());
+      return route.abort();
+    });
+    await page.getByRole("button", { name: TRY }).click();
+    await expect.poll(() => aborted.length).toBeGreaterThan(0);
+    await expect(reload).toHaveCount(1);
+    // No anonymous sign-in was spent: the client never loaded.
+    await page.unroute("**/_next/static/**/*.js");
+    await page.getByRole("button", { name: "Reload", exact: true }).click();
+    await expect(reload).toHaveCount(0);
+    await expect(page.getByRole("button", { name: TRY })).toBeEnabled();
   });
-  await page.getByRole("button", { name: TRY }).click();
-  await expect(reload).toHaveCount(1);
-  expect(aborted).toBe(true);
-  await page.getByRole("button", { name: "Reload", exact: true }).click();
-  await expect(reload).toHaveCount(0);
-  await expect(page.getByRole("button", { name: TRY })).toBeEnabled();
 });
 
 test("Try it on a stale landing tab keeps the real login", async ({ page, context }) => {
