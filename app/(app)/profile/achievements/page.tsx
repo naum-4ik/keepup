@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { BadgeGrid } from "@/components/profile/badge-grid";
 import { Notice } from "@/components/ui/notice";
+import { RefreshButton } from "@/components/ui/refresh-button";
 import { getProfile } from "@/lib/auth";
 import { getT } from "@/lib/i18n/server";
 import { getBadges } from "@/lib/badges-data";
@@ -27,13 +28,12 @@ export default async function AchievementsPage() {
         <Notice
           tone="error"
           action={
-            <Link
-              href="/profile/achievements"
+            <RefreshButton
+              label={t("common.tryAgain")}
+              pendingLabel={t("common.loading")}
               // A 44px target kept to the Notice's line height by negative margins (docs/design.md "Buttons").
-              className="-my-3 flex min-h-11 items-center rounded-lg px-inner font-bold text-primary hover:bg-background/60"
-            >
-              {t("common.tryAgain")}
-            </Link>
+              className="-my-3 flex min-h-11 items-center rounded-lg px-inner font-bold text-primary hover:bg-background/60 disabled:opacity-60"
+            />
           }
         >
           {t("achievements.unavailable")}

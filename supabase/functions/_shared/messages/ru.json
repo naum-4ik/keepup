@@ -1543,7 +1543,8 @@
     "listSeparator": ", ",
     "sectionSeparator": " · ",
     "tryAgain": "Попробовать снова",
-    "downloaded": "Загрузка началась: {file}."
+    "downloaded": "Загрузка началась: {file}.",
+    "loading": "Загружаем…"
   },
   "inbox": {
     "title": "Входящие",

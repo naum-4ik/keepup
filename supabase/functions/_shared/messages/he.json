@@ -1543,7 +1543,8 @@
     "listSeparator": ", ",
     "sectionSeparator": " · ",
     "tryAgain": "ניסיון חוזר",
-    "downloaded": "ההורדה התחילה: {file}."
+    "downloaded": "ההורדה התחילה: {file}.",
+    "loading": "טוענים…"
   },
   "inbox": {
     "title": "הודעות",

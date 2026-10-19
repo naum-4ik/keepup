@@ -1543,7 +1543,8 @@
     "listSeparator": ", ",
     "sectionSeparator": " · ",
     "tryAgain": "Try again",
-    "downloaded": "Download started: {file}."
+    "downloaded": "Download started: {file}.",
+    "loading": "Loading…"
   },
   "inbox": {
     "title": "Inbox",
