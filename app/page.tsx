@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { TryDemoButton } from "@/components/demo/try-demo-button";
@@ -9,6 +10,8 @@ import { Notice } from "@/components/ui/notice";
 import { createClient } from "@/lib/supabase/server";
 import { authErrorReason } from "@/lib/auth-errors";
 import { getT } from "@/lib/i18n/server";
+import { track } from "@/lib/log";
+import { isPrefetch } from "@/lib/prefetch";
 
 // What a search result and the browser tab say about the landing; other pages keep "Keepup" or their own.
 export async function generateMetadata(): Promise<Metadata> {
@@ -29,6 +32,11 @@ export default async function Home({
 
   const reason = authErrorReason(params);
   if (reason) redirect(`/auth/error?reason=${reason}`);
+
+  // A signed-out visit, counted on the server: Faro starts only after load (then up to 2 s idle), so a
+  // quick bounce has no Faro session. Nothing about the visitor (no IP, no place): only that the landing
+  // was served. A link prefetch isn't a visit.
+  if (!isPrefetch(await headers())) track("landing_viewed", {});
 
   // One screen, one filled button (design pass PR 6): the pitch, "Start your first streak", then the
   // quieter ways in: the demo (a text button) and Sign in (a link), each a 44 px tap target.
