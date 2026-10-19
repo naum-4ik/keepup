@@ -224,7 +224,7 @@ export function CheckInButton({
               // The Undo button goes away with the tap: focus goes back to the check-in button.
               requestAnimationFrame(() => buttonRef.current?.focus());
             }}
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-full px-2 text-xs font-semibold text-primary underline-offset-2 hover:underline"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-full px-inner text-xs font-semibold text-primary underline-offset-2 hover:underline"
           >
             {t("offline.undo")}
           </button>
@@ -239,7 +239,7 @@ function ChoiceButton({ onClick, children }: { onClick: () => void; children: Re
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-11 items-center rounded-full border-2 border-input bg-card px-3.5 text-sm font-semibold text-primary hover:bg-accent"
+      className="flex min-h-11 items-center rounded-full border-2 border-input bg-card px-item text-sm font-semibold text-primary hover:bg-accent"
     >
       {children}
     </button>

@@ -1018,7 +1018,8 @@
       "group": "נושא"
     },
     "checkIn": {
-      "label": "{state, select, open {לסמן} done {בוצע} pending {מחכה לאישור} checkedToday {סומן היום} frozen {בהפסקה} other {יתחיל בהמשך}} — {name}: {title}"
+      "label": "{state, select, open {לסמן} done {בוצע} pending {מחכה לאישור} checkedToday {סומן היום} frozen {בהפסקה} other {יתחיל בהמשך}} — {name}: {title}",
+      "checking": "מסמנים עבור {name}: {title}…"
     }
   },
   "garden": {

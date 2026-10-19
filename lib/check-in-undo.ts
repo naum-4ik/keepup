@@ -25,13 +25,24 @@ export type LandedTap = { habitId: string; clientId: string; title: string; appr
 let seq = 0;
 const nextId = () => `check-in-${++seq}`;
 
+// The toasts this module put up. Each new one replaces them (closes them first): three quick taps
+// show the latest "checked in", and "Undoing…" and its answer show at once instead of queueing behind
+// another tap's toast (lib/toast.ts queues and drops the oldest). Older taps undo on the habit page.
+const ours = new Set<string>();
+function replaceWith(deps: UndoDeps, toast: { id: string; text: string; action?: ToastAction }) {
+  for (const id of ours) deps.close(id);
+  ours.clear();
+  ours.add(toast.id);
+  deps.show(toast);
+}
+
 export function checkedInText(t: T, title: string, approval: boolean): string {
   return t("today.checkIn.done", { habit: isolate(title), approval: approval ? "yes" : "no" });
 }
 
 export function showCheckedIn(deps: UndoDeps, tap: LandedTap): void {
   const id = (deps.newId ?? nextId)();
-  deps.show({ id, text: checkedInText(deps.t, tap.title, tap.approval), action: undoAction(deps, tap) });
+  replaceWith(deps, { id, text: checkedInText(deps.t, tap.title, tap.approval), action: undoAction(deps, tap) });
 }
 
 const undoAction = (deps: UndoDeps, tap: LandedTap): ToastAction => ({
@@ -46,23 +57,22 @@ export async function undoCheckIn(deps: UndoDeps, tap: LandedTap): Promise<UndoO
   const newId = deps.newId ?? nextId;
   const habit = isolate(tap.title);
   const busy = newId();
-  deps.show({ id: busy, text: t("today.undo.undoing", { habit }) });
+  replaceWith(deps, { id: busy, text: t("today.undo.undoing", { habit }) });
   let result: UndoResult | null;
   try {
     result = await deps.undo(tap.clientId, tap.habitId);
   } catch {
     result = null; // no answer: offline, or the request failed on the way
   }
-  deps.close(busy);
   if (result?.ok) {
-    deps.show({ id: newId(), text: t("today.undo.done", { habit }) });
+    replaceWith(deps, { id: newId(), text: t("today.undo.done", { habit }) });
     return "undone";
   }
   // Nothing left to take back (approved meanwhile, or its period closed): the habit page shows why.
   if (result?.code === "undo_gone") {
-    deps.show({ id: newId(), text: result.message, action: { label: t("today.undo.openHabit"), href: `/habits/${tap.habitId}` } });
+    replaceWith(deps, { id: newId(), text: result.message, action: { label: t("today.undo.openHabit"), href: `/habits/${tap.habitId}` } });
     return "gone";
   }
-  deps.show({ id: newId(), text: result ? result.message : t("today.undo.failed", { habit }), action: undoAction(deps, tap) });
+  replaceWith(deps, { id: newId(), text: result ? result.message : t("today.undo.failed", { habit }), action: undoAction(deps, tap) });
   return "failed";
 }

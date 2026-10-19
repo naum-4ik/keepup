@@ -34,16 +34,31 @@ describe("check-in toast", () => {
   });
 });
 
+describe("one toast at a time", () => {
+  it("a new check-in replaces the last one's toast; Undo replaces whichever is showing", async () => {
+    const { deps, shown, closed } = setup(async () => ({ ok: true }));
+    showCheckedIn(deps, tap);
+    showCheckedIn(deps, { ...tap, habitId: "h2", clientId: "c2", title: "Read" });
+    expect(closed).toContain(shown[0].id);
+    const second = shown[1];
+    expect(closed).not.toContain(second.id);
+    await undoCheckIn(deps, tap);
+    // The second tap's toast closed before "Undoing…" showed, and "Undoing…" before the answer.
+    expect(closed).toContain(second.id);
+    expect(closed).toContain(shown[2].id);
+    expect(shown.at(-1)?.text).toBe(`${FSI}Walk${PDI}: check-in undone`);
+  });
+});
+
 describe("undoCheckIn", () => {
   it("shows Undoing… while it runs, closes it, then confirms", async () => {
     let answer!: (r: { ok: true }) => void;
     const { deps, shown, closed } = setup(() => new Promise((r) => (answer = r)));
     const done = undoCheckIn(deps, tap);
     expect(shown).toEqual([{ id: "t1", text: `Undoing ${FSI}Walk${PDI}…` }]);
-    expect(closed).toEqual([]);
     answer({ ok: true });
     expect(await done).toBe("undone");
-    expect(closed).toEqual(["t1"]);
+    expect(closed.at(-1)).toBe("t1");
     expect(shown[1]).toEqual({ id: "t2", text: `${FSI}Walk${PDI}: check-in undone` });
   });
 

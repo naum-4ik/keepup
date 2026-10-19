@@ -91,6 +91,7 @@ export function AvatarRow({ members }: { members: CardMember[] }) {
   if (members.length === 0) return null;
   const shown = members.slice(0, MAX_SHOWN);
   return (
+    // Overlapping avatars (a stack, not a spacing level).
     <span className="flex shrink-0 -space-x-2">
       {shown.map((m) => (
         <Avatar key={m.id} name={m.name} emoji={m.avatar_emoji} color={m.avatar_color} className="ring-2 ring-card" />

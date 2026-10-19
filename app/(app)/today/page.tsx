@@ -180,6 +180,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
             <Link
               href={`/groups/${joinedGroup.group_id}`}
               aria-label={tt("welcome.openLabel", { name: isolate(joinedGroup.name) })}
+              // A 44px target kept to the Notice's line height by negative margins (docs/design.md "Buttons").
               className="-my-3 flex min-h-11 items-center rounded-lg px-inner font-bold text-primary hover:bg-background/60"
             >
               {tt("welcome.open")}

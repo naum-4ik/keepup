@@ -12,7 +12,7 @@ export function NeedsConnection({ label, children }: { label: string; children: 
   return (
     <div>
       <div inert className="opacity-50">{children}</div>
-      <p className="mt-1 text-center text-xs font-semibold text-muted-foreground">
+      <p className="mt-inner text-center text-xs font-semibold text-muted-foreground">
         {rich("offline.needsConnectionFor", { label, sr: (c: React.ReactNode) => <span className="sr-only">{c}</span> })}
       </p>
     </div>

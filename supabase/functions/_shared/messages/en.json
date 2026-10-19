@@ -1018,7 +1018,8 @@
       "group": "Theme"
     },
     "checkIn": {
-      "label": "{state, select, open {Check in for} done {Done for} pending {Waiting for approval for} checkedToday {Checked in today for} frozen {Paused for} other {Starts later for}} {name}: {title}"
+      "label": "{state, select, open {Check in for} done {Done for} pending {Waiting for approval for} checkedToday {Checked in today for} frozen {Paused for} other {Starts later for}} {name}: {title}",
+      "checking": "Checking in for {name}: {title}…"
     }
   },
   "garden": {
