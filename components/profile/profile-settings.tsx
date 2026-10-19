@@ -37,7 +37,7 @@ const save = (field: ProfileSetting, value: string) => () => saveProfileSetting(
 function DisplayName({ saved }: { saved: string }) {
   const tx = useTranslations("profile.form");
   const tc = useTranslations("common");
-  const { state, pending, save: run } = useSettingSave("save");
+  const { state, pending, save: run, reset } = useSettingSave(saved, "save");
   const [value, setValue] = useState(saved);
   const invalid = state.status === "error";
   return (
@@ -46,7 +46,7 @@ function DisplayName({ saved }: { saved: string }) {
       onSubmit={(e) => {
         e.preventDefault();
         // The typed name stays in the field whatever happens.
-        run(save("displayName", value));
+        run(value, save("displayName", value));
       }}
     >
       <Label htmlFor="displayName" className="font-semibold">
@@ -57,7 +57,10 @@ function DisplayName({ saved }: { saved: string }) {
           id="displayName"
           name="displayName"
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => {
+            setValue(e.target.value);
+            reset();
+          }}
           required
           autoComplete="nickname"
           className="h-11 min-w-0 flex-1 rounded-xl px-3 text-base"
@@ -74,9 +77,8 @@ function DisplayName({ saved }: { saved: string }) {
 }
 
 function Timezone({ saved, timezones }: { saved: string; timezones: string[] }) {
-  const { state, save: run } = useSettingSave();
+  const { state, save: run } = useSettingSave(saved);
   const [value, setValue] = useState(saved);
-  const [last, setLast] = useState(saved);
   return (
     <div className="flex flex-col gap-inner">
       <TimezonePicker
@@ -84,7 +86,7 @@ function Timezone({ saved, timezones }: { saved: string; timezones: string[] }) 
         value={value}
         onChange={(next) => {
           setValue(next);
-          run(save("timezone", next), { saved: () => setLast(next), failed: () => setValue(last) });
+          run(next, save("timezone", next), { revert: setValue });
         }}
         timezones={timezones}
         showChangeNote
@@ -96,9 +98,8 @@ function Timezone({ saved, timezones }: { saved: string; timezones: string[] }) 
 }
 
 function WeekStart({ saved, label, hint, note, monday, sunday }: { saved: string; label: string; hint: string; note: string; monday: string; sunday: string }) {
-  const { state, save: run } = useSettingSave();
+  const { state, save: run } = useSettingSave(saved);
   const [value, setValue] = useState(saved);
-  const [last, setLast] = useState(saved);
   return (
     <div className="flex flex-col gap-inner">
       {/* The label and its (i): one glyph pair, 4 px. */}
@@ -114,7 +115,7 @@ function WeekStart({ saved, label, hint, note, monday, sunday }: { saved: string
         onChange={(e) => {
           const next = e.target.value;
           setValue(next);
-          run(save("weekStart", next), { saved: () => setLast(next), failed: () => setValue(last) });
+          run(next, save("weekStart", next), { revert: setValue });
         }}
         className={selectClass}
         aria-describedby="weekStart-note weekStart-status"

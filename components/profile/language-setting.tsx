@@ -20,17 +20,16 @@ export function LanguageSetting({ current, enabled }: { current: Locale; enabled
   const t = useTranslations("settings");
   const router = useRouter();
   const [value, setValue] = useState<Locale>(current);
-  const { state, pending, save } = useSettingSave();
+  const { state, pending, save } = useSettingSave<Locale>(current);
 
   function choose(next: Locale) {
-    const before = value;
     setValue(next);
-    save(() => setLanguage(next), {
+    save(next, () => setLanguage(next), {
       saved: () => {
         navigator.serviceWorker?.controller?.postMessage({ type: "keepup:clear-pages" });
         router.refresh();
       },
-      failed: () => setValue(before),
+      revert: setValue,
     });
   }
 

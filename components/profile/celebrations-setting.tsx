@@ -16,12 +16,11 @@ const pillClass =
 export function CelebrationsSetting({ saved }: { saved: CelebrationMode }) {
   const t = useTranslations("settings.celebrations");
   const [value, setValue] = useState<CelebrationMode>(saved);
-  const { state, pending, save } = useSettingSave();
+  const { state, pending, save } = useSettingSave<CelebrationMode>(saved);
 
   function choose(next: CelebrationMode) {
-    const before = value;
     setValue(next);
-    save(() => setCelebrations(next), { failed: () => setValue(before) });
+    save(next, () => setCelebrations(next), { revert: setValue });
   }
 
   return (

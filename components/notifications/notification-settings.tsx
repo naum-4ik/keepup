@@ -71,7 +71,7 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
 
   const thisDeviceOn = here !== null && settings.devices.some((d) => d.endpoint === here);
   // The reminder hour saves when it changes, and says so under it.
-  const hour = useSettingSave();
+  const hour = useSettingSave(settings.reminderHour);
   const [hourValue, setHourValue] = useState(settings.reminderHour);
   const [hourSeen, setHourSeen] = useState(settings.reminderHour);
   if (hourSeen !== settings.reminderHour) {
@@ -96,9 +96,8 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
           disabled={pending || hour.pending}
           onChange={(e) => {
             const next = Number(e.target.value);
-            const before = hourValue;
             setHourValue(next);
-            hour.save(() => setReminderHour(next), { failed: () => setHourValue(before) });
+            hour.save(next, () => setReminderHour(next), { revert: setHourValue });
           }}>
           {HOURS.map((h) => <option key={h} value={h}>{hourLabel(h)}</option>)}
         </select>
