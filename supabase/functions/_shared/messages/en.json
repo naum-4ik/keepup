@@ -935,7 +935,9 @@
     },
     "errors": {
       "pickHabit": "Pick a habit.",
-      "themeFailed": "Couldn't change it. Try again."
+      "themeFailed": "Couldn't change what grows. Reload the page and tap it again.",
+      "offline": "Couldn't reach Keepup. Check your connection and try again.",
+      "reload": "That didn't go through. Reload the page and try again."
     },
     "new": {
       "askAdmin": "Ask an admin of <bdi>{group}</bdi> to add a child."
@@ -967,7 +969,8 @@
       "titlePlaceholder": "Feed the fish",
       "picture": "Picture",
       "period": "{period, select, day {day} week {week} other {month}}",
-      "back": "Back"
+      "back": "Back",
+      "adding": "Adding {title}…"
     },
     "detail": {
       "habitsFailed": "Some habits couldn't be added. Add them from here.",
@@ -977,7 +980,8 @@
       "logged": "{by, select, child {{gender, select, boy {<bdi>{name}</bdi> did it} girl {<bdi>{name}</bdi> did it} other {<bdi>{name}</bdi> did it}}} you {Logged by you} member {Logged by <bdi>{name}</bdi>} other {Logged by a former member}} · {time}",
       "undo": "Undo {title} at {time}",
       "data": "Data",
-      "dataText": "Everything Keepup keeps about <bdi>{name}</bdi>, in one file."
+      "dataText": "Everything Keepup keeps about <bdi>{name}</bdi>, in one file.",
+      "noHabits": "Add a habit for <bdi>{name}</bdi>: each check-in earns 1 star."
     },
     "danger": {
       "title": "Danger zone",
@@ -1018,7 +1022,12 @@
       "other": "Other",
       "stars": "Stars",
       "earns": "A check-in earns one star.",
-      "submit": "Set goal"
+      "submit": "Set goal",
+      "setting": "Setting…",
+      "marking": "Marking…",
+      "setDone": "Goal set: <bdi>{treat}</bdi>. Each check-in earns 1 star toward it.",
+      "receivedDone": "Marked <bdi>{treat}</bdi> as received. Pick the next treat together when you're ready.",
+      "cancelledDone": "Cancelled <bdi>{treat}</bdi>. <bdi>{name}</bdi> keeps all the stars."
     },
     "garden": {
       "stars": "⭐ {stars} this week",
@@ -1028,11 +1037,21 @@
     "theme": {
       "title": "What grows",
       "hint": "Choose it with <bdi>{name}</bdi>. The stars stay the same.",
-      "group": "Theme"
+      "group": "Theme",
+      "changing": "Changing to {theme}…",
+      "changed": "Changed to {theme}. This week's stars stay the same."
     },
     "checkIn": {
       "label": "{state, select, open {Check in for} done {Done for} pending {Waiting for approval for} checkedToday {Checked in today for} frozen {Paused for} other {Starts later for}} {name}: {title}",
-      "checking": "Checking in for {name}: {title}…"
+      "checking": "Checking in for {name}: {title}…",
+      "undoing": "Undoing…",
+      "undoingLabel": "Undoing {title}…"
+    },
+    "toast": {
+      "added": "{habits, plural, =0 {Added {name}. Add a habit below: each check-in earns 1 star.} one {Added {name} with # habit. Each check-in earns 1 star.} other {Added {name} with # habits. Each check-in earns 1 star.}}",
+      "deleted": "Deleted {name}'s profile and history.",
+      "moved": "Moved {name} to {group}.",
+      "habitAdded": "Added {title} for {name}. Each check-in earns 1 star."
     }
   },
   "garden": {
@@ -1511,7 +1530,8 @@
     "tagline": "Habits, together.",
     "listSeparator": ", ",
     "sectionSeparator": " · ",
-    "tryAgain": "Try again"
+    "tryAgain": "Try again",
+    "downloaded": "Downloaded {file}."
   },
   "inbox": {
     "title": "Inbox",

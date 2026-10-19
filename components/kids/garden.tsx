@@ -2,6 +2,7 @@ import { SceneIdle } from "@/components/kids/scene-idle";
 import { SceneItems, type Idle, type Landed } from "@/components/kids/scene-items";
 import { kidTheme, nextStep, restartDay, restartLine, stageFor, stageLabel, stepLines, type Gender } from "@/lib/garden";
 import { isFloatingTheme, sceneItems } from "@/lib/scene-items";
+import { Section } from "@/components/ui/section";
 import { cn } from "@/lib/utils";
 import type { T } from "@/supabase/functions/_shared/i18n";
 
@@ -126,15 +127,17 @@ export function Garden({ t, stars, theme, weekStart, gender = null }: { t: T; st
   const { now, next } = stepLines(t, stars, th.id, gender);
   const title = t(`kidThemes.${th.id}.thisWeek`);
   return (
-    <section aria-label={title} className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
-      <h2 className="text-sm font-bold text-muted-foreground">{title}</h2>
+    <Section title={title}>
       <GardenPicture t={t} stars={stars} theme={th.id} />
-      <div className="flex items-baseline justify-between gap-2">
-        <p className="font-bold">{now}</p>
-        <p className="text-sm font-semibold tabular-nums">{t("kids.garden.stars", { stars })}</p>
+      {/* Where it stands, then what's next and when it starts again: one block, lines on line-height. */}
+      <div className="flex flex-col">
+        <div className="flex items-baseline justify-between gap-inner">
+          <p className="font-bold">{now}</p>
+          <p className="shrink-0 text-sm font-semibold tabular-nums">{t("kids.garden.stars", { stars })}</p>
+        </div>
+        {next && <p className="text-sm text-muted-foreground">{next}</p>}
+        {weekStart && <p className="text-sm text-muted-foreground">{restartLine(t, th.id, restartDay(weekStart), false, gender)}</p>}
       </div>
-      {next && <p className="text-sm text-muted-foreground">{next}</p>}
-      {weekStart && <p className="text-sm text-muted-foreground">{restartLine(t, th.id, restartDay(weekStart), false, gender)}</p>}
-    </section>
+    </Section>
   );
 }

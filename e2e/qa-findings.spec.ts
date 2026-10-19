@@ -43,7 +43,7 @@ test("kid custom habit: a server error keeps what was typed", async ({ page }) =
   await own.getByLabel("Times").fill("2");
   await own.getByRole("button", { name: "Add habit" }).click();
   await expect(own).toBeHidden();
-  await expect(page.getByText("Swim")).toBeVisible();
+  await expect(page.getByRole("main").getByText("Swim")).toBeVisible(); // the toast names it too
 });
 
 test("rename group: an error keeps what was typed, and the field stops at 40 characters", async ({ page }) => {

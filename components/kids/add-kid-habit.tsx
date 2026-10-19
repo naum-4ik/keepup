@@ -11,17 +11,31 @@ import { addButtonClass } from "@/components/ui/add-button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Notice } from "@/components/ui/notice";
+import { useToast } from "@/components/ui/toast";
 import { HABIT_TITLE_MAX, type HabitPeriod } from "@/lib/habit-schema";
 import { useT } from "@/lib/i18n/client";
 import type { Gender } from "@/lib/garden";
 import { KID_TEMPLATES, kidTemplateTitle, templatesLeft, type KidTemplateTitles } from "@/lib/kid-templates";
 import { keepFormValues } from "@/lib/keep-form-values";
+import { reach } from "@/lib/reach";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 
 const initialState: KidFormState = { status: "idle" };
 // Picture emoji a child recognizes (docs/design.md: a curated kid set).
 const KID_EMOJI = ["⭐", ...new Set(KID_TEMPLATES.map((t) => t.emoji)), "🌙", "🦷", "🙏"];
 const bdi = (c: React.ReactNode) => <bdi>{c}</bdi>;
+// 12 px sides to match the 12 px radius (as Notice does).
 const selectClass = "h-11 rounded-xl border border-input bg-card px-3 text-base";
+
+// addChildHabit, but offline or a request that dies says what to do instead of leaving the form stuck.
+function useAddHabit(childId: string) {
+  const { t } = useT();
+  return useActionState(async (prev: KidFormState, formData: FormData): Promise<KidFormState> => {
+    const r = await reach(() => addChildHabit(childId, prev, formData), { offline: t("kids.errors.offline"), reload: t("kids.errors.reload") });
+    return "ok" in r ? { status: "error", message: r.message } : r;
+  }, initialState);
+}
 
 // "Add a habit" opens a dialog: "Create your own" first, then the kid templates she doesn't have yet,
 // by group. A template adds straight away (the dialog stays open for more); your own opens a form.
@@ -40,6 +54,7 @@ export function AddKidHabit({
   gender: Gender;
 }) {
   const { t } = useT();
+  const { showToast } = useToast();
   const [open, setOpen] = useState(false);
   const [custom, setCustom] = useState(false);
 
@@ -59,7 +74,18 @@ export function AddKidHabit({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           {custom ? (
-            <CustomHabitForm childId={childId} childName={childName} gender={gender} onBack={() => setCustom(false)} onAdded={() => setOpen(false)} />
+            <CustomHabitForm
+              childId={childId}
+              childName={childName}
+              gender={gender}
+              onBack={() => setCustom(false)}
+              onAdded={(title) => {
+                // The dialog closes first: a toast behind it couldn't be seen. The habit joins her list,
+                // maybe below the fold; the toast says what a check-in earns.
+                setOpen(false);
+                showToast({ text: t("kids.toast.habitAdded", { title: isolate(title), name: isolate(childName) }) });
+              }}
+            />
           ) : (
             <TemplatePicker childId={childId} childName={childName} existingTitles={existingTitles} templateTitles={templateTitles} onCustom={() => setCustom(true)} />
           )}
@@ -84,26 +110,38 @@ function TemplatePicker({
 }) {
   const { t: tr } = useT();
   const t = useTranslations("kids.habit");
-  const [state, formAction, pending] = useActionState(addChildHabit.bind(null, childId), initialState);
+  const [state, formAction, pending] = useAddHabit(childId);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
   const have = new Set(existingTitles);
   const left = templatesLeft(KID_TEMPLATES, templateTitles, have, (id) => kidTemplateTitle(tr, id));
 
   return (
     <>
-      <div className="flex flex-col gap-1 pe-10">
+      {/* pe-10: room for the dialog's close X. Title over description: line-height, no gap. */}
+      <div className="flex flex-col pe-10">
         <DialogTitle>{t.rich("title", { name: childName, bdi })}</DialogTitle>
         <DialogDescription>{t("description")}</DialogDescription>
       </div>
-      <Button type="button" variant="outline" className="h-12 justify-start gap-3" onClick={onCustom}>
+      <Button type="button" variant="outline" className="h-12 justify-start gap-inner" onClick={onCustom}>
         <PenLine aria-hidden className="size-5 text-primary" />
         {tr("habits.form.createOwn")}
       </Button>
-      {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
+      {state.status === "error" && !pending && (
+        <Notice tone="error" live>
+          {state.message}
+        </Notice>
+      )}
+      {/* In progress, then done, for the tile just tapped: the dialog stays open for more. */}
       <p role="status" className="text-sm font-semibold text-done">
-        {state.status === "saved" && lastAdded ? t("added", { title: lastAdded }) : ""}
+        {pending && lastAdded ? (
+          <span className="text-muted-foreground">{t("adding", { title: lastAdded })}</span>
+        ) : state.status === "saved" && lastAdded ? (
+          t("added", { title: lastAdded })
+        ) : (
+          ""
+        )}
       </p>
-      <form action={formAction} className="flex flex-col gap-4">
+      <form action={formAction} className="flex flex-col gap-item">
         <KidTemplateGroups
           templates={left}
           item={(tpl) => (
@@ -114,7 +152,8 @@ function TemplatePicker({
               disabled={pending}
               onClick={() => setLastAdded(kidTemplateTitle(tr, tpl.id))}
               aria-label={t("add", { title: kidTemplateTitle(tr, tpl.id) })}
-              className="flex min-h-16 w-full items-center gap-3 rounded-2xl border-2 border-transparent bg-muted/60 p-3 hover:border-primary/30"
+              // A template to pick: tinted, not a shadowed card (it's inside a dialog). 12 px padding.
+              className="flex min-h-16 w-full items-center gap-item rounded-2xl border-2 border-transparent bg-muted/60 p-3 hover:border-primary/30"
             >
               <KidTemplateTile template={tpl} />
             </button>
@@ -137,31 +176,36 @@ function CustomHabitForm({
   childName: string;
   gender: Gender;
   onBack: () => void;
-  onAdded: () => void;
+  onAdded: (title: string) => void;
 }) {
   const { t: tr } = useT();
   const t = useTranslations("kids.habit");
-  const [state, formAction, pending] = useActionState(addChildHabit.bind(null, childId), initialState);
+  const [state, formAction, pending] = useAddHabit(childId);
+  const [title, setTitle] = useState("");
   const [emoji, setEmoji] = useState("⭐");
   // Controlled, so the stepper knows the period's limit; keepFormValues means no reset wipes them.
   const [count, setCount] = useState("1");
   const [period, setPeriod] = useState<HabitPeriod>("day");
   useEffect(() => {
-    if (state.status === "saved") onAdded();
-  }, [state, onAdded]);
+    if (state.status === "saved") onAdded(title.trim());
+    // Only a new answer counts; the title is read as it was sent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   return (
     <>
-      <div className="flex flex-col gap-1 pe-10">
+      <div className="flex flex-col pe-10">
         <DialogTitle>{t.rich("ownTitle", { name: childName, bdi })}</DialogTitle>
         <DialogDescription>{t.rich("ownDescription", { name: childName, gender: gender ?? "other", bdi })}</DialogDescription>
       </div>
-      <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1.5">
+      <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-item">
+        <div className="flex flex-col gap-inner">
           <Label htmlFor="kid-habit-title" className="font-semibold">{tr("habits.form.titleLabel")}</Label>
           <Input
             id="kid-habit-title"
             name="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             required
             autoFocus
             maxLength={HABIT_TITLE_MAX}
@@ -171,8 +215,10 @@ function CustomHabitForm({
           />
         </div>
         <input type="hidden" name="emoji" value={emoji} />
+        <div className="flex flex-col gap-inner">
         <p id="kid-habit-emoji" className="text-sm font-semibold">{t("picture")}</p>
-        <div role="group" aria-labelledby="kid-habit-emoji" className="grid grid-cols-6 gap-1">
+        {/* As many 44 px tiles as fit (4 in the dialog at 320; 6 a row made them 38 px). */}
+        <div role="group" aria-labelledby="kid-habit-emoji" className="grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] gap-inner">
           {KID_EMOJI.map((e) => (
             <button
               key={e}
@@ -185,12 +231,13 @@ function CustomHabitForm({
             </button>
           ))}
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="flex flex-col gap-1.5">
+        </div>
+        <div className="grid grid-cols-2 gap-inner">
+          <div className="flex flex-col gap-inner">
             <Label htmlFor="kid-habit-target" className="font-semibold">{tr("habits.form.times")}</Label>
             <CountStepper id="kid-habit-target" value={count} onChange={setCount} period={period} />
           </div>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-inner">
             <Label htmlFor="kid-habit-period" className="font-semibold">{tr("habits.form.per")}</Label>
             <select
               id="kid-habit-period"
@@ -205,8 +252,12 @@ function CustomHabitForm({
             </select>
           </div>
         </div>
-        {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
-        <div className="flex gap-2">
+        {state.status === "error" && (
+          <Notice tone="error" live>
+            {state.message}
+          </Notice>
+        )}
+        <div className="flex gap-inner">
           <Button type="button" variant="outline" className="h-11 flex-1" onClick={onBack} disabled={pending}>
             {t("back")}
           </Button>

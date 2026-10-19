@@ -935,7 +935,9 @@
     },
     "errors": {
       "pickHabit": "נא לבחור הרגל.",
-      "themeFailed": "השינוי לא הצליח. נסו שוב."
+      "themeFailed": "לא הצלחנו לשנות את מה שגדל. רעננו את הדף ולחצו שוב.",
+      "offline": "לא הצלחנו להתחבר ל-Keepup. בדקו את החיבור ונסו שוב.",
+      "reload": "זה לא עבר. רעננו את הדף ונסו שוב."
     },
     "new": {
       "askAdmin": "בקשו ממנהלי הקבוצה <bdi>{group}</bdi> להוסיף ילד/ה."
@@ -967,7 +969,8 @@
       "titlePlaceholder": "להאכיל את הדגים",
       "picture": "תמונה",
       "period": "{period, select, day {יום} week {שבוע} other {חודש}}",
-      "back": "חזרה"
+      "back": "חזרה",
+      "adding": "מוסיפים: {title}…"
     },
     "detail": {
       "habitsFailed": "חלק מההרגלים לא נוספו. אפשר להוסיף אותם מכאן.",
@@ -977,7 +980,8 @@
       "logged": "{by, select, child {{gender, select, boy {<bdi>{name}</bdi> עשה את זה} girl {<bdi>{name}</bdi> עשתה את זה} other {<bdi>{name}</bdi>: בוצע}}} you {סומן על ידיכם} member {סומן על ידי <bdi>{name}</bdi>} other {סומן על ידי מי שכבר לא בקבוצה}} · {time}",
       "undo": "ביטול הסימון: {title}, {time}",
       "data": "נתונים",
-      "dataText": "כל מה ש-Keepup שומר על <bdi>{name}</bdi>, בקובץ אחד."
+      "dataText": "כל מה ש-Keepup שומר על <bdi>{name}</bdi>, בקובץ אחד.",
+      "noHabits": "הוסיפו הרגל ל-<bdi>{name}</bdi>: כל סימון שווה כוכב אחד."
     },
     "danger": {
       "title": "אזור סכנה",
@@ -1018,7 +1022,12 @@
       "other": "אחר",
       "stars": "כוכבים",
       "earns": "כל סימון שווה כוכב אחד.",
-      "submit": "הצבת היעד"
+      "submit": "הצבת היעד",
+      "setting": "מציבים…",
+      "marking": "מסמנים…",
+      "setDone": "היעד הוצב: <bdi>{treat}</bdi>. כל סימון מקרב אליו בכוכב אחד.",
+      "receivedDone": "סימנתם שהפינוק <bdi>{treat}</bdi> התקבל. בחרו יחד את הפינוק הבא כשתהיו מוכנים.",
+      "cancelledDone": "היעד <bdi>{treat}</bdi> בוטל. כל הכוכבים נשארים אצל <bdi>{name}</bdi>."
     },
     "garden": {
       "stars": "⭐ {stars} השבוע",
@@ -1028,11 +1037,21 @@
     "theme": {
       "title": "מה גדל",
       "hint": "בחרו את זה יחד עם <bdi>{name}</bdi>. הכוכבים לא משתנים.",
-      "group": "נושא"
+      "group": "נושא",
+      "changing": "מחליפים ל-{theme}…",
+      "changed": "הנושא הוחלף ל-{theme}. הכוכבים של השבוע נשארים."
     },
     "checkIn": {
       "label": "{state, select, open {לסמן} done {בוצע} pending {מחכה לאישור} checkedToday {סומן היום} frozen {בהפסקה} other {יתחיל בהמשך}} — {name}: {title}",
-      "checking": "מסמנים עבור {name}: {title}…"
+      "checking": "מסמנים עבור {name}: {title}…",
+      "undoing": "מבטלים…",
+      "undoingLabel": "מבטלים את הסימון: {title}…"
+    },
+    "toast": {
+      "added": "{habits, plural, =0 {הפרופיל של {name} נוסף. הוסיפו הרגל למטה: כל סימון שווה כוכב אחד.} one {הפרופיל של {name} נוסף עם הרגל אחד. כל סימון שווה כוכב אחד.} two {הפרופיל של {name} נוסף עם # הרגלים. כל סימון שווה כוכב אחד.} other {הפרופיל של {name} נוסף עם # הרגלים. כל סימון שווה כוכב אחד.}}",
+      "deleted": "הפרופיל של {name} נמחק יחד עם ההיסטוריה.",
+      "moved": "הפרופיל של {name} הועבר לקבוצה {group}.",
+      "habitAdded": "ההרגל {title} נוסף ל-{name}. כל סימון שווה כוכב אחד."
     }
   },
   "garden": {
@@ -1511,7 +1530,8 @@
     "tagline": "הרגלים, ביחד.",
     "listSeparator": ", ",
     "sectionSeparator": " · ",
-    "tryAgain": "ניסיון חוזר"
+    "tryAgain": "ניסיון חוזר",
+    "downloaded": "הקובץ הורד: {file}."
   },
   "inbox": {
     "title": "הודעות",
