@@ -10,15 +10,23 @@ export type SaveTracker<V> = {
   // on a current failure, the value the control goes back to.
   answer(n: number, value: V, ok: boolean): { current: boolean; revertTo: V | null };
   confirmed(): V;
+  // The server's value as the page now has it (a refresh after another save). Taken only while no save
+  // of this control is waiting for its answer: that answer decides.
+  sync(saved: V): void;
 };
 
 export function saveTracker<V>(saved: V): SaveTracker<V> {
   let seq = 0;
   let confirmedSeq = 0;
   let confirmed = saved;
+  let waiting = 0;
   return {
-    begin: () => ++seq,
+    begin: () => {
+      waiting++;
+      return ++seq;
+    },
     answer(n, value, ok) {
+      waiting = Math.max(0, waiting - 1);
       // A success still counts as saved when overtaken, unless a newer one was confirmed already.
       if (ok && n > confirmedSeq) {
         confirmedSeq = n;
@@ -28,5 +36,8 @@ export function saveTracker<V>(saved: V): SaveTracker<V> {
       return { current, revertTo: current && !ok ? confirmed : null };
     },
     confirmed: () => confirmed,
+    sync(value) {
+      if (waiting === 0) confirmed = value;
+    },
   };
 }

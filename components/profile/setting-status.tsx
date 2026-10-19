@@ -1,7 +1,7 @@
 "use client";
 
 import { unstable_rethrow } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Notice } from "@/components/ui/notice";
 import { useT } from "@/lib/i18n/client";
 import { reach } from "@/lib/reach";
@@ -22,6 +22,9 @@ export function useSettingSave<V>(saved: V, retry: "pick" | "save" = "pick") {
   const [state, setState] = useState<SettingState>({ status: "idle" });
   const [pending, startTransition] = useTransition();
   const [tracker] = useState(() => saveTracker(saved));
+  // The page refreshed with a newer saved value (another setting's save revalidates it): a later
+  // failure goes back to that one.
+  useEffect(() => tracker.sync(saved), [tracker, saved]);
   const fallback = retry === "pick" ? t("settings.status.failedPick") : t("settings.status.failedSave");
   const save = (value: V, call: () => Promise<Answer>, after?: { saved?: () => void; revert?: (confirmed: V) => void }) => {
     const n = tracker.begin();
@@ -42,8 +45,8 @@ export function useSettingSave<V>(saved: V, retry: "pick" | "save" = "pick") {
       }
     });
   };
-  // Edited again after a save: the "Saved ✓" no longer describes what's in the field.
-  const reset = () => setState((s) => (s.status === "saved" ? { status: "idle" } : s));
+  // Edited again: neither "Saved ✓" nor an earlier error describes what's in the field now.
+  const reset = () => setState({ status: "idle" });
   return { state, pending, save, reset };
 }
 

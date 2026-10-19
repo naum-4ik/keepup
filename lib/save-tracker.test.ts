@@ -47,4 +47,21 @@ describe("saveTracker", () => {
     expect(s.answer(s.begin(), 0, false).revertTo).toBe(1);
     expect(s.answer(s.begin(), 0, false).revertTo).toBe(1);
   });
+
+  it("takes the page's newer saved value when nothing is waiting", () => {
+    const s = saveTracker("Rome");
+    s.sync("Tokyo"); // saved elsewhere, the page refreshed
+    expect(s.answer(s.begin(), "Paris", false).revertTo).toBe("Tokyo");
+  });
+
+  it("ignores the page's value while a save is waiting: its answer decides", () => {
+    const s = saveTracker("Rome");
+    const n = s.begin();
+    s.sync("Tokyo");
+    expect(s.confirmed()).toBe("Rome");
+    s.answer(n, "Paris", true);
+    expect(s.confirmed()).toBe("Paris");
+    s.sync("Paris");
+    expect(s.confirmed()).toBe("Paris");
+  });
 });
