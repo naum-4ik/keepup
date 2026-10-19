@@ -141,7 +141,7 @@ Every action has four states and a next step:
 - On the same page, from a client component after the action resolves: `useToast().showToast({ text, action })`, with translated text. The action is a link (`{ label, href }`) or a callback (`{ label, onAction }`, for Undo).
 - After a server action that redirects: `await flashToast({ text, values, action })` (`lib/toast-server.ts`) and then `redirect()`. It sets a 60 s cookie (`secure` in production, with the time it was set; older ones are dropped) with catalog keys (client namespaces only) and values; the app layout hands it to the Toaster on the next page, which translates it, shows it once and clears it. The action can only be a link there (an in-app path).
 - Behind an open dialog a toast can't be seen (the overlay covers it): close the dialog first, then show the toast.
-- A toast confirms something the screen does not already show, or carries the next step the screen doesn't offer. When the change is visible in place and nothing follows, no toast. A check-in on Today turns green in place *and* gets a toast, because it carries Undo: "Read 20 min checked in · Undo" (`lib/check-in-undo.ts`). Undo then shows "Undoing Read 20 min…", and after it "check-in undone", or what went wrong with Undo again.
+- A toast confirms something the screen does not already show. When the change is visible in place, no toast, with one exception: a toast carrying Undo is allowed for an in-place change when the screen has no in-place Undo and a persistent Undo exists elsewhere (e.g. the habit page). So a check-in on Today turns green *and* gets "Read 20 min checked in · Undo" (`lib/check-in-undo.ts`); Undo shows "Undoing Read 20 min…" (sticky until it answers), then "check-in undone", or what went wrong with Undo again. One such toast at a time.
 
 ## Motion
 
@@ -196,5 +196,5 @@ Short, warm, direct. Second person. No exclamation-mark spam.
 - Guilt copy, countdown pressure, or naming who broke a group streak.
 - Tiny tap targets, text below 4.5:1 contrast.
 - Photos of people (GDPR, and kids). Avatars are an emoji chosen from a curated set (animals, friendly objects) on a pastel circle; until chosen, the initial.
-- Toasts for things the screen already shows, unless they carry the next step (a toast is for a result that happened elsewhere, or for its Undo).
+- Toasts for things the screen already shows (a toast is for a result that happened elsewhere; the one exception is Undo for an in-place change with no in-place Undo, see "States and feedback").
 - Cards around sentences, single numbers or headed groups of controls.
