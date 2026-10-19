@@ -54,7 +54,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
         <Link href="/progress/recaps" className="-me-inner flex h-11 items-center rounded-full px-inner text-sm font-semibold text-primary hover:bg-muted">{t("progress.recaps")}</Link>
       </div>
       {!showArchived && overview && hasWeekData(overview) && (
-        <WeekCard t={t} overview={overview} days={days} noStreak={noStreakLine(t, noStreakKind(active))} />
+        <WeekCard t={t} overview={overview} days={days} noStreak={noStreakLine(t, noStreakKind(active.map((h) => ({ ...h, ended: ended(h) }))))} />
       )}
 
       {/* The same segmented look as Inbox's tabs: filled pills read as primary buttons. A 4 px track

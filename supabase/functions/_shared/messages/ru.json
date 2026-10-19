@@ -245,7 +245,7 @@
     "ringLabel": "{goals} на этой неделе",
     "moreThanLastWeek": "{n, plural, one {на # больше, чем на прошлой неделе} few {на # больше, чем на прошлой неделе} many {на # больше, чем на прошлой неделе} other {на # больше, чем на прошлой неделе}}",
     "bestWeekYet": "Ваша лучшая неделя",
-    "freshStart": "{start, select, yes {Новая неделя: отметьтесь сегодня, чтобы выполнить первую цель.} other {Отметьтесь сегодня, чтобы выполнить первую цель на этой неделе.}}",
+    "freshStart": "{start, select, yes {Новая неделя: отметьтесь сегодня — это шаг к первой цели.} other {Отметьтесь сегодня — это шаг к первой цели на этой неделе.}}",
     "dotsLabel": "{period, select, week {{n, plural, one {Последняя # неделя} few {Последние # недели} many {Последние # недель} other {Последние # недели}}} month {{n, plural, one {Последний # месяц} few {Последние # месяца} many {Последние # месяцев} other {Последние # месяца}}} other {{n, plural, one {Последний # день} few {Последние # дня} many {Последние # дней} other {Последние # дня}}}}: {counts}",
     "dotCount": "{status, select, done {{n, plural, one {сделано: #} few {сделано: #} many {сделано: #} other {сделано: #}}} missed {{n, plural, one {не сделано: #} few {не сделано: #} many {не сделано: #} other {не сделано: #}}} paused {{n, plural, one {на паузе: #} few {на паузе: #} many {на паузе: #} other {на паузе: #}}} not_started {{n, plural, one {не начато: #} few {не начато: #} many {не начато: #} other {не начато: #}}} open {{n, plural, one {в процессе: #} few {в процессе: #} many {в процессе: #} other {в процессе: #}}} rested {{n, plural, one {дни отдыха: #} few {дни отдыха: #} many {дни отдыха: #} other {дни отдыха: #}}} other {{n, plural, one {#} few {#} many {#} other {#}}}}"
   },

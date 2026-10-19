@@ -245,7 +245,7 @@
     "ringLabel": "{goals} השבוע",
     "moreThanLastWeek": "{n, plural, one {# יותר מבשבוע שעבר} two {# יותר מבשבוע שעבר} other {# יותר מבשבוע שעבר}}",
     "bestWeekYet": "השבוע הכי טוב שלכם עד עכשיו",
-    "freshStart": "{start, select, yes {שבוע חדש: סמנו היום כדי להשיג את היעד הראשון.} other {סמנו היום כדי להשיג את היעד הראשון השבוע.}}",
+    "freshStart": "{start, select, yes {שבוע חדש: סמנו היום כצעד לקראת היעד הראשון.} other {סמנו היום כצעד לקראת היעד הראשון השבוע.}}",
     "dotsLabel": "{period, select, week {{n, plural, one {השבוע האחרון} two {השבועיים האחרונים} other {# השבועות האחרונים}}} month {{n, plural, one {החודש האחרון} two {החודשיים האחרונים} other {# החודשים האחרונים}}} other {{n, plural, one {היום האחרון} two {היומיים האחרונים} other {# הימים האחרונים}}}}: {counts}",
     "dotCount": "{status, select, done {{n, plural, one {בוצע: #} two {בוצע: #} other {בוצע: #}}} missed {{n, plural, one {פוספס: #} two {פוספס: #} other {פוספס: #}}} paused {{n, plural, one {בהפסקה: #} two {בהפסקה: #} other {בהפסקה: #}}} not_started {{n, plural, one {לא התחיל: #} two {לא התחיל: #} other {לא התחיל: #}}} open {{n, plural, one {בתהליך: #} two {בתהליך: #} other {בתהליך: #}}} rested {{n, plural, one {ימי מנוחה: #} two {ימי מנוחה: #} other {ימי מנוחה: #}}} other {{n, plural, one {#} two {#} other {#}}}}"
   },

@@ -67,16 +67,31 @@ export function comparisonLine(
   return null;
 }
 
-// What starts a streak when there is none: the shortest period among the active habits, and for a
-// daily one whether one check-in finishes it ("once") or it needs more ("day").
+// What starts a streak when there is none: the shortest period among the habits where your own
+// check-in alone can start one today, and for a daily one whether one check-in finishes it ("once")
+// or it needs more ("day"). Only running, started, not paused, personal habits without approval and
+// not past their end count: a group habit waits for the others, an approval for the reviewer. With
+// none of those, the general "Meet today's goal" ("day").
 export type NoStreakKind = "once" | "day" | "week" | "month";
-export function noStreakKind(habits: { period: string; target_count: number }[]): NoStreakKind {
+export type StreakCandidate = {
+  period: string;
+  target_count: number;
+  archived_at: string | null;
+  not_started: boolean;
+  frozen: boolean;
+  group_id: string | null;
+  requires_approval: boolean;
+  ended?: boolean;
+};
+export function noStreakKind(all: StreakCandidate[]): NoStreakKind {
+  const habits = all.filter((h) => !h.archived_at && !h.not_started && !h.frozen && !h.group_id && !h.requires_approval && !h.ended);
+  if (habits.length === 0) return "day";
   const daily = habits.filter((h) => h.period === "day");
   if (daily.some((h) => h.target_count <= 1)) return "once";
   if (daily.length > 0) return "day";
   if (habits.some((h) => h.period === "week")) return "week";
   if (habits.some((h) => h.period === "month")) return "month";
-  return "once";
+  return "day";
 }
 export const noStreakLine = (t: T, kind: NoStreakKind): string => t("overview.noStreak", { kind });
 

@@ -245,7 +245,7 @@
     "ringLabel": "{goals} this week",
     "moreThanLastWeek": "{n, plural, other {# more than last week}}",
     "bestWeekYet": "Your best week yet",
-    "freshStart": "{start, select, yes {New week: check in today to meet your first goal.} other {Check in today to meet your first goal this week.}}",
+    "freshStart": "{start, select, yes {New week: check in today toward your first goal.} other {Check in today toward your first goal this week.}}",
     "dotsLabel": "Last {period, select, week {{n, plural, one {# week} other {# weeks}}} month {{n, plural, one {# month} other {# months}}} other {{n, plural, one {# day} other {# days}}}}: {counts}",
     "dotCount": "{status, select, done {{n, plural, other {# done}}} missed {{n, plural, other {# missed}}} paused {{n, plural, other {# paused}}} not_started {{n, plural, other {# not started}}} open {{n, plural, other {# in progress}}} rested {{n, plural, other {# rest day}}} other {{n, plural, other {#}}}}"
   },
