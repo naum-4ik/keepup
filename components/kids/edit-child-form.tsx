@@ -14,6 +14,7 @@ import { Notice } from "@/components/ui/notice";
 import type { AvatarColor } from "@/lib/avatars";
 import { GenderField } from "@/components/kids/gender-field";
 import { keepFormValues } from "@/lib/keep-form-values";
+import { reach } from "@/lib/reach";
 import { CHILD_NAME_MAX, type KidGender } from "@/lib/kid-schema";
 
 const initialState: KidFormState = { status: "idle" };
@@ -55,7 +56,12 @@ export function EditChildButton({
 
 function EditChildForm({ childId, name, emoji, color, gender }: { childId: string; name: string; emoji: string | null; color: AvatarColor | null; gender: KidGender | null }) {
   const t = useTranslations("kids.form");
-  const [state, formAction, pending] = useActionState(updateChild.bind(null, childId), initialState);
+  const tk = useTranslations("kids.errors");
+  // Offline, nothing is sent; a request that dies on the way says to reload. The input is kept.
+  const [state, formAction, pending] = useActionState(async (prev: KidFormState, formData: FormData): Promise<KidFormState> => {
+    const r = await reach(() => updateChild(childId, prev, formData), { offline: tk("offline"), reload: tk("reload") });
+    return "ok" in r ? { status: "error", message: r.message } : r;
+  }, initialState);
   const [value, setValue] = useState(name);
   return (
     <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-item">
