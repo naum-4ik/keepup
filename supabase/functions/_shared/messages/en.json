@@ -1597,7 +1597,8 @@
       "resumedDone": "Notifications are back on ✓",
       "removedDone": "Removed {label} ✓. It gets no more notifications.",
       "offline": "Needs a connection. Connect and tap it again.",
-      "reload": "That didn't go through. Reload the page and tap it again."
+      "reload": "That didn't go through. Reload the page and tap it again.",
+      "pausedUntilOnDone": "Paused ✓. Turn them back on here any time; your Inbox still gets everything."
     },
     "turnOn": {
       "label": "Turn on reminders",

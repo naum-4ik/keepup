@@ -52,7 +52,7 @@ test("Pause all, then resume", async ({ page }) => {
   const section = page.getByRole("region", { name: "Notifications" });
   await section.getByRole("button", { name: "Until I turn them back on" }).click();
   await expect(section.getByText("Paused until you turn them back on")).toBeVisible();
-  await expect(section.getByRole("status").filter({ hasText: "Paused ✓" })).toHaveText("Paused ✓. No pushes until then; your Inbox still gets everything.");
+  await expect(section.getByRole("status").filter({ hasText: "Paused ✓" })).toHaveText("Paused ✓. Turn them back on here any time; your Inbox still gets everything.");
   await section.getByRole("button", { name: "Resume" }).click();
   await expect(section.getByRole("button", { name: "8 hours" })).toBeVisible();
   await expect(section.getByRole("status").filter({ hasText: "back on" })).toHaveText("Notifications are back on ✓");

@@ -160,7 +160,7 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
           <div className="flex flex-wrap gap-inner">
             {PAUSE_CHOICES.map((c) => (
               <Button key={c.choice} type="button" variant="outline" className="h-11" disabled={pending}
-                onClick={() => run({ where: "pause", key: c.choice }, () => pauseAll(c.choice), t("notifications.card.pausedDone"))}>
+                onClick={() => run({ where: "pause", key: c.choice }, () => pauseAll(c.choice), t(c.choice === "until_on" ? "notifications.card.pausedUntilOnDone" : "notifications.card.pausedDone"))}>
                 {busy?.key === c.choice ? t("notifications.card.pausing") : t(`notificationSettings.pauseChoice.${c.choice}`)}
               </Button>
             ))}
