@@ -28,8 +28,8 @@ export default async function Home({
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center gap-section px-4 py-section text-center">
       <div className="flex flex-col items-center gap-inner">
-        {/* Decorative and small: no priority preload, so it doesn't compete with the text (the LCP) for bandwidth. */}
-        <Image src="/icons/icon-192.png" alt="" width={72} height={72} className="rounded-2xl" />
+        {/* Decorative and small: loaded at once (it is on the first screen) but not preloaded, so it doesn't compete with the CSS and the text (the LCP). */}
+        <Image src="/icons/icon-192.png" alt="" width={72} height={72} loading="eager" className="rounded-2xl" />
         <h1 className="text-4xl font-bold tracking-tight">
           <span className="text-foreground">Keep</span>
           <span className="text-primary">up</span>
