@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { RenderedTaps } from "@/components/offline/offline-queue-provider";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ListPlus } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { kidProgressText } from "@/components/habits/habit-card";
@@ -18,6 +18,9 @@ import { lastWeek } from "@/lib/garden";
 import { GardenAlbum } from "@/components/kids/garden-album";
 import { KidCheckInButton, UndoForChildButton } from "@/components/kids/kid-check-in-button";
 import { TreatGoal } from "@/components/kids/treat-goal";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Notice } from "@/components/ui/notice";
+import { Section } from "@/components/ui/section";
 import { getProfile } from "@/lib/auth";
 import { getGroupDetail, getMyGroups } from "@/lib/groups";
 import { todayIn } from "@/lib/dates";
@@ -79,104 +82,113 @@ export default async function KidPage({
   };
 
   return (
-    <section className="flex flex-col gap-4 pt-2 pb-6">
+    <div className="flex flex-col gap-section py-section">
       <RenderedTaps ids={renderedTaps} periods={tapPeriods(habits, () => group?.timezone ?? profile.timezone)} />
-      <Link
-        href={`/groups/${child.group_id}`}
-        className="-ms-2 flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
-      >
-        <ChevronLeft aria-hidden className="size-4 shrink-0 rtl:-scale-x-100" />
-        <span className="truncate">{child.group_name}</span>
-      </Link>
+      <div className="flex flex-col gap-item">
+        {/* -ms-inner: the chevron lines up with the page edge; 4 px icon to label (one glyph pair). */}
+        <Link
+          href={`/groups/${child.group_id}`}
+          className="-ms-inner flex h-11 w-fit max-w-full min-w-0 items-center gap-1 rounded-full px-inner text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <ChevronLeft aria-hidden className="size-4 shrink-0 rtl:-scale-x-100" />
+          <span className="truncate">{child.group_name}</span>
+        </Link>
 
-      <header className="flex items-center gap-3">
-        <Avatar name={child.name} emoji={child.avatar_emoji} color={child.avatar_color} size="lg" />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <h1 className="truncate text-xl font-bold">{child.name}</h1>
-          <p className="truncate text-sm text-muted-foreground">{child.group_name}</p>
-        </div>
-        <EditChildButton childId={id} name={child.name} emoji={child.avatar_emoji} color={child.avatar_color} gender={child.gender} />
-      </header>
+        {/* The name wraps, never "Mar…": it is who this page is about. */}
+        <header className="flex items-center gap-item">
+          <Avatar name={child.name} emoji={child.avatar_emoji} color={child.avatar_color} size="lg" />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <h1 className="text-xl font-bold wrap-break-word">{child.name}</h1>
+            <p className="truncate text-sm text-muted-foreground">{child.group_name}</p>
+          </div>
+          <EditChildButton childId={id} name={child.name} emoji={child.avatar_emoji} color={child.avatar_color} gender={child.gender} />
+        </header>
 
-      {habitsFailed === "1" && (
-        <p role="status" className="rounded-2xl bg-pending-soft p-4 text-sm font-semibold text-pending">
-          {tk("habitsFailed")}
-        </p>
-      )}
+        {habitsFailed === "1" && <Notice tone="error">{tk("habitsFailed")}</Notice>}
 
-      <Link
-        href={`/kids/${id}/play`}
-        className="flex min-h-14 items-center justify-center rounded-2xl bg-primary px-5 text-base font-bold text-primary-foreground shadow-soft hover:brightness-95"
-      >
-        {tk("openView", { name: isolate(child.name) })}
-      </Link>
+        <Link
+          href={`/kids/${id}/play`}
+          className="flex min-h-14 items-center justify-center rounded-2xl bg-primary px-item text-center text-base font-bold text-primary-foreground shadow-soft hover:brightness-95"
+        >
+          {tk("openView", { name: isolate(child.name) })}
+        </Link>
 
-      {rewards && lastWeek(rewards.week_start, rewards.album) && (
-        <NewWeekCard
-          childId={id}
-          weekStart={rewards.week_start}
-          lastStars={lastWeek(rewards.week_start, rewards.album)!.stars}
-          theme={child.kid_theme}
-          gender={child.gender}
-          albumHref="#album"
-        />
-      )}
+        {rewards && lastWeek(rewards.week_start, rewards.album) && (
+          <NewWeekCard
+            childId={id}
+            weekStart={rewards.week_start}
+            lastStars={lastWeek(rewards.week_start, rewards.album)!.stars}
+            theme={child.kid_theme}
+            gender={child.gender}
+            albumHref="#album"
+          />
+        )}
+      </div>
+
       {rewards && <Garden t={tg} stars={rewards.stars_this_week} theme={child.kid_theme} weekStart={rewards.week_start} gender={child.gender} />}
       <ThemePicker childId={id} childName={child.name} theme={child.kid_theme} />
       {rewards && <GardenAlbum t={tg} locale={locale} weeks={rewards.album} theme={child.kid_theme} />}
       {rewards && <TreatGoal childId={id} childName={child.name} gender={child.gender} goal={rewards.goal} />}
 
-      <section aria-label={tk("habits")} className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
-        <h2 className="text-sm font-bold text-muted-foreground">{tk("habits")}</h2>
+      <Section title={tk("habits")}>
         {habits.length > 0 ? (
-          <ul className="flex flex-col gap-3">
-            {habits.map((h) => {
-              const mine = checkIns.filter((c) => c.habit_id === h.habit_id);
-              return (
-                <li key={h.habit_id} className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-3">
-                    <Link
-                      href={`/habits/${h.habit_id}`}
-                      className="-my-1 flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-xl py-1 hover:bg-muted/60"
-                    >
-                      <HabitEmoji category={h.category} emoji={h.emoji} size="lg" />
-                      <span className="flex min-w-0 flex-1 flex-col">
-                        <span className="truncate font-bold">{h.title}</span>
-                        <span className="text-sm text-muted-foreground">
-                          {h.group_name ? tk.rich("progressInGroup", { progress: kidProgressText(tg, locale, h), group: h.group_name, bdi }) : kidProgressText(tg, locale, h)}
+          <>
+            <ul className="flex flex-col gap-item">
+              {habits.map((h) => {
+                const mine = checkIns.filter((c) => c.habit_id === h.habit_id);
+                return (
+                  // A habit to open, with its check-in and Undo buttons beside the link: the card look of
+                  // Today's habit card, not a Surface (a button can't sit inside a link).
+                  <li key={h.habit_id} className="flex flex-col gap-inner rounded-2xl bg-card p-item shadow-soft">
+                    <div className="flex items-center gap-inner">
+                      <Link href={`/habits/${h.habit_id}`} className="group flex min-h-11 min-w-0 flex-1 items-center gap-inner">
+                        <HabitEmoji category={h.category} emoji={h.emoji} size="lg" />
+                        {/* Title over its meta: line-height, not a gap. The title wraps ("Brush tee…" at 320 hid it). */}
+                        <span className="flex min-w-0 flex-1 flex-col">
+                          <span className="font-bold group-hover:underline">{h.title}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {h.group_name ? tk.rich("progressInGroup", { progress: kidProgressText(tg, locale, h), group: h.group_name, bdi }) : kidProgressText(tg, locale, h)}
+                          </span>
                         </span>
-                      </span>
-                    </Link>
-                    <StreakBadge count={h.current_streak} />
-                    <KidCheckInButton
-                      habitId={h.habit_id}
-                      title={h.title}
-                      childId={id}
-                      childName={child.name}
-                      multi={h.target_count > 1}
-                      state={stateOf(h)}
-                    />
-                  </div>
-                  {mine.map((c) => (
-                    <div key={c.id} className="ms-17 flex min-h-11 items-center justify-between gap-2 rounded-xl bg-muted py-1 pe-1 ps-3 text-sm">
-                      <span>{logged(c.logged_by, c.created_at)}</span>
-                      <UndoForChildButton
-                        checkInId={c.id}
+                      </Link>
+                      <StreakBadge count={h.current_streak} />
+                      <KidCheckInButton
                         habitId={h.habit_id}
+                        title={h.title}
                         childId={id}
-                        label={tk("undo", { title: isolate(h.title), time: time.format(new Date(c.created_at)) })}
+                        childName={child.name}
+                        multi={h.target_count > 1}
+                        state={stateOf(h)}
                       />
                     </div>
-                  ))}
-                </li>
-              );
-            })}
-          </ul>
+                    {mine.map((c) => (
+                      // 12 px start padding to match the 12 px radius (as Notice does); the Undo button ends flush.
+                      <div key={c.id} className="flex min-h-11 items-center justify-between gap-inner rounded-xl bg-muted ps-3 text-sm">
+                        <span>{logged(c.logged_by, c.created_at)}</span>
+                        <UndoForChildButton
+                          checkInId={c.id}
+                          habitId={h.habit_id}
+                          childId={id}
+                          label={tk("undo", { title: isolate(h.title), time: time.format(new Date(c.created_at)) })}
+                          title={h.title}
+                        />
+                      </div>
+                    ))}
+                  </li>
+                );
+              })}
+            </ul>
+            <AddKidHabit childId={id} childName={child.name} existingTitles={unarchived.map((h) => h.title)} templateTitles={templateTitles} gender={child.gender} />
+          </>
         ) : (
-          <p className="text-sm text-muted-foreground">{tg("common.noHabits")}</p>
+          <EmptyState
+            icon={<ListPlus className="size-6" />}
+            action={<AddKidHabit childId={id} childName={child.name} existingTitles={unarchived.map((h) => h.title)} templateTitles={templateTitles} gender={child.gender} />}
+          >
+            {tk.rich("noHabits", { name: child.name, bdi })}
+          </EmptyState>
         )}
-        <AddKidHabit childId={id} childName={child.name} existingTitles={unarchived.map((h) => h.title)} templateTitles={templateTitles} gender={child.gender} />
-      </section>
+      </Section>
 
       {/* Archived habits open their page, where a guardian restores them. Finished ones (an end that
           was reached and closed) are listed apart: they don't restore. */}
@@ -184,17 +196,16 @@ export default async function KidPage({
       <HabitLinks title={tp("finished")} habits={archivedHabits.filter((h) => finishedIds.has(h.habit_id))} />
 
       {/* Taking a copy isn't dangerous: it sits on its own, for every adult in the group. */}
-      <section aria-label={tk("data")} className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
-        <h2 className="text-sm font-bold text-muted-foreground">{tk("data")}</h2>
+      <Section title={tk("data")}>
         <p className="text-sm text-muted-foreground">{tk.rich("dataText", { name: child.name, bdi })}</p>
         <ExportChildButton childId={id} childName={child.name} />
-      </section>
+      </Section>
 
       <ChildDangerZone childId={id} childName={child.name} isAdmin={isAdmin} moveTargets={moveTargets} />
 
       {/* Another adult logging for the child (or the child's own taps in the kid view) refreshes this page. */}
       {habits.length > 0 && <LiveRefresh table="check_ins" filter={`user_id=eq.${id}`} />}
-    </section>
+    </div>
   );
 }
 
@@ -202,19 +213,20 @@ export default async function KidPage({
 function HabitLinks({ title, habits }: { title: string; habits: HabitSummary[] }) {
   if (habits.length === 0) return null;
   return (
-    <section aria-label={title} className="flex flex-col gap-2 rounded-2xl bg-card p-5 shadow-soft">
-      <h2 className="text-sm font-bold text-muted-foreground">{title}</h2>
-      <ul className="flex flex-col gap-1">
+    <Section title={title}>
+      {/* Rows on dividers, no cards: py-inner + the divider keep the texts 16 px apart. -mx-inner px-inner:
+          the hover tint reaches past the text without moving it. */}
+      <ul className="-my-inner flex flex-col divide-y divide-border">
         {habits.map((h) => (
           <li key={h.habit_id}>
-            <Link href={`/habits/${h.habit_id}`} className="-mx-2 flex min-h-11 items-center gap-3 rounded-xl px-2 py-1 hover:bg-muted/60">
+            <Link href={`/habits/${h.habit_id}`} className="-mx-inner flex min-h-11 items-center gap-inner rounded-xl px-inner py-inner hover:bg-muted/60">
               <HabitEmoji category={h.category} emoji={h.emoji} size="xs" />
-              <span className="min-w-0 flex-1 truncate font-semibold">{h.title}</span>
+              <span className="min-w-0 flex-1 font-semibold">{h.title}</span>
               <ChevronRight aria-hidden className="size-5 shrink-0 text-muted-foreground rtl:-scale-x-100" />
             </Link>
           </li>
         ))}
       </ul>
-    </section>
+    </Section>
   );
 }

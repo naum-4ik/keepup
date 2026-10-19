@@ -13,12 +13,15 @@ import { insertHabits, setHabitEnd } from "@/lib/habit-create";
 import { startAgainEnd } from "@/lib/habit-finish";
 import { todayIn } from "@/lib/dates";
 import { getGroupDetail } from "@/lib/groups";
-import { genericError, habitErrorMessage, REFRESH_ON_ERROR } from "@/lib/habit-errors";
-import { errorText } from "@/lib/field-error";
+import { errorCode, genericError, habitErrorMessage, REFRESH_ON_ERROR } from "@/lib/habit-errors";
+import { errorTexts } from "@/lib/field-error";
 import { getT } from "@/lib/i18n/server";
 import { reminderError } from "@/lib/reminder-mode";
 import { isUuid, LOCAL_DATE, parseDetailsEdit, parseHabit, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
 import { logError, track } from "@/lib/log";
+import { undoOutcome } from "@/lib/check-in-undo";
+import { addedFlash, deletedFlash, restoredFlash, startedAgainFlash } from "@/lib/habit-toasts";
+import { flashToast } from "@/lib/toast-server";
 import type { T } from "@/supabase/functions/_shared/i18n";
 
 const notFound = (t: T): ActionResult => ({ ok: false, message: t("errors.habit_not_found") });
@@ -27,6 +30,18 @@ const notFound = (t: T): ActionResult => ({ ok: false, message: t("errors.habit_
 // goes through app/api/check-ins/tap instead, so the phone can stop waiting for it.)
 export type ActionResult = { ok: true } | { ok: false; message: string; code?: string };
 export type FormActionState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string };
+// A confirm dialog's action that stays on the client after it worked (archive: its toast carries
+// Undo, which a redirect can't carry): where to go next.
+// The edit form: what was refused, by field (shown under it, the first one focused), or a message
+// when the save itself failed.
+export type DetailsField = "title" | "emoji" | "category" | "startsOn";
+export type DetailsFormState =
+  | { status: "idle" }
+  | { status: "saved" }
+  | { status: "error"; message?: string; errors?: Partial<Record<DetailsField, string>> };
+// The database rules about the start date, said under the start date.
+const START_CODES = new Set(["start_in_past", "start_too_far", "start_locked"]);
+export type ConfirmActionState = FormActionState | { status: "done"; next: string };
 
 function refresh(habitId?: string) {
   revalidatePath("/today");
@@ -58,7 +73,7 @@ function templateIdOf(formData: FormData): string | undefined {
 const keptTemplate = (t: T, formData: FormData, title: string) => templateKept(t, templateIdOf(formData), title);
 
 export async function createHabit(_prev: HabitFormState, formData: FormData): Promise<HabitFormState> {
-  const { t } = await getT();
+  const { t, locale } = await getT();
   const values = readHabitForm(formData);
   const parsed = parseHabit(values);
   if (!parsed.ok) return { status: "error", errors: parsed.errors, values };
@@ -76,6 +91,7 @@ export async function createHabit(_prev: HabitFormState, formData: FormData): Pr
   const h = parsed.value;
   track("habit_created", who, { "habit.scope": "private", "habit.id": ids[0], "habit.title": h.title, "habit.template_id": templateIdOf(formData), "habit.category": h.category, "habit.period": h.period, "habit.target_count": h.targetCount });
   refresh();
+  await flashToast(addedFlash({ id: ids[0], title: h.title, period: h.period, startsOn: h.startsOn }, locale));
   redirect("/today");
 }
 
@@ -103,6 +119,30 @@ export async function undoCheckIn(checkInId: string, habitId: string): Promise<A
   if (error) return { ok: false, message: habitErrorMessage(t, error) };
   track("check_in_undone", who, { "check_in.id": checkInId, "habit.id": habitId });
   refresh(habitId);
+  return { ok: true };
+}
+
+// Undo from Today's "checked in" toast: the tap is known by its client id (lib/offline-client.ts
+// submitTap), not its row. The RPC answers false both when the row is gone (already undone: an earlier
+// Undo whose answer was lost) and when it refuses (approved meanwhile, or its period closed; it then
+// also leaves an undo_dropped row in the Inbox). The row tells them apart (lib/check-in-undo.ts
+// undoOutcome): gone counts as undone, a refusal is said as "can't be undone anymore".
+export async function undoCheckInByClient(clientId: string, habitId: string): Promise<ActionResult> {
+  const { t } = await getT();
+  if (!isUuid(clientId) || !isUuid(habitId)) return notFound(t);
+  const { supabase, who } = await requireUser();
+  const { data, error } = await supabase.rpc("undo_check_in_by_client", { p_client_id: clientId });
+  if (error) return { ok: false, message: habitErrorMessage(t, error) };
+  refresh(habitId);
+  let stillThere: boolean | null = null;
+  if (data !== true) {
+    const { data: row, error: readError } = await supabase.from("check_ins").select("id").eq("client_id", clientId).maybeSingle();
+    if (readError) logError("undo check: reading the check-in failed", readError.message);
+    stillThere = readError ? null : Boolean(row);
+  }
+  const outcome = undoOutcome(data === true, stillThere);
+  if (outcome === "refused") return { ok: false, message: t("today.undo.gone"), code: "undo_gone" };
+  if (outcome === "undone") track("check_in_undone", who, { "check_in.client_id": clientId, "habit.id": habitId });
   return { ok: true };
 }
 
@@ -136,7 +176,7 @@ export async function unfreezeHabit(habitId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
-export async function updateHabitDetails(habitId: string, _prev: FormActionState, formData: FormData): Promise<FormActionState> {
+export async function updateHabitDetails(habitId: string, _prev: DetailsFormState, formData: FormData): Promise<DetailsFormState> {
   const { t } = await getT();
   if (!isUuid(habitId)) return { status: "error", message: t("errors.habit_not_found") };
   const parsed = parseDetailsEdit({
@@ -144,13 +184,12 @@ export async function updateHabitDetails(habitId: string, _prev: FormActionState
     emoji: String(formData.get("emoji") ?? ""),
     category: String(formData.get("category") ?? ""),
   });
-  if (!parsed.ok) {
-    const { title, emoji, category } = parsed.errors;
-    const first = title ?? emoji ?? category;
-    return { status: "error", message: first ? errorText(t, first) : t("errors.checkDetails") };
-  }
   const startsOn = String(formData.get("startsOn") ?? "");
-  if (startsOn !== "" && !LOCAL_DATE.test(startsOn)) return { status: "error", message: t("validation.startDate") };
+  const badStart = startsOn !== "" && !LOCAL_DATE.test(startsOn);
+  if (!parsed.ok || badStart) {
+    const errors = { ...(parsed.ok ? {} : errorTexts(t, parsed.errors)), ...(badStart ? { startsOn: t("validation.startDate") } : {}) };
+    return Object.keys(errors).length > 0 ? { status: "error", errors } : { status: "error", message: t("errors.checkDetails") };
+  }
   const { supabase, who } = await requireUser();
   // The form shows the title as this person reads it. Saved unchanged, it's no rename: a template habit
   // keeps its template (a rename drops it) and its stored title (not overwritten by a translation).
@@ -162,7 +201,10 @@ export async function updateHabitDetails(habitId: string, _prev: FormActionState
     .from("habits")
     .update({ ...rest, ...(renamed ? { title } : {}), ...(startsOn ? { starts_on: startsOn } : {}) })
     .eq("id", habitId);
-  if (error) return { status: "error", message: habitErrorMessage(t, error) };
+  if (error) {
+    const code = errorCode(error);
+    return code && START_CODES.has(code) ? { status: "error", errors: { startsOn: habitErrorMessage(t, error) } } : { status: "error", message: habitErrorMessage(t, error) };
+  }
   track("habit_edited", who, { "habit.id": habitId, "habit.title": renamed ? title : stored.title, "habit.category": parsed.value.category ?? undefined });
   refresh(habitId);
   return { status: "saved" };
@@ -172,56 +214,77 @@ export async function updateHabitDetails(habitId: string, _prev: FormActionState
 // <form>), so a failure must come back as state the dialog can show, not a thrown error.
 // After archive or delete, a guardian lands back on the child's page; everyone else on their own list.
 // Read before the change (a deleted habit can't be read) from the habit's own row (RLS: what I can see).
-async function backTo(supabase: Awaited<ReturnType<typeof requireUser>>["supabase"], userId: string, habitId: string, fallback: string) {
-  const { data } = await supabase.from("habits").select("owner_id, group_id").eq("id", habitId).maybeSingle();
-  return data && !data.group_id && data.owner_id && data.owner_id !== userId ? `/kids/${data.owner_id}` : fallback;
+// `title`: for the toast that says what happened (read here too: a deleted habit can't be read after),
+// as the person reads it: a template habit's name in their language (habitNameFor).
+async function backTo(t: T, supabase: Awaited<ReturnType<typeof requireUser>>["supabase"], userId: string, habitId: string, fallback: string) {
+  const { data } = await supabase.from("habits").select("owner_id, group_id, title, template_id").eq("id", habitId).maybeSingle();
+  const next = data && !data.group_id && data.owner_id && data.owner_id !== userId ? `/kids/${data.owner_id}` : fallback;
+  return { next, title: data ? habitNameFor(t)(data.title, data.template_id) : "" };
 }
 
-export async function archiveHabit(habitId: string): Promise<FormActionState> {
+// No redirect from here: the client goes to `next` and shows "Archived …" with Undo
+// (components/habits/archive-habit-button.tsx, lib/habit-toasts.ts).
+export async function archiveHabit(habitId: string): Promise<ConfirmActionState> {
   const { t } = await getT();
   if (!isUuid(habitId)) return { status: "error", message: t("errors.habit_not_found") };
   const { supabase, userId, who } = await requireUser();
-  const next = await backTo(supabase, userId, habitId, "/progress?view=archived");
+  const { next } = await backTo(t, supabase, userId, habitId, "/progress?view=archived");
   const { error } = await supabase.from("habits").update({ archived_at: new Date().toISOString() }).eq("id", habitId);
   if (error) return { status: "error", message: habitErrorMessage(t, error) };
   track("habit_archived", who, { "habit.id": habitId });
   refresh(habitId);
   if (next.startsWith("/kids/")) revalidatePath(next);
-  redirect(next);
+  return { status: "done", next };
 }
 
 // Restore from Archived (not Finished): back on Today with its history; the archived days count as
 // skipped, never missed (the RPC settles them).
-export async function restoreHabit(habitId: string): Promise<ActionResult> {
+async function restore(habitId: string): Promise<{ ok: true; next: string; title: string } | { ok: false; message: string; code?: string }> {
   const { t } = await getT();
-  if (!isUuid(habitId)) return notFound(t);
+  if (!isUuid(habitId)) return { ok: false, message: t("errors.habit_not_found") };
   const { supabase, userId, who } = await requireUser();
   const { error } = await supabase.rpc("restore_habit", { p_habit_id: habitId });
-  if (error) return { ok: false, message: habitErrorMessage(t, error) };
+  if (error) return { ok: false, message: habitErrorMessage(t, error), code: errorCode(error) };
   track("habit_restored", who, { "habit.id": habitId });
   refresh(habitId);
   // A guardian restoring a child's habit goes back to the child's page.
-  const next = await backTo(supabase, userId, habitId, "/today");
+  const { next, title } = await backTo(t, supabase, userId, habitId, "/today");
   if (next.startsWith("/kids/")) revalidatePath(next);
-  redirect(next);
+  return { ok: true, next, title };
+}
+
+export async function restoreHabit(habitId: string): Promise<ActionResult> {
+  const r = await restore(habitId);
+  if (!r.ok) return r;
+  await flashToast(restoredFlash({ id: habitId, title: r.title }));
+  redirect(r.next);
+}
+
+// Undo of an archive, from its toast: restored where the person is now (no redirect). Already
+// active (an earlier Undo landed but its answer was lost) counts as done.
+export async function undoArchive(habitId: string): Promise<ActionResult> {
+  const r = await restore(habitId);
+  if (r.ok || r.code === "not_archived") return { ok: true };
+  return { ok: false, message: r.message };
 }
 
 export async function deleteHabit(habitId: string): Promise<FormActionState> {
   const { t } = await getT();
   if (!isUuid(habitId)) return { status: "error", message: t("errors.habit_not_found") };
   const { supabase, userId, who } = await requireUser();
-  const next = await backTo(supabase, userId, habitId, "/today");
+  const { next, title } = await backTo(t, supabase, userId, habitId, "/today");
   const { error } = await supabase.rpc("delete_habit", { p_habit_id: habitId });
   if (error) return { status: "error", message: habitErrorMessage(t, error) };
   track("habit_deleted", who, { "habit.id": habitId });
   refresh();
   if (next.startsWith("/kids/")) revalidatePath(next);
+  if (title) await flashToast(deletedFlash(title));
   redirect(next);
 }
 
 // A group habit (admins only; the RPC enforces it). Children take part only when ticked.
 export async function createGroupHabit(_prev: HabitFormState, formData: FormData): Promise<HabitFormState> {
-  const { t } = await getT();
+  const { t, locale } = await getT();
   const values = readHabitForm(formData);
   const parsed = parseHabit(values);
   if (!parsed.ok) return { status: "error", errors: parsed.errors, values };
@@ -252,6 +315,7 @@ export async function createGroupHabit(_prev: HabitFormState, formData: FormData
   track("habit_created", who, { "habit.scope": "group", "habit.id": created?.id, "group.id": groupId, "habit.title": h.title, "habit.template_id": templateIdOf(formData), "habit.category": h.category, "habit.period": h.period, "habit.target_count": h.targetCount });
   refresh();
   revalidatePath(`/groups/${groupId}`);
+  await flashToast(addedFlash({ id: created?.id, title: h.title, period: h.period, startsOn: h.startsOn }, locale));
   redirect("/today");
 }
 
@@ -374,6 +438,7 @@ export async function startAgain(habitId: string): Promise<StartAgainResult> {
     }
   }
   refresh();
+  await flashToast(startedAgainFlash({ id: newId, title: habitNameFor(t)(h.title, h.template_id) }));
   redirect("/today");
 }
 

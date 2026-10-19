@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const rpc = vi.fn();
 const signOut = vi.fn();
+const deleteCookie = vi.fn();
+vi.mock("next/headers", () => ({ cookies: async () => ({ delete: deleteCookie }) }));
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({ rpc, auth: { getClaims: async () => ({ data: { claims: { is_anonymous: true } } }), signOut } }),
 }));
@@ -23,6 +25,7 @@ const form = () => { const f = new FormData(); f.set("timezone", "Europe/Berlin"
 beforeEach(() => {
   rpc.mockReset();
   signOut.mockReset();
+  deleteCookie.mockReset();
 });
 
 describe("startDemo", () => {
@@ -33,6 +36,8 @@ describe("startDemo", () => {
     expect(rpc).toHaveBeenCalledWith("start_demo", {
       p_timezone: "Europe/Berlin", p_group_name: "Семья", p_treat_title: "Поход на детскую площадку",
     });
+    // A demo note hidden in an earlier demo shows again.
+    expect(deleteCookie).toHaveBeenCalledWith("keepup-demo-note");
   });
 
   it("retries with the time zone only when the database doesn't know the new params yet", async () => {
@@ -47,5 +52,6 @@ describe("startDemo", () => {
     expect(await redirectsTo(startDemo(form()))).toBe("/?demo=failed");
     expect(rpc).toHaveBeenCalledOnce();
     expect(signOut).toHaveBeenCalled();
+    expect(deleteCookie).not.toHaveBeenCalled();
   });
 });

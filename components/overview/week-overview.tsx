@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Check, ChevronRight, Flame, ListChecks } from "lucide-react";
+import { CalendarDays, Check, Flame, ListChecks } from "lucide-react";
 import { CATEGORIES } from "@/lib/categories";
 import type { HabitCategory, HabitPeriod } from "@/lib/habit-schema";
 import { comparisonLine, goalsMet, ringDash, streakSpan, type DayCellStatus, type HabitCells, type WeekOverview } from "@/lib/week-overview";
@@ -7,6 +7,7 @@ import type { T } from "@/supabase/functions/_shared/i18n";
 import { cn } from "@/lib/utils";
 import type { DayRow } from "@/lib/day-detail";
 import { WeekDays } from "@/components/overview/week-days";
+import { Section } from "@/components/ui/section";
 
 const STREAK = "text-flame";
 
@@ -54,87 +55,64 @@ export function ProgressRing({
   );
 }
 
-// Today: "This week · ◔ 18 of 22 · 🔥 12", linking to Progress.
-export function WeekStrip({ t, overview: o }: { t: T; overview: WeekOverview }) {
-  return (
-    <Link
-      href="/progress"
-      className="flex min-h-11 items-center gap-2 rounded-2xl bg-card px-4 py-2 text-sm shadow-soft hover:bg-muted/60"
-    >
-      <span className="font-semibold text-muted-foreground">{t("today.thisWeek")}</span>
-      <span aria-hidden className="text-muted-foreground">·</span>
-      <ProgressRing done={o.done} possible={o.possible} label={t("weekOverview.ringLabel", { goals: goalsMet(t, o.done, o.possible) })} />
-      {/* The ring's label says the same for screen readers. */}
-      <span aria-hidden className="font-bold tabular-nums">
-        {t("today.weekCount", { done: String(o.done), possible: String(o.possible) })}
-      </span>
-      {o.best_current_streak > 0 && (
-        <>
-          <span aria-hidden className="text-muted-foreground">·</span>
-          <span className={cn("flex items-center gap-1 font-bold tabular-nums", STREAK)}>
-            <Flame className="size-4 fill-current" aria-hidden />
-            <span className="sr-only">{t("today.bestStreak")}</span>
-            {o.best_current_streak}
-          </span>
-        </>
-      )}
-      <ChevronRight className="ms-auto size-4 text-muted-foreground rtl:-scale-x-100" aria-hidden />
-    </Link>
-  );
-}
-
-// Progress: "Your week" card.
+// Progress: "Your week", a headed section, not a card (docs/design.md: a single stat is a line).
+// The heading row carries the Calendar link, so the headline gets the full width at 320 px.
 // `days`: each past or current day's list for "tap a day" (Progress); without it the days aren't tappable.
-export function WeekCard({ t, overview: o, days }: { t: T; overview: WeekOverview; days?: Record<string, DayRow[]> }) {
+// `noStreak`: what starts a streak when there is none (lib/week-overview.ts noStreakLine).
+export function WeekCard({ t, overview: o, days, noStreak }: { t: T; overview: WeekOverview; days?: Record<string, DayRow[]>; noStreak: string }) {
   const streak = o.best_current_streak;
   const line = comparisonLine(t, o);
   return (
-    <section aria-labelledby="your-week" className="flex flex-col gap-4 rounded-2xl bg-card p-4 shadow-soft">
-      <div className="flex items-center gap-3">
-        <ProgressRing done={o.done} possible={o.possible} size={52} label={t("weekOverview.ringLabel", { goals: goalsMet(t, o.done, o.possible) })} />
-        <div className="flex min-w-0 flex-col">
-          <h2 id="your-week" className="text-sm font-semibold text-muted-foreground">
-            {t("overview.yourWeek")}
-          </h2>
-          <p className="text-lg font-bold tabular-nums">{goalsMet(t, o.done, o.possible)}</p>
-          {line && <p className="text-sm text-muted-foreground">{line}</p>}
-        </div>
-        {days && (
-          <Link href="/progress/calendar" className="ms-auto flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted">
+    <Section
+      title={t("overview.yourWeek")}
+      action={
+        days && (
+          // -me-inner: the link's padding, so its words line up with the page edge (a 44 px target).
+          <Link href="/progress/calendar" className="-me-inner flex h-11 shrink-0 items-center gap-inner rounded-full px-inner text-sm font-semibold text-primary hover:bg-muted">
             <CalendarDays aria-hidden className="size-4" />
             {t("overview.calendar")}
           </Link>
-        )}
+        )
+      }
+    >
+      <div className="flex items-center gap-item">
+        <ProgressRing done={o.done} possible={o.possible} size={52} label={t("weekOverview.ringLabel", { goals: goalsMet(t, o.done, o.possible) })} />
+        <div className="flex min-w-0 flex-col">
+          <p className="text-lg font-bold tabular-nums">{goalsMet(t, o.done, o.possible)}</p>
+          {line && <p className="text-sm text-muted-foreground">{line}</p>}
+        </div>
       </div>
 
       <WeekDays days={o.days} today={o.today} details={days} />
 
-      <ul className="grid grid-cols-3 gap-2 border-t border-border pt-3 text-sm">
-        <li className="flex min-w-0 flex-col items-center gap-0.5 text-center">
-          <span className={cn("flex items-center gap-1 font-bold tabular-nums", streak > 0 ? STREAK : "text-muted-foreground")}>
-            <Flame className={cn("size-4", streak > 0 && "fill-current")} aria-hidden />
-            {streak > 0 ? streakSpan(t, streak, o.best_current_streak_period) : t("overview.noStreak")}
-          </span>
-          {streak > 0 && o.best_current_streak_title && (
-            <span className="w-full truncate text-xs text-muted-foreground">{o.best_current_streak_title}</span>
+      {/* The week's numbers as one line that wraps, not three stat tiles. Icon to number: 4 px, off
+          the scale on purpose (one glyph pair, as in StreakBadge). */}
+      <ul className="flex flex-wrap gap-x-item gap-y-inner text-sm text-muted-foreground">
+        <li className="flex min-w-0 items-center gap-1">
+          <Flame className={cn("size-4 shrink-0", streak > 0 ? cn(STREAK, "fill-current") : "")} aria-hidden />
+          {streak > 0 ? (
+            <span className="min-w-0 truncate">
+              <span className={cn("font-bold tabular-nums", STREAK)}>{streakSpan(t, streak, o.best_current_streak_period)}</span>
+              {o.best_current_streak_title && <> · <bdi>{o.best_current_streak_title}</bdi></>}
+            </span>
+          ) : (
+            <span>{noStreak}</span>
           )}
         </li>
-        <li className="flex flex-col items-center gap-0.5 text-center">
-          <span className="flex items-center gap-1 font-bold tabular-nums">
-            <Check className="size-4 text-primary" aria-hidden />
-            {o.check_ins}
+        <li className="flex items-center gap-1">
+          <Check className="size-4 text-primary" aria-hidden />
+          <span>
+            <span className="font-bold text-foreground tabular-nums">{o.check_ins}</span> {t("overview.checkIns", { n: o.check_ins })}
           </span>
-          <span className="text-xs text-muted-foreground">{t("overview.checkIns", { n: o.check_ins })}</span>
         </li>
-        <li className="flex flex-col items-center gap-0.5 text-center">
-          <span className="flex items-center gap-1 font-bold tabular-nums">
-            <ListChecks className="size-4 text-primary" aria-hidden />
-            {o.active_habits}
+        <li className="flex items-center gap-1">
+          <ListChecks className="size-4 text-primary" aria-hidden />
+          <span>
+            <span className="font-bold text-foreground tabular-nums">{o.active_habits}</span> {t("overview.activeHabits", { n: o.active_habits })}
           </span>
-          <span className="text-xs text-muted-foreground">{t("overview.activeHabits", { n: o.active_habits })}</span>
         </li>
       </ul>
-    </section>
+    </Section>
   );
 }
 

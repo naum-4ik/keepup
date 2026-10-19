@@ -5,18 +5,23 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { redactDeep } from "@/lib/redact";
 import { screenName } from "@/lib/screen-name";
+import { whenIdle } from "@/lib/when-idle";
 
 // Inlined at build time (NEXT_PUBLIC_*). No collector URL (dev without it, tests, CI): nothing loads.
 const COLLECTOR = process.env.NEXT_PUBLIC_FARO_URL;
 
-// Faro and browser tracing are about 65 KB gzipped, so they load after the page is up: first paint never
-// waits for telemetry. Web Vitals still count from the start (the browser buffers them); an error thrown
-// before the load is missed.
+// Faro and browser tracing are about 65 KB gzipped, so they load after the page's load event, then at
+// the browser's next idle moment, waiting up to 2 s for it (lib/when-idle.ts): first paint, the
+// landing's LCP and hydration never wait for or compete with telemetry. Web Vitals still count from the
+// start (the browser buffers them). Missed: an error thrown before then, and a visit (Faro's
+// session_start, the dashboard's "Visits") that leaves before load + that idle wait; the landing counts
+// those on the server too (keepup.landing_viewed, app/page.tsx).
 let ready: Promise<FaroInstance | null> | undefined;
 
 function load() {
   ready ??= (async () => {
     if (!COLLECTOR) return null;
+    await new Promise<void>((resolve) => whenIdle(resolve));
     try {
       const [{ getWebInstrumentations, initializeFaro }, { TracingInstrumentation }] = await Promise.all([
         import("@grafana/faro-web-sdk"),

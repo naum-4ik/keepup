@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.0](https://github.com/naum-4ik/keepup/compare/v1.7.0...v1.8.0) (2026-10-19)
+
+
+### Features
+
+* **design:** kid page, kid view, Settings and Profile without cards; settings save on change with confirmed values ([#264](https://github.com/naum-4ik/keepup/issues/264)) ([8d6174b](https://github.com/naum-4ik/keepup/commit/8d6174baa1caa71647986ced604e6652bfa75d59))
+* **design:** Progress, Recaps, Inbox and Groups without cards, action states and toasts, Profile footer fix ([#263](https://github.com/naum-4ik/keepup/issues/263)) ([01c92c2](https://github.com/naum-4ik/keepup/commit/01c92c2443a0214f0475eac60c3e01dc2eb09229))
+* **habits:** sectioned habit page, pinned form submit, states and toasts for every manage action ([#262](https://github.com/naum-4ik/keepup/issues/262)) ([b44e852](https://github.com/naum-4ik/keepup/commit/b44e852a9989dc56a5fb5cf9a595eda0dc617d6d))
+* **landing:** one call to action, demo client on intent, split Latin font, page titles ([#265](https://github.com/naum-4ik/keepup/issues/265)) ([810e9af](https://github.com/naum-4ik/keepup/commit/810e9af7da19ba23d307661f052f40f6ac03a437))
+* **today:** summary line, check-in states with Undo toast, notices instead of cards, measurable copy ([#261](https://github.com/naum-4ik/keepup/issues/261)) ([ce28d59](https://github.com/naum-4ik/keepup/commit/ce28d591a72866149f2251c13ad5f66b89f1c3e7))
+* **ui:** design foundation — spacing tokens, primitives, 44px buttons, compact shell, toast ([#259](https://github.com/naum-4ik/keepup/issues/259)) ([2ea8eec](https://github.com/naum-4ik/keepup/commit/2ea8eec8dcc9f1d0ac9fa746105c39c77a82760d))
+
 ## [1.7.0](https://github.com/naum-4ik/keepup/compare/v1.6.0...v1.7.0) (2026-10-19)
 
 

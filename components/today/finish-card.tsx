@@ -6,6 +6,7 @@ import { finishHabit, keepGoing } from "@/app/(app)/habits/actions";
 import { Confetti } from "@/components/celebrations/confetti";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import { takeBurstTurn } from "@/lib/burst-turns";
 import type { HabitCategory } from "@/lib/habit-schema";
 import { isolate } from "@/supabase/functions/_shared/i18n";
@@ -81,22 +82,21 @@ export function FinishCard({
     });
 
   return (
-    <section
-      aria-label={t("label", { title: isolate(title) })}
-      className="relative flex flex-col gap-3 overflow-hidden rounded-2xl bg-done-soft p-4 shadow-soft"
-    >
+    // A headed decision, not a card (docs/design.md "Sections"): the habit and what it reached, then
+    // its two actions. overflow-x-clip: the confetti never widens the page.
+    <section aria-label={t("label", { title: isolate(title) })} className="relative flex flex-col gap-item overflow-x-clip">
       {confetti && <Confetti />}
       {/* Above the confetti, so the pieces pass behind the text. */}
-      <div className="relative z-10 flex items-center gap-3">
+      <div className="relative z-10 flex items-center gap-inner">
         <HabitEmoji category={category} emoji={emoji} />
         <div className="flex min-w-0 flex-col">
           <p className="truncate font-bold">{t.rich("reachedEnd", { title, celebrate: celebrate ? "yes" : "no", bdi: (c) => <bdi>{c}</bdi> })}</p>
-          <p className="text-sm text-done dark:text-foreground">{line}</p>
+          <p className="text-sm text-done">{line}</p>
         </div>
       </div>
       {canDecide ? (
-        <div className="relative z-10 flex gap-2">
-          <Button type="button" variant="outline" className="h-11 flex-1 bg-card" disabled={pending} onClick={() => run(finishHabit)}>
+        <div className="relative z-10 flex gap-inner">
+          <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => run(finishHabit)}>
             {t("finish")}
           </Button>
           <Button type="button" className="h-11 flex-1" disabled={pending} onClick={() => run(keepGoing)}>
@@ -106,7 +106,11 @@ export function FinishCard({
       ) : (
         <p className="text-sm text-muted-foreground">{t("adminChooses")}</p>
       )}
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {error && (
+        <Notice tone="error" live>
+          {error}
+        </Notice>
+      )}
     </section>
   );
 }

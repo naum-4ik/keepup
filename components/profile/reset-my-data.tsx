@@ -7,6 +7,8 @@ import { useForgetOfflineHabits } from "@/components/offline/offline-queue-provi
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Notice } from "@/components/ui/notice";
+import { Section } from "@/components/ui/section";
 import { useT } from "@/lib/i18n/client";
 import { isResetWord, runReset } from "@/lib/reset-my-data";
 
@@ -45,10 +47,12 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
   }
 
   return (
-    <section aria-labelledby="reset-my-data-title" className="flex flex-col gap-3 rounded-2xl bg-card p-6 shadow-soft">
-      <h2 id="reset-my-data-title" className="text-base font-bold">{t("settings.reset.title")}</h2>
-      <p className="text-sm text-muted-foreground">{t("settings.reset.clears")}</p>
-      <p className="text-sm text-muted-foreground">{t("settings.reset.keeps")}</p>
+    <Section title={t("settings.reset.title")}>
+      {/* What goes, then what stays: one block, lines on line-height. */}
+      <div className="flex flex-col text-sm text-muted-foreground">
+        <p>{t("settings.reset.clears")}</p>
+        <p>{t("settings.reset.keeps")}</p>
+      </div>
       <Button
         type="button"
         variant="outline"
@@ -63,33 +67,40 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
       </Button>
       <Dialog open={open} onOpenChange={(next) => !pending && setOpen(next)}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pe-10">
+          {/* pe-10: room for the dialog's close X. Title over description: line-height, no gap. */}
+          <div className="flex flex-col pe-10">
             <DialogTitle>{t("settings.reset.dialogTitle")}</DialogTitle>
             <DialogDescription>
               {t("settings.reset.dialogBody", { clears: t("settings.reset.clears"), keeps: t("settings.reset.keeps") })}
             </DialogDescription>
           </div>
           <form
-            className="flex flex-col gap-3"
+            className="flex flex-col gap-item"
             onSubmit={(e) => {
               e.preventDefault();
               if (isResetWord(t, word) && !pending) reset();
             }}
           >
-            <label htmlFor={inputId} className="text-sm font-semibold">
-              {t("settings.typeToConfirm", { word: t("settings.reset.word") })}
-            </label>
-            <Input
-              id={inputId}
-              value={word}
-              onChange={(e) => setWord(e.target.value)}
-              autoComplete="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              className="h-11"
-            />
-            {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-inner">
+              <label htmlFor={inputId} className="text-sm font-semibold">
+                {t("settings.typeToConfirm", { word: t("settings.reset.word") })}
+              </label>
+              <Input
+                id={inputId}
+                value={word}
+                onChange={(e) => setWord(e.target.value)}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                className="h-11"
+              />
+            </div>
+            {error && (
+              <Notice tone="error" live>
+                {error}
+              </Notice>
+            )}
+            <div className="flex gap-inner">
               <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => setOpen(false)}>
                 {t("common.cancel")}
               </Button>
@@ -100,6 +111,6 @@ export function ResetMyData({ privateHabitIds }: { privateHabitIds: string[] }) 
           </form>
         </DialogContent>
       </Dialog>
-    </section>
+    </Section>
   );
 }

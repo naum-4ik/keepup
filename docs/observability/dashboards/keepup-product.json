@@ -520,7 +520,7 @@
       "id": 6,
       "type": "stat",
       "title": "Demo visits",
-      "description": "Try the demo.",
+      "description": "Taps on \"Try a demo with sample habits\".",
       "datasource": {
         "type": "loki",
         "uid": "${DS_LOKI}"

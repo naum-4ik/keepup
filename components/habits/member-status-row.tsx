@@ -49,7 +49,7 @@ export function MemberStatusRow({ members, target }: { members: Member[]; target
   const shown = members.slice(0, MAX_SHOWN);
   const more = members.length - shown.length;
   return (
-    <span className="flex items-center gap-1.5 pt-0.5">
+    <span className="flex items-center gap-inner">
       {shown.map((m) => (
         <MemberAvatar key={m.profile_id} member={m} status={memberStatus(m, target)} />
       ))}

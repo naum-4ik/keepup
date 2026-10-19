@@ -1,6 +1,8 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { DEMO_NOTE_COOKIE } from "@/lib/demo-note";
 import { whereFrom } from "@/lib/geo";
 import { getT } from "@/lib/i18n/server";
 import { track } from "@/lib/log";
@@ -33,6 +35,8 @@ export async function startDemo(formData: FormData): Promise<void> {
     redirect("/?demo=failed");
   }
   track("demo_started", userAttributes(data.claims), await whereFrom());
+  // A new demo always shows its note, even if one hidden earlier in this browser session left the cookie.
+  (await cookies()).delete(DEMO_NOTE_COOKIE);
   redirect("/today");
 }
 

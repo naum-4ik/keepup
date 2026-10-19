@@ -8,6 +8,8 @@ import { useOfflineSignOut } from "@/components/offline/offline-queue-provider";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Notice } from "@/components/ui/notice";
+import { Section } from "@/components/ui/section";
 import { downloadJson } from "@/lib/download-json";
 import { useT } from "@/lib/i18n/client";
 import {
@@ -18,31 +20,46 @@ import {
 } from "@/lib/my-data";
 import { clearOfflineCaches, markPagesOwnerDeleted } from "@/lib/offline-pages";
 import { browserSubscription, signOutCleanup } from "@/lib/push-support";
+import { reach } from "@/lib/reach";
+import { cn } from "@/lib/utils";
+import { isolate } from "@/supabase/functions/_shared/i18n";
 
-// Saves everything Keepup keeps about this person as keepup-my-data-{date}.json.
+// Saves everything Keepup keeps about this person as keepup-my-data-{date}.json, then says which file.
+// "Download started", not "Downloaded": an iPhone home-screen app can drop a download silently. Inline, not a toast: the button also sits in the delete dialog.
 function ExportMyDataButton() {
   const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-inner">
       <Button
         type="button"
         variant="outline"
         className="h-11 w-full"
         disabled={pending}
-        onClick={() =>
+        onClick={() => {
+          setError(null);
+          setSaved(null);
           startTransition(async () => {
-            const r = await exportMyData();
+            const r = await reach(exportMyData, { offline: t("myData.exportOffline"), reload: t("errors.generic") }, { rethrow: unstable_rethrow });
             if (!r.ok) return setError(r.message);
-            setError(null);
-            downloadJson(myDataFileName(new Date()), r.data);
-          })
-        }
+            const file = myDataFileName(new Date());
+            downloadJson(file, r.data);
+            setSaved(file);
+          });
+        }}
       >
         {pending ? t("common.exporting") : t("myData.export")}
       </Button>
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      <p role="status" className={cn("text-sm font-semibold text-done", !saved && "sr-only")}>
+        {saved ? t("common.downloaded", { file: isolate(saved) }) : ""}
+      </p>
+      {error && (
+        <Notice tone="error" live>
+          {error}
+        </Notice>
+      )}
     </div>
   );
 }
@@ -55,12 +72,11 @@ function ExportMyDataButton() {
 export function MyData({ isDemo = false }: { isDemo?: boolean }) {
   const { t } = useT();
   return (
-    <section aria-labelledby="my-data-title" className="flex flex-col gap-3 rounded-2xl bg-card p-6 shadow-soft">
-      <h2 id="my-data-title" className="text-base font-bold">{t("myData.title")}</h2>
+    <Section title={t("myData.title")}>
       <p className="text-sm text-muted-foreground">{t("myData.exportHint")}</p>
       <ExportMyDataButton />
       {!isDemo && <DeleteAccount />}
-    </section>
+    </Section>
   );
 }
 
@@ -143,48 +159,60 @@ function DeleteAccount() {
       </Button>
       <Dialog open={open} onOpenChange={(next) => !pending && !next && close()}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pe-10">
+          {/* pe-10: room for the dialog's close X. Title over description: line-height, no gap. */}
+          <div className="flex flex-col pe-10">
             <DialogTitle>{t("myData.deleteTitle")}</DialogTitle>
             <DialogDescription>{t("myData.deleteBody")}</DialogDescription>
           </div>
           {lines && lines.length > 0 && (
-            <ul className="flex flex-col gap-1 text-sm">
+            <ul className="flex flex-col gap-inner text-sm">
               {lines.map((line, i) => (
                 <li key={i}>{line}</li>
               ))}
             </ul>
           )}
           {previewError && (
-            <div className="flex items-center justify-between gap-2">
-              <p role="alert" className="text-sm text-destructive">{previewError}</p>
-              <Button type="button" variant="outline" className="h-11 shrink-0" onClick={() => void loadPreview()}>
-                {t("common.tryAgain")}
-              </Button>
-            </div>
+            <Notice
+              tone="error"
+              live
+              action={
+                <Button type="button" variant="outline" className="-my-2 h-11 shrink-0" onClick={() => void loadPreview()}>
+                  {t("common.tryAgain")}
+                </Button>
+              }
+            >
+              {previewError}
+            </Notice>
           )}
           <p className="text-sm text-muted-foreground">{t("myData.exportFirst")}</p>
           <ExportMyDataButton />
           <form
-            className="flex flex-col gap-3"
+            className="flex flex-col gap-item"
             onSubmit={(e) => {
               e.preventDefault();
               if (ready && isDeleteWord(t, word) && !pending) remove();
             }}
           >
-            <label htmlFor={inputId} className="text-sm font-semibold">
-              {t("settings.typeToConfirm", { word: t("myData.deleteWord") })}
-            </label>
-            <Input
-              id={inputId}
-              value={word}
-              onChange={(e) => setWord(e.target.value)}
-              autoComplete="off"
-              autoCapitalize="none"
-              spellCheck={false}
-              className="h-11"
-            />
-            {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-inner">
+              <label htmlFor={inputId} className="text-sm font-semibold">
+                {t("settings.typeToConfirm", { word: t("myData.deleteWord") })}
+              </label>
+              <Input
+                id={inputId}
+                value={word}
+                onChange={(e) => setWord(e.target.value)}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                className="h-11"
+              />
+            </div>
+            {error && (
+              <Notice tone="error" live>
+                {error}
+              </Notice>
+            )}
+            <div className="flex gap-inner">
               <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={close}>
                 {t("common.cancel")}
               </Button>

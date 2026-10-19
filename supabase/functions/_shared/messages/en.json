@@ -1,7 +1,7 @@
 {
   "settings": {
     "language": "Language",
-    "languageHint": "Keepup and its notifications use this language.",
+    "languageHint": "Used on this phone, your other devices, emails and notifications.",
     "languageNames": {
       "en": "English",
       "ru": "Русский",
@@ -10,7 +10,6 @@
     "title": "Settings",
     "typeToConfirm": "Type “{word}” to confirm",
     "celebrations": {
-      "label": "Celebrations settings",
       "title": "Celebrations",
       "hint": "How level-ups and new badges appear.",
       "full": "Full",
@@ -25,6 +24,17 @@
       "dialogTitle": "Reset your data?",
       "dialogBody": "{clears} {keeps} This can't be undone.",
       "word": "reset"
+    },
+    "sections": {
+      "profile": "Your profile"
+    },
+    "status": {
+      "saving": "Saving…",
+      "saved": "Saved ✓",
+      "offlinePick": "Not saved: no connection. Connect and pick it again.",
+      "failedPick": "Not saved. Reload the page and pick it again.",
+      "offlineSave": "Not saved: no connection. Connect and tap Save again.",
+      "failedSave": "Not saved. Reload the page and tap Save again."
     }
   },
   "push": {
@@ -245,14 +255,14 @@
     "ringLabel": "{goals} this week",
     "moreThanLastWeek": "{n, plural, other {# more than last week}}",
     "bestWeekYet": "Your best week yet",
-    "freshStart": "A fresh start this week",
+    "freshStart": "{start, select, yes {New week: check in today toward your first goal.} other {Check in today toward your first goal this week.}}",
     "dotsLabel": "Last {period, select, week {{n, plural, one {# week} other {# weeks}}} month {{n, plural, one {# month} other {# months}}} other {{n, plural, one {# day} other {# days}}}}: {counts}",
     "dotCount": "{status, select, done {{n, plural, other {# done}}} missed {{n, plural, other {# missed}}} paused {{n, plural, other {# paused}}} not_started {{n, plural, other {# not started}}} open {{n, plural, other {# in progress}}} rested {{n, plural, other {# rest day}}} other {{n, plural, other {#}}}}"
   },
   "recaps": {
     "weekOf": "Week of {date}",
-    "quietWeek": "A quiet week.",
-    "quietMonth": "A quiet month.",
+    "quietWeek": "A quiet week. Next week starts fresh.",
+    "quietMonth": "A quiet month. Next month starts fresh.",
     "nothingDue": "Nothing was due.",
     "streak": "{title} 🔥 {span}",
     "page": {
@@ -262,7 +272,8 @@
       "firstWeekly": "Your first weekly recap arrives on the first day of next week.",
       "restDays": "{n, plural, other {Rest days: # (dashed)}}",
       "topStreaks": "Top streaks",
-      "badges": "Badges: {list}"
+      "badges": "Badges: {list}",
+      "goToday": "Check in on Today"
     },
     "heatmap": {
       "fullDays": "{n, plural, one {# day} other {# days}} with everything done",
@@ -283,7 +294,7 @@
   "habitFinish": {
     "did": "{together, select, yes {Together you did {done} of {span}} other {You did {done} of {span}}}",
     "withBest": "{main} · best streak {n} 🔥",
-    "anotherGo": "Want to give it another go?"
+    "anotherGo": "{streak, select, yes {Keep going and your streak of {span} carries on, or Finish and start again later.} other {Keep going to build a streak, or Finish and start again later.}}"
   },
   "myData": {
     "deleteWord": "delete",
@@ -299,7 +310,8 @@
     "becomesAdmin": "<bdi>{admin}</bdi> becomes the admin of <bdi>{group}</bdi>.",
     "title": "Your data",
     "export": "Export my data",
-    "deleteAccount": "Delete account"
+    "deleteAccount": "Delete account",
+    "exportOffline": "Needs a connection. Connect and tap Export my data again."
   },
   "errors": {
     "group_not_found": "That group isn't available.",
@@ -356,7 +368,7 @@
     "invalid_subscription": "This device couldn't be set up for notifications.",
     "invalid_time": "Pick a time on the quarter hour.",
     "tap_in_future": "This phone's clock seems to be ahead. Check the time and try again.",
-    "generic": "Something went wrong. Try again.",
+    "generic": "That didn't go through. Try again; if it keeps happening, reload the page.",
     "endsAfterStart": "The last day can't be before the first day.",
     "alreadyReviewedBy": "{reviewer} already reviewed this.",
     "alreadyReviewedSomeone": "Someone already reviewed this.",
@@ -373,10 +385,14 @@
     "banner": "You're in the demo. Data resets after 24 hours.",
     "signInLine": "<signIn>Sign in</signIn> to start your own.",
     "failed": "The demo didn't start. Try again in a moment.",
-    "justLooking": "Just looking?",
-    "tryDemo": "Try the demo",
+    "loadFailed": "Couldn't load the demo. Reload the page and try again.",
+    "reload": "Reload",
+    "tryDemo": "Try a demo with sample habits",
+    "resetsNote": "Resets after 24 hours, no sign-up.",
     "settingUp": "Setting up…",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "compact": "Demo, resets in 24 h. <signIn>Sign in</signIn>",
+    "dismiss": "Hide the demo note"
   },
   "validation": {
     "nameRequired": "Enter a name.",
@@ -410,7 +426,7 @@
     "childrenDeletion": "{n, plural, =0 {The children's profiles and history will be deleted.} one {{names}'s profile and history will be deleted.} other {{names}'s profiles and history will be deleted.}}",
     "newGroup": "New group",
     "list": {
-      "empty": "Share habits with the people you live and hang out with.",
+      "empty": "Create a group and invite people with a link that works for 7 days.",
       "create": "Create a group"
     },
     "card": {
@@ -423,7 +439,9 @@
       "avatar": "Avatar <muted>(optional)</muted>",
       "avatarHint": "Until you pick one, the group shows its first letter.",
       "timezoneHelp": "Your time zone ({city}) and week start are used for the group's habits. Admins can change them later.",
-      "create": "Create group"
+      "create": "Create group",
+      "failed": "Couldn't reach Keepup. Check your connection and tap Create group again.",
+      "reload": "That didn't go through. Reload the page and tap Create group again."
     },
     "detail": {
       "avatarTitle": "Change the group avatar",
@@ -432,7 +450,7 @@
       "child": "Child",
       "addChild": "Add a child",
       "habits": "Group habits",
-      "noHabits": "No group habits yet.",
+      "noHabits": "{n, plural, =1 {Add a group habit: it's done when you check in. Invite people to do it together.} other {Add a group habit: it's done when all # members check in.}}",
       "addHabit": "Add a group habit",
       "habitLine": "{schedule}{approval, select, yes { · needs approval} other {}}",
       "invite": "Invite",
@@ -449,12 +467,15 @@
         "title": "Delete <bdi>{name}</bdi>?",
         "description": "This removes the group and its shared habits for everyone. It can't be undone.",
         "action": "Delete group"
-      }
+      },
+      "noHabitsMember": "No group habits yet. An admin of the group adds them, and they show up here."
     },
     "confirm": {
       "allMoved": "All children were moved.",
       "exportFirst": "Export first",
-      "deleteAnyway": "Delete anyway"
+      "deleteAnyway": "Delete anyway",
+      "failed": "Couldn't reach Keepup. Check your connection and try again.",
+      "reload": "That didn't go through. Reload the page and try again."
     },
     "rename": {
       "action": "Rename",
@@ -487,11 +508,19 @@
       "copy": "Copy link",
       "copied": "Copied",
       "turnOff": "Turn off link",
-      "turningOff": "Turning off…"
+      "turningOff": "Turning off…",
+      "failed": "Couldn't reach Keepup. Check your connection and tap the button again.",
+      "createdStatus": "Invite link created",
+      "turnedOffStatus": "Invite link turned off. Nobody new can join with it."
     },
     "errors": {
       "timezone": "Pick a time zone.",
       "weekStart": "Pick Monday or Sunday."
+    },
+    "toast": {
+      "created": "{invite, select, yes {Created {group}. Create its invite link below: it works for 7 days.} other {Created {group}.}}",
+      "left": "{alone, select, yes {Left {group}. You were its only member, so the group is deleted{children, plural, =0 {.} one {, with # child's profile.} other {, with # children's profiles.}}} other {Left {group}. Your own habits stay with you.}}",
+      "deleted": "Deleted {group} and its shared habits."
     }
   },
   "auth": {
@@ -513,8 +542,8 @@
     "or": "OR",
     "continueGoogle": "Continue with Google",
     "login": {
-      "title": "Welcome back",
-      "subtitle": "Keep up your habits, and do the ones that matter with your family.",
+      "title": "Sign in to Keepup",
+      "subtitle": "Check in daily, keep your streak, share habits with family.",
       "noAccount": "Don't have an account?",
       "signUp": "Sign up",
       "forgot": "Forgot password?",
@@ -919,7 +948,9 @@
     },
     "errors": {
       "pickHabit": "Pick a habit.",
-      "themeFailed": "Couldn't change it. Try again."
+      "themeFailed": "Couldn't change what grows. Reload the page and tap it again.",
+      "offline": "Couldn't reach Keepup. Check your connection and try again.",
+      "reload": "That didn't go through. Reload the page and try again."
     },
     "new": {
       "askAdmin": "Ask an admin of <bdi>{group}</bdi> to add a child."
@@ -951,7 +982,8 @@
       "titlePlaceholder": "Feed the fish",
       "picture": "Picture",
       "period": "{period, select, day {day} week {week} other {month}}",
-      "back": "Back"
+      "back": "Back",
+      "adding": "Adding {title}…"
     },
     "detail": {
       "habitsFailed": "Some habits couldn't be added. Add them from here.",
@@ -961,7 +993,8 @@
       "logged": "{by, select, child {{gender, select, boy {<bdi>{name}</bdi> did it} girl {<bdi>{name}</bdi> did it} other {<bdi>{name}</bdi> did it}}} you {Logged by you} member {Logged by <bdi>{name}</bdi>} other {Logged by a former member}} · {time}",
       "undo": "Undo {title} at {time}",
       "data": "Data",
-      "dataText": "Everything Keepup keeps about <bdi>{name}</bdi>, in one file."
+      "dataText": "Everything Keepup keeps about <bdi>{name}</bdi>, in one file.",
+      "noHabits": "Add a habit for <bdi>{name}</bdi>: each check-in earns 1 star."
     },
     "danger": {
       "title": "Danger zone",
@@ -1002,7 +1035,12 @@
       "other": "Other",
       "stars": "Stars",
       "earns": "A check-in earns one star.",
-      "submit": "Set goal"
+      "submit": "Set goal",
+      "setting": "Setting…",
+      "marking": "Marking…",
+      "setDone": "Goal set: <bdi>{treat}</bdi>. Each check-in earns 1 star toward it.",
+      "receivedDone": "Marked <bdi>{treat}</bdi> as received. Pick the next treat together when you're ready.",
+      "cancelledDone": "Cancelled <bdi>{treat}</bdi>. <bdi>{name}</bdi> keeps all the stars."
     },
     "garden": {
       "stars": "⭐ {stars} this week",
@@ -1012,10 +1050,23 @@
     "theme": {
       "title": "What grows",
       "hint": "Choose it with <bdi>{name}</bdi>. The stars stay the same.",
-      "group": "Theme"
+      "group": "Theme",
+      "changing": "Changing to {theme}…",
+      "changed": "Changed to {theme}. This week's stars stay the same.",
+      "openView": "Open view",
+      "openViewLabel": "Open view ({name})"
     },
     "checkIn": {
-      "label": "{state, select, open {Check in for} done {Done for} pending {Waiting for approval for} checkedToday {Checked in today for} frozen {Paused for} other {Starts later for}} {name}: {title}"
+      "label": "{state, select, open {Check in for} done {Done for} pending {Waiting for approval for} checkedToday {Checked in today for} frozen {Paused for} other {Starts later for}} {name}: {title}",
+      "checking": "Checking in for {name}: {title}…",
+      "undoing": "Undoing…",
+      "undoingLabel": "Undoing {title}…"
+    },
+    "toast": {
+      "added": "{habits, plural, =0 {Added {name}. Add a habit below: each check-in earns 1 star.} one {Added {name} with # habit. Each check-in earns 1 star.} other {Added {name} with # habits. Each check-in earns 1 star.}}",
+      "deleted": "Deleted {name}'s profile and history.",
+      "moved": "Moved {name} to {group}.",
+      "habitAdded": "Added {title} for {name}. Each check-in earns 1 star."
     }
   },
   "garden": {
@@ -1065,38 +1116,35 @@
     "resetDone": "Your data is reset. A fresh start 🌱",
     "progressLabel": "Today's progress",
     "ringLabel": "{done} of {total} done today",
-    "doneOfTotal": "{done} of {total} done",
-    "habitsLabel": "Today's habits: {list}",
-    "itemDone": "{title} done",
-    "itemTodo": "{title} to do",
     "thisWeek": "This week",
     "weekCount": "{done} of {possible}",
     "bestStreak": "Best streak:",
     "line": {
-      "allDone": "Today's all done 🎉",
-      "toGoToday": "{n, plural, other {# to go today}}",
-      "oneMore": "One more to go!",
-      "halfway": "Halfway there 💪",
-      "toGo": "{n, plural, other {# to go}}"
+      "allDone": "{total, plural, one {Done for today 🎉} other {All # done 🎉}}",
+      "toGoToday": "{n, plural, other {Check in # more to finish today.}}",
+      "oneMore": "Check in 1 more to finish today ({done} of {total}).",
+      "halfway": "{done} of {total} done. {n, plural, other {# more to finish today 💪}}",
+      "toGo": "{done} of {total} done. {n, plural, other {Check in # more to finish today.}}",
+      "streakSafe": "{streak, plural, one {Your #-day streak is safe.} other {Your #-day streak is safe.}}"
     },
     "welcome": {
       "title": "Welcome to <bdi>{name}</bdi> 👋",
       "people": "{n, plural, one {# person} other {# people}}",
       "habitsBelow": "your group habits are below",
-      "noGroupHabits": "no group habits yet",
+      "noGroupHabits": "add the group's first habit",
       "open": "Open",
       "openLabel": "Open {name}"
     },
     "approvalsWaiting": "{n, plural, one {# check-in waiting for you} other {# check-ins waiting for you}}",
     "habitFallback": "A habit",
     "empty": {
-      "text": "Nothing to do yet. Add a habit to get started.",
-      "action": "Add your first habit"
+      "text": "Add one habit and check in today to start day 1 of your streak.",
+      "action": "Add a habit, start day 1"
     },
     "sections": {
       "mine": "Mine",
       "groupFallback": "Group",
-      "allCheckedOff": "All checked off. Nice work.",
+      "allCheckedOff": "{total, plural, one {Checked off. Come back tomorrow to keep your streak.} other {All # checked off. Come back tomorrow to keep your streak.}}",
       "doneForToday": "Done for today",
       "later": "Later"
     },
@@ -1109,20 +1157,28 @@
     },
     "gentle": {
       "inviteFamily": {
-        "title": "Invite your family",
-        "body": "Share habits like family dinner. Done when everyone's done.",
-        "cta": "Invite"
+        "body": "Invite your family to a shared habit. The link works for 7 days.",
+        "cta": "Create invite link"
       },
       "inviteFriend": {
-        "title": "Invite a friend",
-        "body": "Do a habit together and cheer each other on.",
-        "cta": "Invite"
+        "body": "Invite a friend to a shared habit and cheer each check-in. The link works for 7 days.",
+        "cta": "Create invite link"
       },
       "addChild": {
-        "title": "Add a child? 🐼",
-        "body": "Track brushing teeth, reading together and more."
+        "body": "Add a child: each check-in earns 1 star toward a treat."
       },
-      "notNow": "Not now"
+      "notNow": "Not now",
+      "creating": "Creating link…"
+    },
+    "checkIn": {
+      "done": "{approval, select, yes {{habit}: sent for approval} other {{habit} checked in}}"
+    },
+    "undo": {
+      "undoing": "Undoing {habit}…",
+      "done": "{habit}: check-in undone",
+      "failed": "Couldn't undo {habit}. Check your connection and tap Undo again.",
+      "gone": "That check-in can't be undone anymore. Open the habit to see it.",
+      "openHabit": "Open habit"
     }
   },
   "nav": {
@@ -1181,12 +1237,16 @@
       "labelRing": "{state}: {title}, {done} of {target}",
       "whoDid": "Who did {title}?",
       "meAndChild": "Me + <bdi>{name}</bdi>",
-      "meAndEveryone": "Me + everyone"
+      "meAndEveryone": "Me + everyone",
+      "checking": "Checking in: {title}…",
+      "failed": "Couldn't save that. Check your connection and tap again.",
+      "notSaved": "Couldn't save that on this device. Reload the page and try again."
     },
     "checkIns": {
-      "empty": "No check-ins this period yet.",
+      "empty": "Check in to start {period, select, day {today} week {this week} other {this month}}: 0 of {target} done.",
       "count": "{n, plural, one {{count} check-in this period} other {{count} check-ins this period}}",
-      "undoAt": "Undo check-in at {time}"
+      "undoAt": "Undo check-in at {time}",
+      "undoing": "Undoing…"
     },
     "streak": {
       "label": "Streak:"
@@ -1215,12 +1275,14 @@
     },
     "cheer": {
       "done": "Cheered<sr> <bdi>{name}</bdi></sr>",
-      "cta": "Cheer ❤️<sr> <bdi>{name}</bdi></sr>"
+      "cta": "Cheer ❤️<sr> <bdi>{name}</bdi></sr>",
+      "sending": "Cheering…<sr> <bdi>{name}</bdi></sr>"
     },
     "nudge": {
       "done": "Nudged ✓<sr> <bdi>{name}</bdi></sr>",
       "cta": "Nudge<sr> <bdi>{name}</bdi></sr>",
-      "menuLabel": "Nudge {name}"
+      "menuLabel": "Nudge {name}",
+      "sending": "Nudging…<sr> <bdi>{name}</bdi></sr>"
     },
     "archive": {
       "trigger": "Archive habit",
@@ -1275,13 +1337,21 @@
       "addReturn": "Add a return date",
       "until": "Until",
       "removeEnd": "Remove end date",
-      "pausing": "Pausing…"
+      "pausing": "Pausing…",
+      "saved": "{scheduled, select, yes {Saved. Check-ins stay open until the pause starts.} other {{me, select, yes {Saved. You aren't counted until you resume.} other {Saved. No check-ins are due, and the streak waits until you resume.}}}}",
+      "resumed": "{what, select, cancelled {Pause cancelled. Nothing changes: check in as usual.} other {{me, select, yes {Resumed. You're counted again from today.} other {Resumed. Check-ins count again from today.}}}}",
+      "resuming": "Resuming…",
+      "cancelling": "Cancelling…"
     },
     "end": {
       "lastDay": "Last day: {date}.",
       "noEnd": "No end: it keeps going until you stop it.",
       "reached": "It reached its end. Keep going removes the end; Finish moves it to Finished.",
-      "removeEnd": "Remove end"
+      "removeEnd": "Remove end",
+      "saved": "{end, select, none {Saved: no end now. It keeps going until you stop it.} other {Saved: the last day is {date}.}}",
+      "finishing": "Finishing…",
+      "finished": "{where, select, kid {{habit} is finished. Its history is in {name}'s Finished.} other {{habit} is finished. Its history is in Progress → Finished.}}",
+      "openFinished": "{where, select, kid {Open {name}'s page} other {Open Finished}}"
     },
     "endPicker": {
       "legend": "Ends",
@@ -1348,7 +1418,7 @@
           "title": "Ends",
           "hintReached": "Reached its end. Keep going or finish",
           "hintLastDay": "Last day {date}",
-          "hintNone": "No end yet"
+          "hintNone": "Add an end, like {span}, to see {progress}"
         },
         "pause": {
           "everyone": "Pause for everyone",
@@ -1373,6 +1443,10 @@
           "title": "Delete",
           "hint": "It has no check-ins yet, so nothing is lost"
         }
+      },
+      "finished": {
+        "title": "Finished",
+        "note": "Start again to build a new streak. This one keeps its history."
       }
     },
     "actions": {
@@ -1380,7 +1454,19 @@
       "pickGroup": "Pick a group.",
       "pickDate": "Pick a date.",
       "startedAgainNoEnd": "Started again, but the end couldn't be set. Set it on the habit page."
-    }
+    },
+    "toast": {
+      "added": "{starts, select, later {Added {habit}. It starts {date}.} other {Added {habit} · check in now to start {period, select, day {day 1} week {week 1} other {month 1}}}}",
+      "deleted": "Deleted {habit}. It had no check-ins, so nothing was lost.",
+      "restored": "Restored {habit}, history kept. The archived days don't count against you.",
+      "startedAgain": "Started {habit} again from today. The finished one keeps its history.",
+      "open": "Open",
+      "archived": "{where, select, kid {Archived {habit}. Its history is in {name}'s Archived.} other {Archived {habit}. Its history is in Progress → Archived.}}",
+      "restoring": "Restoring {habit}…",
+      "undone": "{habit} is back, history kept.",
+      "undoFailed": "Couldn't restore {habit}. Check your connection and tap Undo again."
+    },
+    "sendFailed": "Couldn't send that. Check your connection and tap again."
   },
   "progress": {
     "title": "Progress",
@@ -1394,7 +1480,9 @@
     },
     "empty": {
       "finished": "No finished habits yet. Give a habit an end, like 30 days.",
-      "archived": "No archived habits."
+      "archived": "Archive a habit to keep its history and best streak here.",
+      "showActive": "Show active habits",
+      "active": "Add a habit to start tracking your streak here."
     },
     "habitLine": "{ended, select, yes {Ended · decide on Today · {schedule}} other {{schedule}}}{best, select, yes { · best {span}} other {}}",
     "calendar": {
@@ -1407,7 +1495,7 @@
   "overview": {
     "yourWeek": "Your week",
     "calendar": "Calendar",
-    "noStreak": "No streak yet",
+    "noStreak": "{kind, select, day {Meet today's goal to start a 1-day streak} week {Meet this week's goal to start a 1-week streak} month {Meet this month's goal to start a 1-month streak} other {Check in today to start a 1-day streak}}",
     "checkIns": "{n, plural, one {check-in} other {check-ins}}",
     "activeHabits": "{n, plural, one {active habit} other {active habits}}",
     "byDayLabel": "This week by day",
@@ -1457,21 +1545,34 @@
     "tagline": "Habits, together.",
     "listSeparator": ", ",
     "sectionSeparator": " · ",
-    "tryAgain": "Try again"
+    "tryAgain": "Try again",
+    "downloaded": "Download started: {file}.",
+    "loading": "Loading…"
   },
   "inbox": {
     "title": "Inbox",
     "approvals": {
-      "empty": "Nothing waiting for you.",
+      "empty": "All caught up: 0 check-ins waiting for your approval.",
       "approveAll": "Approve all ({n})",
       "rowLabel": "{name} did {habit}",
       "did": "<bdi>{name}</bdi> did <bdi>{habit}</bdi>",
       "approve": "Approve",
-      "notApproved": "Not approved"
+      "notApproved": "Not approved",
+      "emptyAction": "Check in on Today",
+      "approving": "Approving…",
+      "declining": "Declining…",
+      "approvingAll": "Approving {n}…",
+      "approved": "Approved: {name} · {habit}. It counts toward the streak.",
+      "declined": "Not approved: {name} · {habit}. It won't count toward the streak.",
+      "approvedAll": "{n, plural, =0 {Nothing left to approve: they were reviewed or their time ran out.} one {Approved # check-in. It counts toward the streak.} other {Approved # check-ins. They count toward the streaks.}}",
+      "failed": "Couldn't reach Keepup. Check your connection and tap again.",
+      "reload": "Reload Inbox",
+      "readFailed": "Couldn't load the check-ins waiting for you. Reload the Inbox and tap Approve all again."
     },
     "feed": {
-      "empty": "Nothing yet. Activity from your groups shows up here.",
-      "unread": "Unread: "
+      "empty": "{groups, select, yes {Your groups' check-ins, cheers and nudges show up here.} other {Join or create a group to see members' check-ins here.}}",
+      "unread": "Unread: ",
+      "emptyAction": "Open Groups"
     },
     "errors": {
       "pickMessage": "Pick one of the messages."
@@ -1490,7 +1591,16 @@
       "thisDevice": "this device",
       "remove": "Remove",
       "removeLabel": "Remove {label}",
-      "removeThisLabel": "Remove {label} (this device)"
+      "removeThisLabel": "Remove {label} (this device)",
+      "pausing": "Pausing…",
+      "resuming": "Resuming…",
+      "removing": "Removing…",
+      "pausedDone": "Paused ✓. No pushes until then; your Inbox still gets everything.",
+      "resumedDone": "Notifications are back on ✓",
+      "removedDone": "Removed {label} ✓. It gets no more notifications.",
+      "offline": "Needs a connection. Connect and tap it again.",
+      "reload": "That didn't go through. Reload the page and tap it again.",
+      "pausedUntilOnDone": "Paused ✓. Turn them back on here any time; your Inbox still gets everything."
     },
     "turnOn": {
       "label": "Turn on reminders",
@@ -1585,13 +1695,16 @@
     "earnedLabel": "{name}, earned {date}",
     "lockedLabel": "{name}, locked: {hint}",
     "earnedNote": "Earned {date}",
-    "unavailable": "Badges can't be shown right now. Try again later."
+    "unavailable": "Badges didn't load. Try again; nothing you earned is lost."
   },
   "landing": {
-    "getStarted": "Get started"
+    "start": "Start your first streak"
   },
   "meta": {
+    "title": "Keepup — habit tracker for families",
     "pageTitle": "{page} · Keepup",
+    "signInPage": "Sign in",
+    "signUpPage": "Sign up",
     "shareTitle": "Keepup: Habits, together",
     "shareText": "A habit tracker for one person or a whole family, kids included."
   },

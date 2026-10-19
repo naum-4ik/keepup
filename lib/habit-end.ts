@@ -83,3 +83,21 @@ export const hasEnded = (endsOn: string | undefined | null, today: string) => Bo
 export function withoutEnded<T extends { habit_id: string }>(habits: T[], ends: Map<string, string>, todayOf: (h: T) => string): T[] {
   return habits.filter((h) => !hasEnded(ends.get(h.habit_id), todayOf(h)));
 }
+
+// The Ends row's hint while there is no end (audit D 20): an example end and the count it would show,
+// "Add an end, like 30 days, to see Day 11 of 30". The example is a length the chips still offer
+// (they count from the start, and drop lengths already over): 30 days, 8 weeks or 6 months, else the
+// first one left. None left: just say there is no end.
+const END_EXAMPLE: Record<HabitPeriod, number> = { day: 30, week: 8, month: 6 };
+export function endExample(startsOn: string, today: string, period: HabitPeriod): { n: number; total: number } | null {
+  const offered = (k: number) => endsOnFor(startsOn, period, k) >= today;
+  const total = offered(END_EXAMPLE[period]) ? END_EXAMPLE[period] : END_PRESETS[period].find(offered);
+  if (total === undefined) return null;
+  return { n: today < startsOn ? 1 : periodIndex(startsOn, today, period), total };
+}
+
+export function noEndHint(t: T, startsOn: string, today: string, period: HabitPeriod): string {
+  const ex = endExample(startsOn, today, period);
+  if (!ex) return t("habits.end.noEnd");
+  return t("habits.detail.manage.ends.hintNone", { span: presetLabel(t, ex.total, period), progress: t(`habitEnd.progress.${period}`, ex) });
+}

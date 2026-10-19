@@ -6,8 +6,10 @@ import { createHabit } from "./helpers/habits";
 test("create a group, get an invite link, rename it, and see it in Groups", async ({ page }) => {
   await signUpAndOnboard(page);
   await page.getByRole("link", { name: "Groups" }).click();
-  await expect(page.getByText("Share habits with the people you live and hang out with.")).toBeVisible();
+  await expect(page.getByText("Create a group and invite people with a link that works for 7 days.")).toBeVisible();
   await createGroup(page, "Levi family");
+  // The flash after the redirect, and the invite in focus on the new group's page.
+  await expect(page.getByTestId("toast-live")).toHaveText("Created \u2068Levi family\u2069. Create its invite link below: it works for 7 days.");
   const url = await inviteLink(page);
   expect(url).toMatch(/\/invite\/[A-Za-z0-9_-]{24}$/);
   expect(await inviteLink(page)).toBe(url); // reused, not a new token
@@ -25,7 +27,19 @@ test("the only member deletes their group", async ({ page }) => {
   await page.getByRole("button", { name: "Delete group" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Delete group" }).click();
   await expect(page).toHaveURL(/\/groups$/);
-  await expect(page.getByText("Book club")).toBeHidden();
+  await expect(page.getByTestId("toast-live")).toHaveText("Deleted \u2068Book club\u2069 and its shared habits.");
+  // The toast names the group too: look in the page itself.
+  await expect(page.getByRole("main").getByText("Book club")).toBeHidden();
+});
+
+test("the only member leaving: the group goes, and the toast says so", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Book club", "Friends");
+  await page.getByRole("button", { name: "Leave group" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Leave group" }).click();
+  await expect(page).toHaveURL(/\/groups$/);
+  await expect(page.getByTestId("toast-live")).toHaveText("Left \u2068Book club\u2069. You were its only member, so the group is deleted.");
+  await expect(page.getByRole("main").getByText("Book club")).toBeHidden();
 });
 
 test("deleting a group with a child asks again, and Cancel resets that step", async ({ page }) => {
@@ -50,8 +64,59 @@ test("deleting a group with a child asks again, and Cancel resets that step", as
   await expect(dialog.getByRole("alert")).toHaveText("Mary's profile and history will be deleted.");
   await dialog.getByRole("button", { name: "Delete anyway" }).click();
   await expect(page).toHaveURL(/\/groups$/);
-  await expect(page.getByText("Levi family")).toBeHidden();
+  await expect(page.getByTestId("toast-live")).toHaveText("Deleted \u2068Levi family\u2069 and its shared habits.");
+  await expect(page.getByRole("main").getByText("Levi family")).toBeHidden();
 });
+
+test("leaving a group says Leaving…, then Groups says you left and your own habits stay", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Gym buddies", "Friends");
+  const url = await inviteLink(page);
+  const dan = await (await browser.newContext()).newPage();
+  await joinByLink(dan, url, "Dan");
+  const groupPath = new URL(page.url()).pathname;
+
+  // Hold the leave (a server action POST) until "Leaving…" has been seen.
+  let release!: () => void;
+  const held = new Promise<void>((r) => (release = r));
+  await dan.route(`**${groupPath}`, async (route) => {
+    if (route.request().method() === "POST" && route.request().headers()["next-action"]) await held;
+    await route.continue();
+  });
+  await dan.goto(groupPath);
+  await dan.getByRole("button", { name: "Leave group" }).click();
+  const dialog = dan.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Leave group" }).click();
+  await expect(dialog.getByRole("button", { name: "Leaving…" })).toBeDisabled();
+  release();
+  await expect(dan).toHaveURL(/\/groups$/);
+  await expect(dan.getByTestId("toast-live")).toHaveText("Left \u2068Gym buddies\u2069. Your own habits stay with you.");
+  await expect(dan.getByRole("main").getByText("Gym buddies")).toBeHidden();
+});
+
+for (const [width, height] of [
+  [320, 640],
+  [375, 812],
+  [414, 896],
+] as const) {
+  test(`new group at ${width}×${height}: Create group stays pinned above the nav while the form runs under it`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await signUpAndOnboard(page);
+    await page.goto("/groups/new");
+    // Open the avatar picker, so the form is taller than the screen at every width.
+    await page.locator("main summary").filter({ hasText: "Avatar" }).click();
+    await expect(page.getByRole("group", { name: "Avatar", exact: true })).toBeVisible();
+    const submit = page.getByRole("button", { name: "Create group" });
+    const nav = page.getByRole("navigation", { name: "Main", exact: true });
+    const form = submit.locator("xpath=ancestor::form");
+    const [s, n, f] = await Promise.all([submit.boundingBox(), nav.boundingBox(), form.boundingBox()]);
+    expect(f!.y + f!.height).toBeGreaterThan(n!.y); // the form runs under the nav…
+    expect(s!.height).toBeGreaterThanOrEqual(44); // …while its submit is a full-size target
+    expect(s!.y + s!.height).toBeLessThanOrEqual(n!.y + 0.5); // above the nav
+    expect(s!.y).toBeGreaterThanOrEqual(0); // and on screen, without scrolling
+    expect(s!.x + s!.width).toBeLessThanOrEqual(width);
+  });
+}
 
 test("tap your avatar on Profile to change it, and see it on the Profile tab", async ({ page }) => {
   await signUpAndOnboard(page);
@@ -160,7 +225,7 @@ test("an invited person joins from the link and lands on the group's habits", as
   await completeOnboarding(guest, { name: "Grandma", invited: true });
   const welcome = guest.getByRole("main").getByRole("status");
   await expect(welcome).toContainText("Welcome to Family");
-  await expect(welcome).toContainText("2 people · no group habits yet");
+  await expect(welcome).toContainText("2 people · add the group's first habit");
   await expect(welcome.getByRole("link", { name: "Open \u2068Family\u2069" })).toHaveAttribute("href", /^\/groups\/[0-9a-f-]{36}$/);
 
   await page.goto("/groups");
@@ -351,12 +416,12 @@ test("approval: check-ins wait, each approves the other in the Inbox, both see E
   await guest.getByRole("link", { name: /Inbox/ }).click();
   // exact: "Approve" is also a substring of "Not approved".
   await guest.getByRole("button", { name: "Approve", exact: true }).click();
-  await expect(guest.getByText("Nothing waiting for you.")).toBeVisible();
+  await expect(guest.getByText("All caught up: 0 check-ins waiting for your approval.")).toBeVisible();
 
   await page.goto("/inbox");
   await page.getByRole("button", { name: "Approve", exact: true }).click();
   // Let the approval land before leaving the page (a navigation can cut the action short).
-  await expect(page.getByText("Nothing waiting for you.")).toBeVisible();
+  await expect(page.getByText("All caught up: 0 check-ins waiting for your approval.")).toBeVisible();
   await page.goto("/today");
   await expect(page.getByText("Everyone did it ✓")).toBeVisible();
   await guest.goto("/today");
@@ -405,20 +470,20 @@ test("after the first check-in, a family user gets one gentle Invite card, and c
   await signUp(page, uniqueEmail());
   await completeOnboarding(page, { purpose: "My family" });
   await createHabit(page, { template: "Drink water" });
-  await expect(page.getByText("Invite your family")).toBeHidden();
+  await expect(page.getByText("Invite your family to a shared habit")).toBeHidden();
   await page.getByRole("button", { name: "Check in: \u2068Drink water\u2069" }).click();
   await expect(page.getByRole("link", { name: "Drink water", exact: true })).toHaveAccessibleDescription(/1 \/ 8 today/);
   await page.reload();
-  await expect(page.getByText("Invite your family")).toBeVisible();
-  await expect(page.getByText("Invite a friend")).toBeHidden(); // one card at a time
+  await expect(page.getByText("Invite your family to a shared habit")).toBeVisible();
+  await expect(page.getByText("Invite a friend to a shared habit")).toBeHidden(); // one card at a time
   // The card hides at once and the dismissal is saved in the background: wait for it before reloading.
   const saved = page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes("/today"));
   await page.getByRole("button", { name: "Not now" }).click();
-  await expect(page.getByText("Invite your family")).toBeHidden();
+  await expect(page.getByText("Invite your family to a shared habit")).toBeHidden();
   await saved;
   await page.reload();
   await expect(page.getByRole("link", { name: "Drink water", exact: true })).toHaveAccessibleDescription(/1 \/ 8 today/);
-  await expect(page.getByText("Invite your family")).toBeHidden();
+  await expect(page.getByText("Invite your family to a shared habit")).toBeHidden();
 });
 
 test("Invite a friend: one tap creates the group and opens its invite link", async ({ page }) => {
@@ -428,13 +493,13 @@ test("Invite a friend: one tap creates the group and opens its invite link", asy
   await page.getByRole("button", { name: "Check in: \u2068Drink water\u2069" }).click();
   await expect(page.getByRole("link", { name: "Drink water", exact: true })).toHaveAccessibleDescription(/1 \/ 8 today/);
   await page.reload();
-  await page.getByRole("button", { name: "Invite", exact: true }).click();
+  await page.getByRole("button", { name: "Create invite link" }).click();
   await expect(page).toHaveURL(/\/groups\/[0-9a-f-]{36}\?invite=1$/);
   await expect(page.getByRole("heading", { name: "Friends" })).toBeVisible();
   expect(await inviteLink(page)).toMatch(/\/invite\/[A-Za-z0-9_-]{24}$/);
   // With a group, the Invite card is done.
   await page.goto("/today");
-  await expect(page.getByText("Invite a friend")).toBeHidden();
+  await expect(page.getByText("Invite a friend to a shared habit")).toBeHidden();
 });
 
 test("Everyone did it shows once, with confetti, then not again", async ({ page }) => {
@@ -477,7 +542,7 @@ test("a group milestone is an Inbox row, not a card on Today", async ({ page }) 
   await expect(page.getByRole("button", { name: "Done: \u2068Family dinner\u2069" })).toBeVisible();
   await expect(page.getByText("🔥 \u2068Family dinner\u2069: 7 days in a row, together")).toHaveCount(0);
   // No milestone card any more, so no "milestone day" rule: the gentle card may show.
-  await expect(page.getByText("Add a child? 🐼")).toBeVisible();
+  await expect(page.getByText("Add a child: each check-in earns 1 star toward a treat.")).toBeVisible();
   await page.goto("/inbox");
   await page.getByRole("tab", { name: "Activity" }).click();
   await expect(page.getByText("🔥 \u2068Family dinner\u2069: 7 days in a row, together")).toBeVisible();
@@ -498,9 +563,10 @@ test("the weekly family recap tops the Inbox's Activity tab, not Today, and Dism
   await expect(page.getByText(/Together last week/)).toHaveCount(0);
   await page.goto("/inbox");
   await page.getByRole("tab", { name: "Activity" }).click();
-  const recap = page.getByText(/^Together last week: 1 check-in/);
+  // A Notice: the group's name, then the line.
+  const recap = page.getByText(/^\u2068?Family\u2069? · Together last week: 1 check-in/);
   await expect(recap).toBeVisible();
-  await recap.locator("../..").getByRole("button", { name: "Dismiss" }).click();
+  await page.getByRole("tabpanel").getByRole("button", { name: "Dismiss" }).click();
   await expect(recap).toHaveCount(0);
   await page.waitForLoadState("networkidle"); // the dismissal has been saved
   await page.reload();
@@ -538,10 +604,37 @@ test("Today's group header shows the group's avatar and opens the group", async 
   await expect(page).toHaveURL((u) => u.pathname === groupPath);
 });
 
-test("the group page reads People, then Group habits, then Invite", async ({ page }) => {
+test("the group page reads Group habits, then People, then Invite", async ({ page }) => {
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
-  await expect(page.getByRole("main").getByRole("heading", { level: 2 })).toHaveText(["People", "Group habits", "Invite"]);
+  await expect(page.getByRole("main").getByRole("heading", { level: 2 })).toHaveText(["Group habits", "People", "Invite"]);
+});
+
+// Owner, 2026-10-19: Group habits goes first so its Add button is on the first screen.
+test("an admin with members sees Add a group habit above the nav without scrolling at 320, 375 and 414", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const groupPath = new URL(page.url()).pathname;
+  const url = await inviteLink(page);
+  const dan = await (await browser.newContext()).newPage();
+  await joinByLink(dan, url, "Dan");
+  await createGroupHabitVia(page, "Family", "Family dinner");
+  for (const [width, height] of [
+    [320, 640],
+    [375, 812],
+    [414, 896],
+  ] as const) {
+    await page.setViewportSize({ width, height });
+    await page.goto(groupPath);
+    await expect(page.getByRole("region", { name: "People" })).toContainText("Dan");
+    expect(await page.evaluate(() => window.scrollY), `${width}`).toBe(0);
+    const add = page.getByRole("link", { name: "Add a group habit" });
+    const nav = page.getByRole("navigation", { name: "Main", exact: true });
+    const [a, n] = await Promise.all([add.boundingBox(), nav.boundingBox()]);
+    expect(a!.height, `${width}`).toBeGreaterThanOrEqual(44);
+    expect(a!.y, `${width}`).toBeGreaterThanOrEqual(0);
+    expect(a!.y + a!.height, `${width}`).toBeLessThanOrEqual(n!.y + 0.5);
+  }
 });
 
 test("Inbox rows show who they're from, and an empty Approvals tab has no (0)", async ({ page, browser }) => {
@@ -589,9 +682,80 @@ test("approving a check-in someone just reviewed says who did, and the note stay
   await eve.goto("/inbox");
   await dan.goto("/inbox");
   await dan.getByRole("button", { name: "Approve", exact: true }).click();
-  await expect(dan.getByText("Nothing waiting for you.")).toBeVisible();
+  await expect(dan.getByText("All caught up: 0 check-ins waiting for your approval.")).toBeVisible();
   await eve.getByRole("button", { name: "Approve", exact: true }).click();
   await expect(eve.getByRole("listitem", { name: "\u2068Ana\u2069 did \u2068Gym\u2069" }).getByRole("status")).toHaveText("\u2068Dan\u2069 already reviewed this.");
+});
+
+test("approve says Approving… while it saves, then a toast says what it did", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Gym buddies", "Friends");
+  const url = await inviteLink(page);
+  const dan = await (await browser.newContext()).newPage();
+  await joinByLink(dan, url, "Dan");
+  await page.goto("/habits/new");
+  await page.getByRole("button", { name: "Create your own" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Title").fill("Gym");
+  await dialog.getByLabel("Category").selectOption("fitness");
+  await dialog.getByRole("radio", { name: "Gym buddies" }).check();
+  await dialog.getByRole("switch", { name: "Needs approval" }).click();
+  await dialog.getByRole("button", { name: /^Add habit/ }).click();
+  await expect(page).toHaveURL(/\/today$/);
+  await page.getByRole("button", { name: "Check in: \u2068Gym\u2069" }).click();
+  await expect(page.getByRole("button", { name: "Waiting for approval: \u2068Gym\u2069" })).toBeVisible();
+
+  // Hold the review (a server action: a POST to the page with a Next-Action header) until the
+  // in-progress label has been seen.
+  let release!: () => void;
+  const held = new Promise<void>((r) => (release = r));
+  await dan.route("**/inbox", async (route) => {
+    if (route.request().method() === "POST" && route.request().headers()["next-action"]) await held;
+    await route.continue();
+  });
+  await dan.goto("/inbox");
+  await dan.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(dan.getByRole("button", { name: "Approving…" })).toBeDisabled();
+  await expect(dan.getByRole("button", { name: "Not approved", exact: true })).toBeDisabled();
+  release();
+  await expect(dan.getByTestId("toast-live")).toHaveText("Approved: \u2068Ana\u2069 · \u2068Gym\u2069. It counts toward the streak.");
+  await expect(dan.getByRole("main").getByText("All caught up: 0 check-ins waiting for your approval.")).toBeVisible();
+});
+
+test("Approve all says Approving 2…, then a toast counts them, and focus lands on the empty state's action", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Gym buddies", "Friends");
+  const url = await inviteLink(page);
+  const dan = await (await browser.newContext()).newPage();
+  await joinByLink(dan, url, "Dan");
+  for (const title of ["Gym", "Run"]) {
+    await page.goto("/habits/new");
+    await page.getByRole("button", { name: "Create your own" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Title").fill(title);
+    await dialog.getByLabel("Category").selectOption("fitness");
+    await dialog.getByRole("radio", { name: "Gym buddies" }).check();
+    await dialog.getByRole("switch", { name: "Needs approval" }).click();
+    await dialog.getByRole("button", { name: /^Add habit/ }).click();
+    await expect(page).toHaveURL(/\/today$/);
+    await page.getByRole("button", { name: `Check in: \u2068${title}\u2069` }).click();
+    await expect(page.getByRole("button", { name: `Waiting for approval: \u2068${title}\u2069` })).toBeVisible();
+  }
+
+  let release!: () => void;
+  const held = new Promise<void>((r) => (release = r));
+  await dan.route("**/inbox", async (route) => {
+    if (route.request().method() === "POST" && route.request().headers()["next-action"]) await held;
+    await route.continue();
+  });
+  await dan.goto("/inbox");
+  await dan.getByRole("button", { name: "Approve all (2)" }).click();
+  await expect(dan.getByRole("button", { name: "Approving 2…" })).toBeDisabled();
+  release();
+  await expect(dan.getByTestId("toast-live")).toHaveText("Approved 2 check-ins. They count toward the streaks.");
+  await expect(dan.getByRole("main").getByText("All caught up: 0 check-ins waiting for your approval.")).toBeVisible();
+  // The tapped button is gone with the list: focus moves to what fills its place.
+  await expect(dan.getByRole("link", { name: "Check in on Today" })).toBeFocused();
 });
 
 test("an undo by another member shows up live", async ({ page, browser }) => {

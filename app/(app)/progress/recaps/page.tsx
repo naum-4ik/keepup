@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { CalendarCheck } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Section } from "@/components/ui/section";
 import { MonthHeatmap } from "@/components/recaps/month-heatmap";
 import { getProfile } from "@/lib/auth";
 import { badgeName } from "@/lib/badges";
@@ -14,59 +16,70 @@ export default async function RecapsPage() {
   const weekStart = (profile.week_start === 0 ? 0 : 1) as 0 | 1;
 
   return (
-    <section className="flex flex-col gap-5 py-6">
-      <div className="flex items-center justify-between gap-2">
+    <section className="flex flex-col gap-section py-section">
+      <div className="flex items-center justify-between gap-inner">
         <h1 className="text-xl font-bold">{t("recaps.page.title")}</h1>
-        <Link href="/progress" className="flex h-11 items-center rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted">
+        {/* -me-inner: the link's padding, so its words line up with the page edge (a 44 px target). */}
+        <Link href="/progress" className="-me-inner flex h-11 items-center rounded-full px-inner text-sm font-semibold text-primary hover:bg-muted">
           {t("progress.back")}
         </Link>
       </div>
 
-      <section aria-label={t("recaps.page.weeks")} className="flex flex-col gap-2">
-        <h2 className="text-sm font-bold text-muted-foreground">{t("recaps.page.weeks")}</h2>
+      {/* A recap is a line to read, not something to open or pick: list rows with dividers, no cards
+          (docs/design.md "Surfaces"). */}
+      <Section title={t("recaps.page.weeks")}>
         {weeks.length === 0 ? (
-          <EmptyState icon={<CalendarCheck className="size-6" />}>
+          <EmptyState
+            icon={<CalendarCheck className="size-6" />}
+            action={
+              // Recaps come from check-ins: the way to the first one.
+              <Button asChild variant="outline">
+                <Link href="/today">{t("recaps.page.goToday")}</Link>
+              </Button>
+            }
+          >
             {t("recaps.page.firstWeekly")}
           </EmptyState>
         ) : (
-          <ul className="flex flex-col gap-2">
+          // py-inner on each row + the divider: 16 px from one row's text to the next (the item level).
+          <ul className="-mt-inner flex flex-col divide-y divide-border">
             {weeks.map((r) => (
-              <li key={r.start} className="flex flex-col gap-1 rounded-2xl bg-card p-4 shadow-soft">
+              <li key={r.start} className="flex flex-col py-inner">
                 <p className="text-xs font-semibold text-muted-foreground">{recapTitle(t, locale, r)}</p>
                 <p className="font-semibold">{recapLine(t, locale, r, "history")}</p>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </Section>
 
       {months.length > 0 && (
-        <section aria-label={t("recaps.page.months")} className="flex flex-col gap-2">
-          <h2 className="text-sm font-bold text-muted-foreground">{t("recaps.page.months")}</h2>
-          <ul className="flex flex-col gap-3">
+        <Section title={t("recaps.page.months")}>
+          <div className="flex flex-col gap-section">
             {months.map((r) => {
               const rested = r.days.reduce((n, d) => n + d.rested, 0);
+              const id = `month-${r.start}`;
               return (
-                <li key={r.start} className="flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-soft">
+                <section key={r.start} aria-labelledby={id} className="flex flex-col gap-inner">
                   <div>
-                    <p className="text-xs font-semibold text-muted-foreground">{recapTitle(t, locale, r)}</p>
+                    <h3 id={id} className="text-xs font-semibold text-muted-foreground">{recapTitle(t, locale, r)}</h3>
                     <p className="font-semibold">{recapLine(t, locale, r, "history")}</p>
                   </div>
                   <MonthHeatmap recap={r} weekStart={weekStart} t={t} locale={locale} />
                   {rested > 0 && <p className="text-sm text-muted-foreground">{t("recaps.page.restDays", { n: rested })}</p>}
                   {r.top.length > 0 && (
-                    <ul aria-label={t("recaps.page.topStreaks")} className="flex flex-col gap-1 text-sm">
+                    <ul aria-label={t("recaps.page.topStreaks")} className="flex flex-col text-sm">
                       {r.top.map((s) => <li key={s.title}>{s.emoji} {streakLabel(t, s)}</li>)}
                     </ul>
                   )}
                   {r.badges.length > 0 && (
                     <p className="text-sm text-muted-foreground">{t("recaps.page.badges", { list: r.badges.map((b) => badgeName(t, b.code, b.name)).join(t("common.listSeparator")) })}</p>
                   )}
-                </li>
+                </section>
               );
             })}
-          </ul>
-        </section>
+          </div>
+        </Section>
       )}
     </section>
   );

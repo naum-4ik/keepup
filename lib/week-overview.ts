@@ -44,9 +44,13 @@ export const goalsMet = (t: T, done: number, possible: number): string => t("wee
 
 // Only positive or neutral. "More than last week" needs a last week to compare with. "Best week
 // yet" means this week's share done beats last week's (the only other week in the data), while
-// having done at least as much. Null when there's nothing to add: the line sits under the
-// headline, which already says how many goals were met.
-export function comparisonLine(t: T, o: Pick<WeekOverview, "done" | "possible" | "prev_done" | "prev_possible">): string | null {
+// having done at least as much. Nothing done yet: the next step, the first goal ("New week" only on
+// the week's first day; nothing at all when nothing is due yet). Null when there's nothing to add:
+// the line sits under the headline, which already says how many goals were met.
+export function comparisonLine(
+  t: T,
+  o: Pick<WeekOverview, "done" | "possible" | "prev_done" | "prev_possible"> & Partial<Pick<WeekOverview, "today" | "week_start">>,
+): string | null {
   if (o.prev_possible > 0 && o.done > o.prev_done) {
     return t("weekOverview.moreThanLastWeek", { n: o.done - o.prev_done });
   }
@@ -59,9 +63,37 @@ export function comparisonLine(t: T, o: Pick<WeekOverview, "done" | "possible" |
   ) {
     return t("weekOverview.bestWeekYet");
   }
-  if (o.done === 0) return t("weekOverview.freshStart");
+  if (o.done === 0 && o.possible > 0) return t("weekOverview.freshStart", { start: o.today != null && o.today === o.week_start ? "yes" : "no" });
   return null;
 }
+
+// What starts a streak when there is none: the shortest period among the habits where your own
+// check-in alone can start one today, and for a daily one whether one check-in finishes it ("once")
+// or it needs more ("day"). Only running, started, not paused, personal habits without approval and
+// not past their end count: a group habit waits for the others, an approval for the reviewer. With
+// none of those, the general "Meet today's goal" ("day").
+export type NoStreakKind = "once" | "day" | "week" | "month";
+export type StreakCandidate = {
+  period: string;
+  target_count: number;
+  archived_at: string | null;
+  not_started: boolean;
+  frozen: boolean;
+  group_id: string | null;
+  requires_approval: boolean;
+  ended?: boolean;
+};
+export function noStreakKind(all: StreakCandidate[]): NoStreakKind {
+  const habits = all.filter((h) => !h.archived_at && !h.not_started && !h.frozen && !h.group_id && !h.requires_approval && !h.ended);
+  if (habits.length === 0) return "day";
+  const daily = habits.filter((h) => h.period === "day");
+  if (daily.some((h) => h.target_count <= 1)) return "once";
+  if (daily.length > 0) return "day";
+  if (habits.some((h) => h.period === "week")) return "week";
+  if (habits.some((h) => h.period === "month")) return "month";
+  return "day";
+}
+export const noStreakLine = (t: T, kind: NoStreakKind): string => t("overview.noStreak", { kind });
 
 // Ring maths: the filled share of a circle, clamped to [0, 1]; nothing possible reads as empty.
 export function ringFraction(done: number, possible: number): number {

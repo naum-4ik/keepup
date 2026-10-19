@@ -34,8 +34,8 @@ describe("recaps", () => {
     expect(recapLine(tEn, "en", parseRecap({ ...week, done: 0, possible: 0, longest: null })!)).toBe("Nothing was due.");
   });
   it("never writes 0 of N", () => {
-    expect(recapLine(tEn, "en", parseRecap({ ...week, done: 0, possible: 5, longest: null })!)).toBe("A quiet week.");
-    expect(recapLine(tEn, "en", parseRecap({ ...week, kind: "month", start: "2026-09-01", done: 0, possible: 5, longest: null })!)).toBe("A quiet month.");
+    expect(recapLine(tEn, "en", parseRecap({ ...week, done: 0, possible: 5, longest: null })!)).toBe("A quiet week. Next week starts fresh.");
+    expect(recapLine(tEn, "en", parseRecap({ ...week, kind: "month", start: "2026-09-01", done: 0, possible: 5, longest: null })!)).toBe("A quiet month. Next month starts fresh.");
   });
   it("shades a day by how much of it got done, never red", () => {
     expect([heatLevel(0, 0), heatLevel(0, 3), heatLevel(1, 3), heatLevel(2, 3), heatLevel(3, 3)]).toEqual([0, 1, 2, 3, 4]);

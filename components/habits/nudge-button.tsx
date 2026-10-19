@@ -4,6 +4,7 @@ import { useState, useTransition, type ReactNode } from "react";
 import { DropdownMenu } from "radix-ui";
 import { nudge } from "@/app/(app)/inbox/actions";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import { NUDGE_KINDS } from "@/lib/nudge-kinds";
 import { useT } from "@/lib/i18n/client";
 import { isolate } from "@/supabase/functions/_shared/i18n";
@@ -22,18 +23,18 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
 
   if (done) {
     return (
-      <Button type="button" variant="outline" className="h-11 rounded-full px-4" disabled>
+      <Button type="button" variant="outline" className="h-11 rounded-full px-item" disabled>
         {rich("habits.nudge.done", { name, sr: srOnly })}
       </Button>
     );
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-end gap-inner">
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
-          <Button type="button" variant="outline" className="h-11 rounded-full px-4" disabled={pending || closed}>
-            {rich("habits.nudge.cta", { name, sr: srOnly })}
+          <Button type="button" variant="outline" className="h-11 rounded-full px-item" disabled={pending || closed}>
+            {rich(pending ? "habits.nudge.sending" : "habits.nudge.cta", { name, sr: srOnly })}
           </Button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
@@ -41,7 +42,7 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
             align="end"
             sideOffset={6}
             aria-label={t("habits.nudge.menuLabel", { name: isolate(name) })}
-            className="z-50 min-w-52 rounded-2xl bg-card p-1.5 shadow-[0_4px_24px_rgb(61_44_34_/_0.16)]"
+            className="z-50 min-w-52 rounded-2xl bg-card p-inner shadow-[0_4px_24px_rgb(61_44_34_/_0.16)]"
           >
             {NUDGE_KINDS.map((k) => (
               <DropdownMenu.Item
@@ -50,7 +51,7 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
                   startTransition(async () => {
                     setError(null);
                     // Offline, or the request never came back (a thrown action): it needs the server.
-                    if (!navigator.onLine) return setError(t("offline.needsConnection"));
+                    if (!navigator.onLine) return setError(t("habits.sendFailed"));
                     try {
                       const r = await nudge(habitId, recipientId, k.kind);
                       if (r.ok || r.code === "already_nudged") setDone(true);
@@ -59,11 +60,11 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
                         setError(r.message ?? null);
                       } else setError(r.message ?? null);
                     } catch {
-                      setError(t("offline.needsConnection"));
+                      setError(t("habits.sendFailed"));
                     }
                   })
                 }
-                className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm font-semibold outline-none select-none data-highlighted:bg-muted"
+                className="flex min-h-11 cursor-pointer items-center gap-inner rounded-xl px-inner text-sm font-semibold outline-none select-none data-highlighted:bg-muted"
               >
                 <span className="text-lg">{k.emoji}</span> {t(`feed.nudgeLabel.${k.kind}`)}
               </DropdownMenu.Item>
@@ -72,9 +73,9 @@ export function NudgeButton({ habitId, recipientId, name, sent }: { habitId: str
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
       {error && (
-        <p role="alert" className="max-w-48 text-end text-xs text-destructive">
+        <Notice tone="error" live className="max-w-56">
           {error}
-        </p>
+        </Notice>
       )}
     </div>
   );

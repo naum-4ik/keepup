@@ -26,7 +26,8 @@ export function MonthCalendar({ weeks, weekStart, today, days }: { weeks: (strin
   const sel = selected ? days[selected] : undefined;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-item">
+      {/* 4 px between week rows, off the scale on purpose: the grid is one picture of 44 px days. */}
       <div className="flex flex-col gap-1">
         <div aria-hidden className="grid grid-cols-7">
           {header.map((w, i) => (
@@ -47,12 +48,12 @@ export function MonthCalendar({ weeks, weekStart, today, days }: { weeks: (strin
                       aria-expanded={selected === date}
                       aria-controls={panelId}
                       onClick={() => setSelected((s) => (s === date ? null : date))}
-                      className="flex min-h-11 min-w-11 flex-col items-center gap-1 rounded-xl hover:bg-muted/60"
+                      className="flex min-h-11 min-w-11 flex-col items-center rounded-xl hover:bg-muted/60"
                     >
                       <DayCircle day={asDay(date)} today={today} selected={selected === date} label={String(Number(date.slice(8)))} />
                     </button>
                   ) : (
-                    <span role="img" aria-label={dayLabel(t, locale, date, today, undefined)} className="flex min-h-11 flex-col items-center gap-1">
+                    <span role="img" aria-label={dayLabel(t, locale, date, today, undefined)} className="flex min-h-11 flex-col items-center">
                       <DayCircle day={asDay(date)} today={today} selected={false} label={String(Number(date.slice(8)))} />
                     </span>
                   ))}

@@ -3,6 +3,7 @@
 import { useState, useTransition, type ReactNode } from "react";
 import { cheer } from "@/app/(app)/inbox/actions";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import { useT } from "@/lib/i18n/client";
 
 // The name follows the button word for screen readers only (rich tag <sr>).
@@ -16,34 +17,34 @@ export function CheerButton({ checkInId, habitId, name, cheered }: { checkInId: 
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-end gap-inner">
       <Button
         type="button"
         variant="outline"
         aria-pressed={done}
-        className="h-11 rounded-full px-4 aria-pressed:border-flame/40 aria-pressed:bg-accent aria-pressed:opacity-100"
+        className="h-11 rounded-full px-item aria-pressed:border-flame/40 aria-pressed:bg-accent aria-pressed:opacity-100"
         disabled={done || pending}
         onClick={() =>
           startTransition(async () => {
             setError(null);
             // Offline, or the request never came back (a thrown action): it needs the server.
-            if (!navigator.onLine) return setError(t("offline.needsConnection"));
+            if (!navigator.onLine) return setError(t("habits.sendFailed"));
             try {
               const r = await cheer(checkInId, habitId);
               if (r.ok) setDone(true);
               else setError(r.message ?? null);
             } catch {
-              setError(t("offline.needsConnection"));
+              setError(t("habits.sendFailed"));
             }
           })
         }
       >
-        {rich(done ? "habits.cheer.done" : "habits.cheer.cta", { name, sr: srOnly })}
+        {rich(done ? "habits.cheer.done" : pending ? "habits.cheer.sending" : "habits.cheer.cta", { name, sr: srOnly })}
       </Button>
       {error && (
-        <p role="alert" className="max-w-48 text-end text-xs text-destructive">
+        <Notice tone="error" live className="max-w-56">
           {error}
-        </p>
+        </Notice>
       )}
     </div>
   );

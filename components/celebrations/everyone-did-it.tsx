@@ -70,10 +70,12 @@ export function EveryoneDidIt(props: Props) {
 
   if (ids.length === 0) return null;
   return (
-    <div data-seen={props.ids.length === 0 ? "" : undefined} className="relative flex items-center gap-3 rounded-2xl bg-card p-4 shadow-soft">
+    // A line, not a card (docs/design.md "Surfaces": a sentence is not a card): the words in sage, then
+    // who did it. overflow-x-clip: the confetti never widens the page.
+    <div data-seen={props.ids.length === 0 ? "" : undefined} className="relative flex items-center gap-inner overflow-x-clip">
       {/* Keyed by the rows: a new card (new ids while a kept one shows) bursts again. */}
       {shown && <Confetti key={key} />}
-      <p className="min-w-0 flex-1 font-bold">
+      <p className="min-w-0 flex-1 font-bold text-done">
         {t("everyoneDidIt")}{" "}
         {habits.map((h, i) => (
           <Fragment key={i}>
@@ -91,6 +93,7 @@ export function AvatarRow({ members }: { members: CardMember[] }) {
   if (members.length === 0) return null;
   const shown = members.slice(0, MAX_SHOWN);
   return (
+    // Overlapping avatars (a stack, not a spacing level).
     <span className="flex shrink-0 -space-x-2">
       {shown.map((m) => (
         <Avatar key={m.id} name={m.name} emoji={m.avatar_emoji} color={m.avatar_color} className="ring-2 ring-card" />

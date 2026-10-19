@@ -51,7 +51,7 @@ describe("POST /api/check-ins/tap", () => {
     rpc.mockResolvedValue({ data: row(), error: null });
     const res = await post({ clientId: C, habitId: H, subjectId: null, tappedAt: "2026-10-05T20:58:00Z" });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ xp: 12 });
+    expect(await res.json()).toEqual({ xp: 12, pending: false });
     expect(rpc).toHaveBeenCalledWith("check_in", { p_habit_id: H, p_client_id: C });
     expect(revalidatePath).toHaveBeenCalledWith("/today");
     expect(revalidatePath).toHaveBeenCalledWith(`/habits/${H}`);
@@ -59,12 +59,19 @@ describe("POST /api/check-ins/tap", () => {
 
   it("a resend of a tap that already landed floats nothing", async () => {
     rpc.mockResolvedValue({ data: row({ created_at: "2026-01-01T00:00:00Z" }), error: null });
-    expect(await (await post({ clientId: C, habitId: H })).json()).toEqual({ xp: 0 });
+    expect(await (await post({ clientId: C, habitId: H })).json()).toEqual({ xp: 0, pending: false });
+  });
+
+  it("says when the row waits for approval (an approval habit with two adults), and not when it was approved at once", async () => {
+    rpc.mockResolvedValue({ data: row({ status: "pending" }), error: null });
+    expect(await (await post({ clientId: C, habitId: H })).json()).toEqual({ xp: 0, pending: true }); // no XP until approved
+    rpc.mockResolvedValue({ data: row({ status: "approved" }), error: null });
+    expect(await (await post({ clientId: C, habitId: H })).json()).toEqual({ xp: 12, pending: false });
   });
 
   it("a child's tap uses check_in_for, refreshes the child's pages and floats nothing", async () => {
     rpc.mockResolvedValue({ data: row(), error: null });
-    expect(await (await post({ clientId: C, habitId: H, subjectId: K, byChild: true })).json()).toEqual({ xp: 0 });
+    expect(await (await post({ clientId: C, habitId: H, subjectId: K, byChild: true })).json()).toEqual({ xp: 0, pending: false });
     expect(rpc).toHaveBeenCalledWith("check_in_for", { p_habit_id: H, p_child_id: K, p_by_child: true, p_client_id: C });
     expect(revalidatePath).toHaveBeenCalledWith(`/kids/${K}/play`);
   });

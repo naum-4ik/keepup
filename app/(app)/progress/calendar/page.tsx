@@ -7,7 +7,7 @@ import { getT } from "@/lib/i18n/server";
 import { monthGrid, parseMonth, shiftMonth, summarizeDays } from "@/lib/calendar";
 import { getCalendarCells, getFirstHabitStart, getHabitSummaries } from "@/lib/habits";
 
-const NAV = "flex h-11 items-center gap-1 rounded-full px-3 text-sm font-semibold";
+const NAV = "flex size-11 items-center justify-center rounded-full text-sm font-semibold";
 
 export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
   const { m } = await searchParams;
@@ -26,14 +26,16 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   const hasNext = next <= today.slice(0, 7);
 
   return (
-    <section className="flex flex-col gap-5 py-6">
-      <div className="flex items-center justify-between gap-2">
+    <section className="flex flex-col gap-section py-section">
+      <div className="flex items-center justify-between gap-inner">
         <h1 className="text-xl font-bold">{t("progress.calendar.title")}</h1>
-        <Link href="/progress" className="text-sm font-semibold text-primary">
+        {/* -me-inner: the link's padding, so its words line up with the page edge (a 44 px target). */}
+        <Link href="/progress" className="-me-inner flex h-11 items-center rounded-full px-inner text-sm font-semibold text-primary hover:bg-muted">
           {t("progress.back")}
         </Link>
       </div>
-      <div className="flex flex-col gap-3 rounded-2xl bg-card p-4 shadow-soft">
+      {/* The month is one picture, not a card around it (docs/design.md: a single stat is not a card). */}
+      <div className="flex flex-col gap-item">
         <nav aria-label={t("progress.calendar.monthLabel")} className="flex items-center justify-between">
           {hasPrev ? (
             <Link href={`/progress/calendar?m=${prev}`} aria-label={t("progress.calendar.previousMonth", { month: monthName(prev) })} className={`${NAV} hover:bg-muted`}>

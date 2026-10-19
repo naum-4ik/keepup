@@ -12,6 +12,11 @@ async function addChildUI(page: Page, name: string) {
   await page.getByLabel("I'm this child's parent or guardian").check();
   await page.getByRole("button", { name: `Add ${name}` }).click();
   await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/);
+  // Her page opens with "Added …" above the nav: close it (if still there) so it covers nothing the
+  // test taps next.
+  const close = page.locator("[data-toaster]").getByRole("button", { name: "Dismiss" });
+  if (await close.waitFor({ state: "visible", timeout: 2000 }).then(() => true, () => false)) await close.click().catch(() => {});
+  await expect(page.getByTestId("toast-live")).toHaveText("");
 }
 
 // Sets an input's value the way typing does (the native setter + an input event), so React's state
@@ -43,7 +48,7 @@ test("kid custom habit: a server error keeps what was typed", async ({ page }) =
   await own.getByLabel("Times").fill("2");
   await own.getByRole("button", { name: "Add habit" }).click();
   await expect(own).toBeHidden();
-  await expect(page.getByText("Swim")).toBeVisible();
+  await expect(page.getByRole("main").getByText("Swim")).toBeVisible(); // the toast names it too
 });
 
 test("rename group: an error keeps what was typed, and the field stops at 40 characters", async ({ page }) => {

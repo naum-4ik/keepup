@@ -73,19 +73,77 @@ Icons come from `lucide-react` (rounded line style). **Kid habits** use picture 
 
 ## Typography
 
-- **Font:** Nunito (rounded, friendly) for all UI text via `next/font/google`; Geist Mono only for the version label.
+- **Font:** Nunito (rounded, friendly) for all UI text, self-hosted via `next/font/local` (basic Latin preloaded; latin-ext, Cyrillic and Rubik for Hebrew fetched only when a page uses those letters); Geist Mono only for the version label.
 - **Scale:** 12 (captions) · 14 (secondary) · 16 (body, inputs) · 20 (section titles) · 24 (page titles) · 32 (big numbers: streaks, level).
 - **Numbers** that change (streaks, XP, progress) use `tabular-nums` so they don't jump.
 - **Weights:** 400 body, 600 labels and buttons, 700 titles.
 
 ## Layout and shape
 
-- **Grid:** 4 px. Common gaps: 8, 12, 16, 24.
+- **Grid:** 4 px; spacing uses three levels only (below).
 - **Page padding:** 16 px sides. Content max width 448 px (phone column), centered on larger screens.
 - **Radius:** 16 px cards, 12 px inputs and buttons, full circle for avatars, chips and the check-in button.
 - **Elevation:** soft warm shadow on cards: `0 1px 2px rgb(61 44 34 / 0.06), 0 4px 12px rgb(61 44 34 / 0.05)`. No hard borders on cards.
-- **Empty states:** a small line icon in a pastel circle plus one friendly sentence. No mascots.
-- **Safe areas:** header and bottom nav respect `env(safe-area-inset-*)`.
+- **Safe areas:** header, bottom nav and the page's bottom padding respect `env(safe-area-inset-*)`.
+
+### Spacing
+
+Three levels, everywhere. Tokens in `app/globals.css` `@theme` (`--spacing-*`), so they are Tailwind utilities.
+
+| Level | Size | Use | Utilities |
+|---|---|---|---|
+| inner | 8 px | inside one element: icon to label, title to its meta line, chips in a row | `gap-inner`, `p-inner` |
+| item | 16 px | between elements: list rows, form fields, cards in a list; a Surface's padding | `gap-item`, `p-item` |
+| section | 24 px | between sections; a page's top and bottom padding | `gap-section`, `py-section` |
+
+A title over its meta line is line-height, not a gap. A value off the scale (12, 20, 32) needs a reason in a comment. The one standing exception: a tinted pill (Notice, the demo note) pads its sides 12 px to match its 12 px corner radius, so text never meets the curve.
+
+### App shell
+
+- **Header:** sticky, 4 px + the 44 px logo/bell row + 8 px. In the demo, one more 32 px line (the demo note: "Demo, resets in 24 h. Sign in", dismissible until the browser closes). At 320×640 that leaves at least 480 px of page between the header and the bottom nav.
+- **Bottom nav:** fixed, `z-40` (above anything a page lifts; dialogs and toasts are `z-50`). Its real height is `--nav-height` (60 px on phones, 74 px from `md`; `app/globals.css`), plus the safe-area inset. Everything that clears the nav uses it: `<main>`'s bottom padding (+32 px), the status toast (+8 px), the Subtle celebration, pinned form buttons. Change it together with the nav.
+- **Kid view:** no header, no nav, no demo note (a child holds the phone).
+
+### Surfaces (cards)
+
+A card is for an object you can **pick, compare or open**: a habit, a group, a recap, a template, a kid habit tile. `components/ui/surface.tsx` is the one card style (16 px radius, `p-item`, soft shadow) and it is always tappable: `as="a"` (a link, `href` required) for something that opens, `as="button"` (an `onClick`, or `type="submit"`) for something you pick. There is no static card; in a list the row is `<li><Surface as="a">`. The types refuse a Surface without `as` (`components/ui/primitives.typecheck.tsx`).
+
+Not a card: a sentence (use a Notice), a single stat (a line of text), a heading with controls under it (use a Section), a form, a settings group, an empty state. No card inside a card.
+
+### Sections
+
+`components/ui/section.tsx`: a heading (16 px bold), an optional action at its end, then the content, 16 px apart. Sections sit 24 px apart. The heading names the region for screen readers.
+
+### Notices
+
+`components/ui/notice.tsx`: an inline status line in a soft tint, no shadow. Tones: info (muted), success (sage), error (red). One or two lines: what happened, then the next step as its `action` (a link or button). Optional dismiss. `live` when it appears after something the person did, so screen readers announce it (errors as alert).
+
+### Empty states
+
+`components/ui/empty-state.tsx`: a small line icon in a pastel circle, one sentence that says what fills this place, and the **action that fills it** (required). No card. No mascots.
+
+### Buttons
+
+`components/ui/button.tsx` defaults to 44 px tall (`h-11`); `sm` is 40 px (only beside other controls in a row), `lg` 48 px, `icon` 44 px square. No smaller sizes. Every tap target is at least 44×44, including links inside lines (negative margins keep the line short).
+
+### States and feedback
+
+Every action has four states and a next step:
+
+| State | What the person sees |
+|---|---|
+| Idle | The button with its verb ("Add habit") |
+| In progress | The label changes ("Adding…") and the button is disabled. An icon-only button (the check-in) changes its accessible name ("Checking in: Read…") and its icon spins |
+| Success | A visible confirmation where the result isn't already on screen: a status toast, with the next step as its action ("Undo", "Open") |
+| Error | What happened and what to do, next to the control (a `live` error Notice), and the input kept |
+
+**Settings save on change.** Each setting says "Saving…", then "Saved ✓" beside it (a `role=status` line, `components/profile/setting-status.tsx`), or why it wasn't saved and what to do. A choice that couldn't be saved goes back to the saved one, with that message beside it: never silently. A typed field (the display name) has its own Save right beside it, never one Save at the bottom for several fields. A download (Export) says which file it saved.
+
+**Status toast** (`components/ui/toast.tsx`, logic in `lib/toast.ts`): one at a time above the bottom nav; its words (not its buttons) are in a polite live region; 5 s, 8 s with an action, paused while hovered or focused; an X to close.
+- On the same page, from a client component after the action resolves: `useToast().showToast({ text, action })`, with translated text. The action is a link (`{ label, href }`) or a callback (`{ label, onAction }`, for Undo).
+- After a server action that redirects: `await flashToast({ text, values, action })` (`lib/toast-server.ts`) and then `redirect()`. It sets a 60 s cookie (`secure` in production, with the time it was set; older ones are dropped) with catalog keys (client namespaces only) and values; the app layout hands it to the Toaster on the next page, which translates it, shows it once and clears it. The action can only be a link there (an in-app path). A flash is fleeting: the next toast on that page (a check-in's "· Undo") replaces it instead of waiting behind it.
+- Behind an open dialog a toast can't be seen (the overlay covers it): close the dialog first, then show the toast.
+- A toast confirms something the screen does not already show. When the change is visible in place, no toast, with one exception: a toast carrying Undo is allowed for an in-place change when the screen has no in-place Undo and a persistent Undo exists elsewhere (e.g. the habit page). So a check-in on Today turns green *and* gets "Read 20 min checked in · Undo" (`lib/check-in-undo.ts`); Undo shows "Undoing Read 20 min…" (sticky until it answers), then "check-in undone", or what went wrong with Undo again. One such toast at a time.
 
 ## Motion
 
@@ -140,4 +198,5 @@ Short, warm, direct. Second person. No exclamation-mark spam.
 - Guilt copy, countdown pressure, or naming who broke a group streak.
 - Tiny tap targets, text below 4.5:1 contrast.
 - Photos of people (GDPR, and kids). Avatars are an emoji chosen from a curated set (animals, friendly objects) on a pastel circle; until chosen, the initial.
-- Toasts for things the screen already shows.
+- Toasts for things the screen already shows (a toast is for a result that happened elsewhere; the one exception is Undo for an in-place change with no in-place Undo, see "States and feedback").
+- Cards around sentences, single numbers or headed groups of controls.

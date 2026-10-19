@@ -31,8 +31,8 @@ export default async function ProfilePage() {
   ];
 
   return (
-    <section className="flex flex-col gap-6 py-6">
-      <div className="flex flex-col items-center gap-3 text-center">
+    <div className="flex flex-col gap-section py-section">
+      <div className="flex flex-col items-center gap-item text-center">
         <AvatarEdit
           name={profile.display_name}
           emoji={profile.avatar_emoji}
@@ -53,11 +53,13 @@ export default async function ProfilePage() {
         </div>
       </div>
       {level && <LevelCard xp={level.xp} />}
+      {/* A list of places to go, not a card: rows on dividers. -mx-inner px-inner: the hover tint reaches
+          past the text without moving it. */}
       <nav aria-label={t("profile.accountNav")}>
-        <ul className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-soft">
+        <ul className="flex flex-col divide-y divide-border">
           {links.map(({ href, label, icon: Icon }) => (
-            <li key={href} className="border-t border-border first:border-t-0">
-              <Link href={href} className="flex min-h-14 items-center gap-3 px-4 hover:bg-muted">
+            <li key={href}>
+              <Link href={href} className="-mx-inner flex min-h-14 items-center gap-item rounded-xl px-inner hover:bg-muted/60">
                 <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-primary">
                   <Icon className="size-5" />
                 </span>
@@ -69,20 +71,28 @@ export default async function ProfilePage() {
         </ul>
       </nav>
       <SignOutButton />
-      <footer className="flex justify-center gap-4 text-xs text-muted-foreground">
-        <Link href="/whats-new" className="font-mono underline-offset-4 hover:underline">
+      {/* Links on one centred row that wraps between links, and inside a link only between words, never
+          inside one (ru "Как установить" broke as "установит / ь" at 420 px): wrap-normal break-normal.
+          Each is a 44 px target; the version on its own smaller line below. No dot separators: on a
+          wrapped row one would start the second line. */}
+      <footer className="flex flex-col items-center text-muted-foreground">
+        <ul className="flex flex-wrap justify-center gap-x-item text-sm">
+          {[
+            { href: "/privacy", label: t("profile.footer.privacy") },
+            { href: "/terms", label: t("profile.footer.terms") },
+            { href: "/install", label: t("profile.footer.install") },
+          ].map((l) => (
+            <li key={l.href}>
+              <Link href={l.href} className="flex min-h-11 items-center px-inner text-center wrap-normal break-normal underline-offset-4 hover:underline">
+                {l.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <Link href="/whats-new" className="flex min-h-11 items-center px-inner font-mono text-xs wrap-normal break-normal underline-offset-4 hover:underline">
           {appVersion()}
         </Link>
-        <Link href="/privacy" className="underline-offset-4 hover:underline">
-          {t("profile.footer.privacy")}
-        </Link>
-        <Link href="/terms" className="underline-offset-4 hover:underline">
-          {t("profile.footer.terms")}
-        </Link>
-        <Link href="/install" className="underline-offset-4 hover:underline">
-          {t("profile.footer.install")}
-        </Link>
       </footer>
-    </section>
+    </div>
   );
 }

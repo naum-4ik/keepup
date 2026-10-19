@@ -14,6 +14,8 @@ type Props = {
   error?: string;
   // Settings: after a change, remind that it applies from the next day and week.
   showChangeNote?: boolean;
+  // Settings: the id of the line that says it saved.
+  describedBy?: string;
 };
 
 const selectClass = "h-11 w-full rounded-xl border border-input bg-transparent px-3 text-base tabular-nums";
@@ -34,7 +36,7 @@ function useBrowserClock(): { now: Date | null; deviceZone: string | null } {
 }
 
 // Pick the time zone by what the clock says now: one row per local time, each with a familiar city.
-export function TimezonePicker({ name, value, onChange, timezones, error, showChangeNote = false }: Props) {
+export function TimezonePicker({ name, value, onChange, timezones, error, showChangeNote = false, describedBy }: Props) {
   const { t, locale } = useT();
   const [initial] = useState(value);
   const { now, deviceZone } = useBrowserClock();
@@ -53,7 +55,8 @@ export function TimezonePicker({ name, value, onChange, timezones, error, showCh
   });
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-inner">
+      {/* The label and its (i): one glyph pair, 4 px. */}
       <div className="flex flex-wrap items-center gap-1">
         <label htmlFor={name} className="text-sm font-semibold">
           {t("profile.timezone.label")}
@@ -68,7 +71,7 @@ export function TimezonePicker({ name, value, onChange, timezones, error, showCh
         onChange={(e) => onChange(e.target.value)}
         className={selectClass}
         aria-invalid={Boolean(error)}
-        aria-describedby={error ? `${name}-error` : undefined}
+        aria-describedby={[error ? `${name}-error` : null, describedBy].filter(Boolean).join(" ") || undefined}
       >
         {choices.length === 0 ? (
           <option value={value}>{cityOf(value)}</option>
@@ -85,7 +88,7 @@ export function TimezonePicker({ name, value, onChange, timezones, error, showCh
         <button
           type="button"
           onClick={() => onChange(device)}
-          className="-ms-2 flex min-h-11 items-center gap-1.5 self-start rounded-lg px-2 text-sm font-semibold text-primary hover:bg-accent"
+          className="-ms-inner flex min-h-11 items-center gap-inner self-start rounded-lg px-inner text-sm font-semibold text-primary hover:bg-accent"
         >
           <MapPin className="size-4" aria-hidden />
           {t("profile.timezone.useDevice", { city: cityOf(device) })}

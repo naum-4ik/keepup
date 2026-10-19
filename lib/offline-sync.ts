@@ -100,7 +100,8 @@ export function newTap(now = new Date()): { clientId: string; tappedAt: string }
 
 // A tap tried online (app/api/check-ins/tap): mine, or for a child (subjectId; byChild: in the kid view).
 export type OnlineTap = { clientId: string; habitId: string; subjectId: string | null; byChild?: boolean };
-export type OnlineAnswer = { ok: true; xp?: TapXp } | { ok: false; message: string; code?: string };
+// pending: the server kept it waiting for approval (absent from an older server: unknown).
+export type OnlineAnswer = { ok: true; xp?: TapXp; pending?: boolean } | { ok: false; message: string; code?: string };
 
 export function parseTap(body: unknown): OnlineTap | null {
   if (!body || typeof body !== "object") return null;
@@ -119,9 +120,10 @@ export function parseTap(body: unknown): OnlineTap | null {
 // session carries not_authenticated (kept queued: the next signed-in flush sends it); anything else,
 // a 200 without its JSON (a captive portal) included, has no code and keeps the tap queued.
 export function tapAnswer(t: T, status: number, body: unknown): OnlineAnswer {
-  const b = (body ?? {}) as { xp?: unknown; code?: unknown; message?: unknown };
+  const b = (body ?? {}) as { xp?: unknown; code?: unknown; message?: unknown; pending?: unknown };
   if (status === 200 && body && typeof body === "object" && "xp" in b) {
-    return { ok: true, xp: typeof b.xp === "number" || b.xp === null ? b.xp : 0 };
+    const xp = typeof b.xp === "number" || b.xp === null ? b.xp : 0;
+    return typeof b.pending === "boolean" ? { ok: true, xp, pending: b.pending } : { ok: true, xp };
   }
   const message = typeof b.message === "string" ? b.message : genericError(t);
   if ((status === 409 || status === 401) && typeof b.code === "string") return { ok: false, message, code: b.code };

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { authErrorReason } from "@/lib/auth-errors";
@@ -5,6 +6,11 @@ import { getT } from "@/lib/i18n/server";
 import { safeNextPath, withNext } from "@/lib/paths";
 import { AuthCard } from "./auth-card";
 import { LoginForm } from "./login-form";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getT();
+  return { title: t("meta.pageTitle", { page: t("meta.signInPage") }) };
+}
 
 export default async function LoginPage({
   searchParams,

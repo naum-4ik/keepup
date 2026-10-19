@@ -13,8 +13,9 @@ const shortDate = (date: string, locale: Locale) => {
   return new Intl.DateTimeFormat(INTL_LOCALE[locale], { timeZone: "UTC", day: "numeric", month: "short" }).format(new Date(Date.UTC(y, m - 1, d)));
 };
 // The one chip for date choices: Starts here, Ends in EndPicker (same height, type and pressed state).
+// 4px icon-to-label (off the scale): the calendar icon belongs to the word on a narrow chip.
 export const dateChipClass =
-  "flex h-11 items-center justify-center gap-1 rounded-full border border-input px-1.5 text-[0.8125rem] font-semibold whitespace-nowrap text-muted-foreground hover:border-primary/60 hover:bg-accent/60 hover:text-foreground aria-pressed:border-primary aria-pressed:bg-accent aria-pressed:text-foreground";
+  "flex h-11 min-w-0 items-center justify-center gap-1 rounded-full border border-input px-inner text-[0.8125rem] font-semibold whitespace-nowrap text-muted-foreground hover:border-primary/60 hover:bg-accent/60 hover:text-foreground aria-pressed:border-primary aria-pressed:bg-accent aria-pressed:text-foreground";
 
 type QuickPick = { label: string; date: string };
 
@@ -49,8 +50,11 @@ export function StartDatePicker({ value, onChange, today, min = today, weekStart
   const weekdays = fromWeekStart(headers, weekStart);
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="grid grid-cols-4 gap-1.5">
+    <div className="@container flex flex-col gap-inner">
+      {/* data-invalid: a refused date takes focus on its first chip (lib/focus-first-invalid.ts). */}
+      {/* Two chips a row where four don't fit their words ("Tomorrow", "Next Mon" at 320: the sheet is
+          248px wide), four from 320px of room. */}
+      <div className="grid grid-cols-2 gap-inner @min-[20rem]:grid-cols-4" data-invalid={errorId ? "" : undefined} aria-describedby={errorId}>
         {quick.map((q) => (
           <button key={q.label} type="button" aria-pressed={value === q.date} className={dateChipClass}
             onClick={() => { onChange(q.date); setOpen(false); }}>
@@ -65,8 +69,8 @@ export function StartDatePicker({ value, onChange, today, min = today, weekStart
       </div>
 
       {open && (
-        <div className="rounded-2xl border border-input p-3" aria-describedby={errorId}>
-          <div className="mb-1 flex items-center justify-between">
+        <div className="rounded-2xl border border-input p-inner" aria-describedby={errorId}>
+          <div className="mb-inner flex items-center justify-between">
             <button type="button" aria-label={t("habits.datePicker.previousMonth")} disabled={month <= min.slice(0, 7)}
               onClick={() => setMonth((m) => addMonths(m, -1))}
               className="flex size-11 items-center justify-center rounded-full text-primary hover:bg-muted disabled:text-muted-foreground/40">
@@ -80,7 +84,7 @@ export function StartDatePicker({ value, onChange, today, min = today, weekStart
           </div>
           <div className="grid grid-cols-7 text-center">
             {weekdays.map((d, i) => (
-              <span key={i} className="pb-1 text-xs font-semibold text-muted-foreground">{d}</span>
+              <span key={i} className="pb-inner text-xs font-semibold text-muted-foreground">{d}</span>
             ))}
             {monthGrid(month, weekStart).map((date, i) =>
               date === null ? (

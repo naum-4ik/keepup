@@ -11,9 +11,12 @@ import type { TapXp } from "@/lib/xp";
 // pendingCounts), so the page can tell what they change on screen (queuedDelta).
 export type Counts = ReadonlyMap<string, number> & { readonly queue?: readonly QueueEntry[] };
 export type Flushed = { counts: Counts; changed: boolean; poisoned: number };
-export type TapResult = { ok: true; queued: boolean; xp?: TapXp } | { ok: false; message: string };
+// clientId: on a tap that landed online now, the id the server keeps it by, so the page can offer to
+// undo it (undo_check_in_by_client; app/(app)/habits/actions.ts undoCheckInByClient).
+// pending: on a landed tap, whether the server kept it waiting for approval (undefined: not said).
+export type TapResult = { ok: true; queued: boolean; xp?: TapXp; clientId?: string; pending?: boolean } | { ok: false; message: string };
 // The online try (lib/offline-sync.ts tapSender): `signal` aborts it when it takes too long.
-type Online = (tap: { clientId: string }, signal: AbortSignal) => Promise<{ ok: true; xp?: TapXp } | { ok: false; message: string; code?: string }>;
+type Online = (tap: { clientId: string }, signal: AbortSignal) => Promise<{ ok: true; xp?: TapXp; pending?: boolean } | { ok: false; message: string; code?: string }>;
 
 // A database rule refused it: final, the same answers the sync route maps to 409. An expired session
 // isn't one (the next signed-in flush sends it).
@@ -203,7 +206,8 @@ export function createOfflineClient(deps: {
         landing = false;
       }
       // The XP float shows only for a check-in that counted now (lib/xp.ts); null: counted, amount unknown.
-      return result.xp === 0 || result.xp === undefined ? { ok: true, queued: false } : { ok: true, queued: false, xp: result.xp };
+      const landed = { ok: true, queued: false, clientId: tap.clientId, ...(result.pending !== undefined ? { pending: result.pending } : {}) } as const;
+      return result.xp === 0 || result.xp === undefined ? landed : { ...landed, xp: result.xp };
     }
     if (isRuleRefusal(result.code)) {
       await queue.forget(tap.clientId);

@@ -101,7 +101,7 @@ export function WeekDays({ days, today, details }: { days: WeekDay[]; today: str
   const day = days.find((d) => d.local_date === selected);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-inner">
       <ol aria-label={t("overview.byDayLabel")} className="flex justify-between">
         {days.map((d) => {
           const tappable = Boolean(details) && d.local_date <= today;
@@ -114,12 +114,12 @@ export function WeekDays({ days, today, details }: { days: WeekDay[]; today: str
                   aria-expanded={selected === d.local_date}
                   aria-controls={panelId}
                   onClick={() => setSelected((s) => (s === d.local_date ? null : d.local_date))}
-                  className="flex min-h-11 min-w-11 flex-col items-center gap-1 rounded-xl hover:bg-muted/60"
+                  className="flex min-h-11 min-w-11 flex-col items-center rounded-xl hover:bg-muted/60"
                 >
                   <DayCircle day={d} today={today} selected={selected === d.local_date} />
                 </button>
               ) : (
-                <span role="img" aria-label={dayLabel(t, locale, d, today)} className="flex min-h-11 flex-col items-center gap-1">
+                <span role="img" aria-label={dayLabel(t, locale, d, today)} className="flex min-h-11 flex-col items-center">
                   <DayCircle day={d} today={today} selected={false} />
                 </span>
               )}
@@ -140,8 +140,9 @@ export function DayPanel({ id, date, today, day, rows }: { id: string; date: str
   return (
     <div id={id} hidden={!rows} role="region" aria-label={date ? longDate(date, locale) : undefined}>
       {rows && date && (
-        <div className="flex flex-col gap-2 rounded-xl bg-muted/50 p-3">
-          <p className="flex items-baseline justify-between gap-2">
+        // A soft tint, not a card: 12 px sides to match its 12 px radius (as Notice does).
+        <div className="flex flex-col gap-inner rounded-xl bg-muted/50 px-3 py-inner">
+          <p className="flex items-baseline justify-between gap-inner">
             <span className="font-bold">{date === today ? t("dates.today") : longDate(date, locale)}</span>
             {day && day.daily_possible > 0 && (
               <span className="text-sm text-muted-foreground tabular-nums">
@@ -152,12 +153,13 @@ export function DayPanel({ id, date, today, day, rows }: { id: string; date: str
           {rows.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t("overview.noCheckIns")}</p>
           ) : (
-            <ul className="flex flex-col gap-1.5">
+            <ul className="flex flex-col">
               {rows.map((r) => (
-                <li key={r.habitId} className="flex min-h-10 items-center gap-2.5">
+                <li key={r.habitId} className="flex min-h-11 items-center gap-inner">
                   <HabitEmoji category={r.category} emoji={r.emoji} size="xs" />
                   <span className="min-w-0 flex-1 truncate text-sm font-semibold">{r.title}</span>
                   {r.pending > 0 && (
+                    // 4 px icon to count, off the scale on purpose (one glyph pair).
                     <span className="flex items-center gap-1 text-xs font-semibold text-pending">
                       <Clock aria-hidden className="size-3.5" />
                       {t("overview.waiting", { n: r.pending })}

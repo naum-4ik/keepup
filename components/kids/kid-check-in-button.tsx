@@ -1,10 +1,12 @@
 "use client";
 
+import { unstable_rethrow } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
-import { Check, Clock, Plus, Snowflake, Undo2 } from "lucide-react";
+import { Check, Clock, LoaderCircle, Plus, Snowflake, Undo2 } from "lucide-react";
 import { undoForChild } from "@/app/(app)/kids/actions";
 import { useOfflineQueue, useSubmitTap } from "@/components/offline/offline-queue-provider";
 import { queueKey } from "@/lib/offline-queue";
+import { reach } from "@/lib/reach";
 import type { CheckInState } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/client";
@@ -59,11 +61,15 @@ export function KidCheckInButton({
   }, []);
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-end gap-inner">
       <div className="relative">
         <button
           type="button"
-          aria-label={t("kids.checkIn.label", { state: STATE_KEY[shown], name: isolate(childName), title: isolate(title) })}
+          aria-label={
+            pending
+              ? t("kids.checkIn.checking", { name: isolate(childName), title: isolate(title) })
+              : t("kids.checkIn.label", { state: STATE_KEY[shown], name: isolate(childName), title: isolate(title) })
+          }
           aria-describedby={savingShown ? savingId : undefined}
           disabled={shown !== "open" || pending}
           onClick={() => {
@@ -95,7 +101,12 @@ export function KidCheckInButton({
             pending && "opacity-60",
           )}
         >
-          <Icon className="size-5" strokeWidth={2.5} aria-hidden />
+          {pending ? (
+            // In progress: the label says "Checking in…", and the icon spins (held still under reduced motion).
+            <LoaderCircle className="size-5 motion-safe:animate-spin" strokeWidth={2.5} aria-hidden />
+          ) : (
+            <Icon className="size-5" strokeWidth={2.5} aria-hidden />
+          )}
         </button>
         {star > 0 && (
           <span key={star} aria-hidden className="pointer-events-none absolute -top-3 -start-3 text-xl leading-none motion-safe:animate-star">
@@ -117,29 +128,48 @@ export function KidCheckInButton({
   );
 }
 
-// Any adult of the group may undo a child's check-in while its period is open.
-export function UndoForChildButton({ checkInId, habitId, childId, label }: { checkInId: string; habitId: string; childId: string; label: string }) {
+// Any adult of the group may undo a child's check-in while its period is open. While it undoes, the
+// button says "Undoing…" (its name, "Undoing Tidy my toys…"); the row then leaves with the refresh.
+export function UndoForChildButton({
+  checkInId,
+  habitId,
+  childId,
+  label,
+  title,
+}: {
+  checkInId: string;
+  habitId: string;
+  childId: string;
+  label: string;
+  title: string;
+}) {
   const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
-    <span className="flex flex-col items-end gap-1">
+    <span className="flex flex-col items-end gap-inner">
       <button
         type="button"
-        aria-label={label}
+        aria-label={pending ? t("kids.checkIn.undoingLabel", { title: isolate(title) }) : label}
         disabled={pending}
         onClick={() =>
           startTransition(async () => {
-            const r = await undoForChild(checkInId, habitId, childId);
+            setError(null);
+            const r = await reach(() => undoForChild(checkInId, habitId, childId), { offline: t("kids.errors.offline"), reload: t("kids.errors.reload") }, { rethrow: unstable_rethrow });
             setError(r.ok ? null : r.message);
           })
         }
-        className="flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-60"
+        // Icon to label: one glyph pair, 4 px. 12 px sides: the pill's radius.
+        className="flex h-11 items-center gap-1 rounded-full px-3 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-60"
       >
-        <Undo2 aria-hidden className="size-4" />
-        {t("offline.undo")}
+        {pending ? <LoaderCircle aria-hidden className="size-4 motion-safe:animate-spin" /> : <Undo2 aria-hidden className="size-4" />}
+        {pending ? t("kids.checkIn.undoing") : t("offline.undo")}
       </button>
-      {error && <span role="alert" className="text-xs text-destructive">{error}</span>}
+      {error && (
+        <span role="alert" className="max-w-40 pe-3 text-end text-xs text-destructive">
+          {error}
+        </span>
+      )}
     </span>
   );
 }

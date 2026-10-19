@@ -7,17 +7,21 @@ test("signed-out visitors are sent to sign in", async ({ page }) => {
   await expect(page).toHaveURL(/\/login\?next=%2Ftoday$/);
 });
 
-test("the landing page: one screen, Get started, a Sign in link and a quiet demo link", async ({ page }) => {
+const DEMO = "Try a demo with sample habits";
+
+test("the landing page: one screen, Start your first streak, a quiet demo button and a Sign in link", async ({ page }) => {
   for (const height of [844, 700]) {
     await page.setViewportSize({ width: 390, height });
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Keepup" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Try the demo" })).toBeVisible();
+    await expect(page.getByText("Check in daily, keep your streak, share habits with family.")).toBeVisible();
+    await expect(page.getByRole("button", { name: DEMO })).toBeVisible();
+    await expect(page.getByRole("button", { name: DEMO })).toHaveAccessibleDescription("Resets after 24 hours, no sign-up.");
     await expect(page.getByText("By continuing, you agree to the Terms of use and the Privacy Policy")).toBeVisible();
     // No scrolling: everything fits on one phone screen.
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight)).toBe(true);
   }
-  const start = page.getByRole("link", { name: "Get started" });
+  const start = page.getByRole("link", { name: "Start your first streak" });
   const width = (await start.boundingBox())?.width ?? 0;
   expect(width).toBeGreaterThanOrEqual(340); // the main button fills the column (max 384px minus 2 × 16px margins)
   await start.click();
@@ -25,6 +29,38 @@ test("the landing page: one screen, Get started, a Sign in link and a quiet demo
   await page.goto("/");
   await page.getByRole("link", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/login$/);
+});
+
+for (const [width, height] of [[320, 640], [375, 812], [414, 896]]) {
+  test(`the landing at ${width}×${height}: the one filled button is on the first screen, 44 px or taller`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto("/");
+    // One primary (filled) button on the page: the rest are a text button and links.
+    await expect(page.locator('[data-slot="button"][data-variant="default"]')).toHaveCount(1);
+    const box = (await page.getByRole("link", { name: "Start your first streak" }).boundingBox())!;
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(height);
+    // The quieter ways in are full tap targets too.
+    for (const target of [page.getByRole("button", { name: DEMO }), page.getByRole("link", { name: "Sign in" })]) {
+      expect((await target.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+  });
+}
+
+test("public pages have their own titles", async ({ page }) => {
+  for (const [path, title] of [
+    ["/", "Keepup — habit tracker for families"],
+    ["/login", "Sign in · Keepup"],
+    ["/signup", "Sign up · Keepup"],
+    ["/install", "How to install · Keepup"],
+    ["/privacy", "Privacy Policy · Keepup"],
+    ["/terms", "Terms of use · Keepup"],
+    ["/offline", "Keepup"], // a page without its own title keeps the plain name
+  ]) {
+    await page.goto(path);
+    await expect(page).toHaveTitle(title);
+  }
 });
 
 test("a new user signs in, onboards and lands on Today", async ({ page }) => {
@@ -35,7 +71,7 @@ test("a new user signs in, onboards and lands on Today", async ({ page }) => {
   await expect(page.getByText("Rome", { exact: true })).toBeVisible();
 
   await completeOnboarding(page, { name: "Ana" });
-  await expect(page.getByText("Nothing to do yet")).toBeVisible();
+  await expect(page.getByText("Add one habit and check in today to start day 1 of your streak.")).toBeVisible();
   await expect(
     page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Today" }),
   ).toHaveAttribute("aria-current", "page");
@@ -105,7 +141,7 @@ test("sign-up explains mistakes and links to sign-in for an existing email", asy
 
 test("sign-in and sign-up link to each other, and the password can be shown", async ({ page }) => {
   await page.goto("/login");
-  await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in to Keepup" })).toBeVisible();
   await page.getByRole("link", { name: "Sign up" }).click();
   await expect(page).toHaveURL(/\/signup$/);
   await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
@@ -174,8 +210,8 @@ test("settings changes show on the profile", async ({ page }) => {
   await expect(page.getByLabel("Time zone").locator("option:checked")).toHaveText(/^\d\d:\d\d \(Rome\)$/);
   await chooseTimezone(page, "Asia/Tokyo");
   await expect(page.getByText("Changes apply from your next day and week.")).toBeVisible();
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");
+  // Saved on change, said under the field (no Save button for it).
+  await expect(page.getByRole("region", { name: "Your profile" }).getByRole("status").filter({ hasText: "Saved ✓" })).toBeVisible();
 
   await page.goto("/profile");
   await expect(page.getByText("Tokyo · weeks start Sunday")).toBeVisible();
@@ -207,8 +243,7 @@ test("the first day of the week can be changed in settings", async ({ page }) =>
   await page.goto("/profile/settings");
   await expect(page.getByLabel("Week starts on")).toHaveValue("0"); // detected from the browser locale (en-US)
   await page.getByLabel("Week starts on").selectOption("1");
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");
+  await expect(page.getByRole("region", { name: "Your profile" }).getByRole("status").filter({ hasText: "Saved ✓" })).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("Week starts on")).toHaveValue("1");
 });
@@ -275,18 +310,21 @@ test("a signed-in user clicking a stale link still lands on Today", async ({ pag
   await expect(page).toHaveURL(/\/today$/);
 });
 
-test("saving settings twice confirms both saves", async ({ page }) => {
+test("saving the display name twice confirms both saves", async ({ page }) => {
   await signUpAndOnboard(page);
   await page.goto("/profile/settings");
+  const profile = page.getByRole("region", { name: "Your profile" });
+  const saved = profile.getByRole("status").filter({ hasText: "Saved ✓" });
   await page.getByLabel("Display name").fill("Bea");
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("button", { name: "Saved" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeVisible({ timeout: 5000 });
+  await profile.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(saved).toBeVisible();
 
   await page.getByLabel("Display name").fill("Bee");
-  await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("button", { name: "Saved" })).toBeVisible();
-  await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");
+  await page.getByLabel("Display name").press("Enter"); // Enter saves too
+  await expect(profile.getByRole("status").filter({ hasText: "Saving…" })).toHaveCount(0);
+  await expect(saved).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Display name")).toHaveValue("Bee");
 });
 
 test("Profile is a list: Achievements, Settings, What's new and Groups, then Sign out", async ({ page }) => {

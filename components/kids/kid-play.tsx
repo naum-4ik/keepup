@@ -473,20 +473,27 @@ export function KidPlay({
 
   return (
     <div className="flex flex-1 flex-col gap-5">
-      <header className="flex items-center gap-3">
-        <Avatar name={child.name} emoji={child.emoji} color={child.color} size="lg" />
-        <h1 className="min-w-0 flex-1 truncate text-2xl font-bold">{child.name}</h1>
-        {/* For the grown-up: sound is on by default and remembered on this phone. */}
-        <button
-          type="button"
-          onClick={toggleSound}
-          aria-label={t("kidView.sound")}
-          aria-pressed={!muted}
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground shadow-soft"
-        >
-          {muted ? <VolumeX aria-hidden className="size-5" /> : <Volume2 aria-hidden className="size-5" />}
-        </button>
-        <HoldToExit href={`/kids/${child.id}`} childName={child.name} />
+      {/* Her name is never cut short ("N" at 320, "Alexan-drina" in a shared row): the grown-up's two
+          controls have their own row at the top, and the name the full width under it (a name longer
+          than that wraps instead of overflowing). */}
+      <header className="flex flex-col gap-inner">
+        <div className="flex items-center justify-end gap-inner">
+          {/* For the grown-up: sound is on by default and remembered on this phone. */}
+          <button
+            type="button"
+            onClick={toggleSound}
+            aria-label={t("kidView.sound")}
+            aria-pressed={!muted}
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground shadow-soft"
+          >
+            {muted ? <VolumeX aria-hidden className="size-5" /> : <Volume2 aria-hidden className="size-5" />}
+          </button>
+          <HoldToExit href={`/kids/${child.id}`} childName={child.name} />
+        </div>
+        <div className="flex items-center gap-item">
+          <Avatar name={child.name} emoji={child.emoji} color={child.color} size="lg" />
+          <h1 className="min-w-0 flex-1 text-2xl font-bold wrap-break-word">{child.name}</h1>
+        </div>
       </header>
 
       {weekStart && lastStars ? <NewWeekCard childId={child.id} weekStart={weekStart} lastStars={lastStars} theme={child.theme} gender={child.gender} /> : null}

@@ -3,7 +3,6 @@
 import { createContext, startTransition, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createOfflineClient, type Channel, type Counts, type TapResult } from "@/lib/offline-client";
-import { genericError } from "@/lib/habit-errors";
 import { useT } from "@/lib/i18n/client";
 import { claimSavedPages, clearSavedPages, savePageOffline } from "@/lib/offline-pages";
 import { queuedDelta, type ShownPeriods } from "@/lib/offline-queue";
@@ -213,7 +212,10 @@ export function useSubmitTap() {
   const { t } = useT();
   return useCallback(
     async (tap: { habitId: string; subjectId?: string | null; byChild?: boolean }): Promise<TapResult> => {
-      if (!client) return { ok: false, message: genericError(t) };
+      // No queue, or saving it on the phone failed (IndexedDB; a network failure only queues the tap):
+      // a device problem, so the advice is a reload, not the connection.
+      const failed = t("habits.checkIn.notSaved");
+      if (!client) return { ok: false, message: failed };
       const sendTap = tapSender(t);
       try {
         const r = await client.submitTap(tap, ({ clientId }, signal) =>
@@ -223,7 +225,7 @@ export function useSubmitTap() {
         return r;
       } catch (e) {
         console.error("check-in tap", e);
-        return { ok: false, message: genericError(t) };
+        return { ok: false, message: failed };
       }
     },
     [client, t],

@@ -1,0 +1,167 @@
+import { describe, expect, it } from "vitest";
+import {
+  MAX_WAITING,
+  TOAST_COOKIE,
+  dismissToast,
+  emptyToasts,
+  focusIsLost,
+  flashFromCookieString,
+  TOAST_COOKIE_MAX_AGE,
+  isFreshFlash,
+  isSafeHref,
+  parseFlash,
+  pushToast,
+  removeToast,
+  serializeFlash,
+  toastDuration,
+  type Toast,
+} from "./toast";
+
+const toast = (id: string, extra: Partial<Toast> = {}): Toast => ({ id, text: `Toast ${id}`, ...extra });
+
+describe("toast queue", () => {
+  it("shows the first toast at once and queues the next", () => {
+    const one = pushToast(emptyToasts, toast("a"));
+    expect(one.current?.id).toBe("a");
+    const two = pushToast(one, toast("b"));
+    expect(two.current?.id).toBe("a");
+    expect(two.waiting.map((t) => t.id)).toEqual(["b"]);
+  });
+
+  it("shows the same id once (flash read from the server render and from the cookie)", () => {
+    const s = pushToast(pushToast(emptyToasts, toast("a")), toast("b"));
+    expect(pushToast(s, toast("a"))).toBe(s);
+    expect(pushToast(s, toast("b"))).toBe(s);
+  });
+
+  it("a fleeting toast (a flash) gives way to the next one instead of making it wait", () => {
+    const flash = pushToast(emptyToasts, toast("f", { fleeting: true }));
+    const next = pushToast(flash, toast("b"));
+    expect(next.current?.id).toBe("b");
+    expect(next.waiting).toEqual([]);
+    // A fleeting one that arrives behind another still waits its turn.
+    expect(pushToast(pushToast(emptyToasts, toast("a")), toast("f", { fleeting: true })).waiting.map((t) => t.id)).toEqual(["f"]);
+  });
+
+  it(`keeps at most ${MAX_WAITING} waiting, dropping the oldest`, () => {
+    let s = pushToast(emptyToasts, toast("a"));
+    for (const id of ["b", "c", "d"]) s = pushToast(s, toast(id));
+    expect(s.current?.id).toBe("a");
+    expect(s.waiting.map((t) => t.id)).toEqual(["c", "d"]);
+  });
+
+  it("removing the showing one shows the next; a waiting one is dropped; an unknown id changes nothing", () => {
+    const s = pushToast(pushToast(pushToast(emptyToasts, toast("a")), toast("b")), toast("c"));
+    expect(removeToast(s, "a")).toEqual({ current: toast("b"), waiting: [toast("c")] });
+    expect(removeToast(s, "b")).toEqual({ current: toast("a"), waiting: [toast("c")] });
+    expect(removeToast(s, "x")).toBe(s);
+  });
+
+  it("dismissing the current one shows the next, then nothing", () => {
+    let s = pushToast(pushToast(emptyToasts, toast("a")), toast("b"));
+    s = dismissToast(s, "a");
+    expect(s.current?.id).toBe("b");
+    expect(s.waiting).toEqual([]);
+    s = dismissToast(s, "b");
+    expect(s).toEqual(emptyToasts);
+  });
+
+  it("a late dismiss of a toast that is not showing changes nothing", () => {
+    const s = pushToast(pushToast(emptyToasts, toast("a")), toast("b"));
+    expect(dismissToast(s, "b")).toBe(s);
+    expect(dismissToast(emptyToasts, "a")).toBe(emptyToasts);
+  });
+
+  it("stays longer when it has an action", () => {
+    expect(toastDuration(toast("a"))).toBe(5000);
+    expect(toastDuration(toast("a", { action: { label: "Undo", onAction: () => {} } }))).toBe(8000);
+  });
+
+  it("a sticky toast has no timer: it stays until its owner closes it", () => {
+    expect(toastDuration(toast("a", { sticky: true }))).toBeNull();
+    const s = pushToast(emptyToasts, toast("a", { sticky: true }));
+    expect(removeToast(s, "a").current).toBeNull();
+  });
+});
+
+describe("isSafeHref", () => {
+  it.each(["/today", "/habits/1?view=archived", "/progress#x"])("accepts the in-app path %s", (href) => {
+    expect(isSafeHref(href)).toBe(true);
+  });
+  it.each(["//evil.example", "/\\evil.example", "https://evil.example", "javascript:alert(1)", "today", "", "/to day", "/a\nb"])(
+    "rejects %j",
+    (href) => expect(isSafeHref(href)).toBe(false),
+  );
+});
+
+describe("flash cookie", () => {
+  const flash = { id: "f1", at: 1_700_000_000_000, text: "habits.toast.added", values: { habit: "Read", n: 2 }, action: { label: "common.open", href: "/habits/1" } };
+
+  it("round-trips as the server reads it (JSON) and as document.cookie reads it (URI-encoded)", () => {
+    const value = serializeFlash(flash);
+    expect(parseFlash(value)).toEqual(flash);
+    expect(parseFlash(encodeURIComponent(value))).toEqual(flash);
+  });
+
+  it("keeps a flash without values or action", () => {
+    expect(parseFlash(serializeFlash({ id: "f2", at: 1, text: "common.saved" }))).toEqual({ id: "f2", at: 1, text: "common.saved" });
+  });
+
+  it("drops unknown fields", () => {
+    expect(parseFlash(JSON.stringify({ id: "f3", at: 1, text: "common.saved", html: "<b>x</b>" }))).toEqual({ id: "f3", at: 1, text: "common.saved" });
+  });
+
+  it.each([
+    ["missing", undefined],
+    ["empty", ""],
+    ["not JSON", "%7Bnope"],
+    ["bad URI encoding", "%E0%A4%A"],
+    ["an array", "[1]"],
+    ["no id", JSON.stringify({ at: 1, text: "common.saved" })],
+    ["no time", JSON.stringify({ id: "x", text: "common.saved" })],
+    ["a time that is not a number", JSON.stringify({ id: "x", at: "now", text: "common.saved" })],
+    ["plain text instead of a key", JSON.stringify({ id: "x", at: 1, text: "You won a prize" })],
+    ["a one-word key", JSON.stringify({ id: "x", at: 1, text: "saved" })],
+    ["object values", JSON.stringify({ id: "x", at: 1, text: "common.saved", values: { a: { b: 1 } } })],
+    ["off-site action", JSON.stringify({ id: "x", at: 1, text: "common.saved", action: { label: "common.open", href: "//evil.example" } })],
+    ["action label not a key", JSON.stringify({ id: "x", at: 1, text: "common.saved", action: { label: "Click me", href: "/today" } })],
+    ["too long", JSON.stringify({ id: "x", at: 1, text: "common.saved", values: { a: "x".repeat(2000) } })],
+  ])("rejects %s", (_, raw) => {
+    expect(parseFlash(raw)).toBeNull();
+  });
+
+  it(`is fresh for the cookie's ${TOAST_COOKIE_MAX_AGE} s, then dropped`, () => {
+    const at = 1_700_000_000_000;
+    expect(isFreshFlash({ at }, at)).toBe(true);
+    expect(isFreshFlash({ at }, at + TOAST_COOKIE_MAX_AGE * 1000)).toBe(true);
+    expect(isFreshFlash({ at }, at + TOAST_COOKIE_MAX_AGE * 1000 + 1)).toBe(false);
+    // A server clock a little ahead of the phone's is fine; a time far in the future is not.
+    expect(isFreshFlash({ at: at + 30_000 }, at)).toBe(true);
+    expect(isFreshFlash({ at: at + 120_000 }, at)).toBe(false);
+  });
+
+  it("finds the flash cookie in a document.cookie string", () => {
+    const value = encodeURIComponent(serializeFlash({ id: "f4", at: 1, text: "common.saved" }));
+    expect(flashFromCookieString(`locale=en; ${TOAST_COOKIE}=${value}; other=1`)).toBe(value);
+    expect(flashFromCookieString("locale=en")).toBeNull();
+    expect(flashFromCookieString("")).toBeNull();
+    expect(flashFromCookieString(`${TOAST_COOKIE}-other=x`)).toBeNull();
+  });
+});
+
+describe("focusIsLost", () => {
+  const body = { closest: () => null };
+  const inToaster = { closest: (sel: string) => (sel === "[data-toaster]" ? {} : null) };
+  const elsewhere = { closest: () => null };
+
+  it("is lost with nothing focused, on the body, or inside the toasts (the toast that just closed)", () => {
+    expect(focusIsLost(null, body)).toBe(true);
+    expect(focusIsLost(body, body)).toBe(true);
+    expect(focusIsLost(inToaster, body)).toBe(true);
+  });
+
+  it("is not lost where the person put it since (a field, another button)", () => {
+    expect(focusIsLost(elsewhere, body)).toBe(false);
+  });
+});
+

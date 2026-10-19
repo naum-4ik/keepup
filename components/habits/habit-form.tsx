@@ -15,6 +15,8 @@ import { addButtonClass } from "@/components/ui/add-button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Notice } from "@/components/ui/notice";
+import { focusFirstInvalid } from "@/lib/focus-first-invalid";
 import { categoryLabel, CATEGORY_ORDER } from "@/lib/categories";
 import { formatLocalDate } from "@/lib/dates";
 import type { GroupKind } from "@/lib/group-schema";
@@ -29,11 +31,12 @@ import { useT } from "@/lib/i18n/client";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 
-// Every control in the dialog shares one height so the fields line up.
+// Every control in the dialog shares one height so the fields line up. 12px text inset (off the
+// scale): it matches the 12px corner radius, as in Notice.
 const fieldClass = "h-11 rounded-xl px-3 text-base";
 const selectClass = cn(fieldClass, "w-full border border-input bg-transparent");
 const chipClass =
-  "relative flex h-11 cursor-pointer items-center rounded-full border border-border px-4 text-sm font-semibold has-checked:border-primary has-checked:bg-accent has-checked:text-accent-foreground has-focus-visible:ring-2 has-focus-visible:ring-ring";
+  "relative flex h-11 cursor-pointer items-center rounded-full border border-border px-item text-sm font-semibold has-checked:border-primary has-checked:bg-accent has-checked:text-accent-foreground has-focus-visible:ring-2 has-focus-visible:ring-ring";
 const initialState: HabitFormState = { status: "idle" };
 type Tab = "together" | "popular" | HabitCategory;
 // templateId: the template it was opened from (telemetry only; the words it shows are in the user's language).
@@ -99,8 +102,8 @@ export function HabitForm({
   const createOwn = () => open(true, { title: "", emoji: "", category: "", targetCount: "1", period: "day" });
 
   return (
-    <div className="flex flex-col gap-4">
-      <div role="tablist" aria-label={tr("habits.form.tabsLabel")} className="grid grid-cols-3 gap-2">
+    <div className="flex flex-col gap-item">
+      <div role="tablist" aria-label={tr("habits.form.tabsLabel")} className="grid grid-cols-3 gap-inner">
         {([...(showTogether ? ["together"] : []), "popular", ...CATEGORY_ORDER] as Tab[]).map((key) => (
           <button
             key={key}
@@ -109,7 +112,7 @@ export function HabitForm({
             aria-selected={tab === key}
             onClick={() => setTab(key)}
             className={cn(
-              "flex min-h-11 items-center gap-1.5 rounded-xl bg-card px-2 py-1.5 text-start text-xs leading-tight font-semibold shadow-soft",
+              "flex min-h-11 items-center gap-inner rounded-xl bg-card px-inner text-start text-xs leading-tight font-semibold shadow-soft",
               tab === key ? "bg-accent text-foreground ring-2 ring-primary" : "text-muted-foreground hover:bg-muted",
             )}
           >
@@ -127,13 +130,14 @@ export function HabitForm({
 
       {/* Fixed 2×3 grid (every category tab has exactly 6 templates, Together has 5, or 6 for a couple) with same-size
           cards, so switching tabs never moves anything and "Create your own" always sits in the same place. */}
-      <div role="tabpanel" className="grid grid-cols-2 grid-rows-[repeat(3,4.75rem)] gap-2.5">
+      <div role="tabpanel" className="grid grid-cols-2 grid-rows-[repeat(3,4.75rem)] gap-inner">
         {templates.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => pickTemplate(t)}
-            className="flex h-full items-center gap-2.5 rounded-2xl bg-card px-3 text-start shadow-soft hover:bg-muted"
+            // 12px sides (off the scale): a tile is 139px wide at 320 and the two-line title needs the room.
+            className="flex h-full items-center gap-inner rounded-2xl bg-card px-3 text-start shadow-soft hover:bg-muted"
           >
             <HabitEmoji category={t.category} emoji={t.emoji} size="xs" />
             <span className="flex min-w-0 flex-col">
@@ -170,7 +174,8 @@ export function HabitForm({
           }}
           onEscapeKeyDown={(e) => (e.target as Element | null)?.closest?.(`[${EMOJI_PANEL_ATTR}]`) && e.preventDefault()}
         >
-          <div className="flex flex-col gap-1 pe-10">
+          {/* pe-10: room for the dialog's 44px close button at its corner. */}
+          <div className="pe-10">
             <DialogTitle>{draft?.custom ? tr("habits.form.createOwn") : tr("habits.form.addHabit")}</DialogTitle>
           </div>
           {draft && (
@@ -244,10 +249,16 @@ function HabitFields({
     formRef.current?.querySelectorAll<HTMLInputElement>('input[role="switch"]').forEach((c) => (c.checked = c.dataset.on === "1"));
   }, [state, values.category, values.period, groupId]);
 
+  // A refused submit (after the fields above are put back): focus the first field it named; a message
+  // only (the save itself failed) is a live alert by the button, where focus already is.
+  useEffect(() => {
+    if (state.status === "error" && state.errors && Object.keys(state.errors).length > 0) focusFirstInvalid(formRef.current);
+  }, [state]);
+
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col gap-4">
+    <form ref={formRef} action={formAction} className="flex flex-col gap-item">
       {templateId && <input type="hidden" name="templateId" value={templateId} />}
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-inner">
         <Label htmlFor="title" className="font-semibold">{tf("titleLabel")}</Label>
         <EmojiPicker
           value={values.emoji}
@@ -269,7 +280,7 @@ function HabitFields({
         {errors.title && <p id="title-error" className="text-sm text-destructive">{errors.title}</p>}
       </div>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-inner">
         <Label htmlFor="category" className="font-semibold">{tf("categoryLabel")}</Label>
         <select id="category" name="category" ref={categoryRef} value={values.category} onChange={set("category")} className={selectClass}
           aria-invalid={Boolean(errors.category)} aria-describedby={errors.category ? "category-error" : undefined}>
@@ -282,9 +293,9 @@ function HabitFields({
         {errors.category && <p id="category-error" className="text-sm text-destructive">{errors.category}</p>}
       </div>
 
-      <fieldset className="flex flex-col gap-1.5">
-        <legend className="mb-1.5 text-sm font-semibold">{tf("howOften")}</legend>
-        <div className="grid grid-cols-2 gap-2">
+      <fieldset className="flex flex-col gap-inner">
+        <legend className="mb-inner text-sm font-semibold">{tf("howOften")}</legend>
+        <div className="grid grid-cols-2 gap-inner">
           {/* sr-only is absolutely positioned, so the label takes no grid cell. */}
           <Label htmlFor="targetCount" className="sr-only">{tf("times")}</Label>
           <CountStepper
@@ -296,20 +307,21 @@ function HabitFields({
             describedBy={errors.targetCount ? "targetCount-error" : undefined}
           />
           <Label htmlFor="period" className="sr-only">{tf("per")}</Label>
-          <select id="period" name="period" ref={periodRef} value={values.period} onChange={set("period")} className={selectClass}>
+          <select id="period" name="period" ref={periodRef} value={values.period} onChange={set("period")} className={selectClass}
+            aria-invalid={Boolean(errors.period)} aria-describedby={errors.period ? "period-error" : undefined}>
             {(["day", "week", "month"] as HabitPeriod[]).map((p) => (
               <option key={p} value={p}>{tf("frequencyOption", { n: count, period: p })}</option>
             ))}
           </select>
         </div>
         {errors.targetCount && <p id="targetCount-error" className="text-sm text-destructive">{errors.targetCount}</p>}
-        {errors.period && <p className="text-sm text-destructive">{errors.period}</p>}
+        {errors.period && <p id="period-error" className="text-sm text-destructive">{errors.period}</p>}
       </fieldset>
 
       {groups.length > 0 && (
-        <fieldset className="flex flex-col gap-1.5">
-          <legend className="mb-1.5 text-sm font-semibold">{tf("whoFor")}</legend>
-          <div className="flex flex-wrap gap-2">
+        <fieldset className="flex flex-col gap-inner">
+          <legend className="mb-inner text-sm font-semibold">{tf("whoFor")}</legend>
+          <div className="flex flex-wrap gap-inner">
             {(groupOnly ? groups : [{ id: "", name: tf("justMe") }, ...groups]).map((g) => (
               <label key={g.id || "me"} className={chipClass}>
                 <input
@@ -328,7 +340,7 @@ function HabitFields({
             ))}
           </div>
           {group && (
-            <div className="flex flex-col gap-3 pt-2">
+            <div className="flex flex-col gap-item pt-inner">
               <p className="text-sm text-muted-foreground">{tf.rich("groupNote", { group: group.name, bdi })}</p>
               <Toggle name="requiresApproval" label={tf("needsApproval")} hint={tf.rich("needsApprovalHint", { group: group.name, bdi })} />
               {group.children.map((c) => (
@@ -345,8 +357,8 @@ function HabitFields({
         </fieldset>
       )}
 
-      <fieldset className="flex flex-col gap-1.5">
-        <legend className="mb-1.5 text-sm font-semibold">{tf("starts")}</legend>
+      <fieldset className="flex flex-col gap-inner">
+        <legend className="mb-inner text-sm font-semibold">{tf("starts")}</legend>
         {/* Today is sent as empty, so the server uses its own today (this page's may be stale after midnight). */}
         <input type="hidden" name="startsOn" value={values.startsOn === fieldToday ? "" : values.startsOn} />
         <StartDatePicker
@@ -365,12 +377,18 @@ function HabitFields({
       {/* Keyed by period so the chips reset to "No end" when the unit changes. */}
       <EndPicker key={period} period={period} startsOn={values.startsOn} />
 
-      {state.status === "error" && state.message && (
-        <p role="alert" className="text-sm text-destructive">{state.message}</p>
-      )}
-      <Button type="submit" disabled={pending} className="h-11 text-base">
-        {pending ? tf("adding") : validCount ? tf("addHabitSchedule", { schedule: describeSchedule(tr, count, period) }) : tf("addHabit")}
-      </Button>
+      {/* Pinned to the bottom of the sheet, so the submit (and why it was refused) is always in reach,
+          even at 320×640 where the sheet scrolls. The sheet covers the bottom nav (z-50 over z-40), so
+          it clears the sheet's edge, not the nav. -mx-5/-mb-5/px-5/pb-5 (20px, off the scale): the
+          dialog's own padding, which the bar spans so the fields scroll under it. */}
+      <div className="sticky bottom-0 z-10 -mx-5 -mb-5 flex flex-col gap-inner bg-background px-5 pt-inner pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+        {state.status === "error" && state.message && (
+          <Notice tone="error" live>{state.message}</Notice>
+        )}
+        <Button type="submit" disabled={pending} className="h-11 w-full text-base">
+          <span className="truncate">{pending ? tf("adding") : validCount ? tf("addHabitSchedule", { schedule: describeSchedule(tr, count, period) }) : tf("addHabit")}</span>
+        </Button>
+      </div>
     </form>
   );
 }
@@ -378,7 +396,7 @@ function HabitFields({
 // An on/off row (a checkbox shown as a switch); off by default, sent as "on" or the value when ticked.
 function Toggle({ name, value, label, hint, icon }: { name: string; value?: string; label: ReactNode; hint?: ReactNode; icon?: ReactNode }) {
   return (
-    <label className="flex min-h-11 cursor-pointer items-center gap-3">
+    <label className="flex min-h-11 cursor-pointer items-center gap-inner">
       {icon}
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="text-sm font-semibold">{label}</span>
