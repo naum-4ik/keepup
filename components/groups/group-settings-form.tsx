@@ -7,6 +7,7 @@ import { SaveButton } from "@/components/save-button";
 import { TimezonePicker } from "@/components/timezone-picker";
 
 const initialState: GroupActionState = { status: "idle" };
+// 12 px sides to match the 12 px radius (as Notice does).
 const selectClass = "h-11 rounded-xl border border-input bg-transparent px-3 text-base";
 
 export function GroupSettingsForm({

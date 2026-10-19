@@ -15,7 +15,7 @@ export const GROUP_FLASH_KEYS = {
   deleted: "groups.toast.deleted",
 } as const;
 
-// "Created Family. Share its invite link below: it works for 7 days." The group page opens with the
+// "Created Family. Create its invite link below: it works for 7 days." The group page opens with the
 // invite in focus (?invite=1). A demo login can't invite, so its line stops at "Created Family."
 export const createdFlash = (name: string, canInvite: boolean): FlashInput => ({
   text: GROUP_FLASH_KEYS.created,

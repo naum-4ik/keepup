@@ -9,7 +9,7 @@ test("create a group, get an invite link, rename it, and see it in Groups", asyn
   await expect(page.getByText("Create a group and invite people with a link that works for 7 days.")).toBeVisible();
   await createGroup(page, "Levi family");
   // The flash after the redirect, and the invite in focus on the new group's page.
-  await expect(page.getByTestId("toast-live")).toHaveText("Created \u2068Levi family\u2069. Share its invite link below: it works for 7 days.");
+  await expect(page.getByTestId("toast-live")).toHaveText("Created \u2068Levi family\u2069. Create its invite link below: it works for 7 days.");
   const url = await inviteLink(page);
   expect(url).toMatch(/\/invite\/[A-Za-z0-9_-]{24}$/);
   expect(await inviteLink(page)).toBe(url); // reused, not a new token
@@ -95,10 +95,10 @@ for (const [width, height] of [
     await page.goto("/groups/new");
     // Open the avatar picker, so the form is taller than the screen at every width.
     await page.locator("main summary").filter({ hasText: "Avatar" }).click();
-    await expect(page.getByRole("group", { name: "Avatar" })).toBeVisible();
+    await expect(page.getByRole("group", { name: "Avatar", exact: true })).toBeVisible();
     const submit = page.getByRole("button", { name: "Create group" });
     const nav = page.getByRole("navigation", { name: "Main", exact: true });
-    const form = page.locator("main form");
+    const form = submit.locator("xpath=ancestor::form");
     const [s, n, f] = await Promise.all([submit.boundingBox(), nav.boundingBox(), form.boundingBox()]);
     expect(f!.y + f!.height).toBeGreaterThan(n!.y); // the form runs under the nav…
     expect(s!.height).toBeGreaterThanOrEqual(44); // …while its submit is a full-size target

@@ -19,7 +19,7 @@ describe("group flash toasts", () => {
   });
 
   it("created: where the invite link is and how long it works; a demo login only hears it was created", () => {
-    expect(say(createdFlash("Family", true))).toBe("Created ⁨Family⁩. Share its invite link below: it works for 7 days.");
+    expect(say(createdFlash("Family", true))).toBe("Created ⁨Family⁩. Create its invite link below: it works for 7 days.");
     expect(say(createdFlash("Family", false))).toBe("Created ⁨Family⁩.");
   });
 

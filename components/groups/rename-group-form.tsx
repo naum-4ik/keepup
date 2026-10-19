@@ -58,6 +58,7 @@ export function RenameGroupForm({
         autoFocus
         required
         autoComplete="off"
+        // 12 px sides to match the 12 px radius (as Notice does).
         className="h-11 rounded-xl px-3 text-base"
         aria-invalid={state.status === "error"}
         aria-describedby={state.status === "error" ? "group-name-error" : undefined}
