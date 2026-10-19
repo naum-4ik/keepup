@@ -186,3 +186,5 @@ Keepup is operated from Israel. Data is processed in accordance with the Israeli
 ## 13. Contact
 
 Ilya Naumenko · naumchas00@gmail.com
+
+See also the [Terms of use](/terms).

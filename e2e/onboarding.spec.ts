@@ -22,7 +22,7 @@ test("step 1 pre-fills the name, shows the detected line, and has no reminder ho
   await expect(page.getByText("weeks start Sunday")).toBeVisible(); // en-US locale in the test browser
   await expect(page.getByLabel("Time zone")).toBeHidden();
   await expect(page.getByLabel("Daily reminder")).toHaveCount(0);
-  await expect(page.getByText("By continuing, you agree to the Privacy Policy")).toBeVisible();
+  await expect(page.getByText("By continuing, you agree to the Terms of use and the Privacy Policy")).toBeVisible();
 
   await page.getByRole("button", { name: "Change" }).click();
   await expect(page.getByLabel("Time zone")).toHaveValue("Europe/Rome");

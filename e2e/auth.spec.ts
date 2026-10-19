@@ -13,7 +13,7 @@ test("the landing page: one screen, Get started, a Sign in link and a quiet demo
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Keepup" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Try the demo" })).toBeVisible();
-    await expect(page.getByText("By continuing, you agree to the Privacy Policy")).toBeVisible();
+    await expect(page.getByText("By continuing, you agree to the Terms of use and the Privacy Policy")).toBeVisible();
     // No scrolling: everything fits on one phone screen.
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight)).toBe(true);
   }

@@ -415,6 +415,15 @@ describe("sw.js offline shell", () => {
     expect((await sw.request("/privacy")) as Res).toMatchObject({ body: "privacy policy" });
   });
 
+  it("the terms of use are saved at install and readable offline", async () => {
+    const net = network();
+    net.pages["/terms"] = res("terms of use");
+    const sw = worker([], undefined, net.fetchImpl);
+    await sw.lifecycle("install");
+    net.setOnline(false);
+    expect((await sw.request("/terms")) as Res).toMatchObject({ body: "terms of use" });
+  });
+
   it("how to install is saved at install and readable offline", async () => {
     const net = network();
     net.pages["/install"] = res("how to install");
