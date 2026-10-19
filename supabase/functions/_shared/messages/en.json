@@ -1405,6 +1405,17 @@
       "pickGroup": "Pick a group.",
       "pickDate": "Pick a date.",
       "startedAgainNoEnd": "Started again, but the end couldn't be set. Set it on the habit page."
+    },
+    "toast": {
+      "added": "{starts, select, later {Added {habit}. It starts {date}.} other {Added {habit} · check in now to start {period, select, day {day 1} week {week 1} other {month 1}}}}",
+      "deleted": "Deleted {habit}. It had no check-ins, so nothing was lost.",
+      "restored": "Restored {habit}, history kept. The archived days don't count against you.",
+      "startedAgain": "Started {habit} again from today. The finished one keeps its history.",
+      "open": "Open",
+      "archived": "Archived {habit}. Its history is in Progress → Archived.",
+      "restoring": "Restoring {habit}…",
+      "undone": "{habit} is back, history kept.",
+      "undoFailed": "Couldn't restore {habit}. Check your connection and tap Undo again."
     }
   },
   "progress": {
