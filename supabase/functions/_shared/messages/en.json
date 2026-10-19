@@ -385,8 +385,7 @@
     "banner": "You're in the demo. Data resets after 24 hours.",
     "signInLine": "<signIn>Sign in</signIn> to start your own.",
     "failed": "The demo didn't start. Try again in a moment.",
-    "justLooking": "Just looking?",
-    "tryDemo": "Try the demo",
+    "tryDemo": "Try a demo with sample habits (resets after 24 hours)",
     "settingUp": "Setting up…",
     "loading": "Loading…",
     "compact": "Demo, resets in 24 h. <signIn>Sign in</signIn>",
@@ -540,8 +539,8 @@
     "or": "OR",
     "continueGoogle": "Continue with Google",
     "login": {
-      "title": "Welcome back",
-      "subtitle": "Keep up your habits, and do the ones that matter with your family.",
+      "title": "Sign in to Keepup",
+      "subtitle": "Check in daily, keep your streak, share habits with family.",
       "noAccount": "Don't have an account?",
       "signUp": "Sign up",
       "forgot": "Forgot password?",
@@ -1696,7 +1695,7 @@
     "unavailable": "Badges didn't load. Try again; nothing you earned is lost."
   },
   "landing": {
-    "getStarted": "Get started"
+    "start": "Start your first streak"
   },
   "meta": {
     "pageTitle": "{page} · Keepup",

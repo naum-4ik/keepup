@@ -6,6 +6,7 @@ import { createGroup, inviteLink } from "./helpers/groups";
 const BANNER = "You're in the demo. Data resets after 24 hours.";
 const NOTE = "Demo, resets in 24 h.";
 const OFF = "That's off in the demo.";
+const TRY = "Try a demo with sample habits (resets after 24 hours)";
 
 // One Try it per test: each spends one of the local anonymous sign-ins (30 an hour per IP).
 test("Try it: a full account in under 5 seconds, with a check-in to approve", async ({ page }) => {
@@ -14,7 +15,7 @@ test("Try it: a full account in under 5 seconds, with a check-in to approve", as
   const started = Date.now();
   // The anonymous sign-in runs in the browser (each visitor's own IP against Supabase's per-IP limit).
   const signIn = page.waitForRequest((r) => r.method() === "POST" && r.url().includes("/auth/v1/signup"));
-  await page.getByRole("button", { name: "Try the demo" }).click();
+  await page.getByRole("button", { name: TRY }).click();
   await signIn;
   await expect(page.getByRole("button", { name: "Check in: \u2068Read 20 min\u2069", exact: true })).toBeVisible({ timeout: 5000 });
   expect(Date.now() - started).toBeLessThan(5000);
@@ -30,7 +31,7 @@ test("Try it: a full account in under 5 seconds, with a check-in to approve", as
   await expect(page.getByText(NOTE)).toBeVisible();
   await page.goto("/profile");
   await expect(page.getByText(NOTE)).toBeVisible();
-  // The policy opens in the demo too (the consent line under Try the demo points at it).
+  // The policy opens in the demo too (the consent line under the demo button points at it).
   await page.getByRole("link", { name: "Privacy Policy" }).click();
   await expect(page).toHaveURL(/\/privacy$/);
   await expect(page.getByRole("heading", { name: "Privacy Policy", level: 1 })).toBeVisible();
@@ -62,7 +63,7 @@ test("Try it: a full account in under 5 seconds, with a check-in to approve", as
   await expect(page).toHaveURL(/\/login/);
 });
 
-test("Try the demo waits until the page is ready", async ({ browser }) => {
+test("the demo button waits until the page is ready", async ({ browser }) => {
   // No scripts: what the page shows before it is ready.
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
@@ -80,7 +81,7 @@ test("a failed demo: trying again clears ?demo=failed from the address", async (
   await expect(failed).toHaveCount(1);
   // This retry fails too, before any sign-in reaches Supabase (no anonymous sign-in spent).
   await page.route("**/auth/v1/signup", (route) => route.abort());
-  await page.getByRole("button", { name: "Try the demo" }).click();
+  await page.getByRole("button", { name: TRY }).click();
   await expect(page).not.toHaveURL(/demo=failed/);
   await expect(failed).toHaveCount(1);
 });
@@ -91,7 +92,7 @@ test("Try it on a stale landing tab keeps the real login", async ({ page, contex
   await signUp(page, uniqueEmail());
   await completeOnboarding(page, { name: "Stale Tab" });
 
-  await stale.getByRole("button", { name: "Try the demo" }).click();
+  await stale.getByRole("button", { name: TRY }).click();
   await expect(stale).toHaveURL(/\/today/);
   await expect(stale.getByRole("button", { name: "Check in: \u2068Read 20 min\u2069", exact: true })).toHaveCount(0);
   await stale.goto("/profile");
@@ -116,7 +117,7 @@ test("an invite link opened in the demo: Sign in leaves the demo and comes back 
   await joinerContext.close();
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Try the demo" }).click();
+  await page.getByRole("button", { name: TRY }).click();
   await expect(page).toHaveURL(/\/today/);
   await page.goto(new URL(url).pathname);
   await expect(page.getByText(BANNER)).toBeVisible();

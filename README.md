@@ -133,7 +133,7 @@ Diagrams, security layers, free-tier limits and the scaling path: [docs/architec
 
 **Password reset on any device.** Reset links carry a `token_hash` checked on the server, so they work on any device, not only in the browser that asked.
 
-**A demo that is a database seed.** "Try the demo" signs in anonymously and seeds 30 days of a lived-in account in one transaction; demo and real accounts can't mix (database guards), and an hourly job deletes demos after 24 hours ([decision 0026](docs/decisions/0026-the-demo-is-a-database-seed.md)).
+**A demo that is a database seed.** "Try a demo with sample habits" signs in anonymously and seeds 30 days of a lived-in account in one transaction; demo and real accounts can't mix (database guards), and an hourly job deletes demos after 24 hours ([decision 0026](docs/decisions/0026-the-demo-is-a-database-seed.md)).
 
 **Tests at every layer:** 1410 pgTAP tests in 54 files, 1935 Vitest and 219 Playwright tests (phone viewport), plus the Edge Function tests under Deno in CI. Counts from [`scripts/count-tests.mjs`](scripts/count-tests.mjs).
 

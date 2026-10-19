@@ -4,21 +4,21 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useFormStatus } from "react-dom";
 import { unstable_rethrow, useSearchParams } from "next/navigation";
 import { startDemo } from "@/app/demo/actions";
-import { PrivacyConsent } from "@/components/privacy-consent";
+import { Notice } from "@/components/ui/notice";
 import { runTryIt } from "@/lib/try-demo";
 import { whenIdle } from "@/lib/when-idle";
 import { useT } from "@/lib/i18n/client";
 
-// "Try the demo" on the landing page, and on sign-in and sign-up (someone who followed a link or tapped
-// a step too far can still just look around): a quiet link-style button. The anonymous sign-in happens here, in the browser, so Supabase's per-IP
+// "Try a demo with sample habits" on the landing page, and on sign-in and sign-up (someone who followed a
+// link or tapped a step too far can still just look around): a quiet text button, 44 px tall, never the
+// page's filled button. The consent line is the page's own (it covers signing up too). The anonymous sign-in happens here, in the browser, so Supabase's per-IP
 // limit counts each visitor's own IP (from the server, every visitor would share Vercel's). Then the
 // server seeds the demo. The device's time zone goes along, so the demo's days match the visitor's.
 // ?demo=failed: the seed action couldn't start the demo (app/demo/actions.ts redirects here). A new
 // try takes it out of the address (Next keeps useSearchParams in step), so the old failure goes.
 // The Supabase browser client (about 60 KB gzipped) loads only when needed: on the first tap or once
 // the page is idle, never with the page itself, so it doesn't slow the landing's first paint.
-// consent: the landing shows the consent line here; the sign-in card shows its own under the card.
-export function TryDemoButton({ consent = true }: { consent?: boolean } = {}) {
+export function TryDemoButton() {
   const { t } = useT();
   const zone = useRef<HTMLInputElement>(null);
   const failedBefore = useSearchParams().get("demo") === "failed";
@@ -56,14 +56,14 @@ export function TryDemoButton({ consent = true }: { consent?: boolean } = {}) {
   }
 
   return (
-    <form action={tryIt} className="flex flex-col gap-1">
+    <form action={tryIt} className="flex flex-col items-center gap-inner">
       <input ref={zone} type="hidden" name="timezone" defaultValue="" />
-      {failed && <p role="alert" className="text-sm text-destructive">{t("demo.failed")}</p>}
-      <p className="text-sm text-muted-foreground">
-        {t("demo.justLooking")} <Submit ready={ready} />
-      </p>
-      {/* Same line as onboarding's: the seed onboards. */}
-      {consent && <PrivacyConsent />}
+      {failed && (
+        <Notice tone="error" live className="w-full text-start">
+          {t("demo.failed")}
+        </Notice>
+      )}
+      <Submit ready={ready} />
     </form>
   );
 }
@@ -92,7 +92,7 @@ function Submit({ ready }: { ready: boolean }) {
       type="submit"
       disabled={off}
       aria-disabled={off}
-      className="font-semibold text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
+      className="inline-flex min-h-11 items-center justify-center rounded-lg px-inner text-sm font-semibold text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
     >
       {!ready ? t("demo.loading") : pending ? t("demo.settingUp") : t("demo.tryDemo")}
     </button>

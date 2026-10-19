@@ -49,7 +49,7 @@ We process only the data the app needs to work.
 - Your Inbox: the notifications shown in the app.
 - For each device you turn on push notifications for: the push address and encryption keys your browser gives us to deliver notifications, and your browser's user-agent string (it says which browser and operating system you use, so Settings can name the device).
 
-**Demo** (when you choose "Try the demo")
+**Demo** (when you choose "Try a demo with sample habits")
 
 - An anonymous demo login with sample data and anything you add to it. It has no email address, and it is deleted after 24 hours (section 6).
 
@@ -109,7 +109,7 @@ Where data is transferred outside the EU/EEA (for example to the United States),
 - **Records that a weekly or monthly recap was already sent** (no content): 62 days.
 - **Push devices:** until you remove the device in Settings or sign out on it, until the push service tells us the device is gone, or until you delete your account.
 - **Group invite links:** they work for 7 days or until revoked. The invite record stays with the group until the group is deleted.
-- **Demo logins ("Try the demo"):** deleted automatically, with everything in them, after 24 hours.
+- **Demo logins ("Try a demo"):** deleted automatically, with everything in them, after 24 hours.
 - **Usage, events and error reports (Grafana Labs):** 14 days.
 - **Email alerts about a sign-up or demo start:** in our mailbox (Gmail) for up to 90 days.
 - **Encrypted backups:** 30 days on a rolling basis; deleted data disappears from backups within 30 days.
