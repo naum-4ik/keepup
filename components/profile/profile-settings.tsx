@@ -39,6 +39,10 @@ function DisplayName({ saved }: { saved: string }) {
   const tc = useTranslations("common");
   const { state, pending, save: run, reset } = useSettingSave(saved, "save");
   const [value, setValue] = useState(saved);
+  // What the last Save sent: "Saved ✓" shows only while the field still holds it (typing during a save
+  // must not be called saved).
+  const [sent, setSent] = useState(saved);
+  const shown = state.status === "saved" && value !== sent ? ({ status: "idle" } as const) : state;
   const invalid = state.status === "error";
   return (
     <form
@@ -46,6 +50,7 @@ function DisplayName({ saved }: { saved: string }) {
       onSubmit={(e) => {
         e.preventDefault();
         // The typed name stays in the field whatever happens.
+        setSent(value);
         run(value, save("displayName", value));
       }}
     >
@@ -71,7 +76,7 @@ function DisplayName({ saved }: { saved: string }) {
           {pending ? tc("saving") : tc("save")}
         </Button>
       </div>
-      <SettingStatus state={state} id="displayName-status" />
+      <SettingStatus state={shown} id="displayName-status" />
     </form>
   );
 }
