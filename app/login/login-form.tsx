@@ -73,7 +73,7 @@ export function LoginForm({ next }: { next: string }) {
     return (
       <form
         noValidate
-        className="flex flex-col gap-3"
+        className="flex flex-col gap-item"
         onSubmit={(e) => {
           e.preventDefault(); // step 1 stays in the browser; only the password step talks to the server
           const trimmed = email.trim();
@@ -124,7 +124,7 @@ export function LoginForm({ next }: { next: string }) {
   return (
     <>
       {/* noValidate: the server answers in the app's own words instead of the browser's bubbles. */}
-      <form action={action} noValidate className="flex flex-col gap-3">
+      <form action={action} noValidate className="flex flex-col gap-item">
         <input type="hidden" name="next" value={next} />
         <input type="hidden" name="mode" value="signin" />
 

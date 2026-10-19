@@ -31,7 +31,7 @@ export function SignupForm({ next, signInHref }: { next: string; signInHref: str
 
   return (
     // noValidate: the server answers in the app's own words instead of the browser's bubbles.
-    <form action={action} noValidate className="flex flex-col gap-3">
+    <form action={action} noValidate className="flex flex-col gap-item">
       <input type="hidden" name="next" value={next} />
       <input type="hidden" name="mode" value="signup" />
 
