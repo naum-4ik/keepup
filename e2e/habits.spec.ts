@@ -620,22 +620,41 @@ test("archiving says where the habit went, and Undo puts it back with its check-
   await expect(page.getByRole("button", { name: "Done: \u2068Make the bed\u2069" })).toBeVisible();
 });
 
-test("the Create your own sheet keeps its add button in reach at 320×640", async ({ page }) => {
+for (const [width, height] of [[320, 640], [375, 812], [414, 896]] as const) {
+  test(`the Create your own sheet keeps its add button in reach at ${width}×${height}`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await signUpAndOnboard(page);
+    await page.goto("/habits/new");
+    await page.getByRole("button", { name: "Create your own" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
+    const submit = dialog.getByRole("button", { name: /^Add habit/ });
+    const [box, sheet] = await Promise.all([submit.boundingBox(), dialog.boundingBox()]);
+    // Without scrolling the sheet: at least 44px tall, inside the sheet and the screen.
+    expect(await dialog.evaluate((el) => el.scrollTop)).toBe(0);
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+    expect(box!.y).toBeGreaterThanOrEqual(sheet!.y);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(sheet!.y + sheet!.height + 0.5);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(height);
+    // A refused title shows by the pinned button's form, and focus goes to the field.
+    await submit.click();
+    await expect(dialog.getByLabel("Title")).toBeFocused();
+  });
+}
+
+test("the edit form's Save stays above the bottom nav at 320×640", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
   await signUpAndOnboard(page);
-  await page.goto("/habits/new");
-  await page.getByRole("button", { name: "Create your own" }).click();
-  const dialog = page.getByRole("dialog");
-  await dialog.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
-  const submit = dialog.getByRole("button", { name: /^Add habit/ });
-  const [box, sheet] = await Promise.all([submit.boundingBox(), dialog.boundingBox()]);
-  // Without scrolling the sheet: at least 44px tall, inside the sheet and the screen.
-  expect(await dialog.evaluate((el) => el.scrollTop)).toBe(0);
+  await createHabit(page, { template: "Read 20 min" });
+  await page.goto((await page.getByRole("link", { name: /Read 20 min/ }).getAttribute("href"))!);
+  const summary = page.locator("summary").filter({ hasText: /^Edit details/ });
+  await summary.click();
+  // The row at the top of the screen (under the sticky header): the form runs on below the fold.
+  await summary.evaluate((el) => el.scrollIntoView({ block: "start" }));
+  const save = page.getByRole("main").getByRole("button", { name: "Save", exact: true });
+  await expect(save).toBeVisible();
+  const [box, nav] = await Promise.all([save.boundingBox(), page.getByRole("navigation", { name: "Main", exact: true }).boundingBox()]);
   expect(box!.height).toBeGreaterThanOrEqual(44);
-  expect(box!.y).toBeGreaterThanOrEqual(sheet!.y);
-  expect(box!.y + box!.height).toBeLessThanOrEqual(sheet!.y + sheet!.height + 0.5);
-  expect(box!.y + box!.height).toBeLessThanOrEqual(640);
-  // A refused title shows by the pinned button's form, and focus goes to the field.
-  await submit.click();
-  await expect(dialog.getByLabel("Title")).toBeFocused();
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(nav!.y + 0.5);
 });
