@@ -35,7 +35,7 @@ test("a new user signs in, onboards and lands on Today", async ({ page }) => {
   await expect(page.getByText("Rome", { exact: true })).toBeVisible();
 
   await completeOnboarding(page, { name: "Ana" });
-  await expect(page.getByText("Nothing to do yet")).toBeVisible();
+  await expect(page.getByText("Add one habit and check in today to start day 1 of your streak.")).toBeVisible();
   await expect(
     page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Today" }),
   ).toHaveAttribute("aria-current", "page");

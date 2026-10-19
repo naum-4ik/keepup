@@ -5,7 +5,7 @@ import { createHabit, endHabitYesterday } from "./helpers/habits";
 test("a new user adds a habit from a template", async ({ page }) => {
   await signUpAndOnboard(page);
   await expect(page.getByText("Nothing to do yet")).toBeVisible();
-  await page.getByRole("link", { name: "Add your first habit" }).click();
+  await page.getByRole("link", { name: "Add a habit, start day 1" }).click();
   await expect(page).toHaveURL(/\/habits\/new$/);
 
   await page.getByRole("button", { name: /^Drink water/ }).click();
@@ -246,7 +246,8 @@ test.describe("Habit detail", () => {
     await expect(page.getByRole("button", { name: /^Undo check-in at / })).toBeVisible();
     await expect(page.getByText("1 check-in this period")).toHaveCount(0);
     await expect(page.getByRole("region", { name: "Streaks" })).toContainText("Your streak");
-    await page.getByRole("button", { name: "Undo" }).click();
+    // In the page: Today's "checked in" toast (outside <main>) may still offer its own Undo.
+    await page.getByRole("main").getByRole("button", { name: /^Undo check-in at / }).click();
     await expect(page.getByText("No check-ins this period yet.")).toBeVisible();
 
     await page.goto("/today");

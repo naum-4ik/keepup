@@ -129,7 +129,7 @@ test("Progress: habits are grouped under a heading per category, with no chips r
 
 test("a new user's empty lists say what's next, in one card style", async ({ page }) => {
   await signUpAndOnboard(page);
-  await expect(page.getByText("Nothing to do yet. Add a habit to get started.")).toBeVisible();
+  await expect(page.getByText("Add one habit and check in today to start day 1 of your streak.")).toBeVisible();
   await page.goto("/progress");
   await expect(page.getByText("No habits yet.")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Categories" })).toHaveCount(0);

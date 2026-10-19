@@ -113,12 +113,12 @@ test("an admin of a family group with no children sees Add a child?, which opens
   await createGroup(page, "Family");
   const groupId = page.url().match(/\/groups\/([0-9a-f-]{36})/)![1];
   await createGroupHabitVia(page, "Family", "Walk");
-  await expect(page.getByText("Add a child? 🐼")).toBeHidden(); // not before the first check-in
+  const prompt = page.getByText("Add a child: each check-in earns 1 star toward a treat.");
+  await expect(prompt).toBeHidden(); // not before the first check-in
   await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
   await page.reload();
-  await expect(page.getByText("Add a child? 🐼")).toBeVisible();
-  await expect(page.getByText("Track brushing teeth, reading together and more.")).toBeVisible();
+  await expect(prompt).toBeVisible();
   await page.getByRole("link", { name: "Add a child", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/kids/new\\?group=${groupId}$`));
   await expect(page.getByLabel("Nickname")).toBeVisible();
