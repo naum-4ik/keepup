@@ -1050,7 +1050,8 @@
       "hint": "Choose it with <bdi>{name}</bdi>. The stars stay the same.",
       "group": "Theme",
       "changing": "Changing to {theme}…",
-      "changed": "Changed to {theme}. This week's stars stay the same."
+      "changed": "Changed to {theme}. This week's stars stay the same.",
+      "openView": "Open view"
     },
     "checkIn": {
       "label": "{state, select, open {Check in for} done {Done for} pending {Waiting for approval for} checkedToday {Checked in today for} frozen {Paused for} other {Starts later for}} {name}: {title}",

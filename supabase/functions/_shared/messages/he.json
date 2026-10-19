@@ -1050,7 +1050,8 @@
       "hint": "בחרו את זה יחד עם <bdi>{name}</bdi>. הכוכבים לא משתנים.",
       "group": "נושא",
       "changing": "מחליפים ל-{theme}…",
-      "changed": "הנושא הוחלף ל-{theme}. הכוכבים של השבוע נשארים."
+      "changed": "הנושא הוחלף ל-{theme}. הכוכבים של השבוע נשארים.",
+      "openView": "פתיחת המסך"
     },
     "checkIn": {
       "label": "{state, select, open {לסמן} done {בוצע} pending {מחכה לאישור} checkedToday {סומן היום} frozen {בהפסקה} other {יתחיל בהמשך}} — {name}: {title}",

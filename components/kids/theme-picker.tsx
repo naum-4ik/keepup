@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { Check } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { setChildTheme } from "@/app/(app)/kids/actions";
 import { Notice } from "@/components/ui/notice";
 import { Section } from "@/components/ui/section";
-import { useToast } from "@/components/ui/toast";
 import { KID_THEMES, themeName } from "@/lib/garden";
 import { useT } from "@/lib/i18n/client";
 import { reach } from "@/lib/reach";
@@ -16,15 +16,16 @@ import { isolate } from "@/supabase/functions/_shared/i18n";
 // ideas/kid-view-next.md §2: what grows as the stars come in. Big picture tiles to choose together:
 // three a row at every width (five a row broke "Garde/n" at 320), each at least 44 px wide, the names
 // wrapping only between words (wrap-normal break-normal undo the page's wrap-anywhere).
-// The picked tile shows at once; while it saves a line says so; then a toast with the kid view a tap
-// away (that's where the change shows); a failure puts the saved theme back and says what to do.
+// The picked tile shows at once; while it saves a line under the tiles says so; then the same line says
+// it changed, with the kid view (where the change shows) a tap away; a failure puts the saved theme back
+// and says what to do.
 export function ThemePicker({ childId, childName, theme }: { childId: string; childName: string; theme: string }) {
   const { t: tr } = useT();
   const t = useTranslations("kids.theme");
   const tk = useTranslations("kids");
-  const { showToast } = useToast();
   const [current, setCurrent] = useState(theme);
   const [saving, setSaving] = useState<string | null>(null);
+  const [changed, setChanged] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -33,6 +34,7 @@ export function ThemePicker({ childId, childName, theme }: { childId: string; ch
     const before = current;
     setCurrent(id);
     setSaving(id);
+    setChanged(null);
     setError(null);
     startTransition(async () => {
       const r = await reach(() => setChildTheme(childId, id), { offline: tk("errors.offline"), reload: tk("errors.reload") });
@@ -42,10 +44,7 @@ export function ThemePicker({ childId, childName, theme }: { childId: string; ch
         setError(r.message);
         return;
       }
-      showToast({
-        text: t("changed", { theme: themeName(tr, id) }),
-        action: { label: tk("detail.openView", { name: isolate(childName) }), href: `/kids/${childId}/play` },
-      });
+      setChanged(id);
     });
   };
 
@@ -78,9 +77,28 @@ export function ThemePicker({ childId, childName, theme }: { childId: string; ch
           </button>
         ))}
       </div>
-      <p role="status" className={cn("text-sm text-muted-foreground", !saving && "sr-only")}>
-        {saving ? t("changing", { theme: themeName(tr, saving) }) : ""}
-      </p>
+      {/* One live line, always there: "Changing to…", then what changed with Open view. */}
+      <div role="status" className={cn(!saving && !changed && "sr-only")}>
+        {saving ? (
+          <p className="text-sm text-muted-foreground">{t("changing", { theme: themeName(tr, saving) })}</p>
+        ) : changed ? (
+          <Notice
+            tone="success"
+            action={
+              <Link
+                href={`/kids/${childId}/play`}
+                aria-label={tk("detail.openView", { name: isolate(childName) })}
+                // A 44px target kept to the Notice's line height by negative margins (docs/design.md "Buttons").
+                className="-my-3 flex min-h-11 items-center rounded-lg px-inner font-bold text-primary hover:bg-background/60"
+              >
+                {tk("theme.openView")}
+              </Link>
+            }
+          >
+            {t("changed", { theme: themeName(tr, changed) })}
+          </Notice>
+        ) : null}
+      </div>
       {error && (
         <Notice tone="error" live>
           {error}
