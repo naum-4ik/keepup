@@ -4,6 +4,7 @@ import {
   TOAST_COOKIE,
   dismissToast,
   emptyToasts,
+  focusIsLost,
   flashFromCookieString,
   TOAST_COOKIE_MAX_AGE,
   isFreshFlash,
@@ -138,3 +139,20 @@ describe("flash cookie", () => {
     expect(flashFromCookieString(`${TOAST_COOKIE}-other=x`)).toBeNull();
   });
 });
+
+describe("focusIsLost", () => {
+  const body = { closest: () => null };
+  const inToaster = { closest: (sel: string) => (sel === "[data-toaster]" ? {} : null) };
+  const elsewhere = { closest: () => null };
+
+  it("is lost with nothing focused, on the body, or inside the toasts (the toast that just closed)", () => {
+    expect(focusIsLost(null, body)).toBe(true);
+    expect(focusIsLost(body, body)).toBe(true);
+    expect(focusIsLost(inToaster, body)).toBe(true);
+  });
+
+  it("is not lost where the person put it since (a field, another button)", () => {
+    expect(focusIsLost(elsewhere, body)).toBe(false);
+  });
+});
+

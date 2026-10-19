@@ -13,6 +13,7 @@ import {
   flashFromCookieString,
   isFreshFlash,
   parseFlash,
+  focusIsLost,
   pushToast,
   removeToast,
   toastDuration,
@@ -106,7 +107,10 @@ export function Toaster({ flash }: { flash?: string | null }) {
 
   return (
     // Above the bottom nav and its safe-area inset; z-50 like dialogs.
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-md justify-center px-4"
+    // data-toaster (lib/toast.ts TOASTER_ATTR): focus inside it counts as lost for focusIsLost.
+    <div
+      data-toaster=""
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-md justify-center px-4"
     >
       {/* The live region holds the words only, and is always in the page (a region that appears is not
           announced), so a new toast is read once without its buttons. */}
@@ -136,10 +140,11 @@ function ToastView({ toast, dismissLabel }: { toast: Toast; dismissLabel: string
   }, [paused, close]);
 
   const action = toast.action;
-  // focusAction: the action takes focus once it shows (it then also pauses the timer, onFocus).
+  // focusAction: the action takes focus once it shows (it then also pauses the timer, onFocus), but
+  // only when focus is lost (lib/toast.ts focusIsLost): never away from where the person put it.
   const actionRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    if (toast.focusAction) actionRef.current?.focus();
+    if (toast.focusAction && focusIsLost(document.activeElement, document.body)) actionRef.current?.focus();
   }, [toast.focusAction]);
   const actionClass = "-my-2 flex min-h-11 shrink-0 items-center rounded-lg px-2 font-bold underline underline-offset-2 hover:bg-background/10";
   return (

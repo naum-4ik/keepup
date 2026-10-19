@@ -54,6 +54,15 @@ export function removeToast(state: ToastState, id: string): ToastState {
   return { current: state.current, waiting: state.waiting.filter((t) => t.id !== id) };
 }
 
+// Focus may be moved for the person only when it is lost: nothing focused, the page body (the focused
+// button was removed), or still inside the toasts (the toast that just closed). Anywhere else they put
+// it themselves since, and a late answer must not pull it away. `active`: document.activeElement.
+export const TOASTER_ATTR = "data-toaster";
+export function focusIsLost(active: { closest?: (selector: string) => unknown } | null, body: unknown): boolean {
+  if (!active || active === body) return true;
+  return Boolean(active.closest?.(`[${TOASTER_ATTR}]`));
+}
+
 // How long a toast stays: longer with an action, so there is time to reach it (WCAG 2.2.1; the
 // toast also pauses while hovered or focused).
 // null: sticky, no timer.
