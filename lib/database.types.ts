@@ -944,7 +944,7 @@ isOneToOne: false
         isSetofReturn: false
       } },
 "leave_group":
-{ Args: { "p_confirm_children"?: boolean,"p_group_id": string }; Returns: undefined
+{ Args: { "p_confirm_children"?: boolean,"p_group_id": string }; Returns: Json
                            },
 "mark_badges_seen":
 { Args: { "p_codes": (string)[] }; Returns: number

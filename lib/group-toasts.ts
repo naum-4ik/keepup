@@ -22,10 +22,20 @@ export const createdFlash = (name: string, canInvite: boolean): FlashInput => ({
   values: { group: isolate(name), invite: canInvite ? "yes" : "no" },
 });
 
-// Leaving as the only member deletes the group (private.leave_group_impl), so the line says so.
-export const leftFlash = (name: string, alone: boolean): FlashInput => ({
+// Leaving as the only member deletes the group (private.leave_group_impl), so the line says so, with
+// the children's profiles that went with it.
+export const leftFlash = (name: string, alone: boolean, children = 0): FlashInput => ({
   text: GROUP_FLASH_KEYS.left,
-  values: { group: isolate(name), alone: alone ? "yes" : "no" },
+  values: { group: isolate(name), alone: alone ? "yes" : "no", children },
 });
+
+// public.leave_group's answer ({deleted, children_deleted}, migration 20261028100000). null from a
+// database without that migration (it returned nothing): the caller falls back to its own count.
+export function leaveResult(data: unknown): { deleted: boolean; children: number } | null {
+  if (typeof data !== "object" || data === null || Array.isArray(data)) return null;
+  const { deleted, children_deleted } = data as Record<string, unknown>;
+  if (typeof deleted !== "boolean") return null;
+  return { deleted, children: typeof children_deleted === "number" && Number.isInteger(children_deleted) && children_deleted > 0 ? children_deleted : 0 };
+}
 
 export const deletedFlash = (name: string): FlashInput => ({ text: GROUP_FLASH_KEYS.deleted, values: { group: isolate(name) } });

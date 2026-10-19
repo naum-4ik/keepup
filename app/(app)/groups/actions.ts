@@ -4,7 +4,7 @@ import type { Attributes } from "@opentelemetry/api";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getProfile, requireUser } from "@/lib/auth";
-import { createdFlash, deletedFlash, leftFlash } from "@/lib/group-toasts";
+import { createdFlash, deletedFlash, leaveResult, leftFlash } from "@/lib/group-toasts";
 import { flashToast } from "@/lib/toast-server";
 import { isGroupAvatarEmoji, parseAvatar, type AvatarFormState } from "@/lib/avatars";
 import { GROUP_NAME_MAX, isGroupKind, parseGroupName } from "@/lib/group-schema";
@@ -138,13 +138,15 @@ export async function leaveGroup(groupId: string, confirmChildren: boolean): Pro
   const { t } = await getT();
   if (!isUuid(groupId)) return notFound();
   const { supabase, who } = await requireUser();
-  // Read before leaving: afterwards the group is out of reach (or gone, for its only member).
+  // Read before leaving: afterwards the group is out of reach (or gone, for its only member). The
+  // member count is only the fallback for a database that doesn't say what the leave did yet.
   const [{ name }, others] = await Promise.all([groupName(groupId), otherMembers(groupId)]);
-  const { error } = await supabase.rpc("leave_group", { p_group_id: groupId, p_confirm_children: confirmChildren });
+  const { data, error } = await supabase.rpc("leave_group", { p_group_id: groupId, p_confirm_children: confirmChildren });
   if (error) return { status: "error", message: habitErrorMessage(t, error), code: errorCode(error) };
   track("member_left", who, { "group.id": groupId });
   refresh(groupId);
-  if (name) await flashToast(leftFlash(name, others === 0));
+  const result = leaveResult(data) ?? { deleted: others === 0, children: 0 };
+  if (name) await flashToast(leftFlash(name, result.deleted, result.children));
   redirect("/groups");
 }
 

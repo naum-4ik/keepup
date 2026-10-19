@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { tFor } from "@/lib/i18n/test-t";
-import { createdFlash, deletedFlash, GROUP_FLASH_KEYS, leftFlash } from "@/lib/group-toasts";
+import { createdFlash, deletedFlash, GROUP_FLASH_KEYS, leaveResult, leftFlash } from "@/lib/group-toasts";
 import { parseFlash, serializeFlash, type Flash } from "@/lib/toast";
 import type { Locale } from "@/supabase/functions/_shared/i18n";
 
@@ -10,7 +10,7 @@ const say = (f: Omit<Flash, "id" | "at">, locale: Locale = "en") => tFor(locale)
 describe("group flash toasts", () => {
   it("names only keys that every catalog has (the Toaster drops unknown ones silently)", () => {
     for (const locale of LOCALES)
-      for (const key of Object.values(GROUP_FLASH_KEYS)) expect(() => tFor(locale)(key, { group: "x", alone: "no", invite: "yes" })).not.toThrow();
+      for (const key of Object.values(GROUP_FLASH_KEYS)) expect(() => tFor(locale)(key, { group: "x", alone: "yes", invite: "yes", children: 2 })).not.toThrow();
   });
 
   it("survives the cookie", () => {
@@ -26,6 +26,10 @@ describe("group flash toasts", () => {
   it("left: own habits stay; alone, the group is gone", () => {
     expect(say(leftFlash("Family", false))).toBe("Left ⁨Family⁩. Your own habits stay with you.");
     expect(say(leftFlash("Family", true))).toBe("Left ⁨Family⁩. You were its only member, so the group is deleted.");
+    expect(say(leftFlash("Family", true, 1))).toBe("Left ⁨Family⁩. You were its only member, so the group is deleted, with 1 child's profile.");
+    expect(say(leftFlash("Family", true, 2))).toBe("Left ⁨Family⁩. You were its only member, so the group is deleted, with 2 children's profiles.");
+    expect(say(leftFlash("Семья", true, 3), "ru")).toContain("вместе с профилями 3 детей.");
+    expect(say(leftFlash("Family", true, 2), "he")).toContain("2");
   });
 
   it("deleted: the group and its shared habits", () => {
@@ -53,5 +57,15 @@ describe("groups.detail.noHabits", () => {
     expect(ru("groups.detail.noHabits", { n: 5 })).toContain("все 5 участников");
     expect(ru("groups.detail.noHabits", { n: 21 })).toContain("21 участника");
     expect(tFor("he")("groups.detail.noHabits", { n: 2 })).toContain("שני");
+  });
+});
+
+describe("leaveResult", () => {
+  it("reads what the leave did, and null from an older database", () => {
+    expect(leaveResult({ deleted: true, children_deleted: 2 })).toEqual({ deleted: true, children: 2 });
+    expect(leaveResult({ deleted: false, children_deleted: 0 })).toEqual({ deleted: false, children: 0 });
+    expect(leaveResult(null)).toBeNull();
+    expect(leaveResult({ children_deleted: 1 })).toBeNull();
+    expect(leaveResult({ deleted: true, children_deleted: "x" })).toEqual({ deleted: true, children: 0 });
   });
 });

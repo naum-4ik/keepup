@@ -504,7 +504,7 @@
     },
     "toast": {
       "created": "{invite, select, yes {Created {group}. Create its invite link below: it works for 7 days.} other {Created {group}.}}",
-      "left": "{alone, select, yes {Left {group}. You were its only member, so the group is deleted.} other {Left {group}. Your own habits stay with you.}}",
+      "left": "{alone, select, yes {Left {group}. You were its only member, so the group is deleted{children, plural, =0 {.} one {, with # child's profile.} other {, with # children's profiles.}}} other {Left {group}. Your own habits stay with you.}}",
       "deleted": "Deleted {group} and its shared habits."
     }
   },
