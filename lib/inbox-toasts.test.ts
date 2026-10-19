@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { tEn, tFor } from "@/lib/i18n/test-t";
-import { approvedAllText, reachServer, reviewedText } from "./inbox-toasts";
+import { approvedAllText, nextFocusIndex, reachServer, reviewedText } from "./inbox-toasts";
 
 describe("reviewedText", () => {
   it("says what the decision does, with the names isolated", () => {
@@ -21,7 +21,7 @@ describe("approvedAllText", () => {
   it("counts what was approved, and says when nothing was left", () => {
     expect(approvedAllText(tEn, 1)).toBe("Approved 1 check-in. It counts toward the streak.");
     expect(approvedAllText(tEn, 3)).toBe("Approved 3 check-ins. They count toward the streaks.");
-    expect(approvedAllText(tEn, 0)).toBe("Nothing left to approve: someone reviewed them first.");
+    expect(approvedAllText(tEn, 0)).toBe("Nothing left to approve: they were reviewed or their time ran out.");
   });
 
   it("uses ru one/few/many and he one/two/other", () => {
@@ -50,5 +50,15 @@ describe("reachServer", () => {
   it("a request that died: the same next step", async () => {
     const r = await reachServer(tEn, async () => Promise.reject(new Error("network")), () => true);
     expect(r).toEqual({ ok: false, message: "Couldn't reach Keepup. Check your connection and tap again." });
+  });
+});
+
+describe("nextFocusIndex", () => {
+  it("the row now in the decided row's place, else the last one, else none", () => {
+    expect(nextFocusIndex(0, 2)).toBe(0);
+    expect(nextFocusIndex(1, 2)).toBe(1);
+    expect(nextFocusIndex(2, 2)).toBe(1);
+    expect(nextFocusIndex(0, 0)).toBe(-1);
+    expect(nextFocusIndex(-1, 3)).toBe(0);
   });
 });

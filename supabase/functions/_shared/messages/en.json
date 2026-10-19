@@ -1526,8 +1526,10 @@
       "approvingAll": "Approving {n}…",
       "approved": "Approved: {name} · {habit}. It counts toward the streak.",
       "declined": "Not approved: {name} · {habit}. It won't count toward the streak.",
-      "approvedAll": "{n, plural, =0 {Nothing left to approve: someone reviewed them first.} one {Approved # check-in. It counts toward the streak.} other {Approved # check-ins. They count toward the streaks.}}",
-      "failed": "Couldn't reach Keepup. Check your connection and tap again."
+      "approvedAll": "{n, plural, =0 {Nothing left to approve: they were reviewed or their time ran out.} one {Approved # check-in. It counts toward the streak.} other {Approved # check-ins. They count toward the streaks.}}",
+      "failed": "Couldn't reach Keepup. Check your connection and tap again.",
+      "reload": "Reload Inbox",
+      "readFailed": "Couldn't load the check-ins waiting for you. Reload the Inbox and tap Approve all again."
     },
     "feed": {
       "empty": "{groups, select, yes {Your groups' check-ins, cheers and nudges show up here.} other {Join or create a group to see members' check-ins here.}}",

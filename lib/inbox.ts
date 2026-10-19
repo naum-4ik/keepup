@@ -31,11 +31,16 @@ export async function getFeed(): Promise<FeedItem[]> {
 }
 
 export async function getPendingApprovals(): Promise<PendingApproval[]> {
+  return (await readPendingApprovals()) ?? [];
+}
+
+// null when the read failed: Approve all must not mistake an error for "nothing left".
+export async function readPendingApprovals(): Promise<PendingApproval[] | null> {
   const { supabase } = await requireUser();
   const { data, error } = await supabase.rpc("pending_approvals");
   if (error) {
     logError("pending_approvals failed", error.message);
-    return [];
+    return null;
   }
   const name = habitNameFor((await getT()).t);
   return (data ?? []).map((a) => ({ ...a, habit_title: name(a.habit_title, a.habit_template) }));

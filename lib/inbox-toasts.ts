@@ -12,6 +12,10 @@ export const reviewedText = (t: T, r: Reviewed): string =>
 // Approve all: how many the server approved (0 when someone reviewed them all first).
 export const approvedAllText = (t: T, n: number): string => t("inbox.approvals.approvedAll", { n });
 
+// Where focus goes once a decided row (at `index`) has left a list that now has `count` rows with
+// buttons: the row now in its place, else the last one; -1 when none is left (the empty state).
+export const nextFocusIndex = (index: number, count: number): number => (count === 0 ? -1 : Math.min(Math.max(index, 0), count - 1));
+
 type Answer = { ok: true } | { ok: false; message: string };
 
 // A server action that never answered (offline, or the request died) throws: say what to do instead
