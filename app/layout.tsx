@@ -42,10 +42,13 @@ const rubikHebrew = localFont({
   adjustFontFallback: false, // the Arial fallback face would catch Cyrillic/Hebrew before these files
 });
 
+// Only Profile's version label uses it: not preloaded, so the 23 KB file never competes with the
+// landing's first paint (the browser fetches it when a page shows that label).
 const geistMono = localFont({
   variable: "--font-geist-mono",
   src: [{ path: "./fonts/geist-mono-latin.woff2", weight: "100 900", style: "normal" }],
   display: "swap",
+  preload: false,
 });
 
 // Shared links (LinkedIn, WhatsApp, Slack…) show a card: this title and text, and app/opengraph-image.png.
