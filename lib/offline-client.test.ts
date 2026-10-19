@@ -30,11 +30,11 @@ afterEach(() => vi.useRealTimers());
 describe("an online tap", () => {
   it("passes xp only for a check-in that counted", async () => {
     const { client } = setup();
-    expect(await client.submitTap({ habitId: "h1" }, async () => ({ ok: true, xp: 10 }))).toEqual({ ok: true, queued: false, xp: 10 });
-    expect(await client.submitTap({ habitId: "h2" }, async () => ({ ok: true, xp: 0 }))).toEqual({ ok: true, queued: false });
-    expect(await client.submitTap({ habitId: "h3" }, async () => ({ ok: true, xp: 23 }))).toEqual({ ok: true, queued: false, xp: 23 });
+    expect(await client.submitTap({ habitId: "h1" }, async () => ({ ok: true, xp: 10 }))).toEqual({ ok: true, queued: false, xp: 10, clientId: expect.any(String) });
+    expect(await client.submitTap({ habitId: "h2" }, async () => ({ ok: true, xp: 0 }))).toEqual({ ok: true, queued: false, clientId: expect.any(String) });
+    expect(await client.submitTap({ habitId: "h3" }, async () => ({ ok: true, xp: 23 }))).toEqual({ ok: true, queued: false, xp: 23, clientId: expect.any(String) });
     // Counted, amount unknown (the ledger read failed): kept, so the float says "+XP".
-    expect(await client.submitTap({ habitId: "h4" }, async () => ({ ok: true, xp: null }))).toEqual({ ok: true, queued: false, xp: null });
+    expect(await client.submitTap({ habitId: "h4" }, async () => ({ ok: true, xp: null }))).toEqual({ ok: true, queued: false, xp: null, clientId: expect.any(String) });
   });
 
   it("is saved on the phone before it is tried, sent with its id only, and leaves the queue once it lands", async () => {
@@ -48,7 +48,8 @@ describe("an online tap", () => {
     const sent = (action.mock.calls[0] as unknown as [{ clientId: string }])[0];
     expect(Object.keys(sent)).toEqual(["clientId"]);
     release({ ok: true });
-    expect(await done).toEqual({ ok: true, queued: false });
+    // Its id comes back, so the page can offer Undo for the check-in it became.
+    expect(await done).toEqual({ ok: true, queued: false, clientId: sent.clientId });
     expect(await storage.load()).toEqual([]);
   });
 
