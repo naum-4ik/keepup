@@ -106,6 +106,21 @@ export async function undoCheckIn(checkInId: string, habitId: string): Promise<A
   return { ok: true };
 }
 
+// Undo from Today's "checked in" toast: the tap is known by its client id (lib/offline-client.ts
+// submitTap), not its row. The RPC answers false when there is nothing it may take back (already
+// undone, approved meanwhile, or its period closed): that is said, not passed off as done.
+export async function undoCheckInByClient(clientId: string, habitId: string): Promise<ActionResult> {
+  const { t } = await getT();
+  if (!isUuid(clientId) || !isUuid(habitId)) return notFound(t);
+  const { supabase, who } = await requireUser();
+  const { data, error } = await supabase.rpc("undo_check_in_by_client", { p_client_id: clientId });
+  if (error) return { ok: false, message: habitErrorMessage(t, error) };
+  refresh(habitId);
+  if (data !== true) return { ok: false, message: t("today.undo.gone"), code: "undo_gone" };
+  track("check_in_undone", who, { "check_in.client_id": clientId, "habit.id": habitId });
+  return { ok: true };
+}
+
 export async function freezeHabit(habitId: string, _prev: FormActionState, formData: FormData): Promise<FormActionState> {
   const { t } = await getT();
   if (!isUuid(habitId)) return { status: "error", message: t("errors.habit_not_found") };

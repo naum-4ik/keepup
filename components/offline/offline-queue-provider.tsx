@@ -3,7 +3,6 @@
 import { createContext, startTransition, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { createOfflineClient, type Channel, type Counts, type TapResult } from "@/lib/offline-client";
-import { genericError } from "@/lib/habit-errors";
 import { useT } from "@/lib/i18n/client";
 import { claimSavedPages, clearSavedPages, savePageOffline } from "@/lib/offline-pages";
 import { queuedDelta, type ShownPeriods } from "@/lib/offline-queue";
@@ -213,7 +212,9 @@ export function useSubmitTap() {
   const { t } = useT();
   return useCallback(
     async (tap: { habitId: string; subjectId?: string | null; byChild?: boolean }): Promise<TapResult> => {
-      if (!client) return { ok: false, message: genericError(t) };
+      // A tap that couldn't even be saved on the phone: what happened and what to do (tap again).
+      const failed = t("habits.checkIn.failed");
+      if (!client) return { ok: false, message: failed };
       const sendTap = tapSender(t);
       try {
         const r = await client.submitTap(tap, ({ clientId }, signal) =>
@@ -223,7 +224,7 @@ export function useSubmitTap() {
         return r;
       } catch (e) {
         console.error("check-in tap", e);
-        return { ok: false, message: genericError(t) };
+        return { ok: false, message: failed };
       }
     },
     [client, t],
