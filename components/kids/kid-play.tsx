@@ -473,20 +473,27 @@ export function KidPlay({
 
   return (
     <div className="flex flex-1 flex-col gap-5">
-      <header className="flex items-center gap-3">
-        <Avatar name={child.name} emoji={child.emoji} color={child.color} size="lg" />
-        <h1 className="min-w-0 flex-1 truncate text-2xl font-bold">{child.name}</h1>
-        {/* For the grown-up: sound is on by default and remembered on this phone. */}
-        <button
-          type="button"
-          onClick={toggleSound}
-          aria-label={t("kidView.sound")}
-          aria-pressed={!muted}
-          className="flex size-11 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground shadow-soft"
-        >
-          {muted ? <VolumeX aria-hidden className="size-5" /> : <Volume2 aria-hidden className="size-5" />}
-        </button>
-        <HoldToExit href={`/kids/${child.id}`} childName={child.name} />
+      {/* Her name is never cut short ("N" at 320): the grown-up's two controls wrap to their own row when
+          the name needs the width (on phones they do; the 448 px column fits both on one), and a name
+          longer than its row wraps instead of overflowing. */}
+      <header className="flex flex-wrap items-center gap-inner">
+        <div className="flex min-w-0 flex-[1_1_12rem] items-center gap-item">
+          <Avatar name={child.name} emoji={child.emoji} color={child.color} size="lg" />
+          <h1 className="min-w-0 flex-1 text-2xl font-bold wrap-break-word">{child.name}</h1>
+        </div>
+        <div className="ms-auto flex items-center gap-inner">
+          {/* For the grown-up: sound is on by default and remembered on this phone. */}
+          <button
+            type="button"
+            onClick={toggleSound}
+            aria-label={t("kidView.sound")}
+            aria-pressed={!muted}
+            className="flex size-11 shrink-0 items-center justify-center rounded-full bg-card text-muted-foreground shadow-soft"
+          >
+            {muted ? <VolumeX aria-hidden className="size-5" /> : <Volume2 aria-hidden className="size-5" />}
+          </button>
+          <HoldToExit href={`/kids/${child.id}`} childName={child.name} />
+        </div>
       </header>
 
       {weekStart && lastStars ? <NewWeekCard childId={child.id} weekStart={weekStart} lastStars={lastStars} theme={child.theme} gender={child.gender} /> : null}
