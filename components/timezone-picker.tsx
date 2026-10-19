@@ -56,6 +56,7 @@ export function TimezonePicker({ name, value, onChange, timezones, error, showCh
 
   return (
     <div className="flex flex-col gap-inner">
+      {/* The label and its (i): one glyph pair, 4 px. */}
       <div className="flex flex-wrap items-center gap-1">
         <label htmlFor={name} className="text-sm font-semibold">
           {t("profile.timezone.label")}

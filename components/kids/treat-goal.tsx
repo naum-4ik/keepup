@@ -81,7 +81,7 @@ function ActiveGoal({ childId, childName, gender, goal, onDone }: { childId: str
             className={cn("size-3 rounded-full", i < stars ? "bg-pending" : "bg-muted ring-1 ring-border")}
           />
         ))}
-        <span aria-hidden className="ms-1 text-2xl leading-none">{goal.emoji}</span>
+        <span aria-hidden className="text-2xl leading-none">{goal.emoji}</span>
       </div>
       {reached ? (
         <>
