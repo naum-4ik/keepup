@@ -9,7 +9,7 @@ import { LoginForm } from "./login-form";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getT();
-  return { title: t("meta.pageTitle", { page: t("auth.signIn") }) };
+  return { title: t("meta.pageTitle", { page: t("meta.signInPage") }) };
 }
 
 export default async function LoginPage({

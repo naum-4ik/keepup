@@ -6,7 +6,7 @@ import { createGroup, inviteLink } from "./helpers/groups";
 const BANNER = "You're in the demo. Data resets after 24 hours.";
 const NOTE = "Demo, resets in 24 h.";
 const OFF = "That's off in the demo.";
-const TRY = "Try a demo with sample habits (resets after 24 hours)";
+const TRY = "Try a demo with sample habits";
 
 // One Try it per test: each spends one of the local anonymous sign-ins (30 an hour per IP).
 test("Try it: a full account in under 5 seconds, with a check-in to approve", async ({ page }) => {

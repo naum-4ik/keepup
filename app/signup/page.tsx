@@ -8,7 +8,7 @@ import { SignupForm } from "./signup-form";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getT();
-  return { title: t("meta.pageTitle", { page: t("auth.login.signUp") }) };
+  return { title: t("meta.pageTitle", { page: t("meta.signUpPage") }) };
 }
 
 export default async function SignupPage({

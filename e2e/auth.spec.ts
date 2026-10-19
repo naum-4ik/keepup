@@ -7,7 +7,7 @@ test("signed-out visitors are sent to sign in", async ({ page }) => {
   await expect(page).toHaveURL(/\/login\?next=%2Ftoday$/);
 });
 
-const DEMO = "Try a demo with sample habits (resets after 24 hours)";
+const DEMO = "Try a demo with sample habits";
 
 test("the landing page: one screen, Start your first streak, a quiet demo button and a Sign in link", async ({ page }) => {
   for (const height of [844, 700]) {
@@ -16,6 +16,7 @@ test("the landing page: one screen, Start your first streak, a quiet demo button
     await expect(page.getByRole("heading", { name: "Keepup" })).toBeVisible();
     await expect(page.getByText("Check in daily, keep your streak, share habits with family.")).toBeVisible();
     await expect(page.getByRole("button", { name: DEMO })).toBeVisible();
+    await expect(page.getByRole("button", { name: DEMO })).toHaveAccessibleDescription("Resets after 24 hours, no sign-up.");
     await expect(page.getByText("By continuing, you agree to the Terms of use and the Privacy Policy")).toBeVisible();
     // No scrolling: everything fits on one phone screen.
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight)).toBe(true);

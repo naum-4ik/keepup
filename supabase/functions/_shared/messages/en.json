@@ -387,7 +387,8 @@
     "failed": "The demo didn't start. Try again in a moment.",
     "loadFailed": "Couldn't load the demo. Reload the page and try again.",
     "reload": "Reload",
-    "tryDemo": "Try a demo with sample habits (resets after 24 hours)",
+    "tryDemo": "Try a demo with sample habits",
+    "resetsNote": "Resets after 24 hours, no sign-up.",
     "settingUp": "Setting up…",
     "loading": "Loading…",
     "compact": "Demo, resets in 24 h. <signIn>Sign in</signIn>",
@@ -1702,6 +1703,8 @@
   "meta": {
     "title": "Keepup — habit tracker for families",
     "pageTitle": "{page} · Keepup",
+    "signInPage": "Sign in",
+    "signUpPage": "Sign up",
     "shareTitle": "Keepup: Habits, together",
     "shareText": "A habit tracker for one person or a whole family, kids included."
   },

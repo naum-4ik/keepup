@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { useFormStatus } from "react-dom";
 import { unstable_rethrow, useSearchParams } from "next/navigation";
 import { startDemo } from "@/app/demo/actions";
@@ -8,7 +8,7 @@ import { Notice } from "@/components/ui/notice";
 import { runTryIt } from "@/lib/try-demo";
 import { useT } from "@/lib/i18n/client";
 
-// "Try a demo with sample habits" on the landing page, and on sign-in and sign-up (someone who followed a
+// "Try a demo with sample habits" (and under it "Resets after 24 hours, no sign-up.") on the landing page, and on sign-in and sign-up (someone who followed a
 // link or tapped a step too far can still just look around): a quiet text button, 44 px tall, never the
 // page's filled button. The consent line is the page's own (it covers signing up too). The anonymous sign-in happens here, in the browser, so Supabase's per-IP
 // limit counts each visitor's own IP (from the server, every visitor would share Vercel's). Then the
@@ -27,6 +27,7 @@ export function TryDemoButton() {
   const [failedHere, setFailedHere] = useState<"failed" | "reload" | null>(null);
   const failed = failedHere ?? (failedBefore ? "failed" : null);
   const ready = useHydrated();
+  const noteId = useId();
   useEffect(() => {
     if (zone.current) zone.current.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
   }, []);
@@ -83,7 +84,13 @@ export function TryDemoButton() {
           {t("demo.loadFailed")}
         </Notice>
       )}
-      <Submit ready={ready} />
+      <div className="flex flex-col items-center">
+        <Submit ready={ready} describedBy={noteId} />
+        {/* What the demo is, under its name (owner: the name stays short). */}
+        <p id={noteId} className="-mt-2 text-xs text-muted-foreground">
+          {t("demo.resetsNote")}
+        </p>
+      </div>
     </form>
   );
 }
@@ -103,7 +110,7 @@ function useHydrated(): boolean {
 }
 
 // useFormStatus reads the form it's inside, so the button is its own component.
-function Submit({ ready }: { ready: boolean }) {
+function Submit({ ready, describedBy }: { ready: boolean; describedBy: string }) {
   const { t } = useT();
   const { pending } = useFormStatus();
   const off = pending || !ready;
@@ -112,6 +119,7 @@ function Submit({ ready }: { ready: boolean }) {
       type="submit"
       disabled={off}
       aria-disabled={off}
+      aria-describedby={describedBy}
       onPointerEnter={warmUp}
       onFocus={warmUp}
       onTouchStart={warmUp}
