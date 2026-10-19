@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Check, ChevronRight, Flame, ListChecks } from "lucide-react";
+import { CalendarDays, Check, Flame, ListChecks } from "lucide-react";
 import { CATEGORIES } from "@/lib/categories";
 import type { HabitCategory, HabitPeriod } from "@/lib/habit-schema";
 import { comparisonLine, goalsMet, ringDash, streakSpan, type DayCellStatus, type HabitCells, type WeekOverview } from "@/lib/week-overview";
@@ -52,35 +52,6 @@ export function ProgressRing({
         />
       )}
     </svg>
-  );
-}
-
-// Today: "This week · ◔ 18 of 22 · 🔥 12", linking to Progress.
-export function WeekStrip({ t, overview: o }: { t: T; overview: WeekOverview }) {
-  return (
-    <Link
-      href="/progress"
-      className="flex min-h-11 items-center gap-2 rounded-2xl bg-card px-4 py-2 text-sm shadow-soft hover:bg-muted/60"
-    >
-      <span className="font-semibold text-muted-foreground">{t("today.thisWeek")}</span>
-      <span aria-hidden className="text-muted-foreground">·</span>
-      <ProgressRing done={o.done} possible={o.possible} label={t("weekOverview.ringLabel", { goals: goalsMet(t, o.done, o.possible) })} />
-      {/* The ring's label says the same for screen readers. */}
-      <span aria-hidden className="font-bold tabular-nums">
-        {t("today.weekCount", { done: String(o.done), possible: String(o.possible) })}
-      </span>
-      {o.best_current_streak > 0 && (
-        <>
-          <span aria-hidden className="text-muted-foreground">·</span>
-          <span className={cn("flex items-center gap-1 font-bold tabular-nums", STREAK)}>
-            <Flame className="size-4 fill-current" aria-hidden />
-            <span className="sr-only">{t("today.bestStreak")}</span>
-            {o.best_current_streak}
-          </span>
-        </>
-      )}
-      <ChevronRight className="ms-auto size-4 text-muted-foreground rtl:-scale-x-100" aria-hidden />
-    </Link>
   );
 }
 
