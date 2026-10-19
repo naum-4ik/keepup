@@ -16,49 +16,49 @@ type Props = {
   children: React.ReactNode;
 };
 
-// The sign-in and sign-up screens share this card: title, the email form, then Google, then the
-// link to the other screen, then Try the demo. The consent line sits under the card, once per screen.
+// The sign-in and sign-up screens share this layout: title, the email form, then Google, then the
+// link to the other screen, then the demo, then the consent line, once per screen. No card around it
+// (docs/design.md: a form is not a card); the three spacing levels.
 export async function AuthCard({ title, subtitle, next, googleEnabled, footer, children }: Props) {
   const { t } = await getT();
   return (
-    <main className="mx-auto flex w-full min-h-dvh max-w-sm flex-col justify-center px-4 py-10">
-      <div className="flex flex-col gap-5 rounded-2xl bg-card p-6 shadow-soft">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <Image src="/icons/icon-192.png" alt="" width={56} height={56} className="rounded-2xl" priority />
-          <h1 className="text-2xl font-bold">{title}</h1>
-          <p className="text-sm text-muted-foreground">{subtitle}</p>
-        </div>
+    <main className="mx-auto flex w-full min-h-dvh max-w-sm flex-col justify-center gap-section px-4 py-section">
+      <div className="flex flex-col items-center gap-inner text-center">
+        {/* Decorative and small: no priority preload, so it doesn't compete with the text for bandwidth. */}
+        <Image src="/icons/icon-192.png" alt="" width={56} height={56} className="rounded-2xl" />
+        <h1 className="text-2xl font-bold">{title}</h1>
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
+      </div>
 
+      <div className="flex flex-col gap-item">
         {children}
 
         {googleEnabled && (
           <>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-inner">
               <div aria-hidden="true" className="h-px flex-1 bg-border" />
               <span className="text-xs font-semibold text-muted-foreground">{t("auth.or")}</span>
               <div aria-hidden="true" className="h-px flex-1 bg-border" />
             </div>
             <form action={signInWithGoogle}>
               <input type="hidden" name="next" value={next} />
-              <Button type="submit" variant="outline" className="h-12 w-full justify-center gap-3 bg-card hover:bg-muted">
+              <Button type="submit" variant="outline" size="lg" className="w-full justify-center gap-inner bg-card hover:bg-muted">
                 <GoogleIcon className="size-5" />
                 {t("auth.continueGoogle")}
               </Button>
             </form>
           </>
         )}
+      </div>
 
-        <p className="text-center text-sm text-muted-foreground">
+      <div className="flex flex-col gap-item text-center">
+        <p className="text-sm text-muted-foreground">
           {footer.text}{" "}
-          <Link href={footer.href} className="font-semibold text-primary hover:underline">
+          <Link href={footer.href} className="-my-3 inline-flex min-h-11 items-center font-semibold text-primary hover:underline">
             {footer.linkLabel}
           </Link>
         </p>
-        <div className="text-center">
-          <TryDemoButton consent={false} />
-        </div>
-      </div>
-      <div className="mt-4">
+        <TryDemoButton />
         <PrivacyConsent />
       </div>
     </main>
