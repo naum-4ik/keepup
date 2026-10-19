@@ -87,7 +87,7 @@ export function ThemePicker({ childId, childName, theme }: { childId: string; ch
             action={
               <Link
                 href={`/kids/${childId}/play`}
-                aria-label={tk("detail.openView", { name: isolate(childName) })}
+                aria-label={tk("theme.openViewLabel", { name: isolate(childName) })}
                 // A 44px target kept to the Notice's line height by negative margins (docs/design.md "Buttons").
                 className="-my-3 flex min-h-11 items-center rounded-lg px-inner font-bold text-primary hover:bg-background/60"
               >

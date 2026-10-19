@@ -339,7 +339,7 @@ test("choose what grows with the child: the kid page and the kid view switch the
   await expect(picker.getByRole("button", { name: /Aquarium/ })).toHaveAttribute("aria-pressed", "true");
   // Saved: a line under the tiles, with the kid view a tap away (where the change shows).
   await expect(picker.getByRole("status")).toContainText("Changed to Aquarium. This week's stars stay the same.");
-  await expect(picker.getByRole("link", { name: "Open \u2068Mary\u2069's view" })).toHaveAttribute("href", /\/kids\/[0-9a-f-]{36}\/play$/);
+  await expect(picker.getByRole("link", { name: "Open view (\u2068Mary\u2069)", exact: true })).toHaveAttribute("href", /\/kids\/[0-9a-f-]{36}\/play$/);
   await expect(page.getByRole("region", { name: "This week's aquarium" })).toBeVisible();
   await page.reload(); // saved
   await expect(page.getByRole("region", { name: "What grows" }).getByRole("button", { name: /Aquarium/ })).toHaveAttribute("aria-pressed", "true");
