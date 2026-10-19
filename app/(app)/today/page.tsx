@@ -21,7 +21,7 @@ import { getProfile } from "@/lib/auth";
 import { getMyGroups } from "@/lib/groups";
 import { isUuid } from "@/lib/habit-schema";
 import { getFinishSummary, getGroupTimezones, getHabitEnds, getHabitSummaries, getRecentTapRows, getWeekOverview, type HabitSummary } from "@/lib/habits";
-import { celebrates, finishLine } from "@/lib/habit-finish";
+import { anotherGoLine, celebrates, finishLine } from "@/lib/habit-finish";
 import { getT } from "@/lib/i18n/server";
 import { FinishCard } from "@/components/today/finish-card";
 import { endLabel, endProgress, hasEnded, withoutEnded } from "@/lib/habit-end";
@@ -222,7 +222,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
             title={h.title}
             emoji={h.emoji}
             category={h.category}
-            line={summary && celebrates(summary) ? finishLine(t, summary, h.period, Boolean(h.group_id)) : t("habitFinish.anotherGo")}
+            line={summary && celebrates(summary) ? finishLine(t, summary, h.period, Boolean(h.group_id)) : anotherGoLine(t, h.current_streak, h.period)}
             celebrate={Boolean(summary && celebrates(summary))}
             canDecide={!h.group_id || h.my_role === "admin"}
           />

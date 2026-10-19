@@ -479,7 +479,8 @@ test("a habit that ended: the finish card, Keep going, Finish, and Start again",
   // Nothing done: no 🎉, an invitation instead of a count.
   await expect(readCard).toContainText("Read reached its end");
   await expect(readCard).not.toContainText("🎉");
-  await expect(readCard).toContainText("Keep going to build a new streak, or finish it and start again later.");
+  // No check-ins on Read: no streak to name.
+  await expect(readCard).toContainText("Keep going and your streak carries on, or Finish and start again later.");
   await expect(page.getByRole("button", { name: "Check in: \u2068Read\u2069" })).toHaveCount(0); // no more check-ins
 
   await readCard.getByRole("button", { name: "Keep going" }).click();

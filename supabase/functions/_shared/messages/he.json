@@ -284,7 +284,7 @@
   "habitFinish": {
     "did": "{together, select, yes {ביחד עשיתם {done} מתוך {span}} other {עשיתם {done} מתוך {span}}}",
     "withBest": "{main} · הרצף הארוך ביותר {n} 🔥",
-    "anotherGo": "המשיכו כדי לבנות רצף חדש, או סיימו והתחילו מחדש אחר כך."
+    "anotherGo": "{streak, select, yes {המשיכו והרצף שלכם ({span}) נמשך, או סיימו והתחילו מחדש אחר כך.} other {המשיכו והרצף שלכם נמשך, או סיימו והתחילו מחדש אחר כך.}}"
   },
   "myData": {
     "deleteWord": "מחיקה",

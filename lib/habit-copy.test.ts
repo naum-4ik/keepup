@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { tEn, tFor } from "@/lib/i18n/test-t";
+import { anotherGoLine } from "@/lib/habit-finish";
 
 // The habit page's in-place lines (docs/design.md rule: action, concrete result, a number to go by).
 describe("habit page copy", () => {
@@ -35,7 +36,10 @@ describe("habit page copy", () => {
   });
 
   it("finish lines point at the buttons that are there", () => {
-    expect(tEn("habitFinish.anotherGo")).toBe("Keep going to build a new streak, or finish it and start again later.");
+    expect(anotherGoLine(tEn, 0, "day")).toBe("Keep going and your streak carries on, or Finish and start again later.");
+    expect(anotherGoLine(tEn, 3, "day")).toBe("Keep going and your streak of 3 days carries on, or Finish and start again later.");
+    expect(anotherGoLine(tFor("ru"), 2, "week")).toBe("Продолжайте — и ваша серия (2 недели) не прервётся, или завершите и начните заново позже.");
+    expect(anotherGoLine(tFor("he"), 1, "day")).toContain("המשיכו");
     expect(tEn("habits.detail.finished.note")).toBe("Start again to build a new streak. This one keeps its history.");
   });
 });
