@@ -31,8 +31,8 @@ export default async function ProfilePage() {
   ];
 
   return (
-    <section className="flex flex-col gap-6 py-6">
-      <div className="flex flex-col items-center gap-3 text-center">
+    <div className="flex flex-col gap-section py-section">
+      <div className="flex flex-col items-center gap-item text-center">
         <AvatarEdit
           name={profile.display_name}
           emoji={profile.avatar_emoji}
@@ -53,11 +53,13 @@ export default async function ProfilePage() {
         </div>
       </div>
       {level && <LevelCard xp={level.xp} />}
+      {/* A list of places to go, not a card: rows on dividers. -mx-inner px-inner: the hover tint reaches
+          past the text without moving it. */}
       <nav aria-label={t("profile.accountNav")}>
-        <ul className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-soft">
+        <ul className="flex flex-col divide-y divide-border">
           {links.map(({ href, label, icon: Icon }) => (
-            <li key={href} className="border-t border-border first:border-t-0">
-              <Link href={href} className="flex min-h-14 items-center gap-3 px-4 hover:bg-muted">
+            <li key={href}>
+              <Link href={href} className="-mx-inner flex min-h-14 items-center gap-item rounded-xl px-inner hover:bg-muted/60">
                 <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-primary">
                   <Icon className="size-5" />
                 </span>
@@ -91,6 +93,6 @@ export default async function ProfilePage() {
           {appVersion()}
         </Link>
       </footer>
-    </section>
+    </div>
   );
 }
