@@ -14,7 +14,7 @@ import { startAgainEnd } from "@/lib/habit-finish";
 import { todayIn } from "@/lib/dates";
 import { getGroupDetail } from "@/lib/groups";
 import { errorCode, genericError, habitErrorMessage, REFRESH_ON_ERROR } from "@/lib/habit-errors";
-import { errorText } from "@/lib/field-error";
+import { errorTexts } from "@/lib/field-error";
 import { getT } from "@/lib/i18n/server";
 import { reminderError } from "@/lib/reminder-mode";
 import { isUuid, LOCAL_DATE, parseDetailsEdit, parseHabit, readHabitForm, type HabitFormState } from "@/lib/habit-schema";
@@ -32,6 +32,15 @@ export type ActionResult = { ok: true } | { ok: false; message: string; code?: s
 export type FormActionState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string };
 // A confirm dialog's action that stays on the client after it worked (archive: its toast carries
 // Undo, which a redirect can't carry): where to go next.
+// The edit form: what was refused, by field (shown under it, the first one focused), or a message
+// when the save itself failed.
+export type DetailsField = "title" | "emoji" | "category" | "startsOn";
+export type DetailsFormState =
+  | { status: "idle" }
+  | { status: "saved" }
+  | { status: "error"; message?: string; errors?: Partial<Record<DetailsField, string>> };
+// The database rules about the start date, said under the start date.
+const START_CODES = new Set(["start_in_past", "start_too_far", "start_locked"]);
 export type ConfirmActionState = FormActionState | { status: "done"; next: string };
 
 function refresh(habitId?: string) {
@@ -167,7 +176,7 @@ export async function unfreezeHabit(habitId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
-export async function updateHabitDetails(habitId: string, _prev: FormActionState, formData: FormData): Promise<FormActionState> {
+export async function updateHabitDetails(habitId: string, _prev: DetailsFormState, formData: FormData): Promise<DetailsFormState> {
   const { t } = await getT();
   if (!isUuid(habitId)) return { status: "error", message: t("errors.habit_not_found") };
   const parsed = parseDetailsEdit({
@@ -175,13 +184,12 @@ export async function updateHabitDetails(habitId: string, _prev: FormActionState
     emoji: String(formData.get("emoji") ?? ""),
     category: String(formData.get("category") ?? ""),
   });
-  if (!parsed.ok) {
-    const { title, emoji, category } = parsed.errors;
-    const first = title ?? emoji ?? category;
-    return { status: "error", message: first ? errorText(t, first) : t("errors.checkDetails") };
-  }
   const startsOn = String(formData.get("startsOn") ?? "");
-  if (startsOn !== "" && !LOCAL_DATE.test(startsOn)) return { status: "error", message: t("validation.startDate") };
+  const badStart = startsOn !== "" && !LOCAL_DATE.test(startsOn);
+  if (!parsed.ok || badStart) {
+    const errors = { ...(parsed.ok ? {} : errorTexts(t, parsed.errors)), ...(badStart ? { startsOn: t("validation.startDate") } : {}) };
+    return Object.keys(errors).length > 0 ? { status: "error", errors } : { status: "error", message: t("errors.checkDetails") };
+  }
   const { supabase, who } = await requireUser();
   // The form shows the title as this person reads it. Saved unchanged, it's no rename: a template habit
   // keeps its template (a rename drops it) and its stored title (not overwritten by a translation).
@@ -193,7 +201,10 @@ export async function updateHabitDetails(habitId: string, _prev: FormActionState
     .from("habits")
     .update({ ...rest, ...(renamed ? { title } : {}), ...(startsOn ? { starts_on: startsOn } : {}) })
     .eq("id", habitId);
-  if (error) return { status: "error", message: habitErrorMessage(t, error) };
+  if (error) {
+    const code = errorCode(error);
+    return code && START_CODES.has(code) ? { status: "error", errors: { startsOn: habitErrorMessage(t, error) } } : { status: "error", message: habitErrorMessage(t, error) };
+  }
   track("habit_edited", who, { "habit.id": habitId, "habit.title": renamed ? title : stored.title, "habit.category": parsed.value.category ?? undefined });
   refresh(habitId);
   return { status: "saved" };

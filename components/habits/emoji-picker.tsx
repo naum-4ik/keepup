@@ -64,6 +64,8 @@ export function EmojiPicker({
           aria-label={t("habits.emoji.choose", { emoji: shown })}
           aria-expanded={open}
           aria-describedby={error ? `${ownId}-error` : undefined}
+          // lib/focus-first-invalid.ts: a refused emoji takes focus here (aria-invalid isn't for buttons).
+          data-invalid={error ? "" : undefined}
           aria-controls={open ? panelId : undefined}
           onClick={() => (open ? close() : setOpen(true))}
           className={cn(

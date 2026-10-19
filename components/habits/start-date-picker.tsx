@@ -50,7 +50,8 @@ export function StartDatePicker({ value, onChange, today, min = today, weekStart
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="grid grid-cols-4 gap-1.5">
+      {/* data-invalid: a refused date takes focus on its first chip (lib/focus-first-invalid.ts). */}
+      <div className="grid grid-cols-4 gap-1.5" data-invalid={errorId ? "" : undefined} aria-describedby={errorId}>
         {quick.map((q) => (
           <button key={q.label} type="button" aria-pressed={value === q.date} className={dateChipClass}
             onClick={() => { onChange(q.date); setOpen(false); }}>
