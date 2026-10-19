@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { removeMember, setMemberRole, type GroupActionState } from "@/app/(app)/groups/actions";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import type { GroupMember } from "@/lib/groups";
 import { isolate } from "@/supabase/functions/_shared/i18n";
@@ -68,12 +69,12 @@ export function MemberRow({
   const isAdmin = member.role === "admin";
 
   return (
-    <li className="flex flex-col gap-1">
-      <div className="flex min-h-11 items-center gap-3">
+    <li className="flex flex-col gap-inner">
+      <div className="flex min-h-11 items-center gap-inner">
         <Avatar name={member.name} emoji={member.avatar_emoji} color={member.avatar_color} size="md" />
         <span className="min-w-0 flex-1 truncate font-semibold">{isSelf ? t("you") : member.name}</span>
         {isAdmin && (
-          <span className="inline-flex h-6 items-center rounded-full bg-accent px-2.5 text-xs font-semibold text-accent-foreground">
+          <span className="inline-flex h-6 items-center rounded-full bg-accent px-inner text-xs font-semibold text-accent-foreground">
             {t("admin")}
           </span>
         )}
@@ -88,6 +89,7 @@ export function MemberRow({
             >
               <Ellipsis aria-hidden className="size-5" />
             </summary>
+            {/* A menu popover: 4 px off its trigger and around its rows, off the scale on purpose (one floating control). */}
             <div className="absolute end-0 z-10 mt-1 flex w-52 flex-col rounded-2xl bg-card p-1 shadow-soft ring-1 ring-border">
               <button
                 type="button"
@@ -112,18 +114,27 @@ export function MemberRow({
           </details>
         )}
       </div>
-      {error && !confirming && <p role="alert" className="text-sm text-destructive">{error}</p>}
+      {error && !confirming && (
+        <Notice tone="error" live>
+          {error}
+        </Notice>
+      )}
 
       <Dialog open={confirming} onOpenChange={(next) => !pending && setConfirming(next)}>
         <DialogContent>
-          <div className="flex flex-col gap-1 pe-10">
+          {/* pe-10: room for the dialog's close X. Title over description: line-height, no gap. */}
+          <div className="flex flex-col pe-10">
             <DialogTitle>{t.rich("removeTitle", { name: member.name, bdi })}</DialogTitle>
             <DialogDescription>
               {t.rich("removeDescription", { group: groupName, bdi })}
             </DialogDescription>
           </div>
-          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-          <div className="flex gap-2">
+          {error && (
+            <Notice tone="error" live>
+              {error}
+            </Notice>
+          )}
+          <div className="flex gap-inner">
             <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => setConfirming(false)}>
               {tc("cancel")}
             </Button>

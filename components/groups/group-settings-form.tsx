@@ -26,9 +26,9 @@ export function GroupSettingsForm({
   const [timezone, setTimezone] = useState(initialTimezone);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="flex flex-col gap-item">
       <TimezonePicker name="timezone" value={timezone} onChange={setTimezone} timezones={timezones} />
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-inner">
         <label htmlFor="group-week-start" className="text-sm font-semibold">{tp("weekStart")}</label>
         <select id="group-week-start" name="weekStart" key={weekStart} defaultValue={String(weekStart)} className={selectClass}>
           <option value="1">{tp("monday")}</option>

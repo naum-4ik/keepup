@@ -36,10 +36,10 @@ export function RenameGroupForm({
 
   if (!editing) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-inner">
         <h1 className="min-w-0 flex-1 text-2xl font-bold break-words">{name}</h1>
         {canRename && (
-          <Button type="button" variant="ghost" className="h-11 gap-1.5 px-3 text-muted-foreground" onClick={() => setEditing(true)}>
+          <Button type="button" variant="ghost" className="h-11 gap-inner px-inner text-muted-foreground" onClick={() => setEditing(true)}>
             <Pencil aria-hidden className="size-4" /> {t("action")}
           </Button>
         )}
@@ -48,7 +48,7 @@ export function RenameGroupForm({
   }
 
   return (
-    <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-2">
+    <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-inner">
       <Label htmlFor="group-name" className="font-semibold">{t("label")}</Label>
       <Input
         id="group-name"
@@ -65,7 +65,7 @@ export function RenameGroupForm({
       {state.status === "error" && (
         <p id="group-name-error" role="alert" className="text-sm text-destructive">{state.message}</p>
       )}
-      <div className="flex gap-2">
+      <div className="flex gap-inner">
         <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => setEditing(false)}>
           {tc("cancel")}
         </Button>

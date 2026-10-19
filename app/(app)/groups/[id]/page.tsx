@@ -12,6 +12,8 @@ import { InviteLink } from "@/components/groups/invite-link";
 import { MemberRow } from "@/components/groups/member-row";
 import { RenameGroupForm } from "@/components/groups/rename-group-form";
 import { addButtonClass } from "@/components/ui/add-button";
+import { Notice } from "@/components/ui/notice";
+import { Section } from "@/components/ui/section";
 import { getProfile } from "@/lib/auth";
 import { GROUP_AVATAR_EMOJI } from "@/lib/avatars";
 import { childrenDeletionNotice, inviteUrl } from "@/lib/group-schema";
@@ -25,15 +27,6 @@ import { describeSchedule } from "@/lib/schedule";
 import { listTimezones } from "@/lib/timezones";
 import { deleteGroup, leaveGroup, renameGroup, saveGroupAvatar, updateGroupSettings } from "../actions";
 import { logError } from "@/lib/log";
-
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section aria-label={title} className="flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-soft">
-      <h2 className="text-sm font-bold text-muted-foreground">{title}</h2>
-      {children}
-    </section>
-  );
-}
 
 export default async function GroupPage({
   params,
@@ -75,13 +68,15 @@ export default async function GroupPage({
     : [];
 
   return (
-    <section className="flex flex-col gap-4 pt-2 pb-6">
-      <Link href="/groups" className="-ms-2 flex h-11 w-fit items-center gap-1 rounded-full px-2 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
+    // Headed sections, no cards (docs/design.md "Sections"): a group page is lists and controls.
+    <section className="flex flex-col gap-section py-section">
+      {/* -ms-inner px-inner: the back link's 44 px target, its words on the page edge; chevron to label 4 px (one glyph pair). */}
+      <Link href="/groups" className="-ms-inner flex h-11 w-fit items-center gap-1 rounded-full px-inner text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
         <ChevronLeft aria-hidden className="size-4 rtl:-scale-x-100" />
         {tg("nav.groups")}
       </Link>
 
-      <header className="flex items-center gap-4">
+      <header className="flex items-center gap-item">
         {isAdmin ? (
           <AvatarEdit
             name={group.name}
@@ -96,7 +91,7 @@ export default async function GroupPage({
         ) : (
           <Avatar name={group.name} emoji={group.avatar_emoji} color={group.avatar_color} size="lg" />
         )}
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex min-w-0 flex-1 flex-col gap-inner">
           <RenameGroupForm name={group.name} canRename={isAdmin} action={renameGroup.bind(null, group.id)} />
           <div>
             <KindChip kind={group.kind} t={tg} />
@@ -104,8 +99,8 @@ export default async function GroupPage({
         </div>
       </header>
 
-      <Card title={t("people")}>
-        <ul className="flex flex-col gap-2">
+      <Section title={t("people")}>
+        <ul className="flex flex-col gap-inner">
           {group.members.map((m) => (
             <MemberRow
               key={m.id}
@@ -118,7 +113,7 @@ export default async function GroupPage({
           ))}
           {group.children.map((c) => (
             <li key={c.id}>
-              <Link href={`/kids/${c.id}`} className="-mx-2 flex min-h-11 items-center gap-3 rounded-xl px-2 hover:bg-muted/60">
+              <Link href={`/kids/${c.id}`} className="-mx-inner flex min-h-11 items-center gap-inner rounded-xl px-inner hover:bg-muted/60">
                 <Avatar name={c.name} emoji={c.avatar_emoji} color={c.avatar_color} size="md" />
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate font-semibold">{c.name}</span>
@@ -138,14 +133,14 @@ export default async function GroupPage({
             {t("addChild")}
           </Link>
         )}
-      </Card>
+      </Section>
 
-      <Card title={t("habits")}>
+      <Section title={t("habits")}>
         {habits.length > 0 ? (
-          <ul className="flex flex-col gap-1">
+          <ul className="flex flex-col">
             {habits.map((h) => (
               <li key={h.habit_id}>
-                <Link href={`/habits/${h.habit_id}`} className="-mx-2 flex min-h-11 items-center gap-3 rounded-xl px-2 py-1.5 hover:bg-muted/60">
+                <Link href={`/habits/${h.habit_id}`} className="-mx-inner flex min-h-14 items-center gap-inner rounded-xl px-inner hover:bg-muted/60">
                   <HabitEmoji category={h.category} emoji={h.emoji} size="xs" />
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate font-semibold">{h.title}</span>
@@ -158,7 +153,8 @@ export default async function GroupPage({
             ))}
           </ul>
         ) : (
-          <p className="text-sm text-muted-foreground">{t("noHabits")}</p>
+          // Only admins add group habits (private.create_group_habit_impl), so a member hears who does.
+          <p className="text-sm text-muted-foreground">{isAdmin ? t("noHabits", { n: group.members.length }) : t("noHabitsMember")}</p>
         )}
         {isAdmin && (
           <Link
@@ -169,31 +165,33 @@ export default async function GroupPage({
             {t("addHabit")}
           </Link>
         )}
-      </Card>
+      </Section>
 
       {/* People, then what they do together, then bringing someone new (owner's order). ?invite=1
           still focuses the link (autoFocus scrolls it into view). */}
       {isAdmin && (
-        <Card title={t("invite")}>
+        <Section title={t("invite")}>
           {/* A demo login can't invite anyone (the database refuses it). */}
           {profile.is_demo ? (
-            <p className="text-sm text-muted-foreground">{tg("demo.off")}</p>
+            <Notice>{tg("demo.off")}</Notice>
           ) : (
             <InviteLink groupId={group.id} groupName={group.name} url={url} validUntil={validUntil} autoFocus={invite === "1"} />
           )}
-        </Card>
+        </Section>
       )}
 
       {isAdmin && (
-        <details className="group rounded-2xl bg-card shadow-soft">
-          <summary className="flex min-h-14 list-none items-center gap-3 rounded-2xl px-5 py-3 hover:bg-muted/60 [&::-webkit-details-marker]:hidden">
+        // A folded settings group, not a card: a row between dividers (docs/design.md: no card around
+        // a headed group of controls). -mx-inner px-inner: the hover reaches past the text.
+        <details className="group border-y border-border">
+          <summary className="-mx-inner flex min-h-14 list-none items-center gap-inner rounded-xl px-inner py-inner hover:bg-muted/60 [&::-webkit-details-marker]:hidden">
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="font-bold">{t("settings")}</span>
               <span className="text-xs text-muted-foreground">{t("settingsHint")}</span>
             </span>
             <ChevronDown aria-hidden className="size-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
           </summary>
-          <div className="px-5 pt-1 pb-5">
+          <div className="pb-item">
             <GroupSettingsForm
               timezone={group.timezone}
               weekStart={group.week_start === 0 ? 0 : 1}
@@ -204,7 +202,7 @@ export default async function GroupPage({
         </details>
       )}
 
-      <div className="flex flex-col gap-2 pt-2">
+      <div className="flex flex-col gap-inner">
         <ConfirmGroupAction
           triggerLabel={t("leave.action")}
           title={t.rich("leave.title", { name: group.name, bdi })}

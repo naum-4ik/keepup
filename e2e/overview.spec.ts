@@ -134,7 +134,7 @@ test("a new user's empty lists say what's next, in one card style", async ({ pag
   await expect(page.getByText("Add a habit to start tracking your streak here.")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Categories" })).toHaveCount(0);
   await page.goto("/groups");
-  await expect(page.getByText("Share habits with the people you live and hang out with.")).toBeVisible();
+  await expect(page.getByText("Create a group and invite people with a link that works for 7 days.")).toBeVisible();
   await page.goto("/inbox");
   await expect(page.getByText("Join or create a group to see members' check-ins here.")).toBeVisible();
 });

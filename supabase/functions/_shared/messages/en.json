@@ -413,7 +413,7 @@
     "childrenDeletion": "{n, plural, =0 {The children's profiles and history will be deleted.} one {{names}'s profile and history will be deleted.} other {{names}'s profiles and history will be deleted.}}",
     "newGroup": "New group",
     "list": {
-      "empty": "Share habits with the people you live and hang out with.",
+      "empty": "Create a group and invite people with a link that works for 7 days.",
       "create": "Create a group"
     },
     "card": {
@@ -426,7 +426,8 @@
       "avatar": "Avatar <muted>(optional)</muted>",
       "avatarHint": "Until you pick one, the group shows its first letter.",
       "timezoneHelp": "Your time zone ({city}) and week start are used for the group's habits. Admins can change them later.",
-      "create": "Create group"
+      "create": "Create group",
+      "failed": "Couldn't reach Keepup. Check your connection and tap Create group again."
     },
     "detail": {
       "avatarTitle": "Change the group avatar",
@@ -435,7 +436,7 @@
       "child": "Child",
       "addChild": "Add a child",
       "habits": "Group habits",
-      "noHabits": "No group habits yet.",
+      "noHabits": "{n, plural, =1 {Add a group habit: it's done when you check in. Invite people to do it together.} other {Add a group habit: it's done when all # members check in.}}",
       "addHabit": "Add a group habit",
       "habitLine": "{schedule}{approval, select, yes { · needs approval} other {}}",
       "invite": "Invite",
@@ -452,12 +453,14 @@
         "title": "Delete <bdi>{name}</bdi>?",
         "description": "This removes the group and its shared habits for everyone. It can't be undone.",
         "action": "Delete group"
-      }
+      },
+      "noHabitsMember": "No group habits yet. An admin of the group adds them, and they show up here."
     },
     "confirm": {
       "allMoved": "All children were moved.",
       "exportFirst": "Export first",
-      "deleteAnyway": "Delete anyway"
+      "deleteAnyway": "Delete anyway",
+      "failed": "Couldn't reach Keepup. Check your connection and try again."
     },
     "rename": {
       "action": "Rename",
@@ -490,11 +493,19 @@
       "copy": "Copy link",
       "copied": "Copied",
       "turnOff": "Turn off link",
-      "turningOff": "Turning off…"
+      "turningOff": "Turning off…",
+      "failed": "Couldn't reach Keepup. Check your connection and tap the button again.",
+      "createdStatus": "Invite link created",
+      "turnedOffStatus": "Invite link turned off. Nobody new can join with it."
     },
     "errors": {
       "timezone": "Pick a time zone.",
       "weekStart": "Pick Monday or Sunday."
+    },
+    "toast": {
+      "created": "{invite, select, yes {Created {group}. Share its invite link below: it works for 7 days.} other {Created {group}.}}",
+      "left": "{alone, select, yes {Left {group}. You were its only member, so the group is deleted.} other {Left {group}. Your own habits stay with you.}}",
+      "deleted": "Deleted {group} and its shared habits."
     }
   },
   "auth": {
