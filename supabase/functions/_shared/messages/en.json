@@ -1192,7 +1192,8 @@
       "meAndChild": "Me + <bdi>{name}</bdi>",
       "meAndEveryone": "Me + everyone",
       "checking": "Checking in: {title}…",
-      "failed": "Couldn't save that. Check your connection and tap again."
+      "failed": "Couldn't save that. Check your connection and tap again.",
+      "notSaved": "Couldn't save that on this device. Reload the page and try again."
     },
     "checkIns": {
       "empty": "No check-ins this period yet.",

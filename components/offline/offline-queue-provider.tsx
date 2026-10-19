@@ -212,8 +212,9 @@ export function useSubmitTap() {
   const { t } = useT();
   return useCallback(
     async (tap: { habitId: string; subjectId?: string | null; byChild?: boolean }): Promise<TapResult> => {
-      // A tap that couldn't even be saved on the phone: what happened and what to do (tap again).
-      const failed = t("habits.checkIn.failed");
+      // No queue, or saving it on the phone failed (IndexedDB; a network failure only queues the tap):
+      // a device problem, so the advice is a reload, not the connection.
+      const failed = t("habits.checkIn.notSaved");
       if (!client) return { ok: false, message: failed };
       const sendTap = tapSender(t);
       try {
