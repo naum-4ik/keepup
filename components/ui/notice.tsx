@@ -12,7 +12,8 @@ const tones: Record<NoticeTone, { box: string; icon: typeof Info }> = {
 
 // An inline status line (docs/design.md "Notices"): what happened or what to know, in one or two
 // lines, with the next step as `action` (a link or a button) and an optional dismiss. Not a card: a
-// soft tint, no shadow. Replaces the cards that only held a sentence.
+// soft tint, no shadow. Replaces the cards that only held a sentence. 12px side padding, off the
+// 8/16/24 scale on purpose: it matches the 12px corner radius (rounded-xl), so text never meets the curve.
 // `live`: the line appears after something the person did (an error after a tap), so screen readers
 // announce it: errors as alert, the rest as status. Leave it off for a line that is there on load.
 export function Notice({

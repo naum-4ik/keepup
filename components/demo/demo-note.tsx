@@ -10,7 +10,8 @@ import { DEMO_NOTE_COOKIE } from "@/lib/demo-note";
 // so the header leaves room for the page at 320×640. The X hides it until the browser closes (a session
 // cookie the app layout reads, so a hidden note never flashes back on the next page). Sign in stays
 // reachable after that: Profile → Sign out. Sign in and the X keep a 44px hit area inside the line
-// (negative margins). min-h, not h: Sign in's "Needs a connection" line can grow it.
+// (negative margins). min-h, not h: Sign in's "Needs a connection" line can grow it (it wraps; the
+// words don't). ps-3 (12px) like Notice: it matches the 12px corner radius.
 export function DemoNote() {
   const { t, rich } = useT();
   const [hidden, setHidden] = useState(false);

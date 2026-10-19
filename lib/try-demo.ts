@@ -31,8 +31,10 @@ export async function runTryIt(steps: {
 // Delete account clears it (the demo login is deleted within 24 hours), then the session ends and
 // leaveDemo redirects to /login; that redirect is a rejection `rethrow` passes on. Queued check-ins
 // aren't sent first: demo taps are thrown away with the demo. Returns "failed" if the sign-out broke.
+// forgetDemoNote: a hidden demo note (lib/demo-note.ts) shows again in the next demo.
 export async function runLeaveDemo(steps: {
   clearPhone: () => Promise<void>;
+  forgetDemoNote: () => void;
   leave: () => Promise<void>;
   rethrow: (e: unknown) => void;
 }): Promise<"failed" | null> {
@@ -40,6 +42,11 @@ export async function runLeaveDemo(steps: {
     await steps.clearPhone();
   } catch (e) {
     console.error("demo: clearing the phone", e);
+  }
+  try {
+    steps.forgetDemoNote();
+  } catch (e) {
+    console.error("demo: forgetting the note", e);
   }
   try {
     await steps.leave();

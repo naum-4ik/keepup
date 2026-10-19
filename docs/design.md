@@ -96,7 +96,7 @@ Three levels, everywhere. Tokens in `app/globals.css` `@theme` (`--spacing-*`), 
 | item | 16 px | between elements: list rows, form fields, cards in a list; a Surface's padding | `gap-item`, `p-item` |
 | section | 24 px | between sections; a page's top and bottom padding | `gap-section`, `py-section` |
 
-A title over its meta line is line-height, not a gap. A value off the scale (12, 20, 32) needs a reason in a comment.
+A title over its meta line is line-height, not a gap. A value off the scale (12, 20, 32) needs a reason in a comment. The one standing exception: a tinted pill (Notice, the demo note) pads its sides 12 px to match its 12 px corner radius, so text never meets the curve.
 
 ### App shell
 
