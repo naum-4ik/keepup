@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Notice } from "@/components/ui/notice";
 import { showToast } from "@/components/ui/toast";
 import { alreadyReviewedNote } from "@/lib/habit-errors";
-import { approvedAllText, nextFocusIndex, reachServer, reviewedText } from "@/lib/inbox-toasts";
+import { approvedAllText, focusNeighbours, reachServer, reviewedText } from "@/lib/inbox-toasts";
 import { focusIsLost } from "@/lib/toast";
 import { useT } from "@/lib/i18n/client";
 import { isolate } from "@/supabase/functions/_shared/i18n";
@@ -41,20 +41,24 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
-  // The row a decision was made on, and where it stood: once the refresh takes it away, focus (if it
-  // was lost with the row's buttons) goes to the row now in its place, else the one before it, else
-  // the empty state's action. Never away from where the person put it (lib/toast.ts focusIsLost).
-  // After every commit (no deps): the refresh can land before or after the answer sets `decided`.
-  const decided = useRef<{ ids: string[]; index: number } | null>(null);
+  // The rows a decision was made on, and their neighbours with buttons, by id (lib/inbox-toasts.ts
+  // focusNeighbours): once the refresh takes the rows away, focus (if it was lost with their buttons)
+  // goes to the next row's first button, else the previous row's, else the empty state's action.
+  // Never away from where the person put it (lib/toast.ts focusIsLost). After every commit (no deps):
+  // the refresh can land before or after the answer sets `decided`.
+  const decided = useRef<{ ids: string[]; next: string | null; prev: string | null } | null>(null);
+  const decideOn = (ids: string[]) => {
+    const order = rows.map((r) => ({ id: r.check_in_id, actionable: !notes[r.check_in_id] }));
+    decided.current = { ids, ...focusNeighbours(order, ids) };
+  };
   useEffect(() => {
     const d = decided.current;
     if (!d || d.ids.some((id) => rows.some((r) => r.check_in_id === id))) return;
     decided.current = null;
     if (!focusIsLost(document.activeElement, document.body)) return;
     const root = rootRef.current;
-    const firsts = root ? [...root.querySelectorAll<HTMLElement>("[data-row-first]")] : [];
-    const i = nextFocusIndex(d.index, firsts.length);
-    (i >= 0 ? firsts[i] : root?.querySelector<HTMLElement>("a, button"))?.focus();
+    const byId = (id: string | null) => (id ? root?.querySelector<HTMLElement>(`[data-row-first="${id}"]`) : null);
+    (byId(d.next) ?? byId(d.prev) ?? root?.querySelector<HTMLElement>("a, button"))?.focus();
   });
 
   const run = (key: string, row: string, fn: () => Promise<void>) => {
@@ -76,7 +80,7 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
     run(`${a.check_in_id}:${approve ? "yes" : "no"}`, a.check_in_id, async () => {
       const r = await reachServer(t, () => review(a.check_in_id, approve));
       if (r.ok) {
-        decided.current = { ids: [a.check_in_id], index: rows.findIndex((x) => x.check_in_id === a.check_in_id) };
+        decideOn([a.check_in_id]);
         return showToast({ text: reviewedText(t, { name: a.author_name, habit: a.habit_title, approve }) });
       }
       const code = "code" in r ? r.code : undefined;
@@ -84,10 +88,15 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
         const reviewer = "reviewer" in r ? r.reviewer : undefined;
         setNotes((n) => ({ ...n, [a.check_in_id]: code === "already_reviewed" ? alreadyReviewedNote(t, reviewer) : r.message }));
       } else {
-        // Gone meanwhile (undone, deleted) or another failure: the list may be stale, so the next
-        // step is a reload (the error Notice's action).
-        if (code === "check_in_not_found") decided.current = { ids: [a.check_in_id], index: rows.findIndex((x) => x.check_in_id === a.check_in_id) };
-        setErrors((e) => ({ ...e, [a.check_in_id]: r.message }));
+        // Gone meanwhile (undone, deleted): the server refreshed it away, so a Notice in the row would
+        // never be seen. A toast says it instead, and focus moves on as after a decision.
+        if (code === "check_in_not_found") {
+          decideOn([a.check_in_id]);
+          showToast({ text: r.message });
+        } else {
+          // Another failure: the list may be stale, so the next step is a reload (the Notice's action).
+          setErrors((e) => ({ ...e, [a.check_in_id]: r.message }));
+        }
       }
     });
 
@@ -127,7 +136,7 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
               run("all", "all", async () => {
                 const r = await reachServer(t, () => approveAll(rows.map((x) => x.check_in_id)));
                 if (r.ok) {
-                  decided.current = { ids: rows.map((x) => x.check_in_id), index: 0 };
+                  decideOn(rows.map((x) => x.check_in_id));
                   showToast({ text: approvedAllText(t, "reviewed" in r ? r.reviewed : 0) });
                 }
                 else setErrors((e) => ({ ...e, all: r.message }));
@@ -177,7 +186,7 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
               ) : (
                 <div className="flex flex-col gap-inner">
                   <div className="grid grid-cols-2 gap-inner">
-                    <Button type="button" variant="outline" className="h-11 rounded-xl" data-row-first="" disabled={pending} onClick={() => decide(a, false)}>
+                    <Button type="button" variant="outline" className="h-11 rounded-xl" data-row-first={a.check_in_id} disabled={pending} onClick={() => decide(a, false)}>
                       {busy === `${a.check_in_id}:no` ? tx("declining") : tx("notApproved")}
                     </Button>
                     <Button type="button" className="h-11 rounded-xl" disabled={pending} onClick={() => decide(a, true)}>

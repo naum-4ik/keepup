@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { tEn, tFor } from "@/lib/i18n/test-t";
-import { approvedAllText, nextFocusIndex, reachServer, reviewedText } from "./inbox-toasts";
+import { approvedAllText, focusNeighbours, reachServer, reviewedText } from "./inbox-toasts";
 
 describe("reviewedText", () => {
   it("says what the decision does, with the names isolated", () => {
@@ -53,12 +53,24 @@ describe("reachServer", () => {
   });
 });
 
-describe("nextFocusIndex", () => {
-  it("the row now in the decided row's place, else the last one, else none", () => {
-    expect(nextFocusIndex(0, 2)).toBe(0);
-    expect(nextFocusIndex(1, 2)).toBe(1);
-    expect(nextFocusIndex(2, 2)).toBe(1);
-    expect(nextFocusIndex(0, 0)).toBe(-1);
-    expect(nextFocusIndex(-1, 3)).toBe(0);
+describe("focusNeighbours", () => {
+  const row = (id: string, actionable = true) => ({ id, actionable });
+
+  it("the next row with buttons, and the one before as the fallback", () => {
+    expect(focusNeighbours([row("a"), row("b"), row("c")], ["b"])).toEqual({ next: "c", prev: "a" });
+    expect(focusNeighbours([row("a"), row("b")], ["b"])).toEqual({ next: null, prev: "a" });
+  });
+
+  it("skips rows that only show a note", () => {
+    expect(focusNeighbours([row("a"), row("n1", false), row("b"), row("n2", false), row("c")], ["b"])).toEqual({ next: "c", prev: "a" });
+    expect(focusNeighbours([row("n1", false), row("b"), row("n2", false)], ["b"])).toEqual({ next: null, prev: null });
+  });
+
+  it("all decided (Approve all): nothing left to focus in the list", () => {
+    expect(focusNeighbours([row("a"), row("b")], ["a", "b"])).toEqual({ next: null, prev: null });
+  });
+
+  it("an unknown id: nothing", () => {
+    expect(focusNeighbours([row("a")], ["x"])).toEqual({ next: null, prev: null });
   });
 });

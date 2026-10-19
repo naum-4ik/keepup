@@ -12,9 +12,19 @@ export const reviewedText = (t: T, r: Reviewed): string =>
 // Approve all: how many the server approved (0 when someone reviewed them all first).
 export const approvedAllText = (t: T, n: number): string => t("inbox.approvals.approvedAll", { n });
 
-// Where focus goes once a decided row (at `index`) has left a list that now has `count` rows with
-// buttons: the row now in its place, else the last one; -1 when none is left (the empty state).
-export const nextFocusIndex = (index: number, count: number): number => (count === 0 ? -1 : Math.min(Math.max(index, 0), count - 1));
+// Where focus may go once the decided rows leave: the nearest row after them that still has buttons
+// (not one showing a note), else the nearest before them. Taken at decision time, by id, so rows that
+// only show a note, or a list that reorders, can't shift it. Both null: the empty state's action.
+export function focusNeighbours(rows: { id: string; actionable: boolean }[], decided: string[]): { next: string | null; prev: string | null } {
+  const gone = new Set(decided);
+  const at = rows.map((r) => gone.has(r.id));
+  const first = at.indexOf(true);
+  const last = at.lastIndexOf(true);
+  if (first < 0) return { next: null, prev: null };
+  const next = rows.slice(last + 1).find((r) => r.actionable && !gone.has(r.id))?.id ?? null;
+  const prev = [...rows.slice(0, first)].reverse().find((r) => r.actionable && !gone.has(r.id))?.id ?? null;
+  return { next, prev };
+}
 
 type Answer = { ok: true } | { ok: false; message: string };
 
