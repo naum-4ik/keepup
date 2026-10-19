@@ -86,8 +86,8 @@ export function TryDemoButton() {
       )}
       <div className="flex flex-col items-center">
         <Submit ready={ready} describedBy={noteId} />
-        {/* What the demo is, under its name (owner: the name stays short). */}
-        <p id={noteId} className="-mt-2 text-xs text-muted-foreground">
+        {/* What the demo is, under its name (owner: the name stays short). It tucks 8 px into the button's 44 px box: taps there still reach the button. */}
+        <p id={noteId} className="pointer-events-none -mt-2 text-xs text-muted-foreground">
           {t("demo.resetsNote")}
         </p>
       </div>
