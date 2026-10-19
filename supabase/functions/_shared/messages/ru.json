@@ -1438,7 +1438,7 @@
     "whatIsThis": "Что это?",
     "signOut": "Выйти",
     "signOutTitle": "Выйти?",
-    "privacyConsent": "Продолжая, вы соглашаетесь с <link>Политикой конфиденциальности</link>",
+    "privacyConsent": "Продолжая, вы соглашаетесь с <terms>Условиями использования</terms> и <link>Политикой конфиденциальности</link>",
     "firstCheckinTip": {
       "dismiss": "Скрыть подсказку: ",
       "text": "Нажмите, когда сделаете"
@@ -1554,6 +1554,7 @@
     "summary": "<place>{city}</place> <dot>·</dot> <week>неделя начинается {weekStart, select, sun {в воскресенье} mon {в понедельник} other {в понедельник}}</week>",
     "footer": {
       "privacy": "Политика конфиденциальности",
+      "terms": "Условия использования",
       "install": "Как установить"
     },
     "level": {

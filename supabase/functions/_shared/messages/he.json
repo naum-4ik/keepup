@@ -1438,7 +1438,7 @@
     "whatIsThis": "מה זה?",
     "signOut": "התנתקות",
     "signOutTitle": "להתנתק?",
-    "privacyConsent": "אם תמשיכו, אתם מסכימים ל<link>מדיניות הפרטיות</link>",
+    "privacyConsent": "אם תמשיכו, אתם מסכימים ל<terms>תנאי השימוש</terms> ול<link>מדיניות הפרטיות</link>",
     "firstCheckinTip": {
       "dismiss": "הסתרת הטיפ: ",
       "text": "לחצו כשתסיימו"
@@ -1554,6 +1554,7 @@
     "summary": "<place>{city}</place> <dot>·</dot> <week>השבוע מתחיל {weekStart, select, sun {ביום ראשון} mon {ביום שני} other {ביום שני}}</week>",
     "footer": {
       "privacy": "מדיניות הפרטיות",
+      "terms": "תנאי השימוש",
       "install": "איך להתקין"
     },
     "level": {

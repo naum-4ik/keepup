@@ -5,7 +5,7 @@ import { DISALLOWED, robotsRules } from "./robots";
 const blocked = (path: string) => DISALLOWED.some((prefix) => path === prefix || path.startsWith(prefix));
 
 describe("robots.txt", () => {
-  it.each(["/", "/privacy", "/install", "/whats-new"])("lets crawlers read %s", (p) => {
+  it.each(["/", "/privacy", "/terms", "/install", "/whats-new"])("lets crawlers read %s", (p) => {
     expect(blocked(p)).toBe(false);
     expect(isPublicPath(p)).toBe(true);
   });

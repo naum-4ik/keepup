@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-// Crawlers may read the public pages (/, /privacy, /install, /whats-new) and nothing behind a sign-in.
+// Crawlers may read the public pages (/, /privacy, /terms, /install, /whats-new) and nothing behind a sign-in.
 // "Allow: /" is a prefix match, so every app route is listed in Disallow. No sitemap.
 export const DISALLOWED = [
   "/today",

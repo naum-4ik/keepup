@@ -1438,7 +1438,7 @@
     "whatIsThis": "What is this?",
     "signOut": "Sign out",
     "signOutTitle": "Sign out?",
-    "privacyConsent": "By continuing, you agree to the <link>Privacy Policy</link>",
+    "privacyConsent": "By continuing, you agree to the <terms>Terms of use</terms> and the <link>Privacy Policy</link>",
     "firstCheckinTip": {
       "dismiss": "Dismiss tip: ",
       "text": "Tap when you've done it"
@@ -1554,6 +1554,7 @@
     "summary": "<place>{city}</place> <dot>·</dot> <week>weeks start {weekStart, select, sun {Sunday} mon {Monday} other {Monday}}</week>",
     "footer": {
       "privacy": "Privacy Policy",
+      "terms": "Terms of use",
       "install": "How to install"
     },
     "level": {

@@ -8,7 +8,7 @@ const OFF = "That's off in the demo.";
 // One Try it per test: each spends one of the local anonymous sign-ins (30 an hour per IP).
 test("Try it: a full account in under 5 seconds, with a check-in to approve", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText("By continuing, you agree to the Privacy Policy")).toBeVisible();
+  await expect(page.getByText("By continuing, you agree to the Terms of use and the Privacy Policy")).toBeVisible();
   const started = Date.now();
   // The anonymous sign-in runs in the browser (each visitor's own IP against Supabase's per-IP limit).
   const signIn = page.waitForRequest((r) => r.method() === "POST" && r.url().includes("/auth/v1/signup"));
