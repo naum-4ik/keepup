@@ -6,8 +6,10 @@ import { createHabit } from "./helpers/habits";
 test("create a group, get an invite link, rename it, and see it in Groups", async ({ page }) => {
   await signUpAndOnboard(page);
   await page.getByRole("link", { name: "Groups" }).click();
-  await expect(page.getByText("Share habits with the people you live and hang out with.")).toBeVisible();
+  await expect(page.getByText("Create a group and invite people with a link that works for 7 days.")).toBeVisible();
   await createGroup(page, "Levi family");
+  // The flash after the redirect, and the invite in focus on the new group's page.
+  await expect(page.getByTestId("toast-live")).toHaveText("Created \u2068Levi family\u2069. Share its invite link below: it works for 7 days.");
   const url = await inviteLink(page);
   expect(url).toMatch(/\/invite\/[A-Za-z0-9_-]{24}$/);
   expect(await inviteLink(page)).toBe(url); // reused, not a new token
@@ -25,7 +27,9 @@ test("the only member deletes their group", async ({ page }) => {
   await page.getByRole("button", { name: "Delete group" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Delete group" }).click();
   await expect(page).toHaveURL(/\/groups$/);
-  await expect(page.getByText("Book club")).toBeHidden();
+  await expect(page.getByTestId("toast-live")).toHaveText("Deleted \u2068Book club\u2069 and its shared habits.");
+  // The toast names the group too: look in the page itself.
+  await expect(page.getByRole("main").getByText("Book club")).toBeHidden();
 });
 
 test("deleting a group with a child asks again, and Cancel resets that step", async ({ page }) => {
@@ -50,8 +54,59 @@ test("deleting a group with a child asks again, and Cancel resets that step", as
   await expect(dialog.getByRole("alert")).toHaveText("Mary's profile and history will be deleted.");
   await dialog.getByRole("button", { name: "Delete anyway" }).click();
   await expect(page).toHaveURL(/\/groups$/);
-  await expect(page.getByText("Levi family")).toBeHidden();
+  await expect(page.getByTestId("toast-live")).toHaveText("Deleted \u2068Levi family\u2069 and its shared habits.");
+  await expect(page.getByRole("main").getByText("Levi family")).toBeHidden();
 });
+
+test("leaving a group says Leaving…, then Groups says you left and your own habits stay", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Gym buddies", "Friends");
+  const url = await inviteLink(page);
+  const dan = await (await browser.newContext()).newPage();
+  await joinByLink(dan, url, "Dan");
+  const groupPath = new URL(page.url()).pathname;
+
+  // Hold the leave (a server action POST) until "Leaving…" has been seen.
+  let release!: () => void;
+  const held = new Promise<void>((r) => (release = r));
+  await dan.route(`**${groupPath}`, async (route) => {
+    if (route.request().method() === "POST" && route.request().headers()["next-action"]) await held;
+    await route.continue();
+  });
+  await dan.goto(groupPath);
+  await dan.getByRole("button", { name: "Leave group" }).click();
+  const dialog = dan.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Leave group" }).click();
+  await expect(dialog.getByRole("button", { name: "Leaving…" })).toBeDisabled();
+  release();
+  await expect(dan).toHaveURL(/\/groups$/);
+  await expect(dan.getByTestId("toast-live")).toHaveText("Left \u2068Gym buddies\u2069. Your own habits stay with you.");
+  await expect(dan.getByRole("main").getByText("Gym buddies")).toBeHidden();
+});
+
+for (const [width, height] of [
+  [320, 640],
+  [375, 812],
+  [414, 896],
+] as const) {
+  test(`new group at ${width}×${height}: Create group stays pinned above the nav while the form runs under it`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await signUpAndOnboard(page);
+    await page.goto("/groups/new");
+    // Open the avatar picker, so the form is taller than the screen at every width.
+    await page.locator("main summary").filter({ hasText: "Avatar" }).click();
+    await expect(page.getByRole("group", { name: "Avatar" })).toBeVisible();
+    const submit = page.getByRole("button", { name: "Create group" });
+    const nav = page.getByRole("navigation", { name: "Main", exact: true });
+    const form = page.locator("main form");
+    const [s, n, f] = await Promise.all([submit.boundingBox(), nav.boundingBox(), form.boundingBox()]);
+    expect(f!.y + f!.height).toBeGreaterThan(n!.y); // the form runs under the nav…
+    expect(s!.height).toBeGreaterThanOrEqual(44); // …while its submit is a full-size target
+    expect(s!.y + s!.height).toBeLessThanOrEqual(n!.y + 0.5); // above the nav
+    expect(s!.y).toBeGreaterThanOrEqual(0); // and on screen, without scrolling
+    expect(s!.x + s!.width).toBeLessThanOrEqual(width);
+  });
+}
 
 test("tap your avatar on Profile to change it, and see it on the Profile tab", async ({ page }) => {
   await signUpAndOnboard(page);

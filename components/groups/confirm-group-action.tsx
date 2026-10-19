@@ -4,6 +4,7 @@ import { useActionState, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import type { GroupActionState } from "@/app/(app)/groups/actions";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { ExportChildButton, MoveChildForm, type MoveTarget } from "@/components/kids/child-danger-zone";
 import { childrenDeletionNotice } from "@/lib/group-schema";
@@ -76,8 +77,13 @@ function ConfirmDialog({
   // Children moved out from this step; the dialog isn't remounted by the refresh, so track them here.
   const [moved, setMoved] = useState<Set<string>>(() => new Set());
   const remaining = groupChildren.filter((c) => !moved.has(c.id));
+  // Offline, nothing is sent: the dialog says so and stays open for another try. (Online, success
+  // redirects to /groups with a "Left …" / "Deleted …" toast from the server action.)
   const [state, formAction, pending] = useActionState(
-    (_prev: GroupActionState, formData: FormData) => action(formData.get("confirmChildren") === "1"),
+    (_prev: GroupActionState, formData: FormData): Promise<GroupActionState> | GroupActionState =>
+      typeof navigator !== "undefined" && !navigator.onLine
+        ? { status: "error", message: tc("failed") }
+        : action(formData.get("confirmChildren") === "1"),
     initialState,
   );
   const askChildren = state.status === "error" && state.code === "children_would_be_deleted";
@@ -85,12 +91,13 @@ function ConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={(next) => !pending && onOpenChange(next)}>
       <DialogContent>
-        <div className="flex flex-col gap-1 pe-10">
+        {/* pe-10: room for the dialog's close X. Title over description: line-height, no gap. */}
+        <div className="flex flex-col pe-10">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </div>
         {askChildren ? (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-item">
             {remaining.length > 0 || groupChildren.length === 0 ? (
               <p role="alert" className="text-sm font-semibold text-destructive">
                 {groupChildren.length > 0 ? childrenDeletionNotice(rich, locale, remaining.map((c) => c.name)) : childrenNotice}
@@ -99,7 +106,7 @@ function ConfirmDialog({
               <p role="status" className="text-sm font-semibold">{tc("allMoved")}</p>
             )}
             {remaining.map((c) => (
-              <div key={c.id} role="group" aria-label={c.name} className="flex flex-col gap-2 rounded-2xl bg-muted/60 p-3">
+              <div key={c.id} role="group" aria-label={c.name} className="flex flex-col gap-inner rounded-2xl bg-muted/60 p-item">
                 <p className="font-semibold">{c.name}</p>
                 <ExportChildButton childId={c.id} childName={c.name} label={tc("exportFirst")} className="w-full" />
                 <MoveChildForm
@@ -112,9 +119,13 @@ function ConfirmDialog({
             ))}
           </div>
         ) : (
-          state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>
+          state.status === "error" && (
+            <Notice tone="error" live>
+              {state.message}
+            </Notice>
+          )
         )}
-        <form action={formAction} className="flex gap-2">
+        <form action={formAction} className="flex gap-inner">
           {askChildren && <input type="hidden" name="confirmChildren" value="1" />}
           <Button type="button" variant="outline" className="h-11 flex-1" disabled={pending} onClick={() => onOpenChange(false)}>
             {tm("cancel")}
