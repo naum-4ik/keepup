@@ -26,6 +26,7 @@ export function releaseLabel(r: Release, appVersion: string, locale: Locale, t: 
 export const RELEASES: Release[] = [
   {
     version: "1.7.0",
+    date: "2026-10-19",
     notes: {
       en: ["Keepup now has Terms of use: short, plain rules for using the app. Find them in Profile, at the bottom."],
       ru: ["У Keepup появились Условия использования: короткие и простые правила. Ссылка внизу экрана «Профиль»."],
