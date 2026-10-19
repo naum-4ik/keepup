@@ -60,8 +60,14 @@ const KEY = /^[A-Za-z][\w-]*(\.[\w-]+)+$/;
 
 export type FlashValues = Record<string, string | number>;
 
-// What crosses the redirect: catalog keys and their values, translated by the Toaster.
-export type Flash = { id: string; text: string; values?: FlashValues; action?: { label: string; href: string } };
+// What crosses the redirect: catalog keys and their values, translated by the Toaster. `at`: when it
+// was set (ms since epoch), so a flash older than the cookie's life is dropped even if the cookie stayed.
+export type Flash = { id: string; at: number; text: string; values?: FlashValues; action?: { label: string; href: string } };
+
+// Fresh: set within the cookie's life (and not from the future beyond a minute of clock skew).
+export function isFreshFlash(flash: Pick<Flash, "at">, now: number): boolean {
+  return flash.at <= now + 60_000 && now - flash.at <= TOAST_COOKIE_MAX_AGE * 1000;
+}
 
 // The cookie value: plain JSON. Next's cookies().set URI-encodes it on the way out and cookies().get
 // decodes it, so the server reads JSON and document.cookie reads it encoded; parseFlash takes both.
@@ -87,8 +93,9 @@ export function parseFlash(raw: string | null | undefined): Flash | null {
     return null;
   }
   if (typeof v !== "object" || v === null) return null;
-  const { id, text, values, action } = v as Record<string, unknown>;
+  const { id, at, text, values, action } = v as Record<string, unknown>;
   if (typeof id !== "string" || !id || id.length > 64) return null;
+  if (typeof at !== "number" || !Number.isFinite(at)) return null;
   if (typeof text !== "string" || !KEY.test(text)) return null;
   if (values !== undefined && !isValues(values)) return null;
   let safeAction: Flash["action"];
@@ -97,7 +104,7 @@ export function parseFlash(raw: string | null | undefined): Flash | null {
     if (typeof label !== "string" || !KEY.test(label) || typeof href !== "string" || !isSafeHref(href)) return null;
     safeAction = { label, href };
   }
-  return { id, text, ...(values ? { values } : {}), ...(safeAction ? { action: safeAction } : {}) };
+  return { id, at, text, ...(values ? { values } : {}), ...(safeAction ? { action: safeAction } : {}) };
 }
 
 // The flash cookie's raw value from a `document.cookie` string, or null.

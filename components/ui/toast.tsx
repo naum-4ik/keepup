@@ -11,6 +11,7 @@ import {
   dismissToast,
   emptyToasts,
   flashFromCookieString,
+  isFreshFlash,
   parseFlash,
   pushToast,
   toastDuration,
@@ -64,7 +65,7 @@ export function Toaster({ flash }: { flash?: string | null }) {
       // Clear first: a flash shows once, even if its key is unknown here.
       document.cookie = `${TOAST_COOKIE}=; path=/; max-age=0; samesite=lax`;
       // Fail soft on a key this build doesn't have (or one outside the client namespaces).
-      if (!f || shownFlashes.has(f.id) || !tr.has(f.text as never) || (f.action && !tr.has(f.action.label as never))) return;
+      if (!f || !isFreshFlash(f, Date.now()) || shownFlashes.has(f.id) || !tr.has(f.text as never) || (f.action && !tr.has(f.action.label as never))) return;
       shownFlashes.add(f.id);
       showToast({
         id: f.id,
@@ -85,14 +86,14 @@ export function Toaster({ flash }: { flash?: string | null }) {
   }, [pathname, search, showFlash]);
 
   return (
-    // Always in the page, so screen readers announce a new toast's words (a region that appears is
-    // not announced). Above the bottom nav and its safe-area inset; z-50 like dialogs.
-    <div
-      role="status"
-      aria-live="polite"
-      aria-atomic="true"
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-md justify-center px-4"
+    // Above the bottom nav and its safe-area inset; z-50 like dialogs.
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom)+0.5rem)] z-50 mx-auto flex max-w-md justify-center px-4"
     >
+      {/* The live region holds the words only, and is always in the page (a region that appears is not
+          announced), so a new toast is read once without its buttons. */}
+      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {current?.text}
+      </p>
       {current && <ToastView key={current.id} toast={current} dismissLabel={t("common.dismiss")} />}
     </div>
   );
@@ -124,7 +125,10 @@ function ToastView({ toast, dismissLabel }: { toast: Toast; dismissLabel: string
       onBlur={() => setPaused(false)}
       className="pointer-events-auto flex w-full items-center gap-inner rounded-xl bg-foreground py-2 ps-4 pe-1 text-sm font-semibold text-background shadow-soft motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
     >
-      <p className="min-w-0 flex-1">{toast.text}</p>
+      {/* Read from the live region above; hidden here so it isn't read twice. */}
+      <p aria-hidden className="min-w-0 flex-1">
+        {toast.text}
+      </p>
       {action &&
         ("href" in action ? (
           <Link href={action.href} onClick={close} className={actionClass}>

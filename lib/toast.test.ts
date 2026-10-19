@@ -5,6 +5,8 @@ import {
   dismissToast,
   emptyToasts,
   flashFromCookieString,
+  TOAST_COOKIE_MAX_AGE,
+  isFreshFlash,
   isSafeHref,
   parseFlash,
   pushToast,
@@ -69,7 +71,7 @@ describe("isSafeHref", () => {
 });
 
 describe("flash cookie", () => {
-  const flash = { id: "f1", text: "habits.toast.added", values: { habit: "Read", n: 2 }, action: { label: "common.open", href: "/habits/1" } };
+  const flash = { id: "f1", at: 1_700_000_000_000, text: "habits.toast.added", values: { habit: "Read", n: 2 }, action: { label: "common.open", href: "/habits/1" } };
 
   it("round-trips as the server reads it (JSON) and as document.cookie reads it (URI-encoded)", () => {
     const value = serializeFlash(flash);
@@ -78,11 +80,11 @@ describe("flash cookie", () => {
   });
 
   it("keeps a flash without values or action", () => {
-    expect(parseFlash(serializeFlash({ id: "f2", text: "common.saved" }))).toEqual({ id: "f2", text: "common.saved" });
+    expect(parseFlash(serializeFlash({ id: "f2", at: 1, text: "common.saved" }))).toEqual({ id: "f2", at: 1, text: "common.saved" });
   });
 
   it("drops unknown fields", () => {
-    expect(parseFlash(JSON.stringify({ id: "f3", text: "common.saved", html: "<b>x</b>" }))).toEqual({ id: "f3", text: "common.saved" });
+    expect(parseFlash(JSON.stringify({ id: "f3", at: 1, text: "common.saved", html: "<b>x</b>" }))).toEqual({ id: "f3", at: 1, text: "common.saved" });
   });
 
   it.each([
@@ -91,19 +93,31 @@ describe("flash cookie", () => {
     ["not JSON", "%7Bnope"],
     ["bad URI encoding", "%E0%A4%A"],
     ["an array", "[1]"],
-    ["no id", JSON.stringify({ text: "common.saved" })],
-    ["plain text instead of a key", JSON.stringify({ id: "x", text: "You won a prize" })],
-    ["a one-word key", JSON.stringify({ id: "x", text: "saved" })],
-    ["object values", JSON.stringify({ id: "x", text: "common.saved", values: { a: { b: 1 } } })],
-    ["off-site action", JSON.stringify({ id: "x", text: "common.saved", action: { label: "common.open", href: "//evil.example" } })],
-    ["action label not a key", JSON.stringify({ id: "x", text: "common.saved", action: { label: "Click me", href: "/today" } })],
-    ["too long", JSON.stringify({ id: "x", text: "common.saved", values: { a: "x".repeat(2000) } })],
+    ["no id", JSON.stringify({ at: 1, text: "common.saved" })],
+    ["no time", JSON.stringify({ id: "x", text: "common.saved" })],
+    ["a time that is not a number", JSON.stringify({ id: "x", at: "now", text: "common.saved" })],
+    ["plain text instead of a key", JSON.stringify({ id: "x", at: 1, text: "You won a prize" })],
+    ["a one-word key", JSON.stringify({ id: "x", at: 1, text: "saved" })],
+    ["object values", JSON.stringify({ id: "x", at: 1, text: "common.saved", values: { a: { b: 1 } } })],
+    ["off-site action", JSON.stringify({ id: "x", at: 1, text: "common.saved", action: { label: "common.open", href: "//evil.example" } })],
+    ["action label not a key", JSON.stringify({ id: "x", at: 1, text: "common.saved", action: { label: "Click me", href: "/today" } })],
+    ["too long", JSON.stringify({ id: "x", at: 1, text: "common.saved", values: { a: "x".repeat(2000) } })],
   ])("rejects %s", (_, raw) => {
     expect(parseFlash(raw)).toBeNull();
   });
 
+  it(`is fresh for the cookie's ${TOAST_COOKIE_MAX_AGE} s, then dropped`, () => {
+    const at = 1_700_000_000_000;
+    expect(isFreshFlash({ at }, at)).toBe(true);
+    expect(isFreshFlash({ at }, at + TOAST_COOKIE_MAX_AGE * 1000)).toBe(true);
+    expect(isFreshFlash({ at }, at + TOAST_COOKIE_MAX_AGE * 1000 + 1)).toBe(false);
+    // A server clock a little ahead of the phone's is fine; a time far in the future is not.
+    expect(isFreshFlash({ at: at + 30_000 }, at)).toBe(true);
+    expect(isFreshFlash({ at: at + 120_000 }, at)).toBe(false);
+  });
+
   it("finds the flash cookie in a document.cookie string", () => {
-    const value = encodeURIComponent(serializeFlash({ id: "f4", text: "common.saved" }));
+    const value = encodeURIComponent(serializeFlash({ id: "f4", at: 1, text: "common.saved" }));
     expect(flashFromCookieString(`locale=en; ${TOAST_COOKIE}=${value}; other=1`)).toBe(value);
     expect(flashFromCookieString("locale=en")).toBeNull();
     expect(flashFromCookieString("")).toBeNull();

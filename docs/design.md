@@ -137,9 +137,10 @@ Every action has four states and a next step:
 | Success | A visible confirmation where the result isn't already on screen: a status toast, with the next step as its action ("Undo", "Open") |
 | Error | What happened and what to do, next to the control (a `live` error Notice), and the input kept |
 
-**Status toast** (`components/ui/toast.tsx`, logic in `lib/toast.ts`): one at a time above the bottom nav, in a polite live region; 5 s, 8 s with an action, paused while hovered or focused; an X to close.
+**Status toast** (`components/ui/toast.tsx`, logic in `lib/toast.ts`): one at a time above the bottom nav; its words (not its buttons) are in a polite live region; 5 s, 8 s with an action, paused while hovered or focused; an X to close.
 - On the same page, from a client component after the action resolves: `useToast().showToast({ text, action })`, with translated text. The action is a link (`{ label, href }`) or a callback (`{ label, onAction }`, for Undo).
-- After a server action that redirects: `await flashToast({ text, values, action })` (`lib/toast-server.ts`) and then `redirect()`. It sets a 60 s cookie with catalog keys (client namespaces only) and values; the app layout hands it to the Toaster on the next page, which translates it, shows it once and clears it. The action can only be a link there (an in-app path).
+- After a server action that redirects: `await flashToast({ text, values, action })` (`lib/toast-server.ts`) and then `redirect()`. It sets a 60 s cookie (`secure` in production, with the time it was set; older ones are dropped) with catalog keys (client namespaces only) and values; the app layout hands it to the Toaster on the next page, which translates it, shows it once and clears it. The action can only be a link there (an in-app path).
+- Behind an open dialog a toast can't be seen (the overlay covers it): close the dialog first, then show the toast.
 - A toast confirms something the screen does not already show. When the change is visible in place (a check-in turning green), no toast.
 
 ## Motion
