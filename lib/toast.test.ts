@@ -66,6 +66,12 @@ describe("toast queue", () => {
     expect(toastDuration(toast("a"))).toBe(5000);
     expect(toastDuration(toast("a", { action: { label: "Undo", onAction: () => {} } }))).toBe(8000);
   });
+
+  it("a sticky toast has no timer: it stays until its owner closes it", () => {
+    expect(toastDuration(toast("a", { sticky: true }))).toBeNull();
+    const s = pushToast(emptyToasts, toast("a", { sticky: true }));
+    expect(removeToast(s, "a").current).toBeNull();
+  });
 });
 
 describe("isSafeHref", () => {

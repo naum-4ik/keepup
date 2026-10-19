@@ -43,8 +43,8 @@ let seq = 0;
 // cookie read twice) never shows twice.
 const shownFlashes = new Set<string>();
 // `text`: already translated. `action`: a link ({ label, href }) or a callback ({ label, onAction }).
-export function showToast({ text, action, id }: { text: string; action?: ToastAction; id?: string }): void {
-  setState(pushToast(state, { id: id ?? `toast-${++seq}`, text, action }));
+export function showToast({ text, action, id, sticky }: { text: string; action?: ToastAction; id?: string; sticky?: boolean }): void {
+  setState(pushToast(state, { id: id ?? `toast-${++seq}`, text, action, ...(sticky ? { sticky } : {}) }));
 }
 
 // Closes this toast if it is the one showing, or drops it if it waits (an "Undoing…" toast once the
@@ -111,14 +111,15 @@ function ToastView({ toast, dismissLabel }: { toast: Toast; dismissLabel: string
   const left = useRef(toastDuration(toast));
   const close = useCallback(() => setState(dismissToast(state, toast.id)), [toast.id]);
 
-  // Counts down while not hovered or focused; picks up where it left off.
+  // Counts down while not hovered or focused; picks up where it left off. A sticky toast never does.
   useEffect(() => {
-    if (paused) return;
+    const ms = left.current;
+    if (paused || ms === null) return;
     const started = Date.now();
-    const timer = setTimeout(close, left.current);
+    const timer = setTimeout(close, ms);
     return () => {
       clearTimeout(timer);
-      left.current -= Date.now() - started;
+      left.current = ms - (Date.now() - started);
     };
   }, [paused, close]);
 

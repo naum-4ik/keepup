@@ -20,8 +20,9 @@ export const MAX_WAITING = 2;
 
 export type ToastAction = { label: string; href: string } | { label: string; onAction: () => void };
 
-// A toast ready to show: translated text.
-export type Toast = { id: string; text: string; action?: ToastAction };
+// A toast ready to show: translated text. sticky: stays until its owner closes it (closeToast), for a
+// state that must not vanish before its answer ("Undoing…"); the X still closes it.
+export type Toast = { id: string; text: string; action?: ToastAction; sticky?: boolean };
 
 export type ToastState = { current: Toast | null; waiting: Toast[] };
 
@@ -53,7 +54,9 @@ export function removeToast(state: ToastState, id: string): ToastState {
 
 // How long a toast stays: longer with an action, so there is time to reach it (WCAG 2.2.1; the
 // toast also pauses while hovered or focused).
-export function toastDuration(toast: Pick<Toast, "action">): number {
+// null: sticky, no timer.
+export function toastDuration(toast: Pick<Toast, "action" | "sticky">): number | null {
+  if (toast.sticky) return null;
   return toast.action ? 8000 : 5000;
 }
 

@@ -65,7 +65,7 @@ describe("undoCheckIn", () => {
     let answer!: (r: { ok: true }) => void;
     const { deps, shown, closed } = setup(() => new Promise((r) => (answer = r)));
     const done = undoCheckIn(deps, tap);
-    expect(shown).toEqual([{ id: "t1", text: `Undoing ${FSI}Walk${PDI}…` }]);
+    expect(shown).toEqual([{ id: "t1", text: `Undoing ${FSI}Walk${PDI}…`, sticky: true }]);
     answer({ ok: true });
     expect(await done).toBe("undone");
     expect(closed.at(-1)).toBe("t1");

@@ -11,7 +11,7 @@ type UndoResult = { ok: true } | { ok: false; message: string; code?: string };
 
 export type UndoDeps = {
   t: T;
-  show: (toast: { id: string; text: string; action?: ToastAction }) => void;
+  show: (toast: { id: string; text: string; action?: ToastAction; sticky?: boolean }) => void;
   close: (id: string) => void;
   // app/(app)/habits/actions.ts undoCheckInByClient
   undo: (clientId: string, habitId: string) => Promise<UndoResult>;
@@ -29,7 +29,7 @@ const nextId = () => `check-in-${++seq}`;
 // show the latest "checked in", and "Undoing…" and its answer show at once instead of queueing behind
 // another tap's toast (lib/toast.ts queues and drops the oldest). Older taps undo on the habit page.
 const ours = new Set<string>();
-function replaceWith(deps: Pick<UndoDeps, "show" | "close">, toast: { id: string; text: string; action?: ToastAction }) {
+function replaceWith(deps: Pick<UndoDeps, "show" | "close">, toast: { id: string; text: string; action?: ToastAction; sticky?: boolean }) {
   for (const id of ours) deps.close(id);
   ours.clear();
   ours.add(toast.id);
@@ -63,7 +63,8 @@ export async function undoCheckIn(deps: UndoDeps, tap: LandedTap): Promise<UndoO
   const newId = deps.newId ?? nextId;
   const habit = isolate(tap.title);
   const busy = newId();
-  replaceWith(deps, { id: busy, text: t("today.undo.undoing", { habit }) });
+  // Sticky: it stays until the answer replaces it, however long the request takes.
+  replaceWith(deps, { id: busy, text: t("today.undo.undoing", { habit }), sticky: true });
   let result: UndoResult | null;
   try {
     result = await deps.undo(tap.clientId, tap.habitId);
