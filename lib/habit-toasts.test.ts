@@ -77,7 +77,7 @@ describe("archive toast with Undo", () => {
     showArchived(deps, { ...habit, child: { id: "k1", name: "Mary" } });
     expect(shown[0].text).toBe(`Archived ${FSI}Read${PDI}. Its history is in ${FSI}Mary${PDI}'s Archived.`);
     showArchived({ ...deps, t: tFor("ru") }, { ...habit, child: { id: "k1", name: "Маша" } });
-    expect(shown[1].text).toBe(`${FSI}Read${PDI}: в архиве. История — в разделе «Архив» у ${FSI}Маша${PDI}.`);
+    expect(shown[1].text).toBe(`${FSI}Read${PDI}: в архиве. История — в разделе «Архив» на странице ребёнка (${FSI}Маша${PDI}).`);
   });
 
   it("Undo: Restoring… (sticky, replacing the archived toast), then back with a link to open it", async () => {
