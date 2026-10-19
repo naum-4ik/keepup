@@ -15,7 +15,7 @@ export default async function GroupsPage() {
   const groups = await getMyGroups();
 
   return (
-    <section className="flex flex-col gap-4 pt-4 pb-6">
+    <section className="flex flex-col gap-section py-section">
       <h1 className="text-xl font-bold">{tn("groups")}</h1>
       {groups.length === 0 ? (
         <EmptyState
@@ -29,8 +29,8 @@ export default async function GroupsPage() {
           {t("list.empty")}
         </EmptyState>
       ) : (
-        <>
-          <ul className="flex flex-col gap-3">
+        <div className="flex flex-col gap-item">
+          <ul className="flex flex-col gap-item">
             {groups.map((g) => (
               <li key={g.group_id}>
                 <GroupCard group={g} t={tg} />
@@ -41,7 +41,7 @@ export default async function GroupsPage() {
             <Plus aria-hidden className="size-4" />
             {t("newGroup")}
           </Link>
-        </>
+        </div>
       )}
     </section>
   );

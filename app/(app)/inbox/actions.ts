@@ -6,7 +6,7 @@ import { NUDGE_KINDS } from "@/lib/nudge-kinds";
 import { errorCode, habitErrorMessage, reviewerOf } from "@/lib/habit-errors";
 import { getT } from "@/lib/i18n/server";
 import { isUuid } from "@/lib/habit-schema";
-import { getPendingApprovals } from "@/lib/inbox";
+import { readPendingApprovals } from "@/lib/inbox";
 import { logError, track } from "@/lib/log";
 
 export type ReviewResult = { ok: true; reviewed: number } | { ok: false; message: string; code?: string; reviewer?: string };
@@ -24,7 +24,12 @@ export async function review(checkInId: string, approve: boolean): Promise<Revie
   const { error } = await supabase.rpc("review_check_in", { p_check_in_id: checkInId, p_approve: approve });
   // Refresh only after a review that happened: a refresh on "already reviewed" re-rendered the Inbox
   // and took the row away with its note ("Dan already reviewed this."). The row leaves on the next visit.
-  if (error) return { ok: false, message: habitErrorMessage(t, error), code: errorCode(error), reviewer: reviewerOf(error) };
+  if (error) {
+    const code = errorCode(error);
+    // Gone (undone or deleted meanwhile): refresh, so the row leaves with its note.
+    if (code === "check_in_not_found") refresh();
+    return { ok: false, message: habitErrorMessage(t, error), code, reviewer: reviewerOf(error) };
+  }
   track("check_in_reviewed", who, { "check_in.id": checkInId, "review.decision": approve ? "approve" : "reject", "review.count": 1 });
   refresh();
   return { ok: true, reviewed: 1 };
@@ -37,7 +42,10 @@ const MAX_BATCH = 100;
 // are dropped; ones that closed or were reviewed meanwhile are skipped by review_check_ins.
 export async function approveAll(checkInIds: string[]): Promise<ReviewResult> {
   const { t } = await getT();
-  const pending = new Set((await getPendingApprovals()).map((a) => a.check_in_id));
+  const read = await readPendingApprovals();
+  // A failed read is not "nothing left": say so, with the next step.
+  if (!read) return { ok: false, message: t("inbox.approvals.readFailed") };
+  const pending = new Set(read.map((a) => a.check_in_id));
   const ids = [...new Set(checkInIds)].filter((id) => isUuid(id) && pending.has(id)).slice(0, MAX_BATCH);
   if (ids.length === 0) {
     refresh();

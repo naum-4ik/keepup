@@ -23,7 +23,7 @@ test("Try it: a full account in under 5 seconds, with a check-in to approve", as
   await page.goto("/inbox");
   // exact: "Approve" is also a substring of "Not approved".
   await page.getByRole("button", { name: "Approve", exact: true }).click();
-  await expect(page.getByText("Nothing waiting for you.")).toBeVisible();
+  await expect(page.getByText("All caught up: 0 check-ins waiting for your approval.")).toBeVisible();
 
   // The note on every app screen; what the demo can't do says so instead.
   await page.goto("/today");

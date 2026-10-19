@@ -69,18 +69,26 @@ export default async function ProfilePage() {
         </ul>
       </nav>
       <SignOutButton />
-      <footer className="flex justify-center gap-4 text-xs text-muted-foreground">
-        <Link href="/whats-new" className="font-mono underline-offset-4 hover:underline">
+      {/* Links on one centred row that wraps between links, and inside a link only between words, never
+          inside one (ru "Как установить" broke as "установит / ь" at 420 px): wrap-normal break-normal.
+          Each is a 44 px target; the version on its own smaller line below. No dot separators: on a
+          wrapped row one would start the second line. */}
+      <footer className="flex flex-col items-center text-muted-foreground">
+        <ul className="flex flex-wrap justify-center gap-x-item text-sm">
+          {[
+            { href: "/privacy", label: t("profile.footer.privacy") },
+            { href: "/terms", label: t("profile.footer.terms") },
+            { href: "/install", label: t("profile.footer.install") },
+          ].map((l) => (
+            <li key={l.href}>
+              <Link href={l.href} className="flex min-h-11 items-center px-inner text-center wrap-normal break-normal underline-offset-4 hover:underline">
+                {l.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+        <Link href="/whats-new" className="flex min-h-11 items-center px-inner font-mono text-xs wrap-normal break-normal underline-offset-4 hover:underline">
           {appVersion()}
-        </Link>
-        <Link href="/privacy" className="underline-offset-4 hover:underline">
-          {t("profile.footer.privacy")}
-        </Link>
-        <Link href="/terms" className="underline-offset-4 hover:underline">
-          {t("profile.footer.terms")}
-        </Link>
-        <Link href="/install" className="underline-offset-4 hover:underline">
-          {t("profile.footer.install")}
         </Link>
       </footer>
     </section>

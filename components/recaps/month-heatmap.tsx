@@ -31,6 +31,8 @@ export function MonthHeatmap({
     (d) => d.possible > 0 && d.done >= d.possible,
   ).length;
   const head = fromWeekStart(weekdayLabels(locale, "narrow"), weekStart);
+  // 4 px between squares and under the weekday letters, off the scale on purpose: the grid is one
+  // picture, and the squares must stay readable at 320 px.
   return (
     <div>
       <div

@@ -35,7 +35,8 @@ export function InboxTabs({
     refs.current[next]?.focus();
   };
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-section">
+      {/* A 4 px track around the pills, off the scale on purpose (one control, like a switch). */}
       <div role="tablist" aria-label={t("inbox.title")} className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
         {tabs.map(([key, label], i) => (
           <button

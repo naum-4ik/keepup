@@ -245,14 +245,14 @@
     "ringLabel": "{goals} this week",
     "moreThanLastWeek": "{n, plural, other {# more than last week}}",
     "bestWeekYet": "Your best week yet",
-    "freshStart": "A fresh start this week",
+    "freshStart": "{start, select, yes {New week: check in today toward your first goal.} other {Check in today toward your first goal this week.}}",
     "dotsLabel": "Last {period, select, week {{n, plural, one {# week} other {# weeks}}} month {{n, plural, one {# month} other {# months}}} other {{n, plural, one {# day} other {# days}}}}: {counts}",
     "dotCount": "{status, select, done {{n, plural, other {# done}}} missed {{n, plural, other {# missed}}} paused {{n, plural, other {# paused}}} not_started {{n, plural, other {# not started}}} open {{n, plural, other {# in progress}}} rested {{n, plural, other {# rest day}}} other {{n, plural, other {#}}}}"
   },
   "recaps": {
     "weekOf": "Week of {date}",
-    "quietWeek": "A quiet week.",
-    "quietMonth": "A quiet month.",
+    "quietWeek": "A quiet week. Next week starts fresh.",
+    "quietMonth": "A quiet month. Next month starts fresh.",
     "nothingDue": "Nothing was due.",
     "streak": "{title} 🔥 {span}",
     "page": {
@@ -413,7 +413,7 @@
     "childrenDeletion": "{n, plural, =0 {The children's profiles and history will be deleted.} one {{names}'s profile and history will be deleted.} other {{names}'s profiles and history will be deleted.}}",
     "newGroup": "New group",
     "list": {
-      "empty": "Share habits with the people you live and hang out with.",
+      "empty": "Create a group and invite people with a link that works for 7 days.",
       "create": "Create a group"
     },
     "card": {
@@ -426,7 +426,9 @@
       "avatar": "Avatar <muted>(optional)</muted>",
       "avatarHint": "Until you pick one, the group shows its first letter.",
       "timezoneHelp": "Your time zone ({city}) and week start are used for the group's habits. Admins can change them later.",
-      "create": "Create group"
+      "create": "Create group",
+      "failed": "Couldn't reach Keepup. Check your connection and tap Create group again.",
+      "reload": "That didn't go through. Reload the page and tap Create group again."
     },
     "detail": {
       "avatarTitle": "Change the group avatar",
@@ -435,7 +437,7 @@
       "child": "Child",
       "addChild": "Add a child",
       "habits": "Group habits",
-      "noHabits": "No group habits yet.",
+      "noHabits": "{n, plural, =1 {Add a group habit: it's done when you check in. Invite people to do it together.} other {Add a group habit: it's done when all # members check in.}}",
       "addHabit": "Add a group habit",
       "habitLine": "{schedule}{approval, select, yes { · needs approval} other {}}",
       "invite": "Invite",
@@ -452,12 +454,15 @@
         "title": "Delete <bdi>{name}</bdi>?",
         "description": "This removes the group and its shared habits for everyone. It can't be undone.",
         "action": "Delete group"
-      }
+      },
+      "noHabitsMember": "No group habits yet. An admin of the group adds them, and they show up here."
     },
     "confirm": {
       "allMoved": "All children were moved.",
       "exportFirst": "Export first",
-      "deleteAnyway": "Delete anyway"
+      "deleteAnyway": "Delete anyway",
+      "failed": "Couldn't reach Keepup. Check your connection and try again.",
+      "reload": "That didn't go through. Reload the page and try again."
     },
     "rename": {
       "action": "Rename",
@@ -490,11 +495,19 @@
       "copy": "Copy link",
       "copied": "Copied",
       "turnOff": "Turn off link",
-      "turningOff": "Turning off…"
+      "turningOff": "Turning off…",
+      "failed": "Couldn't reach Keepup. Check your connection and tap the button again.",
+      "createdStatus": "Invite link created",
+      "turnedOffStatus": "Invite link turned off. Nobody new can join with it."
     },
     "errors": {
       "timezone": "Pick a time zone.",
       "weekStart": "Pick Monday or Sunday."
+    },
+    "toast": {
+      "created": "{invite, select, yes {Created {group}. Create its invite link below: it works for 7 days.} other {Created {group}.}}",
+      "left": "{alone, select, yes {Left {group}. You were its only member, so the group is deleted{children, plural, =0 {.} one {, with # child's profile.} other {, with # children's profiles.}}} other {Left {group}. Your own habits stay with you.}}",
+      "deleted": "Deleted {group} and its shared habits."
     }
   },
   "auth": {
@@ -1228,12 +1241,14 @@
     },
     "cheer": {
       "done": "Cheered<sr> <bdi>{name}</bdi></sr>",
-      "cta": "Cheer ❤️<sr> <bdi>{name}</bdi></sr>"
+      "cta": "Cheer ❤️<sr> <bdi>{name}</bdi></sr>",
+      "sending": "Cheering…<sr> <bdi>{name}</bdi></sr>"
     },
     "nudge": {
       "done": "Nudged ✓<sr> <bdi>{name}</bdi></sr>",
       "cta": "Nudge<sr> <bdi>{name}</bdi></sr>",
-      "menuLabel": "Nudge {name}"
+      "menuLabel": "Nudge {name}",
+      "sending": "Nudging…<sr> <bdi>{name}</bdi></sr>"
     },
     "archive": {
       "trigger": "Archive habit",
@@ -1416,7 +1431,8 @@
       "restoring": "Restoring {habit}…",
       "undone": "{habit} is back, history kept.",
       "undoFailed": "Couldn't restore {habit}. Check your connection and tap Undo again."
-    }
+    },
+    "sendFailed": "Couldn't send that. Check your connection and tap again."
   },
   "progress": {
     "title": "Progress",
@@ -1430,8 +1446,9 @@
     },
     "empty": {
       "finished": "No finished habits yet. Give a habit an end, like 30 days.",
-      "archived": "No archived habits.",
-      "showActive": "Show active habits"
+      "archived": "Archive a habit to keep its history and best streak here.",
+      "showActive": "Show active habits",
+      "active": "Add a habit to start tracking your streak here."
     },
     "habitLine": "{ended, select, yes {Ended · decide on Today · {schedule}} other {{schedule}}}{best, select, yes { · best {span}} other {}}",
     "calendar": {
@@ -1444,7 +1461,7 @@
   "overview": {
     "yourWeek": "Your week",
     "calendar": "Calendar",
-    "noStreak": "No streak yet",
+    "noStreak": "{kind, select, day {Meet today's goal to start a 1-day streak} week {Meet this week's goal to start a 1-week streak} month {Meet this month's goal to start a 1-month streak} other {Check in today to start a 1-day streak}}",
     "checkIns": "{n, plural, one {check-in} other {check-ins}}",
     "activeHabits": "{n, plural, one {active habit} other {active habits}}",
     "byDayLabel": "This week by day",
@@ -1499,15 +1516,25 @@
   "inbox": {
     "title": "Inbox",
     "approvals": {
-      "empty": "Nothing waiting for you.",
+      "empty": "All caught up: 0 check-ins waiting for your approval.",
       "approveAll": "Approve all ({n})",
       "rowLabel": "{name} did {habit}",
       "did": "<bdi>{name}</bdi> did <bdi>{habit}</bdi>",
       "approve": "Approve",
-      "notApproved": "Not approved"
+      "notApproved": "Not approved",
+      "emptyAction": "Check in on Today",
+      "approving": "Approving…",
+      "declining": "Declining…",
+      "approvingAll": "Approving {n}…",
+      "approved": "Approved: {name} · {habit}. It counts toward the streak.",
+      "declined": "Not approved: {name} · {habit}. It won't count toward the streak.",
+      "approvedAll": "{n, plural, =0 {Nothing left to approve: they were reviewed or their time ran out.} one {Approved # check-in. It counts toward the streak.} other {Approved # check-ins. They count toward the streaks.}}",
+      "failed": "Couldn't reach Keepup. Check your connection and tap again.",
+      "reload": "Reload Inbox",
+      "readFailed": "Couldn't load the check-ins waiting for you. Reload the Inbox and tap Approve all again."
     },
     "feed": {
-      "empty": "Nothing yet. Activity from your groups shows up here.",
+      "empty": "{groups, select, yes {Your groups' check-ins, cheers and nudges show up here.} other {Join or create a group to see members' check-ins here.}}",
       "unread": "Unread: ",
       "emptyAction": "Open Groups"
     },

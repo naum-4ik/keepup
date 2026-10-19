@@ -45,8 +45,8 @@ test("the weekly overview shows on Today and Progress", async ({ page }) => {
   await expect(day.getByRole("listitem").filter({ hasText: "Read" })).toContainText("Done");
   await todayButton.click();
   await expect(day).toBeHidden();
-  await expect(card.getByRole("listitem").filter({ hasText: "check-in" })).toHaveText("2check-ins");
-  await expect(card.getByRole("listitem").filter({ hasText: "active habits" })).toHaveText("2active habits");
+  await expect(card.getByRole("listitem").filter({ hasText: "check-in" })).toHaveText("2 check-ins");
+  await expect(card.getByRole("listitem").filter({ hasText: "active habits" })).toHaveText("2 active habits");
 
   await expect(page.getByRole("link", { name: /Walk/ }).getByRole("img", { name: "Last 7 days: 6 not started, 1 done" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Read/ }).getByRole("img", { name: "Last 7 days: 6 not started, 1 done" })).toBeVisible();
@@ -131,10 +131,10 @@ test("a new user's empty lists say what's next, in one card style", async ({ pag
   await signUpAndOnboard(page);
   await expect(page.getByText("Add one habit and check in today to start day 1 of your streak.")).toBeVisible();
   await page.goto("/progress");
-  await expect(page.getByText("No habits yet.")).toBeVisible();
+  await expect(page.getByText("Add a habit to start tracking your streak here.")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Categories" })).toHaveCount(0);
   await page.goto("/groups");
-  await expect(page.getByText("Share habits with the people you live and hang out with.")).toBeVisible();
+  await expect(page.getByText("Create a group and invite people with a link that works for 7 days.")).toBeVisible();
   await page.goto("/inbox");
-  await expect(page.getByText("Nothing yet. Activity from your groups shows up here.")).toBeVisible();
+  await expect(page.getByText("Join or create a group to see members' check-ins here.")).toBeVisible();
 });

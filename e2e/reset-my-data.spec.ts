@@ -68,7 +68,7 @@ test("Settings → Reset my data: private habits, XP, badges and Inbox go; the g
   await expect(page.getByRole("region", { name: "Achievements" })).toContainText("0 of 24 earned");
   await page.goto("/inbox");
   await page.getByRole("tab", { name: "Activity" }).click();
-  await expect(page.getByText("Nothing yet. Activity from your groups shows up here.")).toBeVisible();
+  await expect(page.getByText("Your groups' check-ins, cheers and nudges show up here.")).toBeVisible();
 
   // The group and the child stay.
   await page.goto(`/groups/${groupId}`);

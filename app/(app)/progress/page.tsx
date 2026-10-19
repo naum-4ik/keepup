@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChartColumn } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Surface } from "@/components/ui/surface";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { StreakBadge } from "@/components/habits/streak-badge";
 import { HabitDots, WeekCard } from "@/components/overview/week-overview";
@@ -17,8 +18,7 @@ import { StartAgainButton } from "@/components/habits/start-again-button";
 import { getT } from "@/lib/i18n/server";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
-import { hasWeekData, streakSpan } from "@/lib/week-overview";
-
+import { hasWeekData, noStreakKind, noStreakLine, streakSpan } from "@/lib/week-overview";
 
 export default async function ProgressPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const { view } = await searchParams;
@@ -47,14 +47,18 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
     : undefined;
 
   return (
-    <section className="flex flex-col gap-5 py-6">
-      <div className="flex items-center justify-between gap-2">
+    <section className="flex flex-col gap-section py-section">
+      <div className="flex items-center justify-between gap-inner">
         <h1 className="text-xl font-bold">{t("progress.title")}</h1>
-        <Link href="/progress/recaps" className="flex h-11 items-center rounded-full px-3 text-sm font-semibold text-primary hover:bg-muted">{t("progress.recaps")}</Link>
+        {/* -me-inner: the link's padding, so its words line up with the page edge (a 44 px target). */}
+        <Link href="/progress/recaps" className="-me-inner flex h-11 items-center rounded-full px-inner text-sm font-semibold text-primary hover:bg-muted">{t("progress.recaps")}</Link>
       </div>
-      {!showArchived && overview && hasWeekData(overview) && <WeekCard t={t} overview={overview} days={days} />}
+      {!showArchived && overview && hasWeekData(overview) && (
+        <WeekCard t={t} overview={overview} days={days} noStreak={noStreakLine(t, noStreakKind(active.map((h) => ({ ...h, ended: ended(h) }))))} />
+      )}
 
-      {/* The same segmented look as Inbox's tabs: filled pills read as primary buttons. */}
+      {/* The same segmented look as Inbox's tabs: filled pills read as primary buttons. A 4 px track
+          around the pills, off the scale on purpose (one control, like a switch). */}
       <nav aria-label={t("progress.listLabel")} className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
         {[
           { href: "/progress", label: t("progress.tabs.active"), current: !showArchived },
@@ -91,24 +95,27 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
             )
           }
         >
-          {showFinished ? t("progress.empty.finished") : showArchived ? t("progress.empty.archived") : t("common.noHabits")}
+          {showFinished ? t("progress.empty.finished") : showArchived ? t("progress.empty.archived") : t("progress.empty.active")}
         </EmptyState>
       ) : (
         categories.map((c) => (
-          <section key={c} aria-labelledby={`cat-${c}-title`} className="flex flex-col gap-2">
+          <section key={c} aria-labelledby={`cat-${c}-title`} className="flex flex-col gap-item">
             <h2 id={`cat-${c}-title`} className="text-sm font-bold text-muted-foreground">{categoryLabel(t, c)}</h2>
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col gap-item">
               {habits
                 .filter((h) => h.category === c)
                 .map((h) => (
-                  <li key={h.habit_id} className="flex items-center rounded-2xl bg-card shadow-soft">
-                    <Link href={`/habits/${h.habit_id}`} className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-3.5 hover:bg-muted/60">
+                  // The row opens the habit (a Surface link). Restore / Start again sit beside it, not
+                  // inside: a button can't live in a link.
+                  <li key={h.habit_id} className="flex items-center gap-inner">
+                    <Surface as="a" href={`/habits/${h.habit_id}`} className="flex min-w-0 flex-1 items-center gap-item">
                       <HabitEmoji category={h.category} emoji={h.emoji} />
                       <span className="flex min-w-0 flex-1 flex-col">
-                        <span className="flex min-w-0 items-center gap-2">
+                        <span className="flex min-w-0 items-center gap-inner">
                           <span className="truncate font-bold">{h.title}</span>
                           {h.group_name && (
-                            <span className="max-w-[45%] shrink-0 truncate rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">
+                            // A chip: 8 px sides, 2 px tall padding (a pill around one word, off the scale on purpose).
+                            <span className="max-w-[45%] shrink-0 truncate rounded-full bg-accent px-inner py-0.5 text-xs font-semibold text-accent-foreground">
                               {h.group_name}
                             </span>
                           )}
@@ -122,20 +129,20 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                           })}
                         </span>
                         {cellsFor.has(h.habit_id) && (
-                          <span className="pt-1.5">
+                          <span className="pt-inner">
                             <HabitDots t={t} cells={cellsFor.get(h.habit_id)!} category={h.category} period={h.period} />
                           </span>
                         )}
                       </span>
                       <StreakBadge count={h.current_streak} />
-                    </Link>
+                    </Surface>
                     {showFinished && h.archived_at && (!h.group_id || h.my_role === "admin") && (
-                      <span className="shrink-0 pe-2">
+                      <span className="shrink-0">
                         <StartAgainButton habitId={h.habit_id} title={h.title} />
                       </span>
                     )}
                     {showArchived && !showFinished && (!h.group_id || h.my_role === "admin") && (
-                      <span className="shrink-0 pe-2">
+                      <span className="shrink-0">
                         <RestoreHabitButton habitId={h.habit_id} title={h.title} />
                       </span>
                     )}
