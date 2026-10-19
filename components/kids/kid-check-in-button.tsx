@@ -1,5 +1,6 @@
 "use client";
 
+import { unstable_rethrow } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { Check, Clock, LoaderCircle, Plus, Snowflake, Undo2 } from "lucide-react";
 import { undoForChild } from "@/app/(app)/kids/actions";
@@ -154,7 +155,7 @@ export function UndoForChildButton({
         onClick={() =>
           startTransition(async () => {
             setError(null);
-            const r = await reach(() => undoForChild(checkInId, habitId, childId), { offline: t("kids.errors.offline"), reload: t("kids.errors.reload") });
+            const r = await reach(() => undoForChild(checkInId, habitId, childId), { offline: t("kids.errors.offline"), reload: t("kids.errors.reload") }, { rethrow: unstable_rethrow });
             setError(r.ok ? null : r.message);
           })
         }

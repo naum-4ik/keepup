@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { PenLine, Plus } from "lucide-react";
+import { unstable_rethrow } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { addChildHabit, type KidFormState } from "@/app/(app)/kids/actions";
 import { KidTemplateGroups, KidTemplateTile } from "@/components/kids/add-child-form";
@@ -32,7 +33,7 @@ const selectClass = "h-11 rounded-xl border border-input bg-card px-3 text-base"
 function useAddHabit(childId: string) {
   const { t } = useT();
   return useActionState(async (prev: KidFormState, formData: FormData): Promise<KidFormState> => {
-    const r = await reach(() => addChildHabit(childId, prev, formData), { offline: t("kids.errors.offline"), reload: t("kids.errors.reload") });
+    const r = await reach(() => addChildHabit(childId, prev, formData), { offline: t("kids.errors.offline"), reload: t("kids.errors.reload") }, { rethrow: unstable_rethrow });
     return "ok" in r ? { status: "error", message: r.message } : r;
   }, initialState);
 }

@@ -39,7 +39,7 @@ export function ExportChildButton({ childId, childName, label, className }: { ch
           setError(null);
           setSaved(null);
           startTransition(async () => {
-            const r = await reach(() => exportChild(childId), { offline: tk("offline"), reload: tk("reload") });
+            const r = await reach(() => exportChild(childId), { offline: tk("offline"), reload: tk("reload") }, { rethrow: unstable_rethrow });
             if (!r.ok) return setError(r.message);
             // Saved as keepup-{nickname}-{date}.json.
             const file = exportFileName(childName);
@@ -119,7 +119,7 @@ export function MoveChildForm({
           disabled={pending || !to}
           onClick={() =>
             startTransition(async () => {
-              const r = await reach(() => moveChild(childId, to), { offline: tk("errors.offline"), reload: tk("errors.reload") });
+              const r = await reach(() => moveChild(childId, to), { offline: tk("errors.offline"), reload: tk("errors.reload") }, { rethrow: unstable_rethrow });
               if (!r.ok) return setError(r.message);
               setError(null);
               setOpen(false);
@@ -195,7 +195,7 @@ function ResetChildButton({ childId, childName }: { childId: string; childName: 
               disabled={pending}
               onClick={() =>
                 startTransition(async () => {
-                  const r = await reach(() => resetChild(childId), { offline: tk("offline"), reload: tk("reload") });
+                  const r = await reach(() => resetChild(childId), { offline: tk("offline"), reload: tk("reload") }, { rethrow: unstable_rethrow });
                   if (!r.ok) return setError(r.message);
                   setOpen(false);
                   setDone(true);

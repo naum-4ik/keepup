@@ -1,6 +1,7 @@
 "use client";
 
 import { PenLine } from "lucide-react";
+import { unstable_rethrow } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useActionState, useState, useTransition } from "react";
 import { cancelGoal, markReceived, setGoal, type KidActionResult, type KidFormState } from "@/app/(app)/kids/actions";
@@ -59,7 +60,7 @@ function ActiveGoal({ childId, childName, gender, goal, onDone }: { childId: str
   const [confirming, setConfirming] = useState(false);
   const reached = goal.reached_at !== null;
   const stars = reached ? goal.target : Math.min(goal.stars, goal.target);
-  const send = (fn: () => Promise<KidActionResult>) => reach(fn, { offline: tk("offline"), reload: tk("reload") });
+  const send = (fn: () => Promise<KidActionResult>) => reach(fn, { offline: tk("offline"), reload: tk("reload") }, { rethrow: unstable_rethrow });
 
   return (
     <div className="flex flex-col gap-item">
@@ -175,7 +176,7 @@ function SetGoalForm({ childId, onSet }: { childId: string; onSet: (treat: strin
   const [open, setOpen] = useState(false);
   // Offline or a request that dies says what to do, with the form kept (keepFormValues).
   const [state, formAction, pending] = useActionState(async (prev: KidFormState, formData: FormData): Promise<KidFormState> => {
-    const r = await reach(() => setGoal(childId, prev, formData), { offline: tk("offline"), reload: tk("reload") });
+    const r = await reach(() => setGoal(childId, prev, formData), { offline: tk("offline"), reload: tk("reload") }, { rethrow: unstable_rethrow });
     if ("ok" in r) return { status: "error", message: r.message };
     if (r.status === "saved") onSet(String(formData.get("title") ?? "").trim());
     return r;

@@ -42,7 +42,7 @@ function ExportMyDataButton() {
           setError(null);
           setSaved(null);
           startTransition(async () => {
-            const r = await reach(exportMyData, { offline: t("myData.exportOffline"), reload: t("errors.generic") });
+            const r = await reach(exportMyData, { offline: t("myData.exportOffline"), reload: t("errors.generic") }, { rethrow: unstable_rethrow });
             if (!r.ok) return setError(r.message);
             const file = myDataFileName(new Date());
             downloadJson(file, r.data);

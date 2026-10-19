@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Pencil } from "lucide-react";
+import { unstable_rethrow } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { updateChild, type KidFormState } from "@/app/(app)/kids/actions";
 import { AvatarPicker } from "@/components/avatar-picker";
@@ -59,7 +60,7 @@ function EditChildForm({ childId, name, emoji, color, gender }: { childId: strin
   const tk = useTranslations("kids.errors");
   // Offline, nothing is sent; a request that dies on the way says to reload. The input is kept.
   const [state, formAction, pending] = useActionState(async (prev: KidFormState, formData: FormData): Promise<KidFormState> => {
-    const r = await reach(() => updateChild(childId, prev, formData), { offline: tk("offline"), reload: tk("reload") });
+    const r = await reach(() => updateChild(childId, prev, formData), { offline: tk("offline"), reload: tk("reload") }, { rethrow: unstable_rethrow });
     return "ok" in r ? { status: "error", message: r.message } : r;
   }, initialState);
   const [value, setValue] = useState(name);

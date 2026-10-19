@@ -1,5 +1,6 @@
 "use client";
 
+import { unstable_rethrow } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Notice } from "@/components/ui/notice";
 import { useT } from "@/lib/i18n/client";
@@ -29,7 +30,7 @@ export function useSettingSave<V>(saved: V, retry: "pick" | "save" = "pick") {
       const r = await reach(call, {
         offline: t(retry === "pick" ? "settings.status.offlinePick" : "settings.status.offlineSave"),
         reload: fallback,
-      });
+      }, { rethrow: unstable_rethrow });
       const { current, revertTo } = tracker.answer(n, value, r.ok);
       if (!current) return; // a newer change took over: its own answer decides
       if (r.ok) {

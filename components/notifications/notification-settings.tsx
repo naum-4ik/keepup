@@ -1,6 +1,7 @@
 // components/notifications/notification-settings.tsx
 "use client";
 
+import { unstable_rethrow } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 import { forgetPushSubscription, pauseAll, setDelivery, setReminderHour } from "@/app/(app)/profile/settings/notification-actions";
@@ -72,7 +73,7 @@ export function NotificationSettingsCard({ settings, isDemo = false }: { setting
     setDone(null);
     setFailed(null);
     startTransition(async () => {
-      const r = await reach(action, { offline: t("notifications.card.offline"), reload: t("notifications.card.reload") });
+      const r = await reach(action, { offline: t("notifications.card.offline"), reload: t("notifications.card.reload") }, { rethrow: unstable_rethrow });
       setBusy(null);
       if (r.ok) setDone({ where: b.where, text: doneText });
       else setFailed({ where: b.where, message: r.message });
@@ -264,6 +265,8 @@ function DeliveryChoice({ category, label, hint, saved }: {
       timer.current = null;
       waiting.current = null;
       const n = ++latest.current;
+      // No rethrow here: this runs from a timer, outside any transition, where a thrown redirect would
+      // only be an unhandled rejection; a signed-out answer shows as "Not saved…" instead.
       const r = await reach(() => setDelivery(category, next), { offline: t("settings.status.offlinePick"), reload: t("settings.status.failedPick") });
       // A newer change took over: its own save decides.
       if (n !== latest.current || timer.current !== null) return;

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
+import { unstable_rethrow } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { setChildTheme } from "@/app/(app)/kids/actions";
 import { Notice } from "@/components/ui/notice";
@@ -37,7 +38,7 @@ export function ThemePicker({ childId, childName, theme }: { childId: string; ch
     setChanged(null);
     setError(null);
     startTransition(async () => {
-      const r = await reach(() => setChildTheme(childId, id), { offline: tk("errors.offline"), reload: tk("errors.reload") });
+      const r = await reach(() => setChildTheme(childId, id), { offline: tk("errors.offline"), reload: tk("errors.reload") }, { rethrow: unstable_rethrow });
       setSaving(null);
       if (!r.ok) {
         setCurrent(before);
