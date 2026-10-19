@@ -288,7 +288,8 @@ test("a treat goal from an idea, with a quick star target", async ({ page }) => 
   await expect(goal.getByRole("button", { name: "Picture: 🎈. Change" })).toBeVisible();
   await goal.getByRole("button", { name: "⭐ 30" }).click();
   await goal.getByRole("button", { name: "Set goal" }).click();
-  await expect(goal).toContainText("Pizza night with grandma");
+  // Said where it happened (the form gave way to the goal).
+  await expect(goal.getByRole("status")).toHaveText("Goal set: Pizza night with grandma. Each check-in earns 1 star toward it.");
   await expect(goal).toContainText("⭐ 0 of 30");
 });
 
@@ -315,6 +316,7 @@ test("a treat goal of our own, with another star count", async ({ page }) => {
   await goal.getByRole("button", { name: "Cancel goal" }).click();
   await dialog.getByRole("button", { name: "Cancel goal" }).click();
   await expect(goal.getByRole("button", { name: "Set a goal" })).toBeVisible();
+  await expect(goal.getByRole("status")).toHaveText("Cancelled Trip to the aquarium. Mary keeps all the stars.");
 });
 
 test("choose what grows with the child: the kid page and the kid view switch theme", async ({ page }) => {
@@ -977,24 +979,28 @@ test("adding a child says what she starts with; deleting her goes back to Groups
   await page.unrouteAll({ behavior: "ignoreErrors" });
 });
 
-test("the kid view at 320×640: a long name is shown whole, and the first card is big and on screen", async ({ page }) => {
+test("the kid view at 320, 375, 414 and 430 wide: a long name is shown whole on one line, and the first card is big and on screen", async ({ page }) => {
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
   await addChild(page, "Family", "Alexandrina");
-  await page.setViewportSize({ width: 320, height: 640 });
-  await page.getByRole("main").getByRole("link", { name: "Open ⁨Alexandrina⁩'s view" }).click();
+  const play = page.getByRole("main").getByRole("link", { name: "Open \u2068Alexandrina\u2069's view" });
+  await play.click();
   await expect(page).toHaveURL(/\/play$/);
-  const name = page.getByRole("heading", { name: "Alexandrina", level: 1 });
-  await expect(name).toBeVisible();
-  // Not cut short (it was "N…" beside Sound and Hold to exit), and on one line, not broken letter by letter.
-  expect(await name.evaluate((el) => el.scrollWidth <= el.clientWidth && getComputedStyle(el).textOverflow !== "ellipsis")).toBe(true);
-  expect((await name.boundingBox())!.height).toBeLessThanOrEqual(40); // one 32 px line
-  await expect(page.getByRole("button", { name: "Hold to exit ⁨Alexandrina⁩'s view" })).toBeInViewport();
-  const first = page.getByRole("listitem").first().getByRole("button");
-  await expect(first).toBeInViewport({ ratio: 1 });
-  const box = (await first.boundingBox())!;
-  expect(box.width).toBeGreaterThanOrEqual(44);
-  expect(box.height).toBeGreaterThanOrEqual(44);
+  for (const [width, height] of [[320, 640], [375, 812], [414, 896], [430, 932]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.reload();
+    const name = page.getByRole("heading", { name: "Alexandrina", level: 1 });
+    await expect(name).toBeVisible();
+    // Not cut short (it was "N…" beside Sound and Hold to exit), and on one line, not broken inside the word.
+    expect(await name.evaluate((el) => el.scrollWidth <= el.clientWidth && getComputedStyle(el).textOverflow !== "ellipsis"), `${width}`).toBe(true);
+    expect((await name.boundingBox())!.height, `${width}`).toBeLessThanOrEqual(40); // one 32 px line
+    await expect(page.getByRole("button", { name: "Hold to exit \u2068Alexandrina\u2069's view" })).toBeInViewport();
+    const first = page.getByRole("listitem").first().getByRole("button");
+    await expect(first).toBeInViewport({ ratio: 1 });
+    const box = (await first.boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
 });
 
 test("the theme picker at 320: three tiles a row, each at least 44 px, names never broken inside a word", async ({ page }) => {
