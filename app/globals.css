@@ -76,6 +76,14 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
   --shadow-soft: 0 1px 2px rgb(61 44 34 / 0.06), 0 4px 12px rgb(61 44 34 / 0.05);
+  /* Three spacing levels (docs/design.md "Spacing"): inside an element, between elements, between
+     sections. The --spacing-* namespace gives the utilities: gap-inner, gap-item, gap-section, p-item,
+     py-section, mt-section… */
+  --spacing-inner: 0.5rem;
+  --spacing-item: 1rem;
+  --spacing-section: 1.5rem;
+  /* The fixed bottom nav's height (without the safe-area inset): page padding and toasts clear it. */
+  --spacing-nav: 4rem;
   --animate-checkin: checkin 220ms ease-out;
   --animate-xp-float: xp-float 900ms ease-out forwards;
   --animate-star: star-bounce 250ms ease-out;
