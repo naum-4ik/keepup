@@ -42,7 +42,8 @@ export function TryDemoButton() {
     let supabase: ReturnType<Awaited<ReturnType<typeof loadSupabase>>["createClient"]>;
     try {
       supabase = (await loadSupabase()).createClient();
-    } catch {
+    } catch (e) {
+      console.error("demo: loading the client", e);
       setFailedHere("reload"); // the script didn't load (offline, a new deploy)
       return;
     }
