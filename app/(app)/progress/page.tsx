@@ -99,7 +99,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
         </EmptyState>
       ) : (
         categories.map((c) => (
-          <section key={c} aria-labelledby={`cat-${c}-title`} className="flex flex-col gap-inner">
+          <section key={c} aria-labelledby={`cat-${c}-title`} className="flex flex-col gap-item">
             <h2 id={`cat-${c}-title`} className="text-sm font-bold text-muted-foreground">{categoryLabel(t, c)}</h2>
             <ul className="flex flex-col gap-item">
               {habits

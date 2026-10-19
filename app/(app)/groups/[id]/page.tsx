@@ -99,42 +99,8 @@ export default async function GroupPage({
         </div>
       </header>
 
-      <Section title={t("people")}>
-        <ul className="flex flex-col gap-inner">
-          {group.members.map((m) => (
-            <MemberRow
-              key={m.id}
-              groupId={group.id}
-              groupName={group.name}
-              member={m}
-              isSelf={m.id === userId}
-              canManage={isAdmin && m.id !== userId}
-            />
-          ))}
-          {group.children.map((c) => (
-            <li key={c.id}>
-              <Link href={`/kids/${c.id}`} className="-mx-inner flex min-h-11 items-center gap-inner rounded-xl px-inner hover:bg-muted/60">
-                <Avatar name={c.name} emoji={c.avatar_emoji} color={c.avatar_color} size="md" />
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate font-semibold">{c.name}</span>
-                  <span className="text-xs text-muted-foreground">{t("child")}</span>
-                </span>
-                <ChevronRight aria-hidden className="size-5 text-muted-foreground rtl:-scale-x-100" />
-              </Link>
-            </li>
-          ))}
-        </ul>
-        {isAdmin && (
-          <Link
-            href={`/kids/new?group=${group.id}`}
-            className={addButtonClass}
-          >
-            <Plus aria-hidden className="size-4" />
-            {t("addChild")}
-          </Link>
-        )}
-      </Section>
-
+      {/* What they do together first, so Add a group habit is on the first screen at 320 (owner,
+          2026-10-19); then the people, then bringing someone new. */}
       <Section title={t("habits")}>
         {habits.length > 0 ? (
           <ul className="flex flex-col">
@@ -167,8 +133,43 @@ export default async function GroupPage({
         )}
       </Section>
 
-      {/* People, then what they do together, then bringing someone new (owner's order). ?invite=1
-          still focuses the link (autoFocus scrolls it into view). */}
+      <Section title={t("people")}>
+        <ul className="flex flex-col gap-item">
+          {group.members.map((m) => (
+            <MemberRow
+              key={m.id}
+              groupId={group.id}
+              groupName={group.name}
+              member={m}
+              isSelf={m.id === userId}
+              canManage={isAdmin && m.id !== userId}
+            />
+          ))}
+          {group.children.map((c) => (
+            <li key={c.id}>
+              <Link href={`/kids/${c.id}`} className="-mx-inner flex min-h-11 items-center gap-item rounded-xl px-inner hover:bg-muted/60">
+                <Avatar name={c.name} emoji={c.avatar_emoji} color={c.avatar_color} size="md" />
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate font-semibold">{c.name}</span>
+                  <span className="text-xs text-muted-foreground">{t("child")}</span>
+                </span>
+                <ChevronRight aria-hidden className="size-5 text-muted-foreground rtl:-scale-x-100" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+        {isAdmin && (
+          <Link
+            href={`/kids/new?group=${group.id}`}
+            className={addButtonClass}
+          >
+            <Plus aria-hidden className="size-4" />
+            {t("addChild")}
+          </Link>
+        )}
+      </Section>
+
+      {/* ?invite=1 still focuses the link (autoFocus scrolls it into view). */}
       {isAdmin && (
         <Section title={t("invite")}>
           {/* A demo login can't invite anyone (the database refuses it). */}

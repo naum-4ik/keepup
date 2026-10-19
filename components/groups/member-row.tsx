@@ -71,7 +71,7 @@ export function MemberRow({
 
   return (
     <li className="flex flex-col gap-inner">
-      <div className="flex min-h-11 items-center gap-inner">
+      <div className="flex min-h-11 items-center gap-item">
         <Avatar name={member.name} emoji={member.avatar_emoji} color={member.avatar_color} size="md" />
         <span className="min-w-0 flex-1 truncate font-semibold">{isSelf ? t("you") : member.name}</span>
         {isAdmin && (

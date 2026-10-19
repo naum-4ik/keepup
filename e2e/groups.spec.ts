@@ -594,10 +594,37 @@ test("Today's group header shows the group's avatar and opens the group", async 
   await expect(page).toHaveURL((u) => u.pathname === groupPath);
 });
 
-test("the group page reads People, then Group habits, then Invite", async ({ page }) => {
+test("the group page reads Group habits, then People, then Invite", async ({ page }) => {
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
-  await expect(page.getByRole("main").getByRole("heading", { level: 2 })).toHaveText(["People", "Group habits", "Invite"]);
+  await expect(page.getByRole("main").getByRole("heading", { level: 2 })).toHaveText(["Group habits", "People", "Invite"]);
+});
+
+// Owner, 2026-10-19: Group habits goes first so its Add button is on the first screen.
+test("an admin with members sees Add a group habit above the nav without scrolling at 320, 375 and 414", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Family");
+  const groupPath = new URL(page.url()).pathname;
+  const url = await inviteLink(page);
+  const dan = await (await browser.newContext()).newPage();
+  await joinByLink(dan, url, "Dan");
+  await createGroupHabitVia(page, "Family", "Family dinner");
+  for (const [width, height] of [
+    [320, 640],
+    [375, 812],
+    [414, 896],
+  ] as const) {
+    await page.setViewportSize({ width, height });
+    await page.goto(groupPath);
+    await expect(page.getByRole("region", { name: "People" })).toContainText("Dan");
+    expect(await page.evaluate(() => window.scrollY), `${width}`).toBe(0);
+    const add = page.getByRole("link", { name: "Add a group habit" });
+    const nav = page.getByRole("navigation", { name: "Main", exact: true });
+    const [a, n] = await Promise.all([add.boundingBox(), nav.boundingBox()]);
+    expect(a!.height, `${width}`).toBeGreaterThanOrEqual(44);
+    expect(a!.y, `${width}`).toBeGreaterThanOrEqual(0);
+    expect(a!.y + a!.height, `${width}`).toBeLessThanOrEqual(n!.y + 0.5);
+  }
 });
 
 test("Inbox rows show who they're from, and an empty Approvals tab has no (0)", async ({ page, browser }) => {
