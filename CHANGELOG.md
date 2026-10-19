@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/naum-4ik/keepup/compare/v1.6.0...v1.7.0) (2026-10-19)
+
+
+### Features
+
+* terms of use page ([#254](https://github.com/naum-4ik/keepup/issues/254)) ([b5cbcee](https://github.com/naum-4ik/keepup/commit/b5cbcee8db603ae61a899aa499f5674f71ac295e))
+
 ## [1.6.0](https://github.com/naum-4ik/keepup/compare/v1.5.0...v1.6.0) (2026-10-18)
 
 

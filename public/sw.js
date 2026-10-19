@@ -11,9 +11,9 @@ const ASSETS = "keepup-assets";
 const MAX_ASSETS = 300;
 const PAGES = "keepup-pages"; // the last Today and kid view, on this device only; cleared at sign-out
 const OFFLINE_URL = "/offline";
-// Public pages kept in the shell too, so they open offline: the privacy policy (linked from sign-in)
+// Public pages kept in the shell too, so they open offline: the privacy policy and terms of use (linked from sign-in)
 // and how to install (linked from Profile and the "moved" notice).
-const SHELL_PAGES = ["/privacy", "/install"];
+const SHELL_PAGES = ["/privacy", "/terms", "/install"];
 const OFFLINE_PAGES = [/^\/today$/, /^\/kids\/[0-9a-f-]{36}\/play$/];
 
 // The offline page is saved up front, but a failure (installed while offline) must not hold the
@@ -242,7 +242,7 @@ self.addEventListener("message", (event) => {
     // A language change (Settings → Language): the saved pages are in the old language. Saves in
     // flight finish first, or they'd put an old-language page back. /install (a shell page, in the
     // visitor's language) goes too: saveShellPages puts it back on the next online page load.
-    // /privacy stays English, and /offline carries every language: both are kept.
+    // /privacy and /terms stay English, and /offline carries every language: both are kept.
     event.waitUntil(Promise.all([...saving]).then(() => Promise.all([caches.delete(PAGES), dropShellPage("/install")])));
   }
 });

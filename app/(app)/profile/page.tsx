@@ -76,6 +76,9 @@ export default async function ProfilePage() {
         <Link href="/privacy" className="underline-offset-4 hover:underline">
           {t("profile.footer.privacy")}
         </Link>
+        <Link href="/terms" className="underline-offset-4 hover:underline">
+          {t("profile.footer.terms")}
+        </Link>
         <Link href="/install" className="underline-offset-4 hover:underline">
           {t("profile.footer.install")}
         </Link>
