@@ -65,7 +65,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const shareText = t("meta.shareText");
   return {
     metadataBase: new URL(siteUrl),
-    title: "Keepup",
+    // The landing's title, and the default for pages without their own (those use meta.pageTitle).
+    title: t("meta.title"),
     description: t("common.tagline"),
     applicationName: "Keepup",
     openGraph: { type: "website", siteName: "Keepup", title: shareTitle, description: shareText, url: "/" },

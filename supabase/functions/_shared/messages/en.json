@@ -1698,6 +1698,7 @@
     "start": "Start your first streak"
   },
   "meta": {
+    "title": "Keepup — habit tracker for families",
     "pageTitle": "{page} · Keepup",
     "shareTitle": "Keepup: Habits, together",
     "shareText": "A habit tracker for one person or a whole family, kids included."
