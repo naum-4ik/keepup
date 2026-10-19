@@ -9,7 +9,7 @@ async function openGroup(page: Page, groupName: string) {
   await expect(page).toHaveURL(/\/groups\/[0-9a-f-]{36}$/);
 }
 
-async function addChild(page: Page, groupName: string, name: string, gender?: "Boy" | "Girl") {
+async function addChild(page: Page, groupName: string, name: string, gender?: "Boy" | "Girl", opts: { toast?: string } = {}) {
   await openGroup(page, groupName);
   await page.getByRole("link", { name: "Add a child" }).click();
   await page.getByLabel("Nickname").fill(name);
@@ -19,6 +19,16 @@ async function addChild(page: Page, groupName: string, name: string, gender?: "B
   await page.getByLabel("I'm this child's parent or guardian").check();
   await page.getByRole("button", { name: `Add ${name}` }).click();
   await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/);
+  await closeAddedToast(page, name, opts.toast);
+}
+
+// Her page opens with "Added Mary with 3 habits…" above the nav for 5 s: say it was there, then close
+// it, so it can't cover what the test taps next (Danger zone, Add a habit) or repeat her name.
+// `text`: the whole line, when the test is about it.
+async function closeAddedToast(page: Page, name: string, text?: string) {
+  await expect(page.getByTestId("toast-live")).toHaveText(text ?? new RegExp(`^Added \u2068${name}\u2069`));
+  await page.locator("[data-toaster]").getByRole("button", { name: "Dismiss" }).click();
+  await expect(page.getByTestId("toast-live")).toHaveText("");
 }
 
 test("add a child with the three starter habits, check in for her on Today, and see a star", async ({ page }) => {
@@ -449,6 +459,7 @@ async function addChildWithFiveHabits(page: Page, groupName: string, name: strin
   await page.getByLabel("I'm this child's parent or guardian").check();
   await page.getByRole("button", { name: `Add ${name}` }).click();
   await expect(page).toHaveURL(/\/kids\/[0-9a-f-]{36}$/);
+  await closeAddedToast(page, name, `Added \u2068${name}\u2069 with 5 habits. Each check-in earns 1 star.`);
 }
 
 test("the kid view with five habits: a done card slides to the bottom, and the picture stays in sight", async ({ page }) => {
@@ -958,8 +969,7 @@ test("the garden picture scrolls under the tab bar, never over it", async ({ pag
 test("adding a child says what she starts with; deleting her goes back to Groups and says so", async ({ page }) => {
   await signUpAndOnboard(page);
   await createGroup(page, "Family");
-  await addChild(page, "Family", "Mary");
-  await expect(page.getByTestId("toast-live")).toHaveText("Added ⁨Mary⁩ with 3 habits. Each check-in earns 1 star.");
+  await addChild(page, "Family", "Mary", undefined, { toast: "Added \u2068Mary\u2069 with 3 habits. Each check-in earns 1 star." });
 
   const zone = page.getByRole("region", { name: "Danger zone" });
   await zone.getByRole("button", { name: "Delete ⁨Mary⁩'s profile" }).click();
