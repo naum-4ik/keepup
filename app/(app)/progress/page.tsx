@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChartColumn } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
+import { EmptyState } from "@/components/ui/empty-state";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { StreakBadge } from "@/components/habits/streak-badge";
 import { HabitDots, WeekCard } from "@/components/overview/week-overview";
@@ -79,8 +79,13 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
         <EmptyState
           icon={<ChartColumn className="size-6" />}
           action={
-            !showArchived && (
-              <Button asChild className="h-11">
+            showArchived ? (
+              // Finished and Archived fill up from the Active tab: the way back there.
+              <Button asChild variant="outline">
+                <Link href="/progress">{t("progress.empty.showActive")}</Link>
+              </Button>
+            ) : (
+              <Button asChild>
                 <Link href="/habits/new">{t("common.addHabit")}</Link>
               </Button>
             )

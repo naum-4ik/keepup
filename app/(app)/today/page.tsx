@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { ChevronRight, Clock } from "lucide-react";
 import { Avatar } from "@/components/avatar";
 import { EveryoneDidIt, type CardMember } from "@/components/celebrations/everyone-did-it";
-import { EmptyState } from "@/components/empty-state";
+import { EmptyState } from "@/components/ui/empty-state";
 import { FirstCheckinTip } from "@/components/first-checkin-tip";
 import { SproutIcon } from "@/components/sprout-icon";
 import { HabitCard, type EndLine } from "@/components/habits/habit-card";
@@ -237,7 +237,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
         <EmptyState
           icon={<SproutIcon className="size-6" />}
           action={
-            <Button asChild className="h-11">
+            <Button asChild>
               <Link href="/habits/new">{tt("empty.action")}</Link>
             </Button>
           }

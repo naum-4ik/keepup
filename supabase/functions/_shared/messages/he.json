@@ -262,7 +262,8 @@
       "firstWeekly": "הסיכום השבועי הראשון יגיע ביום הראשון של השבוע הבא.",
       "restDays": "{n, plural, one {ימי מנוחה: # (מקווקו)} two {ימי מנוחה: # (מקווקו)} other {ימי מנוחה: # (מקווקו)}}",
       "topStreaks": "הרצפים הארוכים ביותר",
-      "badges": "תגים: {list}"
+      "badges": "תגים: {list}",
+      "goToday": "לסמן ב„היום“"
     },
     "heatmap": {
       "fullDays": "{n, plural, one {יום אחד שבו הכול בוצע} two {יומיים שבהם הכול בוצע} other {# ימים שבהם הכול בוצע}}",
@@ -376,7 +377,9 @@
     "justLooking": "רק מסתכלים?",
     "tryDemo": "כניסה לדמו",
     "settingUp": "מכינים…",
-    "loading": "בטעינה…"
+    "loading": "בטעינה…",
+    "compact": "דמו, מתאפס אחרי 24 שעות. <signIn>התחברות</signIn>",
+    "dismiss": "הסתרת ההודעה על הדמו"
   },
   "validation": {
     "nameRequired": "נא להזין שם.",
@@ -1394,7 +1397,8 @@
     },
     "empty": {
       "finished": "עוד אין הרגלים שהסתיימו. אפשר לתת להרגל סיום, למשל 30 ימים.",
-      "archived": "אין הרגלים בארכיון."
+      "archived": "אין הרגלים בארכיון.",
+      "showActive": "הצגת הרגלים פעילים"
     },
     "habitLine": "{ended, select, yes {הסתיים · להחליט במסך \"היום\" · {schedule}} other {{schedule}}}{best, select, yes { · שיא {span}} other {}}",
     "calendar": {
@@ -1471,7 +1475,8 @@
     },
     "feed": {
       "empty": "עוד אין כלום. הפעילות מהקבוצות שלכם תופיע כאן.",
-      "unread": "לא נקרא: "
+      "unread": "לא נקרא: ",
+      "emptyAction": "לקבוצות"
     },
     "errors": {
       "pickMessage": "נא לבחור אחת מההודעות."

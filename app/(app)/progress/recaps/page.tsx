@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarCheck } from "lucide-react";
-import { EmptyState } from "@/components/empty-state";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { MonthHeatmap } from "@/components/recaps/month-heatmap";
 import { getProfile } from "@/lib/auth";
 import { badgeName } from "@/lib/badges";
@@ -25,7 +26,15 @@ export default async function RecapsPage() {
       <section aria-label={t("recaps.page.weeks")} className="flex flex-col gap-2">
         <h2 className="text-sm font-bold text-muted-foreground">{t("recaps.page.weeks")}</h2>
         {weeks.length === 0 ? (
-          <EmptyState icon={<CalendarCheck className="size-6" />}>
+          <EmptyState
+            icon={<CalendarCheck className="size-6" />}
+            action={
+              // Recaps come from check-ins: the way to the first one.
+              <Button asChild variant="outline">
+                <Link href="/today">{t("recaps.page.goToday")}</Link>
+              </Button>
+            }
+          >
             {t("recaps.page.firstWeekly")}
           </EmptyState>
         ) : (
