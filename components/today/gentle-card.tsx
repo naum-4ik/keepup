@@ -11,6 +11,8 @@ import type { GentleCard as GentleCardData } from "@/lib/today-cards";
 // Notice, not a card (docs/design.md "Notices"): one sentence with what it gets you, its action inline
 // after it (a 44px target kept to the line's height by negative margins), and "Not now".
 const COPY_KEY = { invite_family: "inviteFamily", invite_friend: "inviteFriend" } as const;
+// -my-3 keeps the 44px target to the line's height; px-1 (4px, off the scale on purpose) is only the
+// hover tint's edge around a word inside a sentence, where 8px would read as a gap in the text.
 const ACTION = "-my-3 inline-flex min-h-11 items-center rounded-lg px-1 font-bold text-primary underline underline-offset-2 hover:bg-background/60 disabled:no-underline";
 
 export function GentleCard({ card }: { card: GentleCardData }) {
