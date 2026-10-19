@@ -32,6 +32,16 @@ test("the only member deletes their group", async ({ page }) => {
   await expect(page.getByRole("main").getByText("Book club")).toBeHidden();
 });
 
+test("the only member leaving: the group goes, and the toast says so", async ({ page }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Book club", "Friends");
+  await page.getByRole("button", { name: "Leave group" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Leave group" }).click();
+  await expect(page).toHaveURL(/\/groups$/);
+  await expect(page.getByTestId("toast-live")).toHaveText("Left \u2068Book club\u2069. You were its only member, so the group is deleted.");
+  await expect(page.getByRole("main").getByText("Book club")).toBeHidden();
+});
+
 test("deleting a group with a child asks again, and Cancel resets that step", async ({ page }) => {
   await signUpAndOnboard(page);
   await createGroup(page, "Levi family");
@@ -710,6 +720,42 @@ test("approve says Approving… while it saves, then a toast says what it did", 
   release();
   await expect(dan.getByTestId("toast-live")).toHaveText("Approved: \u2068Ana\u2069 · \u2068Gym\u2069. It counts toward the streak.");
   await expect(dan.getByRole("main").getByText("All caught up: 0 check-ins waiting for your approval.")).toBeVisible();
+});
+
+test("Approve all says Approving 2…, then a toast counts them, and focus lands on the empty state's action", async ({ page, browser }) => {
+  await signUpAndOnboard(page);
+  await createGroup(page, "Gym buddies", "Friends");
+  const url = await inviteLink(page);
+  const dan = await (await browser.newContext()).newPage();
+  await joinByLink(dan, url, "Dan");
+  for (const title of ["Gym", "Run"]) {
+    await page.goto("/habits/new");
+    await page.getByRole("button", { name: "Create your own" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Title").fill(title);
+    await dialog.getByLabel("Category").selectOption("fitness");
+    await dialog.getByRole("radio", { name: "Gym buddies" }).check();
+    await dialog.getByRole("switch", { name: "Needs approval" }).click();
+    await dialog.getByRole("button", { name: /^Add habit/ }).click();
+    await expect(page).toHaveURL(/\/today$/);
+    await page.getByRole("button", { name: `Check in: \u2068${title}\u2069` }).click();
+    await expect(page.getByRole("button", { name: `Waiting for approval: \u2068${title}\u2069` })).toBeVisible();
+  }
+
+  let release!: () => void;
+  const held = new Promise<void>((r) => (release = r));
+  await dan.route("**/inbox", async (route) => {
+    if (route.request().method() === "POST" && route.request().headers()["next-action"]) await held;
+    await route.continue();
+  });
+  await dan.goto("/inbox");
+  await dan.getByRole("button", { name: "Approve all (2)" }).click();
+  await expect(dan.getByRole("button", { name: "Approving 2…" })).toBeDisabled();
+  release();
+  await expect(dan.getByTestId("toast-live")).toHaveText("Approved 2 check-ins. They count toward the streaks.");
+  await expect(dan.getByRole("main").getByText("All caught up: 0 check-ins waiting for your approval.")).toBeVisible();
+  // The tapped button is gone with the list: focus moves to what fills its place.
+  await expect(dan.getByRole("link", { name: "Check in on Today" })).toBeFocused();
 });
 
 test("an undo by another member shows up live", async ({ page, browser }) => {
