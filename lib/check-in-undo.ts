@@ -21,7 +21,14 @@ export type UndoDeps = {
   // (components/habits/check-in-focus.ts). The toast's own Undo, which had it, is gone.
   onUndone?: (habitId: string) => void;
   newId?: () => string;
+  // How long "Undoing…" waits for an answer before it says it couldn't (with Undo again).
+  timeoutMs?: number;
 };
+
+// A hung undo request: "Undoing…" is sticky, so it would stay for ever. After this it gives up on
+// the answer and offers Undo again (if the first one did land, the retry finds nothing and counts as
+// undone: undoOutcome "already").
+export const UNDO_TIMEOUT_MS = 30_000;
 
 // The server's answer to an undo by client id (app/(app)/habits/actions.ts undoCheckInByClient): the
 // RPC's true, or else whether the row is still there. Gone (an earlier undo whose answer was lost) is
@@ -80,10 +87,16 @@ export async function undoCheckIn(deps: UndoDeps, tap: LandedTap): Promise<UndoO
   // Sticky: it stays until the answer replaces it, however long the request takes.
   replaceWith(deps, { id: busy, text: t("today.undo.undoing", { habit }), sticky: true });
   let result: UndoResult | null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    result = await deps.undo(tap.clientId, tap.habitId);
+    result = await Promise.race([
+      deps.undo(tap.clientId, tap.habitId),
+      new Promise<never>((_, reject) => (timer = setTimeout(() => reject(new Error("timeout")), deps.timeoutMs ?? UNDO_TIMEOUT_MS))),
+    ]);
   } catch {
-    result = null; // no answer: offline, or the request failed on the way
+    result = null; // no answer: offline, the request failed on the way, or it hung
+  } finally {
+    clearTimeout(timer);
   }
   // A newer check-in's toast took over while this undo ran: the answer waits its turn behind it
   // rather than closing it.

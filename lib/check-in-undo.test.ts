@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { tEn, tFor } from "@/lib/i18n/test-t";
-import { checkedInText, showCheckedIn, showCheckedInWithout, undoCheckIn, undoOutcome, type UndoDeps } from "@/lib/check-in-undo";
+import { checkedInText, showCheckedIn, showCheckedInWithout, undoCheckIn, undoOutcome, UNDO_TIMEOUT_MS, type UndoDeps } from "@/lib/check-in-undo";
 import type { ToastAction } from "@/lib/toast";
 
 const FSI = "⁨";
@@ -141,3 +141,23 @@ describe("undoOutcome", () => {
     expect(undoOutcome(false, null)).toBe("refused");
   });
 });
+
+describe("a hung undo", () => {
+  it(`after ${UNDO_TIMEOUT_MS / 1000} s, Undoing… gives way to "couldn't undo" with Undo again`, async () => {
+    vi.useFakeTimers();
+    try {
+      const { deps, shown, closed } = setup(() => new Promise(() => {})); // never answers
+      const done = undoCheckIn(deps, tap);
+      await vi.advanceTimersByTimeAsync(UNDO_TIMEOUT_MS - 1);
+      expect(shown).toHaveLength(1); // still Undoing…
+      await vi.advanceTimersByTimeAsync(1);
+      expect(await done).toBe("failed");
+      expect(closed).toContain(shown[0].id);
+      expect(shown[1].text).toBe(`Couldn't undo ${FSI}Walk${PDI}. Check your connection and tap Undo again.`);
+      expect(shown[1].action && "onAction" in shown[1].action).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
