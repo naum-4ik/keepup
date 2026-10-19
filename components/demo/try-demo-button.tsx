@@ -6,7 +6,6 @@ import { unstable_rethrow, useSearchParams } from "next/navigation";
 import { startDemo } from "@/app/demo/actions";
 import { Notice } from "@/components/ui/notice";
 import { runTryIt } from "@/lib/try-demo";
-import { whenIdle } from "@/lib/when-idle";
 import { useT } from "@/lib/i18n/client";
 
 // "Try a demo with sample habits" on the landing page, and on sign-in and sign-up (someone who followed a
@@ -16,8 +15,9 @@ import { useT } from "@/lib/i18n/client";
 // server seeds the demo. The device's time zone goes along, so the demo's days match the visitor's.
 // ?demo=failed: the seed action couldn't start the demo (app/demo/actions.ts redirects here). A new
 // try takes it out of the address (Next keeps useSearchParams in step), so the old failure goes.
-// The Supabase browser client (about 60 KB gzipped) loads only when needed: on the first tap or once
-// the page is idle, never with the page itself, so it doesn't slow the landing's first paint.
+// The Supabase browser client's code (about 60 KB gzipped) loads only when someone reaches for the
+// button (pointer over it, focus, touch) or taps it, never with the page, so it doesn't slow the first
+// paint. The client itself is created only on the tap.
 export function TryDemoButton() {
   const { t } = useT();
   const zone = useRef<HTMLInputElement>(null);
@@ -27,7 +27,6 @@ export function TryDemoButton() {
   const ready = useHydrated();
   useEffect(() => {
     if (zone.current) zone.current.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    return whenIdle(() => void loadSupabase().catch(() => {}));
   }, []);
 
   // A form action: useFormStatus stays pending through both steps.
@@ -38,9 +37,9 @@ export function TryDemoButton() {
       url.searchParams.delete("demo");
       window.history.replaceState(null, "", url.pathname + url.search + url.hash);
     }
-    let supabase: Awaited<ReturnType<typeof loadSupabase>>;
+    let supabase: ReturnType<Awaited<ReturnType<typeof loadSupabase>>["createClient"]>;
     try {
-      supabase = await loadSupabase();
+      supabase = (await loadSupabase()).createClient();
     } catch {
       setFailedHere(true); // the script didn't load (offline, a new deploy): the same "try again" line
       return;
@@ -68,13 +67,14 @@ export function TryDemoButton() {
   );
 }
 
-// One client per page, created on first use.
-let supabaseClient: Promise<ReturnType<typeof import("@/lib/supabase/client").createClient>> | undefined;
+// The module, fetched once; a failed fetch can be tried again.
+let supabaseModule: Promise<typeof import("@/lib/supabase/client")> | undefined;
 function loadSupabase() {
-  supabaseClient ??= import("@/lib/supabase/client").then((m) => m.createClient());
-  supabaseClient.catch(() => (supabaseClient = undefined)); // a failed load can be tried again
-  return supabaseClient;
+  supabaseModule ??= import("@/lib/supabase/client");
+  supabaseModule.catch(() => (supabaseModule = undefined));
+  return supabaseModule;
 }
+const warmUp = () => void loadSupabase().catch(() => {});
 
 // Before the page is ready (scripts still loading) a tap would do nothing: the button waits, off.
 const noSubscribe = () => () => {};
@@ -92,6 +92,9 @@ function Submit({ ready }: { ready: boolean }) {
       type="submit"
       disabled={off}
       aria-disabled={off}
+      onPointerEnter={warmUp}
+      onFocus={warmUp}
+      onTouchStart={warmUp}
       className="inline-flex min-h-11 items-center justify-center rounded-lg px-inner text-sm font-semibold text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
     >
       {!ready ? t("demo.loading") : pending ? t("demo.settingUp") : t("demo.tryDemo")}
