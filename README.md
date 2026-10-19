@@ -51,7 +51,7 @@ Then turn reminders on: Profile → Settings → **Turn on reminders**. Reminder
 
 ## What it does
 
-Try the demo on the first screen, no sign-up: it opens a lived-in account (Sam's month, a family with Alex and a kid, Nova), deleted after 24 hours. Invites and push are off in the demo.
+"Try a demo with sample habits" on the first screen, no sign-up: it opens a lived-in account (Sam's month, a family with Alex and a kid, Nova), deleted after 24 hours. Invites and push are off in the demo.
 
 ### Every day
 
@@ -180,7 +180,7 @@ README screenshots: `npm run readme:screenshots` (local stack; seeds a demo mont
 | M3 | Groups and family: shared habits, approvals, kid profiles with a star garden, emoji avatars, backups | ✅ v0.4.0 |
 | M4 | Installable app (PWA), push reminders, offline check-ins | ✅ v0.5.0 |
 | M5 | XP, levels, badges, rest days, weekly recaps | ✅ v0.6.0 |
-| M6 | Landing page, "Try the demo", privacy policy, data export and account delete, production | ✅ v1.0.0 |
+| M6 | Landing page, "Try a demo with sample habits", privacy policy, data export and account delete, production | ✅ v1.0.0 |
 | v1.1 | Its own address (keepuphabits.vercel.app), a "Keepup moved" note on the old one, an in-app How to install guide | ✅ v1.1.0 |
 
 Next: ideas for after v1.
