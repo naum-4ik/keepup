@@ -124,7 +124,7 @@ Not a card: a sentence (use a Notice), a single stat (a line of text), a heading
 
 ### Buttons
 
-`components/ui/button.tsx` defaults to 44 px tall (`h-11`); `sm` is 40 px (only beside other controls in a row), `lg` 48 px, `icon` 44 px square. Every tap target is at least 44×44, including links inside lines (negative margins keep the line short).
+`components/ui/button.tsx` defaults to 44 px tall (`h-11`); `sm` is 40 px (only beside other controls in a row), `lg` 48 px, `icon` 44 px square. No smaller sizes. Every tap target is at least 44×44, including links inside lines (negative margins keep the line short).
 
 ### States and feedback
 
