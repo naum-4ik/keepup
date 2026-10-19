@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { unstable_rethrow } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { createGroup, type GroupActionState } from "@/app/(app)/groups/actions";
 import { AvatarPicker } from "@/components/avatar-picker";
@@ -20,13 +21,18 @@ export function NewGroupForm({ city }: { city: string }) {
   const { t } = useT();
   const tn = useTranslations("groups.new");
   const tc = useTranslations("common");
-  // Offline, nothing is sent: the pinned bar says what to do. Online, success redirects to the new
-  // group with a "Created …" toast (app/(app)/groups/actions.ts).
-  const [state, formAction, pending] = useActionState(
-    (prev: GroupActionState, formData: FormData): Promise<GroupActionState> | GroupActionState =>
-      typeof navigator !== "undefined" && !navigator.onLine ? { status: "error", message: tn("failed"), code: "offline" } : createGroup(prev, formData),
-    initialState,
-  );
+  // Offline, nothing is sent; a request that dies on the way fails the same way: the pinned bar says
+  // what to do. Success redirects to the new group with a "Created …" toast
+  // (app/(app)/groups/actions.ts); that redirect arrives as a rejection, so it is rethrown.
+  const [state, formAction, pending] = useActionState(async (prev: GroupActionState, formData: FormData): Promise<GroupActionState> => {
+    if (typeof navigator !== "undefined" && !navigator.onLine) return { status: "error", message: tn("failed"), code: "offline" };
+    try {
+      return await createGroup(prev, formData);
+    } catch (e) {
+      unstable_rethrow(e);
+      return { status: "error", message: tn("failed"), code: "offline" };
+    }
+  }, initialState);
   const offline = state.status === "error" && state.code === "offline";
   const nameError = state.status === "error" && !offline;
   const [name, setName] = useState("");

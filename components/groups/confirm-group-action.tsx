@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, type ReactNode } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { GroupActionState } from "@/app/(app)/groups/actions";
 import { Button } from "@/components/ui/button";
@@ -77,15 +78,18 @@ function ConfirmDialog({
   // Children moved out from this step; the dialog isn't remounted by the refresh, so track them here.
   const [moved, setMoved] = useState<Set<string>>(() => new Set());
   const remaining = groupChildren.filter((c) => !moved.has(c.id));
-  // Offline, nothing is sent: the dialog says so and stays open for another try. (Online, success
-  // redirects to /groups with a "Left …" / "Deleted …" toast from the server action.)
-  const [state, formAction, pending] = useActionState(
-    (_prev: GroupActionState, formData: FormData): Promise<GroupActionState> | GroupActionState =>
-      typeof navigator !== "undefined" && !navigator.onLine
-        ? { status: "error", message: tc("failed") }
-        : action(formData.get("confirmChildren") === "1"),
-    initialState,
-  );
+  // Offline, nothing is sent; a request that dies on the way fails the same way: the dialog says so
+  // and stays open for another try. Success redirects to /groups with a "Left …" / "Deleted …" toast
+  // from the server action; that redirect arrives as a rejection, so it is rethrown, never caught.
+  const [state, formAction, pending] = useActionState(async (_prev: GroupActionState, formData: FormData): Promise<GroupActionState> => {
+    if (typeof navigator !== "undefined" && !navigator.onLine) return { status: "error", message: tc("failed") };
+    try {
+      return await action(formData.get("confirmChildren") === "1");
+    } catch (e) {
+      unstable_rethrow(e);
+      return { status: "error", message: tc("failed") };
+    }
+  }, initialState);
   const askChildren = state.status === "error" && state.code === "children_would_be_deleted";
 
   return (
