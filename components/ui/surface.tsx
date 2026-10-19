@@ -1,44 +1,29 @@
 import Link from "next/link";
-import type { ComponentProps } from "react";
+import type { ComponentProps, MouseEventHandler } from "react";
 import { cn } from "@/lib/utils";
 
 // The one card (docs/design.md "Surfaces"): only for an object you can pick, compare or open (a habit,
-// a group, a recap, a template). Static text, a single stat or a headed group of controls is a
-// Section or a Notice, never a Surface. `as="a"` is an in-app link (next/link); `as="button"` a picker
-// tile; `as="li"` a row in a list of objects. Inner padding is the item level (16px).
-const base = "rounded-2xl bg-card p-item text-card-foreground shadow-soft";
-const tappable = "block w-full text-start hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+// a group, a recap, a template). So it is always tappable: `as="a"` opens something (next/link, href
+// required), `as="button"` picks something (an onClick, or type="submit" in a form). There is no static
+// card: static text, a single stat or a headed group of controls is a Section or a Notice. In a list,
+// the row is `<li><Surface as="a" …/></li>`. Inner padding is the item level (16px).
+const base =
+  "block w-full rounded-2xl bg-card p-item text-start text-card-foreground shadow-soft hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
-type SurfaceProps =
-  | ({ as?: "div" } & ComponentProps<"div">)
-  | ({ as: "li" } & ComponentProps<"li">)
+type ButtonBase = Omit<ComponentProps<"button">, "type" | "onClick">;
+
+export type SurfaceProps =
   | ({ as: "a" } & ComponentProps<typeof Link>)
-  | ({ as: "button" } & ComponentProps<"button">);
-
-// Props without `as`, so the element gets only its own attributes.
-function omitAs<P extends { as?: unknown }>(props: P): Omit<P, "as"> {
-  const rest = { ...props };
-  delete rest.as;
-  return rest;
-}
+  | ({ as: "button"; type?: "button"; onClick: MouseEventHandler<HTMLButtonElement> } & ButtonBase)
+  | ({ as: "button"; type: "submit"; onClick?: MouseEventHandler<HTMLButtonElement> } & ButtonBase);
 
 export function Surface(props: SurfaceProps) {
-  switch (props.as) {
-    case "a": {
-      const { className, ...rest } = omitAs(props);
-      return <Link className={cn(base, tappable, className)} {...rest} />;
-    }
-    case "button": {
-      const { className, type = "button", ...rest } = omitAs(props);
-      return <button type={type} className={cn(base, tappable, className)} {...rest} />;
-    }
-    case "li": {
-      const { className, ...rest } = omitAs(props);
-      return <li className={cn(base, className)} {...rest} />;
-    }
-    default: {
-      const { className, ...rest } = omitAs(props);
-      return <div className={cn(base, className)} {...rest} />;
-    }
+  if (props.as === "a") {
+    const { as: kind, className, ...rest } = props;
+    void kind;
+    return <Link className={cn(base, className)} {...rest} />;
   }
+  const { as: kind, className, type = "button", ...rest } = props;
+  void kind;
+  return <button type={type} className={cn(base, className)} {...rest} />;
 }

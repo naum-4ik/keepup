@@ -106,7 +106,7 @@ A title over its meta line is line-height, not a gap. A value off the scale (12,
 
 ### Surfaces (cards)
 
-A card is for an object you can **pick, compare or open**: a habit, a group, a recap, a template, a kid habit tile. `components/ui/surface.tsx` is the one card style (16 px radius, `p-item`, soft shadow); `as="a"` for something that opens, `as="button"` for something you pick, `as="li"` for a row in a list of objects.
+A card is for an object you can **pick, compare or open**: a habit, a group, a recap, a template, a kid habit tile. `components/ui/surface.tsx` is the one card style (16 px radius, `p-item`, soft shadow) and it is always tappable: `as="a"` (a link, `href` required) for something that opens, `as="button"` (an `onClick`, or `type="submit"`) for something you pick. There is no static card; in a list the row is `<li><Surface as="a">`. The types refuse a Surface without `as` (`components/ui/primitives.typecheck.tsx`).
 
 Not a card: a sentence (use a Notice), a single stat (a line of text), a heading with controls under it (use a Section), a form, a settings group, an empty state. No card inside a card.
 
