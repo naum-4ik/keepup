@@ -479,8 +479,8 @@ test("a habit that ended: the finish card, Keep going, Finish, and Start again",
   // Nothing done: no 🎉, an invitation instead of a count.
   await expect(readCard).toContainText("Read reached its end");
   await expect(readCard).not.toContainText("🎉");
-  // No check-ins on Read: no streak to name.
-  await expect(readCard).toContainText("Keep going and your streak carries on, or Finish and start again later.");
+  // No check-ins on Read: no streak to carry on.
+  await expect(readCard).toContainText("Keep going to build a streak, or Finish and start again later.");
   await expect(page.getByRole("button", { name: "Check in: \u2068Read\u2069" })).toHaveCount(0); // no more check-ins
 
   await readCard.getByRole("button", { name: "Keep going" }).click();
@@ -649,11 +649,21 @@ test("the edit form's Save stays above the bottom nav at 320×640", async ({ pag
   await page.goto((await page.getByRole("link", { name: /Read 20 min/ }).getAttribute("href"))!);
   const summary = page.locator("summary").filter({ hasText: /^Edit details/ });
   await summary.click();
-  // The row at the top of the screen (under the sticky header): the form runs on below the fold.
+  // Closed, the form fits above the nav at 320×640 (about 410px under its row). With the start
+  // date's calendar open it runs about 300px further, below the nav: then only pinning keeps Save in reach.
+  const form = page.locator("form").filter({ has: page.getByLabel("Title", { exact: true }) });
+  await form.getByRole("button", { name: "Pick a date" }).click();
+  // The row at the top of the screen (under the sticky header).
   await summary.evaluate((el) => el.scrollIntoView({ block: "start" }));
-  const save = page.getByRole("main").getByRole("button", { name: "Save", exact: true });
+  const save = form.getByRole("button", { name: "Save", exact: true });
   await expect(save).toBeVisible();
-  const [box, nav] = await Promise.all([save.boundingBox(), page.getByRole("navigation", { name: "Main", exact: true }).boundingBox()]);
+  const [box, nav, formBox] = await Promise.all([
+    save.boundingBox(),
+    page.getByRole("navigation", { name: "Main", exact: true }).boundingBox(),
+    form.boundingBox(),
+  ]);
+  // The form goes on under the nav, yet Save sits above it: it is pinned, not just near the top.
+  expect(formBox!.y + formBox!.height).toBeGreaterThan(nav!.y);
   expect(box!.height).toBeGreaterThanOrEqual(44);
   expect(box!.y).toBeGreaterThanOrEqual(0);
   expect(box!.y + box!.height).toBeLessThanOrEqual(nav!.y + 0.5);
