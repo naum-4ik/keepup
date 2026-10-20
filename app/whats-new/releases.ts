@@ -26,6 +26,7 @@ export function releaseLabel(r: Release, appVersion: string, locale: Locale, t: 
 export const RELEASES: Release[] = [
   {
     version: "1.9.0",
+    date: "2026-10-20",
     notes: {
       en: [
         "Tabs and cards answer your tap at once: the next screen appears right away and fills in as it loads.",
