@@ -30,7 +30,7 @@ export default async function RecapsPage() {
       <Section title={t("recaps.page.weeks")}>
         {weeks.length === 0 ? (
           <EmptyState
-            icon={<CalendarCheck className="size-6" />}
+            icon={<CalendarCheck aria-hidden className="size-6" />}
             action={
               // Recaps come from check-ins: the way to the first one.
               <Button asChild variant="outline">

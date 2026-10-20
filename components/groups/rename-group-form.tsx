@@ -48,7 +48,10 @@ export function RenameGroupForm({
   }
 
   return (
-    <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-inner">
+    <>
+      {/* The page keeps its title while the name is being edited. */}
+      <h1 className="sr-only">{name}</h1>
+      <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-inner">
       <Label htmlFor="group-name" className="font-semibold">{t("label")}</Label>
       <Input
         id="group-name"
@@ -74,6 +77,7 @@ export function RenameGroupForm({
           {pending ? tc("saving") : tc("save")}
         </Button>
       </div>
-    </form>
+      </form>
+    </>
   );
 }

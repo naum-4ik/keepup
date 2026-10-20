@@ -89,7 +89,10 @@ export default async function GroupPage({
             className="size-16 text-3xl"
           />
         ) : (
-          <Avatar name={group.name} emoji={group.avatar_emoji} color={group.avatar_color} size="lg" />
+          // The h1 beside it names the group, so the avatar is decoration here.
+          <span aria-hidden className="flex shrink-0">
+            <Avatar name={group.name} emoji={group.avatar_emoji} color={group.avatar_color} size="lg" />
+          </span>
         )}
         <div className="flex min-w-0 flex-1 flex-col gap-inner">
           <RenameGroupForm name={group.name} canRename={isAdmin} action={renameGroup.bind(null, group.id)} />
@@ -148,7 +151,10 @@ export default async function GroupPage({
           {group.children.map((c) => (
             <li key={c.id}>
               <Link href={`/kids/${c.id}`} className="-mx-inner flex min-h-11 items-center gap-item rounded-xl px-inner hover:bg-muted/60">
-                <Avatar name={c.name} emoji={c.avatar_emoji} color={c.avatar_color} size="md" />
+                {/* The name is right next to it, so the avatar is decoration here. */}
+                <span aria-hidden className="flex shrink-0">
+                  <Avatar name={c.name} emoji={c.avatar_emoji} color={c.avatar_color} size="md" />
+                </span>
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate font-semibold">{c.name}</span>
                   <span className="text-xs text-muted-foreground">{t("child")}</span>

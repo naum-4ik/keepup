@@ -43,7 +43,7 @@ export function KidTemplateTile({ template, selected }: { template: KidTemplate;
             selected ? "border-primary bg-primary text-primary-foreground" : "border-input",
           )}
         >
-          {selected && <Check className="size-4" strokeWidth={3} />}
+          {selected && <Check aria-hidden className="size-4" strokeWidth={3} />}
         </span>
       )}
     </>

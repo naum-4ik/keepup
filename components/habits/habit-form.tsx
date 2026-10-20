@@ -118,7 +118,7 @@ export function HabitForm({
           >
             {key === "popular" || key === "together" ? (
               <span aria-hidden className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent">
-                {key === "popular" ? <Star className="size-4 text-primary" /> : <Users className="size-4 text-primary" />}
+                {key === "popular" ? <Star aria-hidden className="size-4 text-primary" /> : <Users aria-hidden className="size-4 text-primary" />}
               </span>
             ) : (
               <CategoryIcon category={key} size="xs" />
@@ -349,7 +349,7 @@ function HabitFields({
                   name="children"
                   value={c.id}
                   label={tf.rich("include", { name: c.name, bdi })}
-                  icon={<Avatar name={c.name} emoji={c.avatar_emoji} color={c.avatar_color} size="sm" />}
+                  icon={<span aria-hidden className="flex shrink-0"><Avatar name={c.name} emoji={c.avatar_emoji} color={c.avatar_color} size="sm" /></span>}
                 />
               ))}
             </div>

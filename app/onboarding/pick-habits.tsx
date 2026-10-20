@@ -78,7 +78,7 @@ export function PickHabits({ templates, joined }: { templates: HabitTemplate[]; 
                       on ? "border-primary bg-primary text-primary-foreground" : "border-input",
                     )}
                   >
-                    {on && <Check className="size-3" strokeWidth={3} />}
+                    {on && <Check aria-hidden className="size-3" strokeWidth={3} />}
                   </span>
                 </button>
               );

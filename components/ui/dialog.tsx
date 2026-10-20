@@ -51,7 +51,7 @@ function DialogContent({
       >
         {children}
         <DialogPrimitive.Close className="absolute top-3 end-3 flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted">
-          <XIcon className="size-5" />
+          <XIcon aria-hidden className="size-5" />
           <span className="sr-only">{t("close")}</span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
