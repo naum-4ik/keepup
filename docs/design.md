@@ -25,16 +25,17 @@ Soft and warm: cream surfaces, warm-brown text, one terracotta accent, pastel ca
 | `background` | `#FFF8F0` cream | `#1F1915` | Page |
 | `card` | `#FFFFFF` | `#2A221C` | Cards, sheets |
 | `foreground` | `#3D2C22` warm brown | `#F5EDE4` | Main text (12.6:1 / 15:1) |
-| `muted-foreground` | `#7A6556` | `#B8A596` | Secondary text (5.2:1 / 7.3:1) |
-| `border` | `#EFE3D6` | `#3A2F27` | Dividers, inputs |
+| `muted-foreground` | `#776253` | `#B8A596` | Secondary text, placeholders (5.5:1 / 7.3:1 on the page; ≥ 4.6:1 on muted, accent, secondary) |
+| `border` | `#EFE3D6` | `#3A2F27` | Dividers, card edges: decoration, not 3:1 |
+| `input` | `#9C8D7E` | `#7A6C61` | Field borders, the open check-in circle (3.1:1 / 3.1:1: a transparent field's only edge) |
 
 ### Accent: Terracotta
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `primary` | `#B84F33` | `#F0A07F` | Primary buttons, active nav, links (4.7:1 on cream) |
-| `primary-foreground` | `#FFFFFF` | `#2A221C` | Text on primary (5.0:1 / 7.5:1) |
-| `flame` | `#E8804F` | `#F0A07F` | Streak 🔥 icon and count only (not body text) |
+| `primary` / `ring` | `#AD4529` | `#F0A07F` | Primary buttons, active nav, links, focus outline (5.5:1 on cream; ≥ 4.6:1 on accent, muted, secondary) |
+| `primary-foreground` | `#FFFFFF` | `#2A221C` | Text on primary (5.7:1 / 7.5:1) |
+| `flame` | `#B75420` | `#F0A07F` | Streak 🔥 icon and count only, not body text (the count is 14px bold, so 4.6:1 on cream) |
 
 ### Status
 
@@ -50,7 +51,7 @@ Soft tones; always paired with an icon. Tokens live in `app/globals.css` (Tailwi
 | `frozen` | `#3B6E99` soft blue | `#8FB8DC` | Paused text, snowflake |
 | `frozen-soft` | `#E3F1FA` | `#353A3E` | Paused surfaces |
 | `flame-soft` | `#FDE6D8` | `#543727` | Peach avatar |
-| `destructive` | `#C0392B` | `#E06C5E` | Missed / destructive, with x |
+| `destructive` | `#AE261A` | `#F37D6E` | Missed / destructive, with x (≥ 4.6:1 on the page, card and its own `/10`–`/20` tints) |
 
 ### Categories
 
@@ -61,7 +62,7 @@ Pastel chip background with a deeper icon color. Category tabs and pickers show 
 | Health | `cat-health` | `#E3F1FA` / `#2D353B` | `#3B82B8` / `#7FB0DA` | heart-pulse |
 | Fitness | `cat-fitness` | `#E5F2E6` / `#313729` | `#4F8A5B` / `#7FBF8C` | footprints |
 | Mind | `cat-mind` | `#EEE8F8` / `#3A2F3A` | `#7B61B0` / `#A992D6` | sun |
-| Learning | `cat-learning` | `#FBF3D9` / `#45371C` | `#B08A1E` / `#D9B54A` | book-open |
+| Learning | `cat-learning` | `#FBF3D9` / `#45371C` | `#A57F06` / `#D9B54A` | book-open |
 | People | `cat-people` | `#FBE6E8` / `#482B29` | `#C2505F` / `#E0848F` | users |
 | Home | `cat-home` | `#E0F3EF` / `#2D3730` | `#3A8C7E` / `#6FC0B0` | house |
 | Work & money | `cat-work-money` | `#F1EADF` / `#3D3124` | `#8A6B45` / `#C4A07A` | briefcase-business |
@@ -70,6 +71,16 @@ Pastel chip background with a deeper icon color. Category tabs and pickers show 
 Use `bg-cat-<name>-soft` for the chip and `text-cat-<name>` for the icon. Dark chips are 20% of the category colour mixed into the warm card (`#2A221C`), so they stay warm, never cold navy. Undone emoji chips fade with `grayscale` and opacity (60% in dark, 40% in light), never a darkening filter.
 
 Icons come from `lucide-react` (rounded line style). **Kid habits** use picture emoji a child recognizes (🪥 brush teeth, 🧸 tidy toys, 📖 read, 🛁 bath, 🥦 eat veggies, 😴 bedtime), chosen from a curated kid set, shown large in a pastel circle. **Habit emoji:** every habit has one emoji (templates bring theirs; "Create your own" picks one, or gets the category default: 🍎 health, 👟 fitness, 🌿 mind, 📚 learning, 💛 people, 🏠 home, 💼 work & money, 🚫 break a habit). It sits inside the category-coloured chip wherever the habit appears (Today, the habit page, Progress), so the colour tells the category and the emoji tells the habit. Otherwise emoji only in copy (🔥 in the streak count) and in avatars, never as UI icons.
+
+### Contrast
+
+WCAG 2.2 AA in light and dark: text 4.5:1 (3:1 only from 24px, or 18.66px bold), UI parts (field borders, the check-in circle, icons that carry meaning, focus outlines) 3:1 against what is next to them. Change a token, never one component: `lib/contrast.test.ts` reads `app/globals.css` and checks every pair the app uses, tints like `bg-destructive/10` included, so a token that drops below fails CI. A new pairing goes into that test.
+
+- Text tints: no `text-*/50` for text people need to read; only disabled controls may fade (they are exempt, but stay legible).
+- Destructive button: `bg-destructive/10` (hover `/20` light, `/15` dark); a stronger tint drops the red text below 4.5:1.
+- Focus: the solid `ring` (5.5:1 / 7.5:1) is the indicator; the soft `ring/50` halo around fields and buttons is extra.
+- Graphics without 3:1 between their steps (the recap heatmap's light shades, history and week dots) always carry a text alternative: `role="img"` with a label, a legend, or the numbers beside them.
+- Brand art (app icon, install pictures, emails) keeps `#B84F33`; their text still passes on white.
 
 ## Typography
 

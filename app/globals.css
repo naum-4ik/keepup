@@ -244,18 +244,20 @@
   --card-foreground: #3D2C22;
   --popover: #FFFFFF;
   --popover-foreground: #3D2C22;
-  --primary: #B84F33;
+  --primary: #AD4529;
   --primary-foreground: #FFFFFF;
   --secondary: #F6E3D8;
   --secondary-foreground: #3D2C22;
   --muted: #F3EADF;
-  --muted-foreground: #7A6556;
+  --muted-foreground: #776253;
   --accent: #FDE3D3;
   --accent-foreground: #3D2C22;
-  --destructive: #C0392B;
+  --destructive: #AE261A;
   --border: #EFE3D6;
-  --input: #E6D6C6;
-  --ring: #B84F33;
+  /* Field borders: a transparent input's only edge, so ≥ 3:1 on cream and white (WCAG 1.4.11).
+     `border` stays soft: dividers are decoration. lib/contrast.test.ts checks every used pair. */
+  --input: #9C8D7E;
+  --ring: #AD4529;
   /* Status: text-safe on white, cream and the soft tints (≥ 4.5:1). */
   --done: #3D7549;
   --done-soft: #E5F2E6;
@@ -264,8 +266,8 @@
   --pending-soft: #FBF3D9;
   --frozen: #3B6E99;
   --frozen-soft: #E3F1FA;
-  /* Streak 🔥 icon and count only, never body text. */
-  --flame: #E8804F;
+  /* Streak 🔥 icon and count only (14px bold: text, so ≥ 4.5:1 on cream and white), never body text. */
+  --flame: #B75420;
   --flame-soft: #FDE6D8;
   /* Categories: a pastel chip and a deeper icon colour. */
   --cat-health: #3B82B8;
@@ -274,7 +276,7 @@
   --cat-fitness-soft: #E5F2E6;
   --cat-mind: #7B61B0;
   --cat-mind-soft: #EEE8F8;
-  --cat-learning: #B08A1E;
+  --cat-learning: #A57F06;
   --cat-learning-soft: #FBF3D9;
   --cat-people: #C2505F;
   --cat-people-soft: #FBE6E8;
@@ -317,9 +319,9 @@
     --muted-foreground: #B8A596;
     --accent: #4A3226;
     --accent-foreground: #F5EDE4;
-    --destructive: #E06C5E;
+    --destructive: #F37D6E;
     --border: #3A2F27;
-    --input: #4A3D33;
+    --input: #7A6C61;
     --ring: #F0A07F;
     /* Lighter inks; soft tints are 20–22% of the colour mixed into the warm card, never cold navy. */
     --done: #7FBF8C;
@@ -358,7 +360,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   body {
     @apply bg-background text-foreground;
