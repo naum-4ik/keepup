@@ -1,5 +1,5 @@
 // Builds the PNG app icons from the master sprout (ideas/app-icon.md). Run: node scripts/gen-app-icons.mjs
-// Uses sharp, which Next.js already installs for next/image.
+// Uses sharp, which Next.js already installs for next/image; compressPng (scripts/compress-images.mjs) shrinks the output.
 //
 // - icon-{192,512,1024}.png, purpose "any" (Chrome/Edge desktop install, macOS Dock, Windows taskbar):
 //   a transparent canvas with the peach tile on the macOS icon grid (824 of 1024 px, 100 px margin,
@@ -8,7 +8,9 @@
 // - logo-192.png: the full-bleed tile, for the pictures inside the app (landing, sign-in, invite,
 //   notifications), where CSS rounds the corners.
 // - maskable-512.png (Android) and app/apple-icon.png (iOS) are full-bleed and stay as they are.
+import { writeFileSync } from "node:fs";
 import sharp from "sharp";
+import { compressPng } from "./compress-images.mjs";
 
 const SPROUT = `
   <path d="M20 51 L44 51" fill="none" stroke="#B84F33" stroke-width="5" stroke-linecap="round"/>
@@ -31,10 +33,9 @@ const fullBleed = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
 
 const out = "public/icons";
 for (const size of [192, 512, 1024]) {
-  await sharp(Buffer.from(padded), { density: (72 * size) / 1024 * 4 })
-    .resize(size, size)
-    .png({ compressionLevel: 9 })
-    .toFile(`${out}/icon-${size}.png`);
+  const png = await sharp(Buffer.from(padded), { density: (72 * size) / 1024 * 4 }).resize(size, size).png().toBuffer();
+  writeFileSync(`${out}/icon-${size}.png`, await compressPng(png));
 }
-await sharp(Buffer.from(fullBleed), { density: 72 * 12 }).resize(192, 192).png({ compressionLevel: 9 }).toFile(`${out}/logo-192.png`);
+const logo = await sharp(Buffer.from(fullBleed), { density: 72 * 12 }).resize(192, 192).png().toBuffer();
+writeFileSync(`${out}/logo-192.png`, await compressPng(logo));
 console.log("icons written to", out);
