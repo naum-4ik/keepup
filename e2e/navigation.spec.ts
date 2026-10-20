@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { signUpAndOnboard } from "./helpers/auth";
 
 // page.route doesn't see requests a service worker answers: keep the worker out of this file.

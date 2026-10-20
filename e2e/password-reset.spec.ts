@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { completeOnboarding, signIn, signUp, TEST_PASSWORD, uniqueEmail } from "./helpers/auth";
 import { localAdmin } from "./helpers/groups";
 import { latestMailLink, mailCount } from "./helpers/mail";

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { completeOnboarding, signUp, signUpAndOnboard, uniqueEmail } from "./helpers/auth";
 import { createGroup, createGroupHabitVia, inviteLink, joinByLink } from "./helpers/groups";
 import { createHabit } from "./helpers/habits";

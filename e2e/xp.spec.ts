@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { completeOnboarding, setCelebrations, signUp, signUpAndOnboard, uniqueEmail } from "./helpers/auth";
 import { createHabit } from "./helpers/habits";
 

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { signUp, uniqueEmail } from "./helpers/auth";
 
 async function finishStepOne(page: Page, purpose?: "Me" | "My family" | "Friends") {

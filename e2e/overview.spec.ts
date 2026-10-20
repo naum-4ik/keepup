@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { signUpAndOnboard } from "./helpers/auth";
 import { createGroup, createGroupHabitVia, joinedDaysAgo } from "./helpers/groups";
 import { createHabit, startHabitDaysAgo } from "./helpers/habits";

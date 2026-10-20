@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { completeOnboarding, signIn, signUp, uniqueEmail } from "./helpers/auth";
 import { createHabit } from "./helpers/habits";
 

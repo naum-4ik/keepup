@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { signUpAndOnboard } from "./helpers/auth";
 
 const he = JSON.parse(readFileSync(join(process.cwd(), "supabase/functions/_shared/messages/he.json"), "utf8"));
