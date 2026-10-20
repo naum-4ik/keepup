@@ -256,7 +256,9 @@ function HabitFields({
   }, [state]);
 
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col gap-item">
+    // noValidate: the app's own messages beside each field, never the browser's bubbles (the count's
+    // min, the end date's min). `required` still tells assistive tech which fields must be filled.
+    <form ref={formRef} action={formAction} noValidate className="flex flex-col gap-item">
       {templateId && <input type="hidden" name="templateId" value={templateId} />}
       <div className="flex flex-col gap-inner">
         <Label htmlFor="title" className="font-semibold">{tf("titleLabel")}</Label>
@@ -271,6 +273,7 @@ function HabitFields({
             name="title"
             value={values.title}
             onChange={set("title")}
+            required
             maxLength={HABIT_TITLE_MAX}
             className={fieldClass}
             aria-invalid={Boolean(errors.title)}
@@ -282,9 +285,8 @@ function HabitFields({
 
       <div className="flex flex-col gap-inner">
         <Label htmlFor="category" className="font-semibold">{tf("categoryLabel")}</Label>
-        <select id="category" name="category" ref={categoryRef} value={values.category} onChange={set("category")} className={selectClass}
+        <select id="category" name="category" ref={categoryRef} value={values.category} onChange={set("category")} className={selectClass} required
           aria-invalid={Boolean(errors.category)} aria-describedby={errors.category ? "category-error" : undefined}>
-          {/* Not `required`: the browser would block the submit and hide the other fields' messages. */}
           <option value="" disabled>{tf("pickCategory")}</option>
           {CATEGORY_ORDER.map((c) => (
             <option key={c} value={c}>{categoryLabel(tr, c)}</option>

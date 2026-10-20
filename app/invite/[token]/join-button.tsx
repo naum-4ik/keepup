@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/notice";
 import type { AcceptInviteState } from "./actions";
 
 type Props = {
@@ -15,9 +16,9 @@ export function JoinButton({ action, label, pendingLabel }: Props) {
   return (
     <form action={formAction} className="flex flex-col gap-2">
       {state?.message && (
-        <p role="alert" className="text-center text-sm text-destructive">
+        <Notice tone="error" live>
           {state.message}
-        </p>
+        </Notice>
       )}
       <Button type="submit" disabled={pending} className="h-12 w-full rounded-xl text-base">
         {pending ? pendingLabel : label}

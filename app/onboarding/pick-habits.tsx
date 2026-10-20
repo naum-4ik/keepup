@@ -11,6 +11,7 @@ import { useT } from "@/lib/i18n/client";
 import { describeSchedule } from "@/lib/schedule";
 import { cn } from "@/lib/utils";
 import { startWithHabits, type PickHabitsState } from "./actions";
+import { Notice } from "@/components/ui/notice";
 
 const initialState: PickHabitsState = { status: "idle" };
 
@@ -93,9 +94,9 @@ export function PickHabits({ templates, joined }: { templates: HabitTemplate[]; 
           {atLimit ? tr("onboarding.habits.atLimit", { max: MAX_STARTER_HABITS }) : n > 0 ? tr("onboarding.habits.picked", { n, max: MAX_STARTER_HABITS }) : ""}
         </p>
         {state.status === "error" && (
-          <p role="alert" className="text-center text-sm text-destructive">
+          <Notice tone="error" live>
             {state.message}
-          </p>
+          </Notice>
         )}
         <Button type="submit" disabled={n === 0 || pending} className="h-11 text-base">
           {pending ? tr("habits.form.adding") : n === 0 ? tr("onboarding.habits.pickToStart") : tr("onboarding.habits.startWith", { n })}

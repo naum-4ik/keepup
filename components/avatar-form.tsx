@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 import { AvatarPicker } from "@/components/avatar-picker";
 import { SaveButton } from "@/components/save-button";
+import { Notice } from "@/components/ui/notice";
 import type { AvatarColor, AvatarFormState } from "@/lib/avatars";
 
 const initialState: AvatarFormState = { status: "idle" };
@@ -32,7 +33,7 @@ export function AvatarForm({
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <AvatarPicker name={name} emoji={emoji} color={color} options={options} hint={hint} />
-      {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
+      {state.status === "error" && <Notice tone="error" live>{state.message}</Notice>}
       <SaveButton state={state} pending={pending} />
     </form>
   );
