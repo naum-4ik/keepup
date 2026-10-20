@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { LoadingAnnouncement } from "@/components/app-shell/loading-announcement";
 import { cn } from "@/lib/utils";
 
 // Loading screens (the routes' loading.tsx): the page's shape in soft `bg-muted` blocks while its data
@@ -6,9 +6,8 @@ import { cn } from "@/lib/utils";
 // the link, so a tap shows it at once instead of leaving the old page up. Built from the same
 // spacing as the pages (docs/design.md: inner 8, item 16, section 24) and the same line boxes, so the
 // real page lands where the skeleton was. Cards only where the real page has cards (habit, group rows).
-// Every block is aria-hidden; the region says it's busy and one polite line says "Loading…". It is no
-// role="status" on purpose: pages own their status lines (Today's summary, "Saved ✓"), and a second
-// status inside <main> would make `main.getByRole("status")` ambiguous while the page swaps in.
+// Every block is aria-hidden; the region says it's busy and one polite line says "Loading…"
+// (LoadingAnnouncement: mounted empty, so it is announced; no role="status").
 
 const pulse = "bg-muted motion-safe:animate-pulse";
 
@@ -30,12 +29,9 @@ export function TextBone({ size = "base", className }: { size?: "xs" | "sm" | "b
 
 // The page frame, as the pages use it: sections 24 px apart, 24 px top and bottom.
 export function PageSkeleton({ children, className }: { children: React.ReactNode; className?: string }) {
-  const t = useTranslations("common");
   return (
     <>
-      <p className="sr-only" aria-live="polite">
-        {t("loading")}
-      </p>
+      <LoadingAnnouncement />
       <div aria-busy="true" data-testid="page-skeleton" className={cn("flex flex-col gap-section py-section", className)}>
         {children}
       </div>
