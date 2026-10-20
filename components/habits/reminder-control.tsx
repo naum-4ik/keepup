@@ -52,7 +52,7 @@ export function ReminderControl({ habitId, settings, isDemo = false }: { habitId
           </div>
         ))}
         <Button type="button" className="h-11 w-fit" disabled={pending} onClick={() => run(() => setHabitReminder(habitId, mode, mode === "time" ? time : null))}>
-          {t("common.save")}
+          {pending ? t("common.saving") : t("common.save")}
         </Button>
       </fieldset>
 

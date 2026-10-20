@@ -541,6 +541,7 @@
     "emailPlaceholder": "you@example.com",
     "or": "OR",
     "continueGoogle": "Continue with Google",
+    "openingGoogle": "Opening Google…",
     "login": {
       "title": "Sign in to Keepup",
       "subtitle": "Check in daily, keep your streak, share habits with family.",
