@@ -7,6 +7,8 @@ import { createHabit } from "../../e2e/helpers/habits";
 // README screenshots (docs/screenshots). Local stack only: seeds a month of history straight into the
 // database (triggers off), like e2e/helpers do. Run: npm run readme:screenshots
 const OUT = "docs/screenshots";
+// Names in accessible labels come wrapped in Unicode isolates (FSI … PDI), as in e2e/kids.spec.ts.
+const iso = (s: string) => `\u2068${s}\u2069`;
 
 function seedHistory(email: string): void {
   if (!/^[\w.+-]+@[\w.-]+$/.test(email)) throw new Error(`Not an email: ${email}`);
@@ -47,6 +49,12 @@ select private.backfill_badges();`;
 test("README screenshots", async ({ page, context }) => {
   test.setTimeout(120_000);
   const email = uniqueEmail("readme");
+
+  // The landing page, signed out: the pitch and one call to action.
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "Start your first streak" })).toBeVisible();
+  await page.screenshot({ path: `${OUT}/landing.png` });
+
   await signUp(page, email);
   await completeOnboarding(page, { name: "Ana" });
   for (const template of ["Drink water", "Walk 10,000 steps", "Meditate", "Read 20 min", "Work out"]) {
@@ -73,15 +81,17 @@ test("README screenshots", async ({ page, context }) => {
     await expect(dialog).toBeHidden();
   }
 
-  // Today, half done.
+  // Today, half done, right after a check-in: the summary line and the toast with Undo.
   await page.goto("/today");
-  for (let i = 0; i < 3; i++) await page.getByRole("button", { name: "Check in: Drink water" }).click();
-  await page.getByRole("button", { name: "Check in: Walk 10,000 steps" }).click();
-  await expect(page.getByRole("button", { name: "Done: Walk 10,000 steps" })).toBeVisible();
-  await page.getByRole("button", { name: "Check in: Meditate" }).click();
-  await expect(page.getByRole("button", { name: "Done: Meditate" })).toBeVisible();
-  await page.getByRole("button", { name: /^Check in for Mary: / }).first().click();
+  await page.getByRole("button", { name: /^Check in for \u2068Mary\u2069: / }).first().click();
+  for (let i = 0; i < 3; i++) await page.getByRole("button", { name: `Check in: ${iso("Drink water")}` }).click();
+  await page.getByRole("button", { name: `Check in: ${iso("Walk 10,000 steps")}` }).click();
+  await expect(page.getByRole("button", { name: `Done: ${iso("Walk 10,000 steps")}` })).toBeVisible();
   await page.goto("/today");
+  await page.getByRole("button", { name: `Check in: ${iso("Meditate")}` }).click();
+  await expect(page.getByRole("button", { name: `Done: ${iso("Meditate")}` })).toBeVisible();
+  await expect(page.locator("[data-toaster]").getByRole("button", { name: "Undo", exact: true })).toBeVisible();
+  await page.waitForTimeout(300); // the toast's slide-in
   await page.screenshot({ path: `${OUT}/today.png` });
 
   await page.goto("/progress");
@@ -104,8 +114,8 @@ test("README screenshots", async ({ page, context }) => {
   await page.screenshot({ path: `${OUT}/new-habit.png` });
 
   await page.goto(kidPage);
-  await page.getByRole("link", { name: "Open Mary's view" }).click();
-  await expect(page.getByRole("button", { name: "Hold to exit Mary's view" })).toBeVisible();
+  await page.getByRole("main").getByRole("link", { name: `Open ${iso("Mary")}'s view` }).click();
+  await expect(page.getByRole("button", { name: `Hold to exit ${iso("Mary")}'s view` })).toBeVisible();
   // Finish two habits, so the open ones stay on top and the done ones sink to the bottom.
   for (const title of ["Read a book together", "Tidy my toys"]) {
     await page.locator("button:not([disabled])").filter({ hasText: title }).first().click();
@@ -164,7 +174,7 @@ test("README screenshots", async ({ page, context }) => {
   await expect(section.getByText(/^Reminders are on for this device/)).toBeVisible();
   await section.getByRole("group", { name: "Nudges" }).getByRole("radio", { name: "Inbox only" }).check();
   await section.getByRole("group", { name: "Group activity" }).getByRole("radio", { name: "Sound" }).check();
-  await page.waitForLoadState("networkidle");
+  await expect(section.getByRole("status").filter({ hasText: "Saved ✓" }).first()).toBeVisible();
   await section.getByText("What to send").scrollIntoViewIfNeeded();
   await page.waitForTimeout(500);
   await page.screenshot({ path: `${OUT}/notifications.png` });
@@ -173,13 +183,13 @@ test("README screenshots", async ({ page, context }) => {
   await page.goto("/today");
   await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.ready, navigator.serviceWorker.controller !== null))).toBe(true);
   await page.reload();
-  await expect(page.getByRole("button", { name: "Check in: Read 20 min" })).toBeVisible();
+  await expect(page.getByRole("button", { name: `Check in: ${iso("Read 20 min")}` })).toBeVisible();
   await expect.poll(() => page.evaluate(async () => {
     const hit = await caches.match("/today");
-    return Boolean(hit) && (await hit!.text()).includes("Check in: Read 20 min");
+    return Boolean(hit) && (await hit!.text()).includes("Read 20 min");
   })).toBe(true);
   await context.setOffline(true);
-  await page.getByRole("button", { name: "Check in: Read 20 min" }).click();
+  await page.getByRole("button", { name: `Check in: ${iso("Read 20 min")}` }).click();
   await expect(page.getByText("Saving… ☁️")).toBeVisible();
   await expect(page.getByText("Offline · showing your last update")).toBeVisible();
   await page.waitForTimeout(800);

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { signUpAndOnboard } from "./helpers/auth";
 import { createGroup, createGroupHabitVia, joinedDaysAgo } from "./helpers/groups";
 import { createHabit, startHabitDaysAgo } from "./helpers/habits";
@@ -131,7 +131,7 @@ test("a new user's empty lists say what's next, in one card style", async ({ pag
   await signUpAndOnboard(page);
   await expect(page.getByText("Add one habit and check in today to start day 1 of your streak.")).toBeVisible();
   await page.goto("/progress");
-  await expect(page.getByText("Add a habit to start tracking your streak here.")).toBeVisible();
+  await expect(page.getByRole("main").getByText("Add a habit to start tracking your streak here.")).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Categories" })).toHaveCount(0);
   await page.goto("/groups");
   await expect(page.getByText("Create a group and invite people with a link that works for 7 days.")).toBeVisible();

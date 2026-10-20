@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { MOVED_PARAM } from "@/lib/moved";
-import { isPublicPath } from "@/lib/paths";
+import { needsSignIn } from "@/lib/paths";
 import type { Database } from "@/lib/database.types";
 
 export async function updateSession(request: NextRequest) {
@@ -34,7 +34,7 @@ export async function updateSession(request: NextRequest) {
   const signedIn = Boolean(data?.claims);
   const { pathname, search } = request.nextUrl;
 
-  if (!signedIn && !isPublicPath(pathname)) {
+  if (!signedIn && needsSignIn(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = `?next=${encodeURIComponent(pathname + search)}`;

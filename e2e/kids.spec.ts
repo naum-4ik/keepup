@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { signUpAndOnboard } from "./helpers/auth";
 import { createGroup, createGroupHabitVia, inviteLink, joinByLink } from "./helpers/groups";
 import { endHabitYesterday } from "./helpers/habits";
@@ -130,7 +130,7 @@ test("an admin of a family group with no children sees Add a child?, which opens
   await createGroup(page, "Family");
   const groupId = page.url().match(/\/groups\/([0-9a-f-]{36})/)![1];
   await createGroupHabitVia(page, "Family", "Walk");
-  const prompt = page.getByText("Add a child: each check-in earns 1 star toward a treat.");
+  const prompt = page.getByRole("main").getByText("Add a child: each check-in earns 1 star toward a treat.");
   await expect(prompt).toBeHidden(); // not before the first check-in
   await page.getByRole("button", { name: "Check in: \u2068Walk\u2069" }).click();
   await expect(page.getByRole("button", { name: "Done: \u2068Walk\u2069" })).toBeVisible();
@@ -149,7 +149,7 @@ test("the kid view: big buttons, a tap counts at once, and hold to exit", async 
   await expect(page.getByRole("navigation", { name: "Main" })).toBeHidden();
   // For a toddler: no counts or "what's next" here (they're on the kid page), just the scene.
   await expect(page.getByText(/more ⭐ to/)).toHaveCount(0);
-  const items = page.locator("[data-items]");
+  const items = page.getByRole("main").locator("[data-items]");
   await expect(items).toHaveAttribute("data-items", "0");
   const teeth = page.getByRole("button", { name: /Brush teeth/ });
   await teeth.click();
@@ -416,8 +416,8 @@ test("a group habit with a child that ended leaves the kid views, and Start agai
   await expect(page.getByRole("region", { name: "Habits" })).toContainText("Tidy my toys");
   await expect(page.getByRole("region", { name: "Habits" })).not.toContainText("Walk the dog");
   await page.goto(`${kidPage}/play`);
-  await expect(page.getByText("Tidy my toys")).toBeVisible();
-  await expect(page.getByText("Walk the dog")).toHaveCount(0);
+  await expect(page.getByRole("main").getByText("Tidy my toys")).toBeVisible();
+  await expect(page.getByRole("main").getByText("Walk the dog")).toHaveCount(0);
 
   await page.goto("/today");
   await page.getByRole("region", { name: "\u2068Walk the dog\u2069 is finished" }).getByRole("button", { name: "Finish" }).click();
@@ -443,11 +443,11 @@ test("the kid view: the third star brings the sprout, and the last habit of the 
   // screen for ~2 s, then settles into the scene.
   await expect(page.locator("[data-milestone]")).toHaveText("🌱", { timeout: 8000 });
   await expect(page.locator("[data-milestone]")).toHaveCount(0, { timeout: 4000 });
-  await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "3");
+  await expect(page.getByRole("main").locator("[data-items]")).toHaveAttribute("data-items", "3");
   await page.getByRole("button", { name: /Brush teeth/ }).click(); // the last one today
   // The scene dances once its item has landed.
-  await expect(page.locator("[data-items] .animate-dance").first()).toBeAttached({ timeout: 5000 });
-  await expect(page.locator("[data-items] .animate-dance")).toHaveCount(0, { timeout: 4000 }); // ~2 seconds, then still
+  await expect(page.getByRole("main").locator("[data-items] .animate-dance").first()).toBeAttached({ timeout: 5000 });
+  await expect(page.getByRole("main").locator("[data-items] .animate-dance")).toHaveCount(0, { timeout: 4000 }); // ~2 seconds, then still
 });
 
 // A child with five habits: the three starters, plus Bath time and Play outside.
@@ -513,14 +513,14 @@ test("the kid view's idle motion: the scene moves gently, and not at all with Re
   await addChild(page, "Family", "Mary");
   await page.getByRole("link", { name: "Open \u2068Mary\u2069's view" }).click();
   await page.getByRole("button", { name: /Tidy my toys/ }).click();
-  await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "1");
+  await expect(page.getByRole("main").locator("[data-items]")).toHaveAttribute("data-items", "1");
   const idleRunning = () =>
     page.evaluate(() => document.getAnimations().filter((a) => a instanceof CSSAnimation && a.animationName.startsWith("idle-") && a.playState === "running").length);
   await expect.poll(idleRunning, { timeout: 4000 }).toBeGreaterThan(0);
 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.reload();
-  await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "1");
+  await expect(page.getByRole("main").locator("[data-items]")).toHaveAttribute("data-items", "1");
   await page.waitForTimeout(500);
   expect(await idleRunning()).toBe(0);
   await expect(page.locator('[data-idle="drift"], [data-idle="sparkle"]')).toHaveCount(0);
@@ -607,7 +607,7 @@ test("the kid view: a finishing tap shows the new thing big in the middle, then 
   expect(await landingOffset(page, 0)).toBeLessThan(20);
   await expect(reveal).toHaveCount(0);
   await expect(item).toBeVisible();
-  await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "1");
+  await expect(page.getByRole("main").locator("[data-items]")).toHaveAttribute("data-items", "1");
 });
 
 // Records every frame what's big on screen: the reveal's emoji (once drawn) and the milestone's.
@@ -754,7 +754,7 @@ test("the kid view: two taps 200 ms apart both show big, each long enough to see
   await expect(page.locator('[data-item="0"]')).toBeVisible();
   await expect(page.locator("[data-reveal]")).toHaveCount(0, { timeout: 4000 });
   await expect(page.locator('[data-item="1"]')).toBeVisible();
-  await expect(page.locator("[data-items]")).toHaveAttribute("data-items", "2");
+  await expect(page.getByRole("main").locator("[data-items]")).toHaveAttribute("data-items", "2");
   const { shows } = await seen();
   expect(shows.map((x) => x.what)).toEqual(["reveal 🌸", "reveal 🍄"]);
   for (const x of shows) expect(x.ms).toBeGreaterThanOrEqual(700);
@@ -903,7 +903,7 @@ test("editing a child's habit that has no category keeps it without one", async 
   await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");
   await page.reload();
   await expect(page.getByRole("heading", { name: "Tidy my room" })).toBeVisible();
-  await expect(page.locator("header").filter({ hasText: "Tidy my room" })).not.toContainText("Home");
+  await expect(page.getByRole("main").locator("header").filter({ hasText: "Tidy my room" })).not.toContainText("Home");
   await manage.getByText("Edit details", { exact: true }).click();
   await expect(manage.getByLabel("Category")).toHaveValue("");
 });

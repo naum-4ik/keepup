@@ -10,7 +10,7 @@ import { isAvatarColor } from "@/lib/avatars";
 import { cityOf } from "@/lib/timezones";
 import { appVersion } from "@/lib/version";
 import { getMyLevel } from "@/lib/xp-data";
-import { saveAvatar } from "./actions";
+import { saveAvatar } from "../actions";
 
 // profile.summary reads as one line here; the city is its own element, as on onboarding.
 const summaryTags = {

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { completeOnboarding, signIn, signUp, uniqueEmail } from "./helpers/auth";
 import { createHabit } from "./helpers/habits";
 
@@ -134,7 +134,7 @@ test("a template habit shows in the chosen language; a typed or renamed one stay
   await expect(page.getByRole("heading", { name: en.water, exact: true })).toBeVisible();
 
   // Renamed: the typed name in both languages.
-  await page.locator("summary").filter({ hasText: /^Edit details/ }).click();
+  await page.getByRole("main").locator("summary").filter({ hasText: /^Edit details/ }).click();
   await page.getByLabel("Title", { exact: true }).fill(en.renamed);
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByRole("main").getByRole("status")).toHaveText("Saved");

@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { expect, test, type Page, type Request } from "@playwright/test";
+import { expect, test, type Page, type Request } from "./fixtures";
 import { completeOnboarding, signIn, signUp, signUpAndOnboard, uniqueEmail } from "./helpers/auth";
 import { createGroup, inviteLink, joinByLink } from "./helpers/groups";
 

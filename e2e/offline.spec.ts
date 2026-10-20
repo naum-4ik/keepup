@@ -1,6 +1,6 @@
 // e2e/offline.spec.ts
 // Check-ins with the network off (ideas/offline.md): queued on the phone, synced once when back.
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { signUpAndOnboard } from "./helpers/auth";
 import { createGroup } from "./helpers/groups";
 import { countCheckIns, countCheckInsOf, createHabit } from "./helpers/habits";

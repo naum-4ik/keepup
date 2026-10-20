@@ -23,7 +23,14 @@ import { getMyLevel } from "@/lib/xp-data";
 import { LOCALES } from "@/supabase/functions/_shared/i18n";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const [{ profile, who }, unread, level] = await Promise.all([getProfile(), getUnreadCount(), getMyLevel()]);
+  // Started together; only the profile is waited for (the onboarding redirect and every id need it). The
+  // bell's count and the Profile tab's level stream in (both fail soft, so neither promise rejects): the
+  // shell and the page's loading screen go out on the profile alone.
+  const unread = getUnreadCount().catch(() => 0);
+  const level = getMyLevel()
+    .then((l) => (l ? { level: l.level, xpProgress: levelFraction(l.xp) } : null))
+    .catch(() => null);
+  const { profile, who } = await getProfile();
   if (!profile.onboarded_at) redirect("/onboarding");
   const requestLocale = (await getLocale()) as Locale;
   const cookieStore = await cookies();
@@ -49,8 +56,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           displayName={profile.display_name}
           avatarEmoji={profile.avatar_emoji}
           avatarColor={profile.avatar_color}
-          level={level?.level ?? null}
-          xpProgress={level ? levelFraction(level.xp) : null}
+          level={level}
         />
         {/* A demo login has no push devices (the database refuses them): no re-save on app open. */}
         {!profile.is_demo && <PushRefresh />}

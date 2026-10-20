@@ -62,9 +62,12 @@ export default async function KidPage({
   ]);
   const unarchived = summaries.filter((h) => !h.archived_at);
   const archivedHabits = summaries.filter((h) => h.archived_at && !h.group_id);
-  const finishedIds = archivedHabits.length > 0 ? await getFinishedIds() : new Set<string>();
   // A habit past its end (in the group's calendar) takes no more check-ins, so it leaves the list.
-  const ends = await getHabitEnds(unarchived.map((h) => h.habit_id));
+  // Both need only the habits list, so they load together.
+  const [finishedIds, ends] = await Promise.all([
+    archivedHabits.length > 0 ? getFinishedIds() : new Set<string>(),
+    getHabitEnds(unarchived.map((h) => h.habit_id)),
+  ]);
   const today = todayIn(group?.timezone ?? profile.timezone);
   const habits = withoutEnded(unarchived, ends, () => today);
   const checkIns = await getChildCheckIns(id, habits);

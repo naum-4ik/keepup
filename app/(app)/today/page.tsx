@@ -43,51 +43,59 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const { t, locale } = await getT();
   const tt = await getTranslations("today");
   const tg = await getTranslations("groups.detail");
+  // One wave: each read starts as soon as what it needs is in (the ends once the habits are, a child's
+  // habits once the children are), not after the slowest of the first reads. Every promise is in the one
+  // Promise.all, so none is left unhandled.
   const childrenP = getMyChildren();
-  const [summaries, overview, groups, approvals, children, { profile }, celebrations, dismissed, checkedIn, tapRows] = await Promise.all([
-    getHabitSummaries(),
-    getWeekOverview(),
-    getMyGroups(),
-    getPendingApprovals(),
-    childrenP,
-    getProfile(),
-    getCelebrations(),
-    getDismissedCards(),
-    hasCheckedIn(),
-    childrenP.then((cs) => getRecentTapRows(cs.map((c) => c.child_id))),
-  ]);
-  const joinedGroup = joined && isUuid(joined) ? groups.find((g) => g.group_id === joined) : undefined;
+  const summariesP = getHabitSummaries();
+  const profileP = getProfile();
+  const activeP = summariesP.then((s) => s.filter((h) => !h.archived_at));
   // Habits past their end (ideas/habit-end-date.md) leave the lists (no more check-ins) for a finish card.
   // "Ended" is judged in each habit's own calendar: a group habit (and a child's) runs on the group's zone.
   // Two chains run side by side: the kids' sections (habits, stars, ends) and mine (ends, finish cards).
-  const active = summaries.filter((h) => !h.archived_at);
-  const endsP = getHabitEnds(active.map((h) => h.habit_id));
-  const zonesP = getGroupTimezones([...active.map((h) => h.group_id), ...children.map((c) => c.group_id)]).then(
-    (zones) => (groupId: string | null | undefined) => (groupId && zones.get(groupId)) || profile.timezone,
+  const endsP = activeP.then((active) => getHabitEnds(active.map((h) => h.habit_id)));
+  const zonesP = Promise.all([activeP, childrenP, profileP]).then(([active, children, { profile }]) =>
+    getGroupTimezones([...active.map((h) => h.group_id), ...children.map((c) => c.group_id)]).then(
+      (zones) => (groupId: string | null | undefined) => (groupId && zones.get(groupId)) || profile.timezone,
+    ),
   );
   const todayOfP = zonesP.then((zoneOf) => (groupId: string | null | undefined) => todayIn(zoneOf(groupId)));
-  const [kids, ends, finishes, todayOf, zoneOf] = await Promise.all([
-    (async () => {
-      // A section per child: the child's active habits and this week's stars (both fail soft).
-      const kidRows = await Promise.all(
-        children.map(async (child) => {
-          const [kidHabits, rewards] = await Promise.all([getChildSummaries(child.child_id), getChildRewards(child.child_id)]);
-          return { child, habits: kidHabits.filter((h) => !h.archived_at), stars: rewards?.stars_this_week ?? null };
-        }),
-      );
-      const [kidEnds, dayOf] = await Promise.all([getHabitEnds(kidRows.flatMap((k) => k.habits).map((h) => h.habit_id)), todayOfP]);
-      // A child's ended habits simply leave the child's section (an adult decides from their own finish card).
-      return kidRows.map((k) => ({ ...k, habits: withoutEnded(k.habits, kidEnds, () => dayOf(k.child.group_id)) }));
-    })(),
-    endsP,
-    (async () => {
-      const [myEnds, dayOf] = await Promise.all([endsP, todayOfP]);
-      const ended = active.filter((h) => hasEnded(myEnds.get(h.habit_id), dayOf(h.group_id)));
-      return Promise.all(ended.map(async (h) => ({ h, summary: await getFinishSummary(h.habit_id) })));
-    })(),
-    todayOfP,
-    zonesP,
-  ]);
+  const [summaries, overview, groups, approvals, children, { profile }, celebrations, dismissed, checkedIn, tapRows, active, kids, ends, finishes, todayOf, zoneOf] =
+    await Promise.all([
+      summariesP,
+      getWeekOverview(),
+      getMyGroups(),
+      getPendingApprovals(),
+      childrenP,
+      profileP,
+      getCelebrations(),
+      getDismissedCards(),
+      hasCheckedIn(),
+      childrenP.then((cs) => getRecentTapRows(cs.map((c) => c.child_id))),
+      activeP,
+      (async () => {
+        // A section per child: the child's active habits and this week's stars (both fail soft).
+        const kidRows = await Promise.all(
+          (await childrenP).map(async (child) => {
+            const [kidHabits, rewards] = await Promise.all([getChildSummaries(child.child_id), getChildRewards(child.child_id)]);
+            return { child, habits: kidHabits.filter((h) => !h.archived_at), stars: rewards?.stars_this_week ?? null };
+          }),
+        );
+        const [kidEnds, dayOf] = await Promise.all([getHabitEnds(kidRows.flatMap((k) => k.habits).map((h) => h.habit_id)), todayOfP]);
+        // A child's ended habits simply leave the child's section (an adult decides from their own finish card).
+        return kidRows.map((k) => ({ ...k, habits: withoutEnded(k.habits, kidEnds, () => dayOf(k.child.group_id)) }));
+      })(),
+      endsP,
+      (async () => {
+        // The same habit objects as `active` below: the lists drop finished ones by identity.
+        const [mine, myEnds, dayOf] = await Promise.all([activeP, endsP, todayOfP]);
+        const ended = mine.filter((h) => hasEnded(myEnds.get(h.habit_id), dayOf(h.group_id)));
+        return Promise.all(ended.map(async (h) => ({ h, summary: await getFinishSummary(h.habit_id) })));
+      })(),
+      todayOfP,
+      zonesP,
+    ]);
+  const joinedGroup = joined && isUuid(joined) ? groups.find((g) => g.group_id === joined) : undefined;
   const habits = active.filter((h) => !finishes.some((f) => f.h === h));
   // The check-ins these counts include, for taps still waiting on this phone (RenderedTaps).
   const renderedTaps = renderedTapIds(
@@ -160,8 +168,9 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
 
   // Spacing (docs/design.md): sections 24px apart, the title over its summary 8px. Kept short so the
   // first check-in is on the first screen of a 320×640 phone, above the bottom nav.
+  // data-offline-page: this Today rendered, so the service worker may save it for offline use (public/sw.js).
   return (
-    <section className="flex flex-col gap-section py-section">
+    <section data-offline-page="today" className="flex flex-col gap-section py-section">
       <RenderedTaps ids={renderedTaps} periods={shownPeriods} />
       <div className="flex flex-col gap-inner">
         <div className="flex flex-wrap items-baseline justify-between gap-x-inner">

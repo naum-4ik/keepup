@@ -75,12 +75,15 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const bdi = (c: React.ReactNode) => <bdi>{c}</bdi>;
   // The end needs only the id, so it loads with the habit.
   const childIdsP = getMyChildren().then((cs) => cs.map((c) => c.child_id));
-  const [{ profile, userId }, detail, ends, tapRows, childIds] = await Promise.all([
+  // The reminder settings need only the id too; read with the habit, used further down.
+  const settingsP = getHabitSettings(id);
+  const [{ profile, userId }, detail, ends, tapRows, childIds, settings] = await Promise.all([
     getProfile(),
     getHabitDetail(id),
     getHabitEnds([id]),
     childIdsP.then((ids) => getRecentTapRows(ids)),
     childIdsP,
+    settingsP,
   ]);
   if (!detail) notFound();
 
@@ -98,10 +101,9 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
   const category = h.category ?? "home";
   // A group habit runs on its group's calendar (time zone and week start). Finished habits use Start
   // again (Progress → Finished); only plain archived ones restore, so that list is read only then.
-  const [group, finishedIds, settings] = await Promise.all([
+  const [group, finishedIds] = await Promise.all([
     h.group_id || child?.groupId ? getGroupDetail((h.group_id ?? child?.groupId)!) : null,
     archived && canManage ? getFinishedIds() : null,
-    getHabitSettings(h.habit_id),
   ]);
   // Reminders are for people who do the habit: its owner, or anyone in its group (adults always take part).
   const takesPart = !child && (Boolean(h.group_id) || h.my_role === "owner");

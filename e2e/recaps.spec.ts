@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { signUp, completeOnboarding, uniqueEmail } from "./helpers/auth";
 import { createHabit, seedPastCheckIns, startHabitDaysAgo } from "./helpers/habits";
 

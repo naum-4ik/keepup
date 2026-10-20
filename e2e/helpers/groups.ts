@@ -14,7 +14,10 @@ export async function createGroup(page: Page, name: string, kind = "Family"): Pr
 // The invite card shows the URL in a read-only input labelled "Invite link", so tests and people can select it.
 export async function inviteLink(page: Page): Promise<string> {
   const link = page.getByRole("textbox", { name: "Invite link" });
-  if (!(await link.isVisible())) await page.getByRole("button", { name: "Create invite link" }).click();
+  const create = page.getByRole("button", { name: "Create invite link" });
+  // The group page streams in behind its loading screen (the URL can change first): wait for one of them.
+  await expect(link.or(create).first()).toBeVisible();
+  if (!(await link.isVisible())) await create.click();
   return (await link.inputValue()).trim();
 }
 

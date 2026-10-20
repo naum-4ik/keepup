@@ -15,6 +15,10 @@ const OFFLINE_URL = "/offline";
 // and how to install (linked from Profile and the "moved" notice).
 const SHELL_PAGES = ["/privacy", "/terms", "/install"];
 const OFFLINE_PAGES = [/^\/today$/, /^\/kids\/[0-9a-f-]{36}\/play$/];
+// A page is saved only when it rendered: Today and the kid view put data-offline-page="…" on their content.
+// Pages stream (loading screens), so the answer is 200 before the data is read; an error or a not-found
+// that happens after that is still a 200 and must never become the offline copy.
+const RENDERED = 'data-offline-page="';
 
 // The offline page is saved up front, but a failure (installed while offline) must not hold the
 // update back: it is saved again on the next page load that works.
@@ -24,7 +28,7 @@ self.addEventListener("install", (event) => {
       .open(SHELL)
       .then((c) =>
         c
-          .addAll([OFFLINE_URL, "/icons/icon-192.png"])
+          .addAll([OFFLINE_URL, "/icons/logo-192.png"])
           .then(() => c.match(OFFLINE_URL))
           .then((page) => page && page.text().then(saveAssetsOf))
           .then((assets) => assets && c.put(MANIFEST + OFFLINE_URL, manifestFor(assets))),
@@ -140,8 +144,10 @@ function nextSave(pathname) {
 }
 async function putIfLatest(pathname, res, isLatest) {
   if (!isLatest()) return;
+  const html = await res.clone().text();
+  if (!html.includes(RENDERED)) return;
   // Its scripts first: a saved page always has what it needs, and its list keeps them from the prune.
-  const assets = await saveAssetsOf(await res.clone().text());
+  const assets = await saveAssetsOf(html);
   if (!isLatest()) return;
   const cache = await caches.open(PAGES);
   await cache.put(MANIFEST + pathname, manifestFor(assets));
@@ -293,8 +299,8 @@ self.addEventListener("push", (event) => {
         // renotify only with a tag (Chrome throws otherwise) and only when it may ring.
         silent: data.silent !== false,
         renotify: typeof data.tag === "string" && Boolean(data.tag) && data.silent === false,
-        icon: "/icons/icon-192.png",
-        badge: "/icons/icon-192.png",
+        icon: "/icons/logo-192.png",
+        badge: "/icons/logo-192.png",
         data: { url: typeof data.url === "string" && data.url ? data.url : "/inbox", checkInId: data.checkInId || null, version: VERSION },
         actions: Array.isArray(data.actions) ? data.actions : [],
       })

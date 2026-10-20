@@ -7,7 +7,8 @@ import { MovedNotice } from "@/components/moved/moved-notice";
 import { Faro } from "@/components/observability/faro";
 import { ServiceWorker } from "@/components/pwa/service-worker";
 import "./globals.css";
-import { siteUrl as siteUrlFor } from "@/lib/site-url";
+import { iosStartupImages } from "@/lib/ios-splash";
+import { deploymentSiteUrl } from "@/lib/site-url";
 import { isRtl } from "@/supabase/functions/_shared/i18n";
 import { CLIENT_NAMESPACES } from "@/i18n/client-namespaces";
 
@@ -76,10 +77,7 @@ const geistMono = localFont({
 
 // Shared links (LinkedIn, WhatsApp, Slack…) show a card: this title and text, and app/opengraph-image.png.
 // The card needs absolute URLs (lib/site-url.ts: production keepuphabits, else Vercel's address).
-const siteUrl = siteUrlFor({
-  deployEnv: process.env.NEXT_PUBLIC_DEPLOY_ENV,
-  vercelProductionUrl: process.env.VERCEL_PROJECT_PRODUCTION_URL,
-});
+const siteUrl = deploymentSiteUrl();
 // Words in the visitor's language (meta.*, common.tagline); "Keepup" is the name and stays. The image
 // (app/opengraph-image.png and its alt text) stays English.
 export async function generateMetadata(): Promise<Metadata> {
@@ -94,8 +92,12 @@ export async function generateMetadata(): Promise<Metadata> {
     applicationName: "Keepup",
     openGraph: { type: "website", siteName: "Keepup", title: shareTitle, description: shareText, url: "/" },
     twitter: { card: "summary_large_image", title: shareTitle, description: shareText },
-    // iPhone "Add to Home Screen": full screen, named Keepup (the icon is app/apple-icon.png).
-    appleWebApp: { capable: true, title: "Keepup", statusBarStyle: "default" },
+    // iPhone "Add to Home Screen": full screen, named Keepup (the icon is app/apple-icon.png), and a cream
+    // launch screen with the tile instead of a white one (lib/ios-splash.ts).
+    appleWebApp: { capable: true, title: "Keepup", statusBarStyle: "default", startupImage: iosStartupImages() },
+    // Next writes only the standard mobile-web-app-capable; iOS still reads the legacy apple- one before it
+    // uses the launch screens above. Same full-screen launch the manifest's display: standalone asks for.
+    other: { "apple-mobile-web-app-capable": "yes" },
   };
 }
 

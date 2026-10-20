@@ -1,13 +1,12 @@
-// The manifest is fetched without cookies, so it must never redirect to /login. /offline is what the
-// service worker saves at install, signed in or not. Crawlers read /robots.txt signed out.
-const PUBLIC_EXACT = new Set(["/", "/manifest.webmanifest", "/sw.js", "/offline", "/robots.txt"]);
-// /api routes check the session themselves and answer 401 JSON (a redirect to the login page would
-// look like success to a fetch from the service worker).
-const PUBLIC_PREFIXES = ["/login", "/signup", "/auth", "/whats-new", "/privacy", "/terms", "/install", "/invite", "/api"];
+// The app's screens: a signed-out visit goes to /login and comes back after (lib/supabase/proxy.ts).
+// Everything else answers for itself: public pages (/, /login, /privacy, /install, /invite, …), the
+// manifest, /sw.js, /robots.txt and /sitemap.xml, /api routes (they check the session and answer 401
+// JSON), and unknown addresses, which get the real "Page not found" (app/not-found.tsx) rather than a
+// sign-in screen. A new screen folder under app/ must be added here: lib/paths.test.ts checks app/.
+export const APP_PREFIXES = ["/today", "/progress", "/habits", "/groups", "/inbox", "/kids", "/profile", "/onboarding"];
 
-export function isPublicPath(pathname: string): boolean {
-  if (PUBLIC_EXACT.has(pathname)) return true;
-  return PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+export function needsSignIn(pathname: string): boolean {
+  return APP_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
 // Only same-site absolute paths. Browsers strip tabs/newlines and treat "\" as "/",
