@@ -47,8 +47,9 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   let [before, after] = [0, 0];
   for (const f of files) {
     const input = readFileSync(f);
-    const out = await compressPng(input);
-    const keep = out.length < input.length * 0.99 ? out : input; // under 1% is churn, not a gain
+    // A second pass can still shave a pixel-identical percent off a fresh palette PNG; stop below 1% (churn).
+    let keep = input;
+    for (let out = await compressPng(keep); out.length < keep.length * 0.99; out = await compressPng(keep)) keep = out;
     if (keep !== input) writeFileSync(f, keep);
     before += input.length;
     after += keep.length;
