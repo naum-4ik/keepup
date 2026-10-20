@@ -72,7 +72,10 @@ function DisplayName({ saved }: { saved: string }) {
           aria-invalid={invalid}
           aria-describedby="displayName-status"
         />
-        <Button type="submit" className="h-11 shrink-0" disabled={pending}>
+        {/* Not disabled while a save is out: with the only submit button disabled, Enter in the field
+            does nothing, so a name typed right after a save was silently never sent. A second save while
+            one is out is fine: only the newest answer shows (lib/save-tracker.ts). */}
+        <Button type="submit" className="h-11 shrink-0">
           {pending ? tc("saving") : tc("save")}
         </Button>
       </div>
