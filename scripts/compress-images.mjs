@@ -2,10 +2,12 @@
 // (no arguments: every PNG folder of the repo). Uses sharp, which Next.js already installs.
 //
 // Each file is encoded twice: as a 256-colour palette (what pngquant does) and losslessly at the highest
-// zlib effort. The palette wins only when it is visually lossless: a premultiplied PSNR of at least 50 dB
-// against the original. Below that it bands soft gradients (the glow in the kid view at 47.8 dB showed a
-// ring). The smaller of the accepted encodings is written only if it beats the file on disk, so a rerun on
-// compressed files changes nothing.
+// zlib level (no "effort" there: in sharp it switches the palette on). The palette wins only when it is
+// visually lossless: a premultiplied PSNR of at least 50 dB against the original. Below that it bands soft
+// gradients (the glow in the kid view, at 47.8 dB, showed a ring). A file that is already a palette PNG is
+// never quantized again (each pass would drift further from the original): its palette encoding must be
+// pixel-identical. The smaller accepted encoding is written only if it saves at least 1% on disk, so a rerun
+// on compressed files changes nothing.
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -28,9 +30,10 @@ async function psnr(a, b) {
 
 // The smallest visually lossless encoding of a PNG buffer (may be larger than the input).
 export async function compressPng(input) {
-  const lossless = await sharp(input).png({ compressionLevel: 9, effort: 10, adaptiveFiltering: true }).toBuffer();
+  const lossless = await sharp(input).png({ compressionLevel: 9, adaptiveFiltering: true, palette: false }).toBuffer();
   const palette = await sharp(input).png({ compressionLevel: 9, effort: 10, palette: true, quality: 100 }).toBuffer();
-  const ok = palette.length < lossless.length && (await psnr(input, palette)) >= MIN_PSNR;
+  const { isPalette } = await sharp(input).metadata();
+  const ok = palette.length < lossless.length && (await psnr(input, palette)) >= (isPalette ? Infinity : MIN_PSNR);
   return ok ? palette : lossless;
 }
 
@@ -45,7 +48,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   for (const f of files) {
     const input = readFileSync(f);
     const out = await compressPng(input);
-    const keep = out.length < input.length ? out : input;
+    const keep = out.length < input.length * 0.99 ? out : input; // under 1% is churn, not a gain
     if (keep !== input) writeFileSync(f, keep);
     before += input.length;
     after += keep.length;

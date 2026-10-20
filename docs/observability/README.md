@@ -75,6 +75,7 @@ The uptime check is also the heartbeat: it keeps production traffic above zero, 
 - **Devices** and **Screens** (Faro): browsers, systems, phone or computer, who uses what, most viewed screens.
 - **Habits**, **Features and friction**, **Live feed**: top habits, categories, the habit lifecycle, feature use, refusals by rule, the latest actions as readable lines.
 Infra also has **Limits**: database size against 500 MB, connections against 60 (the free plan's Nano compute), the data disk and memory, plus links to the monthly quotas the metrics feed doesn't carry.
+The two screenshots above are taken by hand: after replacing one, run `node scripts/compress-images.mjs docs/observability/screenshots`.
 
 ## Queries
 TraceQL (Tempo):
