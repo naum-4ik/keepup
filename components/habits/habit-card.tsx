@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { HabitEmoji } from "@/components/habits/category-icon";
+import { LinkPending } from "@/components/ui/link-pending";
 import { CheckInButton } from "@/components/habits/check-in-button";
 import { MemberStatusRow } from "@/components/habits/member-status-row";
 import { StreakBadge } from "@/components/habits/streak-badge";
@@ -53,7 +54,7 @@ export async function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; 
   const metaId = `habit-meta-${habit.habit_id}`;
 
   return (
-    <div className="flex items-center gap-inner rounded-2xl bg-card p-item shadow-soft">
+    <div className="relative flex items-center gap-inner rounded-2xl bg-card p-item shadow-soft">
       <Link
         href={`/habits/${habit.habit_id}`}
         aria-labelledby={titleId}
@@ -94,6 +95,7 @@ export async function HabitCard({ habit, kid, endLine }: { habit: HabitSummary; 
             )}
           </span>
         </span>
+        <LinkPending />
       </Link>
       <StreakBadge count={habit.current_streak} />
       <CheckInButton

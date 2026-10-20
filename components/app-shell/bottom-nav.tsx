@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
+import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CalendarCheck, ChartColumn, CircleUser, Plus, Users, type LucideIcon } from "lucide-react";
 import { Avatar } from "@/components/avatar";
+import { isNavActive, tabTone } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 type NavItem = { href: string; label: "today" | "progress" | "newHabit" | "groups" | "profile"; icon: LucideIcon };
@@ -23,15 +24,39 @@ function NavLink({ href, label, icon: Icon, active, glyph, name }: Omit<NavItem,
       href={href}
       aria-label={name}
       aria-current={active ? "page" : undefined}
+      className={cn("group relative flex min-h-11 w-full rounded-xl text-xs font-semibold", !active && "hover:bg-muted")}
+    >
+      <TabBody active={active} label={label} glyph={glyph ?? <Icon className="size-5" aria-hidden />} />
+    </Link>
+  );
+}
+
+// Inside the Link (useLinkStatus reads the Link it sits in): a tapped tab turns active at once and shows a
+// small bar until its page commits, so the tap answers even when the next page isn't prefetched yet (a cold
+// start, a slow network). With a prefetched loading screen the page commits at once and aria-current moves.
+// The bar is always there and only fades in: nothing shifts. data-pending is for tests.
+function TabBody({ active, label, glyph }: { active: boolean; label: string; glyph: React.ReactNode }) {
+  const { pending } = useLinkStatus();
+  const tone = tabTone(active, pending);
+  return (
+    <span
+      data-pending={tone === "pending" ? "" : undefined}
       className={cn(
-        "flex min-h-11 w-full flex-col items-center justify-center gap-0.5 rounded-xl py-2.5 text-xs font-semibold",
-        active ? "text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        "flex w-full flex-col items-center justify-center gap-0.5 py-2.5",
+        tone === "idle" ? "text-muted-foreground group-hover:text-foreground" : "text-primary",
       )}
     >
+      <span
+        aria-hidden
+        className={cn(
+          "absolute inset-x-0 top-1 mx-auto h-0.5 w-5 rounded-full bg-primary opacity-0 transition-opacity duration-150",
+          tone === "pending" && "opacity-100 motion-safe:animate-pulse",
+        )}
+      />
       {/* md+: a 36px box, so every label lines up under the Profile tab's larger avatar and ring. */}
-      <span className="flex items-center justify-center md:h-9">{glyph ?? <Icon className="size-5" aria-hidden />}</span>
+      <span className="flex items-center justify-center md:h-9">{glyph}</span>
       {label}
-    </Link>
+    </span>
   );
 }
 
@@ -76,7 +101,7 @@ export function BottomNav({
 }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string) => isNavActive(pathname, href);
   const onProfile = isActive(PROFILE.href);
   const percent = xpProgress == null ? null : Math.floor(Math.min(Math.max(xpProgress, 0), 1) * 100);
   const profileName = !level ? undefined : percent == null ? t("profileLevel", { level }) : t("profileLevelProgress", { level, percent: percent / 100, next: level + 1 });
