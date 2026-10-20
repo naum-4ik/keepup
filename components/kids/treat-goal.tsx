@@ -3,7 +3,7 @@
 import { PenLine } from "lucide-react";
 import { unstable_rethrow } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { cancelGoal, markReceived, setGoal, type KidActionResult, type KidFormState } from "@/app/(app)/kids/actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Notice } from "@/components/ui/notice";
 import { Section } from "@/components/ui/section";
+import { useFocusFirstInvalid } from "@/lib/focus-first-invalid";
 import { reach } from "@/lib/reach";
 import type { Gender } from "@/lib/garden";
 import { GOAL_DEFAULT_EMOJI, GOAL_DEFAULT_TARGET, GOAL_TITLE_MAX } from "@/lib/kid-schema";
@@ -188,6 +189,11 @@ function SetGoalForm({ childId, onSet }: { childId: string; onSet: (treat: strin
   const [allIdeas, setAllIdeas] = useState(false);
   const [target, setTarget] = useState(String(GOAL_DEFAULT_TARGET));
   const [otherTarget, setOtherTarget] = useState(false);
+  // A message about one field sits beside it; any other (offline, a server error) above the buttons.
+  const field = state.status === "error" ? state.field : undefined;
+  const fieldError = (f: typeof field) => (state.status === "error" && field === f ? state.message : null);
+  const formRef = useRef<HTMLFormElement>(null);
+  useFocusFirstInvalid(formRef, state);
 
   if (!open) {
     return (
@@ -206,7 +212,8 @@ function SetGoalForm({ childId, onSet }: { childId: string; onSet: (treat: strin
     "flex min-h-24 flex-col items-center justify-center gap-inner rounded-2xl border-2 bg-card p-inner text-center text-xs font-semibold leading-tight wrap-normal break-normal shadow-soft hover:bg-muted aria-pressed:border-primary aria-pressed:bg-accent";
 
   return (
-    <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-item">
+    // noValidate: the app's own messages beside each field, never the browser's bubbles.
+    <form ref={formRef} onSubmit={keepFormValues(formAction)} noValidate className="flex flex-col gap-item">
       <div className="flex flex-col gap-inner">
         <p id="treat-ideas" className="text-sm font-semibold">{t("choose")}</p>
         <div role="group" aria-labelledby="treat-ideas" className="grid grid-cols-3 gap-inner">
@@ -257,6 +264,9 @@ function SetGoalForm({ childId, onSet }: { childId: string; onSet: (treat: strin
               type="button"
               aria-label={t("picture", { emoji })}
               aria-expanded={emojiOpen}
+              // data-invalid, not aria-invalid (not allowed on a button): focus still finds it.
+              data-invalid={fieldError("emoji") ? "" : undefined}
+              aria-describedby={fieldError("emoji") ? "goal-emoji-error" : undefined}
               onClick={() => setEmojiOpen((o) => !o)}
               className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-input text-2xl leading-none hover:bg-muted"
             >
@@ -273,8 +283,12 @@ function SetGoalForm({ childId, onSet }: { childId: string; onSet: (treat: strin
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="h-11 rounded-xl px-3 text-base"
+              aria-invalid={Boolean(fieldError("title"))}
+              aria-describedby={fieldError("title") ? "goal-title-error" : undefined}
             />
           </div>
+          {fieldError("title") && <p id="goal-title-error" className="text-sm text-destructive">{fieldError("title")}</p>}
+          {fieldError("emoji") && <p id="goal-emoji-error" className="text-sm text-destructive">{fieldError("emoji")}</p>}
           {emojiOpen && (
             // As many 44 px tiles as fit (5 at 320; 6 a row made them 36 px). 12 px padding: the 12 px radius.
             <div role="group" aria-label={t("emojiGroup")} className="grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] gap-inner rounded-xl bg-muted/50 p-3">
@@ -301,7 +315,14 @@ function SetGoalForm({ childId, onSet }: { childId: string; onSet: (treat: strin
       {picked && (
         <div className="flex flex-col gap-inner">
           <p id="goal-stars" className="text-sm font-semibold">{t("starsToCollect")}</p>
-          <div role="group" aria-labelledby="goal-stars" className="grid grid-cols-4 gap-inner">
+          <div
+            role="group"
+            aria-labelledby="goal-stars"
+            // The typed number carries the mark when it is shown; otherwise the chips do.
+            aria-describedby={fieldError("target") && !otherTarget ? "goal-target-error" : undefined}
+            data-invalid={fieldError("target") && !otherTarget ? "" : undefined}
+            className="grid grid-cols-4 gap-inner"
+          >
             {STAR_PICKS.map((n) => (
               <button
                 key={n}
@@ -341,16 +362,19 @@ function SetGoalForm({ childId, onSet }: { childId: string; onSet: (treat: strin
                 onChange={(e) => setTarget(e.target.value)}
                 required
                 className="h-11 w-24 rounded-xl px-3 text-base"
+                aria-invalid={Boolean(fieldError("target"))}
+                aria-describedby={fieldError("target") ? "goal-target-error" : undefined}
               />
             </div>
           ) : (
             <input type="hidden" name="target" value={target} />
           )}
+          {fieldError("target") && <p id="goal-target-error" className="text-sm text-destructive">{fieldError("target")}</p>}
           <p className="text-xs text-muted-foreground">{t("earns")}</p>
         </div>
       )}
 
-      {state.status === "error" && (
+      {state.status === "error" && !field && (
         <Notice tone="error" live>
           {state.message}
         </Notice>

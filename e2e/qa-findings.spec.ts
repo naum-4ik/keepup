@@ -40,7 +40,10 @@ test("kid custom habit: a server error keeps what was typed", async ({ page }) =
   await own.getByLabel("Times").fill("8");
   await own.getByLabel("Per").selectOption("week");
   await own.getByRole("button", { name: "Add habit" }).click();
-  await expect(own.getByRole("alert")).toHaveText("Pick 1–7 times a week.");
+  // Beside the count, which is marked and takes focus.
+  await expect(own.locator("#kid-habit-count-error")).toHaveText("Pick 1–7 times a week.");
+  await expect(own.getByLabel("Times")).toHaveAttribute("aria-invalid", "true");
+  await expect(own.getByLabel("Times")).toBeFocused();
   await expect(own.getByLabel("Title")).toHaveValue("Swim");
   await expect(own.getByLabel("Times")).toHaveValue("8");
   await expect(own.getByLabel("Per")).toHaveValue("week");
@@ -59,7 +62,8 @@ test("rename group: an error keeps what was typed, and the field stops at 40 cha
   await expect(field).toHaveAttribute("maxlength", "40");
   await field.fill("   ");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "Give the group a name." })).toBeVisible();
+  await expect(page.locator("#group-name-error")).toHaveText("Give the group a name.");
+  await expect(field).toHaveAttribute("aria-invalid", "true");
   await expect(field).toHaveValue("   ");
 });
 
@@ -79,7 +83,7 @@ test("add child and new group: a server error keeps the box ticked and the kind 
   const box = page.getByLabel("I'm this child's parent or guardian");
   await box.check();
   await page.getByRole("button", { name: /^Add / }).click();
-  await expect(page.getByRole("alert").filter({ hasText: "Enter a nickname." })).toBeVisible();
+  await expect(page.locator("#child-name-error")).toHaveText("Enter a nickname.");
   await expect(box).toBeChecked();
   await expect(page.getByLabel("Nickname")).toHaveValue("   ");
 });
