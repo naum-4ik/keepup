@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { completeOnboarding, signUp, uniqueEmail } from "./helpers/auth";
 import { localAdmin } from "./helpers/groups";
 

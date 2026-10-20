@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { signUpAndOnboard } from "./helpers/auth";
 
 // Settings' one rule: every setting saves when it changes and says so beside it ("Saved ✓"); one

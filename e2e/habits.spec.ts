@@ -1,4 +1,4 @@
-import { expect, test, type Locator } from "@playwright/test";
+import { expect, test, type Locator } from "./fixtures";
 import { signUpAndOnboard } from "./helpers/auth";
 import { createHabit, endHabitYesterday } from "./helpers/habits";
 

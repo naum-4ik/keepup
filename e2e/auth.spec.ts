@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { TEST_PASSWORD, chooseTimezone, completeOnboarding, signIn, signUp, signUpAndOnboard, uniqueEmail } from "./helpers/auth";
 
 test("signed-out visitors are sent to sign in", async ({ page }) => {

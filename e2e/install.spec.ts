@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 test("the manifest is served to signed-out visitors, with icons that load", async ({ request }) => {
   const res = await request.get("/manifest.webmanifest", { maxRedirects: 0 });
