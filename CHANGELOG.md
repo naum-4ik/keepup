@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.10.0](https://github.com/naum-4ik/keepup/compare/v1.9.0...v1.10.0) (2026-10-20)
+
+
+### Features
+
+* **icon:** terracotta tile with a larger cream sprout, every icon from one master ([#286](https://github.com/naum-4ik/keepup/issues/286)) ([71869fa](https://github.com/naum-4ik/keepup/commit/71869fa243a1c02a0b6d57324754e30e49a874c5))
+
+
+### Bug Fixes
+
+* **a11y:** accessible names and one validation pattern for every form ([#284](https://github.com/naum-4ik/keepup/issues/284)) ([bc27038](https://github.com/naum-4ik/keepup/commit/bc270384aa3618494bff7f76c04a518eddc12a1f))
+* **a11y:** colour contrast to WCAG AA in light and dark ([#282](https://github.com/naum-4ik/keepup/issues/282)) ([e0bf701](https://github.com/naum-4ik/keepup/commit/e0bf701205840a82cbc7864e0be2e1a67629bb0a))
+* **settings:** a name typed right after a save is saved on Enter ([#280](https://github.com/naum-4ik/keepup/issues/280)) ([c6fc3f4](https://github.com/naum-4ik/keepup/commit/c6fc3f4dd2486c8e6f8a2ee36ad0a429215d101e))
+
+
+### Performance Improvements
+
+* **images:** compress the repo's PNGs; Grafana landing funnel tiles ([#285](https://github.com/naum-4ik/keepup/issues/285)) ([78cfb77](https://github.com/naum-4ik/keepup/commit/78cfb77f217a1ad513bd773e773398cad857c9aa))
+
 ## [1.9.0](https://github.com/naum-4ik/keepup/compare/v1.8.0...v1.9.0) (2026-10-20)
 
 
