@@ -2,6 +2,7 @@
 
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense, use } from "react";
 import { useTranslations } from "next-intl";
 import { CalendarCheck, ChartColumn, CircleUser, Plus, Users, type LucideIcon } from "lucide-react";
 import { Avatar } from "@/components/avatar";
@@ -84,27 +85,28 @@ function XpRing({ fraction }: { fraction: number }) {
   );
 }
 
+// The person's level (public.my_level) and how far to the next one, 0 to 1; null when it couldn't be read.
+export type NavLevel = { level: number; xpProgress: number } | null;
+
+type ProfileTabProps = { displayName: string; avatarEmoji?: string | null; avatarColor?: string | null; active: boolean };
+
 export function BottomNav({
   displayName,
   avatarEmoji,
   avatarColor,
   level,
-  xpProgress,
 }: {
   displayName: string;
   avatarEmoji?: string | null;
   avatarColor?: string | null;
-  // The person's level (public.my_level), on the avatar; null when it couldn't be read.
-  level?: number | null;
-  // How far to the next level, 0 to 1 (the ring around the avatar); null when it couldn't be read: no ring.
-  xpProgress?: number | null;
+  // A promise, so the app shell doesn't wait for it: the Profile tab shows the avatar at once and its level
+  // and ring join when they arrive (both drawn over the avatar: nothing moves).
+  level: Promise<NavLevel>;
 }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const isActive = (href: string) => isNavActive(pathname, href);
-  const onProfile = isActive(PROFILE.href);
-  const percent = xpProgress == null ? null : Math.floor(Math.min(Math.max(xpProgress, 0), 1) * 100);
-  const profileName = !level ? undefined : percent == null ? t("profileLevel", { level }) : t("profileLevelProgress", { level, percent: percent / 100, next: level + 1 });
+  const profile: ProfileTabProps = { displayName, avatarEmoji, avatarColor, active: isActive(PROFILE.href) };
 
   return (
     <nav
@@ -133,33 +135,49 @@ export function BottomNav({
           <NavLink {...GROUPS} label={t(GROUPS.label)} active={isActive(GROUPS.href)} />
         </li>
         <li className="flex flex-1 justify-center">
-          <NavLink
-            {...PROFILE}
-            label={t(PROFILE.label)}
-            active={onProfile}
-            name={profileName}
-            // Your avatar is the Profile tab. Decoration: the link is named "Profile, level 2, 40% to level 3". A 20px
-            // avatar inside a 2px XP ring (26px, 3px past the avatar) and no margin: the tab stays as tall as the 20px icons
-            // beside it and the ring stops at the label's line box, so it never covers "Profile". On wide screens (md+,
-            // desktop, often a 1x display where a 10px emoji is a smudge) the avatar is 28px with a 36px ring, every tab's
-            // icon box is 36px tall so the labels line up, and the level sits off the emoji, on the ring (owner, 2026-10-05).
-            glyph={
-              <span aria-hidden className="relative flex rounded-full">
-                <Avatar name={displayName} emoji={avatarEmoji} color={avatarColor} size="sm" className="size-5 text-[0.625rem] md:size-7 md:text-base" />
-                {percent != null ? <XpRing fraction={percent / 100} /> : null}
-                {level ? (
-                  // The number only; Profile says "Level 2 · Seedling" in words. Soft sage, smaller than the
-                  // bell's count and never its colour, so it doesn't read as unread (owner). bottom-0, not
-                  // below: the label is 2px below the avatar, so anything lower covers "Profile".
-                  <span className="absolute -end-2 bottom-0 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-done-soft px-0.5 text-[0.5625rem] leading-none md:-end-4 md:-bottom-1 md:h-4 md:min-w-4 md:text-[0.625rem] font-bold text-done tabular-nums shadow-[0_0_0_2px_var(--card)] ring-1 ring-done/50">
-                    {level}
-                  </span>
-                ) : null}
-              </span>
-            }
-          />
+          <Suspense fallback={<ProfileTab {...profile} level={null} />}>
+            <ProfileTabWithLevel {...profile} level={level} />
+          </Suspense>
         </li>
       </ul>
     </nav>
+  );
+}
+
+function ProfileTabWithLevel({ level, ...rest }: ProfileTabProps & { level: Promise<NavLevel> }) {
+  return <ProfileTab {...rest} level={use(level)} />;
+}
+
+function ProfileTab({ displayName, avatarEmoji, avatarColor, active, level: read }: ProfileTabProps & { level: NavLevel }) {
+  const t = useTranslations("nav");
+  const level = read?.level ?? null;
+  const percent = read == null ? null : Math.floor(Math.min(Math.max(read.xpProgress, 0), 1) * 100);
+  const profileName = !level ? undefined : percent == null ? t("profileLevel", { level }) : t("profileLevelProgress", { level, percent: percent / 100, next: level + 1 });
+  return (
+    <NavLink
+      {...PROFILE}
+      label={t(PROFILE.label)}
+      active={active}
+      name={profileName}
+      // Your avatar is the Profile tab. Decoration: the link is named "Profile, level 2, 40% to level 3". A 20px
+      // avatar inside a 2px XP ring (26px, 3px past the avatar) and no margin: the tab stays as tall as the 20px icons
+      // beside it and the ring stops at the label's line box, so it never covers "Profile". On wide screens (md+,
+      // desktop, often a 1x display where a 10px emoji is a smudge) the avatar is 28px with a 36px ring, every tab's
+      // icon box is 36px tall so the labels line up, and the level sits off the emoji, on the ring (owner, 2026-10-05).
+      glyph={
+        <span aria-hidden className="relative flex rounded-full">
+          <Avatar name={displayName} emoji={avatarEmoji} color={avatarColor} size="sm" className="size-5 text-[0.625rem] md:size-7 md:text-base" />
+          {percent != null ? <XpRing fraction={percent / 100} /> : null}
+          {level ? (
+            // The number only; Profile says "Level 2 · Seedling" in words. Soft sage, smaller than the
+            // bell's count and never its colour, so it doesn't read as unread (owner). bottom-0, not
+            // below: the label is 2px below the avatar, so anything lower covers "Profile".
+            <span className="absolute -end-2 bottom-0 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-done-soft px-0.5 text-[0.5625rem] leading-none md:-end-4 md:-bottom-1 md:h-4 md:min-w-4 md:text-[0.625rem] font-bold text-done tabular-nums shadow-[0_0_0_2px_var(--card)] ring-1 ring-done/50">
+              {level}
+            </span>
+          ) : null}
+        </span>
+      }
+    />
   );
 }
