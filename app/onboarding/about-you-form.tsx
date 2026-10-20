@@ -7,7 +7,9 @@ import { SaveButton } from "@/components/save-button";
 import { TimezonePicker } from "@/components/timezone-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Notice } from "@/components/ui/notice";
 import { errorTexts } from "@/lib/field-error";
+import { useFocusFirstInvalid } from "@/lib/focus-first-invalid";
 import { useT } from "@/lib/i18n/client";
 import { purposeForGroupKind, type GroupKind } from "@/lib/group-schema";
 import type { OnboardingFormState, OnboardingFormValues, Purpose } from "@/lib/profile-schema";
@@ -61,11 +63,13 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
   const [detected, setDetected] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const weekStartRef = useRef<HTMLSelectElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const detailsId = useId();
 
   const values = state.status === "error" && state.values ? state.values : defaults;
   const errors = state.status === "error" ? errorTexts(t, state.errors) : {};
   const showDetails = expanded || Boolean(errors.timezone || errors.weekStart);
+  useFocusFirstInvalid(formRef, state);
 
   // Time zone and week start come from the browser once, on mount (the server can't know them).
   useEffect(() => {
@@ -83,7 +87,8 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
   }, [state, weekStart]);
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    // noValidate: the app's own messages beside each field, never the browser's bubbles.
+    <form ref={formRef} action={formAction} noValidate className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="displayName" className="font-semibold">
           {t("profile.form.displayName")}
@@ -168,7 +173,13 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
             {rich("onboarding.purposeLabel", { muted: (c: ReactNode) => <span className="font-normal text-muted-foreground">{c}</span> })}
           </p>
           <input type="hidden" name="purpose" value={purpose} />
-          <div role="group" aria-labelledby="purpose-label" className="flex flex-wrap gap-2">
+          <div
+            role="group"
+            aria-labelledby="purpose-label"
+            aria-describedby={errors.purpose ? "purpose-error" : undefined}
+            data-invalid={errors.purpose ? "" : undefined}
+            className="flex flex-wrap gap-2"
+          >
             {PURPOSE_CHIPS.map((chip) => {
               const pressed = purpose === chip.value;
               return (
@@ -190,14 +201,14 @@ export function AboutYouForm({ action, timezones, defaults, invitedTo }: Props) 
               );
             })}
           </div>
-          {errors.purpose && <p className="text-sm text-destructive">{errors.purpose}</p>}
+          {errors.purpose && <p id="purpose-error" className="text-sm text-destructive">{errors.purpose}</p>}
         </div>
       )}
 
       {state.status === "error" && state.message && (
-        <p role="alert" className="text-sm text-destructive">
+        <Notice tone="error" live>
           {state.message}
-        </p>
+        </Notice>
       )}
 
       <div className="flex flex-col gap-2">

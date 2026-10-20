@@ -16,7 +16,8 @@ import { logError, track } from "@/lib/log";
 import { errorText } from "@/lib/field-error";
 import type { T } from "@/supabase/functions/_shared/i18n";
 
-export type GroupActionState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string; code?: string };
+// `field`: the message is about the name, so the form shows it beside that field (none: the form's).
+export type GroupActionState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string; code?: string; field?: "name" };
 
 const fail = async (key: string): Promise<GroupActionState> => {
   const { t } = await getT();
@@ -28,6 +29,12 @@ const noMember = () => fail("errors.member_not_found");
 // A name the database rejects arrives as a raw check violation, not a keepup: code.
 const nameErrorMessage = (t: T, error: { code?: string; message?: string }) =>
   error.code === "23514" ? t("errors.groupNameLength", { max: GROUP_NAME_MAX }) : habitErrorMessage(t, error);
+// A refused name (too long for the database) belongs beside the field; anything else is the form's.
+const nameError = (t: T, error: { code?: string; message?: string }): GroupActionState => ({
+  status: "error",
+  message: nameErrorMessage(t, error),
+  ...(error.code === "23514" ? { field: "name" as const } : {}),
+});
 
 function refresh(groupId?: string) {
   revalidatePath("/groups");
@@ -38,13 +45,13 @@ function refresh(groupId?: string) {
 export async function createGroup(_prev: GroupActionState, formData: FormData): Promise<GroupActionState> {
   const { t } = await getT();
   const name = parseGroupName(String(formData.get("name") ?? ""));
-  if (!name.ok) return { status: "error", message: errorText(t, name.error) };
+  if (!name.ok) return { status: "error", message: errorText(t, name.error), field: "name" };
   const kind = String(formData.get("kind") ?? "other");
   const avatar = parseAvatar(t, formData, isGroupAvatarEmoji);
   if (!avatar.ok) return { status: "error", message: avatar.message };
   const { supabase, who } = await requireUser();
   const { data, error } = await supabase.rpc("create_group", { p_name: name.value, p_kind: isGroupKind(kind) ? kind : "other" });
-  if (error || !data) return { status: "error", message: error ? nameErrorMessage(t, error) : habitErrorMessage(t, null) };
+  if (error || !data) return error ? nameError(t, error) : { status: "error", message: habitErrorMessage(t, null) };
   track("group_created", who, { "group.id": data.id, "group.kind": isGroupKind(kind) ? kind : "other" });
   // Optional: the group is created either way, so a failed avatar only logs (it can be set later).
   if (avatar.emoji || avatar.color !== "peach") {
@@ -62,10 +69,10 @@ export async function renameGroup(groupId: string, _prev: GroupActionState, form
   const { t } = await getT();
   if (!isUuid(groupId)) return notFound();
   const name = parseGroupName(String(formData.get("name") ?? ""));
-  if (!name.ok) return { status: "error", message: errorText(t, name.error) };
+  if (!name.ok) return { status: "error", message: errorText(t, name.error), field: "name" };
   const { supabase } = await requireUser();
   const { error } = await supabase.rpc("update_group", { p_group_id: groupId, p_name: name.value });
-  if (error) return { status: "error", message: nameErrorMessage(t, error) };
+  if (error) return nameError(t, error);
   refresh(groupId);
   return { status: "saved" };
 }

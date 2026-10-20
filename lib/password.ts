@@ -65,3 +65,17 @@ export function passwordAuthMessage(t: T, error: { code?: string }): string {
   const key = error.code && MESSAGE_KEYS[error.code];
   return key ? t(key, { min: PASSWORD_MIN }) : t("errors.generic");
 }
+
+// Which field a Supabase Auth error is about, so the form shows it beside that field. None: the pair
+// (a wrong password) or the form as a whole (too many tries, a server error).
+const FIELD_OF: Record<string, CredentialsField> = {
+  user_already_exists: "email",
+  email_exists: "email",
+  email_address_invalid: "email",
+  weak_password: "password",
+  same_password: "password",
+};
+
+export function passwordAuthField(error: { code?: string }): CredentialsField | undefined {
+  return error.code ? FIELD_OF[error.code] : undefined;
+}

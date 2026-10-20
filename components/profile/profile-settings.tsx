@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { saveProfileSetting } from "@/app/(app)/profile/settings/actions";
 import { InfoHint } from "@/components/info-hint";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Section } from "@/components/ui/section";
+import { useFocusFirstInvalid } from "@/lib/focus-first-invalid";
 import type { ProfileSetting } from "@/lib/profile-schema";
 
 type Saved = { displayName: string; timezone: string; weekStart: string };
@@ -44,8 +45,14 @@ function DisplayName({ saved }: { saved: string }) {
   const [sent, setSent] = useState(saved);
   const shown = state.status === "saved" && value !== sent ? ({ status: "idle" } as const) : state;
   const invalid = state.status === "error";
+  // Not saved: back to the field, which reads why (aria-describedby).
+  const formRef = useRef<HTMLFormElement>(null);
+  useFocusFirstInvalid(formRef, state);
   return (
     <form
+      ref={formRef}
+      // noValidate: the app's own "why" beside the field, never the browser's bubble.
+      noValidate
       className="flex flex-col gap-inner"
       onSubmit={(e) => {
         e.preventDefault();

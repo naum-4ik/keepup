@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { GroupActionState } from "@/app/(app)/groups/actions";
 import { SaveButton } from "@/components/save-button";
 import { TimezonePicker } from "@/components/timezone-picker";
+import { Notice } from "@/components/ui/notice";
 
 const initialState: GroupActionState = { status: "idle" };
 // 12 px sides to match the 12 px radius (as Notice does).
@@ -37,7 +38,7 @@ export function GroupSettingsForm({
         </select>
       </div>
       <p className="text-xs text-muted-foreground">{t("note")}</p>
-      {state.status === "error" && <p role="alert" className="text-sm text-destructive">{state.message}</p>}
+      {state.status === "error" && <Notice tone="error" live>{state.message}</Notice>}
       <SaveButton state={state} pending={pending} />
     </form>
   );

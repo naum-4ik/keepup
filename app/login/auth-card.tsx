@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { GoogleIcon } from "@/components/google-icon";
+import { GoogleSubmit } from "@/components/google-submit";
 import { TryDemoButton } from "@/components/demo/try-demo-button";
 import { PrivacyConsent } from "@/components/privacy-consent";
-import { Button } from "@/components/ui/button";
 import { getT } from "@/lib/i18n/server";
 import { signInWithGoogle } from "./actions";
 
@@ -42,10 +42,14 @@ export async function AuthCard({ title, subtitle, next, googleEnabled, footer, c
             </div>
             <form action={signInWithGoogle}>
               <input type="hidden" name="next" value={next} />
-              <Button type="submit" variant="outline" size="lg" className="w-full justify-center gap-inner bg-card hover:bg-muted">
-                <GoogleIcon className="size-5" />
-                {t("auth.continueGoogle")}
-              </Button>
+              <GoogleSubmit
+                variant="outline"
+                size="lg"
+                className="w-full justify-center gap-inner bg-card hover:bg-muted"
+                icon={<GoogleIcon className="size-5" />}
+                label={t("auth.continueGoogle")}
+                pendingLabel={t("auth.openingGoogle")}
+              />
             </form>
           </>
         )}

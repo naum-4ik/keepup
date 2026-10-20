@@ -491,7 +491,10 @@ export function KidPlay({
           <HoldToExit href={`/kids/${child.id}`} childName={child.name} />
         </div>
         <div className="flex items-center gap-item">
-          <Avatar name={child.name} emoji={child.emoji} color={child.color} size="lg" />
+          {/* The h1 beside it names her, so the avatar is decoration here. */}
+          <span aria-hidden className="flex shrink-0">
+            <Avatar name={child.name} emoji={child.emoji} color={child.color} size="lg" />
+          </span>
           <h1 className="min-w-0 flex-1 text-2xl font-bold wrap-break-word">{child.name}</h1>
         </div>
       </header>
@@ -637,7 +640,7 @@ export function KidPlay({
                     with the ✓. Both the same size, so the title never re-wraps when a card turns done. */}
                 {done ? (
                   <span aria-hidden data-mark="done" className="flex size-16 shrink-0 items-center justify-center rounded-full bg-done-foreground text-done">
-                    <Check className="size-10" strokeWidth={3} />
+                    <Check aria-hidden className="size-10" strokeWidth={3} />
                   </span>
                 ) : (
                   <span aria-hidden data-mark="open" className="size-16 shrink-0 rounded-full border-4 border-done bg-background" />

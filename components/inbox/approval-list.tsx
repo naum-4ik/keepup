@@ -110,7 +110,7 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
     return (
       <div ref={rootRef}>
         <EmptyState
-          icon={<CircleCheck className="size-6" />}
+          icon={<CircleCheck aria-hidden className="size-6" />}
           action={
             // Nothing to review: the next thing to do is your own check-ins.
             <Button asChild variant="outline">
@@ -168,7 +168,10 @@ export function ApprovalList({ rows }: { rows: ApprovalRow[] }) {
               )}
             >
               <div className="flex items-center gap-inner">
-                <Avatar name={a.author_name} emoji={a.author_avatar_emoji} color={a.author_avatar_color} size="md" />
+                {/* The line beside it names them, so the avatar is decoration here. */}
+                <span aria-hidden className="flex shrink-0">
+                  <Avatar name={a.author_name} emoji={a.author_avatar_emoji} color={a.author_avatar_color} size="md" />
+                </span>
                 <div className="flex min-w-0 flex-col">
                   <p className="font-semibold">
                     {tx.rich("did", { name: a.author_name, habit: a.habit_title, bdi })}

@@ -1,3 +1,5 @@
+import { useEffect, type RefObject } from "react";
+
 // After a submit the server refused field by field: focus goes to the first field it named, in the
 // form's own order (docs/design.md "States and feedback": inline errors, focus on the first one).
 // A field marks itself with aria-invalid="true" (inputs, selects) or data-invalid (a control group
@@ -14,4 +16,12 @@ export function focusFirstInvalid(root: Pick<El, "querySelector"> | null): boole
   const target = field.matches(FOCUSABLE) ? field : field.querySelector(FOCUSABLE);
   target?.focus();
   return Boolean(target);
+}
+
+// The same after every refused submit: each answer is a new state object, so the effect runs once per
+// answer. A form-level error (a Notice, nothing marked) leaves focus where it is.
+export function useFocusFirstInvalid(form: RefObject<HTMLFormElement | null>, state: { status: string }): void {
+  useEffect(() => {
+    if (state.status === "error") focusFirstInvalid(form.current);
+  }, [form, state]);
 }

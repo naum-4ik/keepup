@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isValidEmail } from "@/lib/email";
+import { describedBy } from "@/lib/field-error";
+import { useFocusFirstInvalid } from "@/lib/focus-first-invalid";
 import { useT } from "@/lib/i18n/client";
 import { requestPasswordReset, submitCredentials } from "./actions";
 import { PasswordInput } from "./password-input";
@@ -21,6 +23,7 @@ export function LoginForm({ next }: { next: string }) {
   const [reset, resetAction] = useActionState(requestPasswordReset, initialState);
   const [resetPending, startReset] = useTransition();
   const emailRef = useRef<HTMLInputElement>(null);
+  const passwordFormRef = useRef<HTMLFormElement>(null);
   const [email, setEmail] = useState("");
   const [step, setStep] = useState<"email" | "password">("email");
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -28,6 +31,8 @@ export function LoginForm({ next }: { next: string }) {
   // An error belongs to the attempt that caused it: going back to change the email dismisses it.
   const [dismissed, setDismissed] = useState<LoginState | null>(null);
   const error = step === "password" && state.status === "error" && state !== dismissed ? state : null;
+  // A refused sign-in marks the password, so focus goes back to it with the message.
+  useFocusFirstInvalid(passwordFormRef, state);
 
   // The email field takes focus once the hint is there, so a screen reader reads the hint with it.
   useEffect(() => {
@@ -77,7 +82,12 @@ export function LoginForm({ next }: { next: string }) {
         onSubmit={(e) => {
           e.preventDefault(); // step 1 stays in the browser; only the password step talks to the server
           const trimmed = email.trim();
-          if (!isValidEmail(trimmed)) return setEmailError(t("auth.emailInvalid"));
+          if (!isValidEmail(trimmed)) {
+            setEmailError(t("auth.emailInvalid"));
+            // Back to the field, which reads its message (aria-describedby).
+            emailRef.current?.focus();
+            return;
+          }
           setEmail(trimmed);
           setEmailError(null);
           setStep("password");
@@ -97,6 +107,7 @@ export function LoginForm({ next }: { next: string }) {
           autoCorrect="off"
           spellCheck={false}
           autoFocus
+          required
           placeholder={t("auth.emailPlaceholder")}
           className="h-11 rounded-xl px-3"
           ref={emailRef}
@@ -106,10 +117,10 @@ export function LoginForm({ next }: { next: string }) {
             setNeedEmail(false);
           }}
           aria-invalid={Boolean(emailError)}
-          aria-describedby={[emailError && "login-error", needEmail && FORGOT_STATUS_ID].filter(Boolean).join(" ") || undefined}
+          aria-describedby={describedBy(emailError && "login-error", needEmail && FORGOT_STATUS_ID)}
         />
         {emailError && (
-          <p id="login-error" role="alert" className="text-sm text-destructive">
+          <p id="login-error" className="text-sm text-destructive">
             {emailError}
           </p>
         )}
@@ -124,7 +135,7 @@ export function LoginForm({ next }: { next: string }) {
   return (
     <>
       {/* noValidate: the server answers in the app's own words instead of the browser's bubbles. */}
-      <form action={action} noValidate className="flex flex-col gap-item">
+      <form ref={passwordFormRef} action={action} noValidate className="flex flex-col gap-item">
         <input type="hidden" name="next" value={next} />
         <input type="hidden" name="mode" value="signin" />
 
@@ -162,16 +173,16 @@ export function LoginForm({ next }: { next: string }) {
         <PasswordInput
           autoComplete="current-password"
           autoFocus
+          required
           invalid={Boolean(error)}
           describedBy={error ? "login-error" : undefined}
         />
-        <div className="-mt-2">{forgot}</div>
-
         {error && (
-          <p id="login-error" role="alert" className="text-sm text-destructive">
+          <p id="login-error" className="-mt-1 text-sm text-destructive">
             {error.message}
           </p>
         )}
+        <div className="-mt-2">{forgot}</div>
 
         <Button type="submit" disabled={pending} className="h-11">
           {pending ? t("auth.login.signingIn") : t("auth.signIn")}

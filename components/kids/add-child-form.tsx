@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, type ReactNode } from "react";
+import { useActionState, useRef, useState, type ReactNode } from "react";
 import { Check, Plus, X } from "lucide-react";
 import { unstable_rethrow } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Notice } from "@/components/ui/notice";
 import { GenderField } from "@/components/kids/gender-field";
+import { describedBy } from "@/lib/field-error";
+import { useFocusFirstInvalid } from "@/lib/focus-first-invalid";
 import { CHILD_NAME_MAX } from "@/lib/kid-schema";
 import { DEFAULT_KID_TEMPLATE_IDS, KID_TEMPLATES, kidGroupLabel, kidTemplatesByGroup, kidTemplateTitle, type KidTemplate } from "@/lib/kid-templates";
 import { useT } from "@/lib/i18n/client";
@@ -43,7 +45,7 @@ export function KidTemplateTile({ template, selected }: { template: KidTemplate;
             selected ? "border-primary bg-primary text-primary-foreground" : "border-input",
           )}
         >
-          {selected && <Check className="size-4" strokeWidth={3} />}
+          {selected && <Check aria-hidden className="size-4" strokeWidth={3} />}
         </span>
       )}
     </>
@@ -84,6 +86,10 @@ export function AddChildForm({ groupId }: { groupId: string }) {
   const [guardian, setGuardian] = useState(false);
   const [choosing, setChoosing] = useState(false);
   const nickname = name.trim();
+  // A message about the nickname sits under it; any other (offline, a server error) is the pinned bar's.
+  const nameError = state.status === "error" && state.field === "name";
+  const formRef = useRef<HTMLFormElement>(null);
+  useFocusFirstInvalid(formRef, state);
   const chosen = KID_TEMPLATES.filter((t) => picked.has(t.id));
 
   const toggle = (id: string) =>
@@ -96,7 +102,8 @@ export function AddChildForm({ groupId }: { groupId: string }) {
 
   return (
     // A form, not a card (docs/design.md "Surfaces"): fields on the page, the submit pinned above the nav.
-    <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-section">
+    // noValidate: the app's own message under the nickname, never the browser's bubble.
+    <form ref={formRef} onSubmit={keepFormValues(formAction)} noValidate className="flex flex-col gap-section">
       <input type="hidden" name="groupId" value={groupId} />
       {[...picked].map((id) => (
         <input key={id} type="hidden" name="templates" value={id} />
@@ -115,8 +122,14 @@ export function AddChildForm({ groupId }: { groupId: string }) {
             autoComplete="off"
             // 12 px sides to match the 12 px radius (as Notice does).
             className="h-11 rounded-xl px-3 text-base"
-            aria-describedby="child-name-help"
+            aria-invalid={nameError}
+            aria-describedby={describedBy(nameError && "child-name-error", "child-name-help")}
           />
+          {nameError && (
+            <p id="child-name-error" className="text-sm text-destructive">
+              {state.message}
+            </p>
+          )}
           <p id="child-name-help" className="text-sm text-muted-foreground">
             {tf("nicknameHelp")}
           </p>
@@ -212,7 +225,7 @@ export function AddChildForm({ groupId }: { groupId: string }) {
       {/* Pinned above the bottom nav on phones, so the button stays in reach while the habits list
           grows (as the new-group and habit forms do). -mx-item px-item: the bar's background spans the page. */}
       <div className="sticky bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom))] z-10 -mx-item flex flex-col gap-inner bg-background px-item py-inner">
-        {state.status === "error" && (
+        {state.status === "error" && !nameError && (
           <Notice tone="error" live>
             {state.message}
           </Notice>

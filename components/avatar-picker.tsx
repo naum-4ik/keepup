@@ -29,7 +29,10 @@ export function AvatarPicker({
       <input type="hidden" name="avatarEmoji" value={emoji} />
       <input type="hidden" name="avatarColor" value={color} />
       <div className="flex items-center gap-3">
-        <Avatar name={name || "?"} emoji={emoji} color={color} size="lg" />
+        {/* A preview of the choice the buttons below already announce: decoration ("?" until named). */}
+        <span aria-hidden className="flex shrink-0">
+          <Avatar name={name || "?"} emoji={emoji} color={color} size="lg" />
+        </span>
         <p className="text-sm text-muted-foreground">{hint ?? t("avatars.hint")}</p>
       </div>
       <div role="group" aria-label={t("avatars.avatarGroup")} className="grid grid-cols-6 gap-1">

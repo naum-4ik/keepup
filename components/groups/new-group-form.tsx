@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { unstable_rethrow } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Notice } from "@/components/ui/notice";
 import { GROUP_AVATAR_EMOJI } from "@/lib/avatars";
+import { describedBy } from "@/lib/field-error";
+import { useFocusFirstInvalid } from "@/lib/focus-first-invalid";
 import { groupKindLabel, GROUP_KINDS, type GroupKind } from "@/lib/group-schema";
 import { useT } from "@/lib/i18n/client";
 import { keepFormValues } from "@/lib/keep-form-values";
@@ -34,8 +36,11 @@ export function NewGroupForm({ city }: { city: string }) {
       return { status: "error", message: tn(navigator.onLine ? "reload" : "failed"), code: "offline" };
     }
   }, initialState);
-  const offline = state.status === "error" && state.code === "offline";
-  const nameError = state.status === "error" && !offline;
+  // A message about the name sits beside it; any other (offline, a server error) is the pinned bar's.
+  const nameError = state.status === "error" && state.field === "name";
+  const formError = state.status === "error" && !nameError;
+  const formRef = useRef<HTMLFormElement>(null);
+  useFocusFirstInvalid(formRef, state);
   const [name, setName] = useState("");
   const [kind, setKind] = useState<GroupKind | "">("");
 
@@ -47,7 +52,8 @@ export function NewGroupForm({ city }: { city: string }) {
 
   return (
     // A form, not a card (docs/design.md "Surfaces"): fields on the page, the submit pinned above the nav.
-    <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-section">
+    // noValidate: the app's own message beside the name, never the browser's bubble.
+    <form ref={formRef} onSubmit={keepFormValues(formAction)} noValidate className="flex flex-col gap-section">
       <fieldset className="flex flex-col gap-inner">
         <legend className="mb-inner text-sm font-semibold">{tn("whoFor")}</legend>
         <div className="flex flex-wrap gap-inner">
@@ -83,10 +89,10 @@ export function NewGroupForm({ city }: { city: string }) {
           // 12 px sides to match the 12 px radius (as Notice does).
           className="h-11 rounded-xl px-3 text-base"
           aria-invalid={nameError}
-          aria-describedby={nameError ? "group-new-name-error" : "group-new-name-help"}
+          aria-describedby={describedBy(nameError && "group-new-name-error", "group-new-name-help")}
         />
         {nameError && (
-          <p id="group-new-name-error" role="alert" className="text-sm text-destructive">{state.message}</p>
+          <p id="group-new-name-error" className="text-sm text-destructive">{state.message}</p>
         )}
       </div>
 
@@ -109,7 +115,7 @@ export function NewGroupForm({ city }: { city: string }) {
       {/* Pinned above the bottom nav on phones, so Create stays in reach while the avatar picker is
           open (as the habit edit form does). -mx-item px-item: the bar's background spans the page. */}
       <div className="sticky bottom-[calc(var(--nav-height)+env(safe-area-inset-bottom))] z-10 -mx-item flex flex-col gap-inner bg-background px-item py-inner">
-        {offline && (
+        {formError && (
           <Notice tone="error" live>
             {state.message}
           </Notice>

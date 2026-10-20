@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { DemoBanner } from "@/components/demo/demo-banner";
 import { GoogleIcon } from "@/components/google-icon";
+import { GoogleSubmit } from "@/components/google-submit";
 import { Button } from "@/components/ui/button";
 import { GROUP_KIND_EMOJI, isGroupKind } from "@/lib/group-schema";
 import { getT } from "@/lib/i18n/server";
@@ -77,12 +78,16 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
             <>
               <form action={signInWithGoogle}>
                 <input type="hidden" name="next" value={next} />
-                <Button type="submit" className="h-12 w-full gap-3 rounded-xl text-base">
-                  <span className="flex size-6 items-center justify-center rounded-full bg-card">
-                    <GoogleIcon className="size-4" />
-                  </span>
-                  {t("invite.joinGoogle")}
-                </Button>
+                <GoogleSubmit
+                  className="h-12 w-full gap-3 rounded-xl text-base"
+                  icon={
+                    <span className="flex size-6 items-center justify-center rounded-full bg-card">
+                      <GoogleIcon className="size-4" />
+                    </span>
+                  }
+                  label={t("invite.joinGoogle")}
+                  pendingLabel={t("auth.openingGoogle")}
+                />
               </form>
               <Button asChild variant="ghost" className="h-11 text-base text-primary">
                 <Link href={`/login?next=${encodeURIComponent(next)}`}>{t("invite.useEmail")}</Link>

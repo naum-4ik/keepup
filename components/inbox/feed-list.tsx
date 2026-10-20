@@ -16,7 +16,7 @@ export function FeedList({ items, timeZone, now, t, locale, hasGroups }: { items
     // The feed fills from groups: the way to join or create one.
     return (
       <EmptyState
-        icon={<Bell className="size-6" />}
+        icon={<Bell aria-hidden className="size-6" />}
         action={
           <Button asChild variant="outline">
             <Link href="/groups">{t("inbox.feed.emptyAction")}</Link>

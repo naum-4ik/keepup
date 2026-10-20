@@ -60,7 +60,8 @@ export function HabitDetailsForm({
   }, [state]);
 
   return (
-    <form ref={formRef} action={formAction} className="flex flex-col gap-item">
+    // noValidate: the app's own messages beside each field, never the browser's bubbles.
+    <form ref={formRef} action={formAction} noValidate className="flex flex-col gap-item">
       <div className="flex flex-col gap-inner">
         <Label htmlFor="title">{t("habits.form.titleLabel")}</Label>
         <EmojiPicker
@@ -74,6 +75,7 @@ export function HabitDetailsForm({
             name="title"
             value={values.title}
             onChange={(e) => setValues((v) => ({ ...v, title: e.target.value }))}
+            required
             className={fieldClass}
             aria-invalid={Boolean(errors.title)}
             aria-describedby={errors.title ? "edit-title-error" : undefined}

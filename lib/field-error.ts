@@ -9,3 +9,9 @@ export const errorText = (t: T, e: FieldError): string => t(e.key, e.values);
 export function errorTexts<K extends string>(t: T, errors: Partial<Record<K, FieldError>> | undefined): Partial<Record<K, string>> {
   return Object.fromEntries(Object.entries<FieldError | undefined>(errors ?? {}).flatMap(([k, e]) => (e ? [[k, errorText(t, e)]] : []))) as Partial<Record<K, string>>;
 }
+
+// A field's aria-describedby from the ids that apply right now (its help line, its error): the
+// ones that are set, space-separated, or nothing at all.
+export function describedBy(...ids: (string | false | null | undefined)[]): string | undefined {
+  return ids.filter(Boolean).join(" ") || undefined;
+}

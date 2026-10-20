@@ -287,7 +287,7 @@ function DeliveryChoice({ category, label, hint, saved }: {
         {saving && (
           // Spinner to its word: one glyph pair, 4 px.
           <span aria-hidden data-testid={`delivery-${category}-saving`} className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-            <Loader2 className="size-3 animate-spin motion-reduce:animate-none" />
+            <Loader2 aria-hidden className="size-3 animate-spin motion-reduce:animate-none" />
             {t("common.saving")}
           </span>
         )}

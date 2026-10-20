@@ -6,7 +6,7 @@ import { LOCALES } from "@/supabase/functions/_shared/i18n";
 import { pickLocale } from "@/i18n/config";
 import { createClient } from "@/lib/supabase/server";
 import { isValidEmail } from "@/lib/email";
-import { credentialsError, isFreshRecovery, newPasswordError, passwordAuthMessage } from "@/lib/password";
+import { credentialsError, isFreshRecovery, newPasswordError, passwordAuthField, passwordAuthMessage } from "@/lib/password";
 import { getT } from "@/lib/i18n/server";
 import { safeNextPath } from "@/lib/paths";
 import { requestOrigin } from "@/lib/request-origin";
@@ -37,7 +37,7 @@ export async function submitCredentials(_prev: LoginState, formData: FormData): 
       : await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     const accountExists = error.code === "user_already_exists" || error.code === "email_exists";
-    return { status: "error", message: passwordAuthMessage(t, error), email, mode, accountExists };
+    return { status: "error", message: passwordAuthMessage(t, error), field: passwordAuthField(error), email, mode, accountExists };
   }
   if (!data.session) {
     if (mode === "signup") return { status: "confirm", message: t("auth.confirmEmailSent") };

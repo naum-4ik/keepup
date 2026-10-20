@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { Pencil } from "lucide-react";
 import { unstable_rethrow } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -16,6 +16,7 @@ import type { AvatarColor } from "@/lib/avatars";
 import { GenderField } from "@/components/kids/gender-field";
 import { keepFormValues } from "@/lib/keep-form-values";
 import { reach } from "@/lib/reach";
+import { useFocusFirstInvalid } from "@/lib/focus-first-invalid";
 import { CHILD_NAME_MAX, type KidGender } from "@/lib/kid-schema";
 
 const initialState: KidFormState = { status: "idle" };
@@ -64,8 +65,13 @@ function EditChildForm({ childId, name, emoji, color, gender }: { childId: strin
     return "ok" in r ? { status: "error", message: r.message } : r;
   }, initialState);
   const [value, setValue] = useState(name);
+  // A message about the nickname sits under it; any other (offline, a server error) above Save.
+  const nameError = state.status === "error" && state.field === "name";
+  const formRef = useRef<HTMLFormElement>(null);
+  useFocusFirstInvalid(formRef, state);
   return (
-    <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-item">
+    // noValidate: the app's own message under the nickname, never the browser's bubble.
+    <form ref={formRef} onSubmit={keepFormValues(formAction)} noValidate className="flex flex-col gap-item">
       <div className="flex flex-col gap-inner">
         <Label htmlFor="child-edit-name" className="font-semibold">{t("nickname")}</Label>
         <Input
@@ -77,12 +83,19 @@ function EditChildForm({ childId, name, emoji, color, gender }: { childId: strin
           maxLength={CHILD_NAME_MAX}
           autoComplete="off"
           className="h-11 rounded-xl px-3 text-base"
+          aria-invalid={nameError}
+          aria-describedby={nameError ? "child-edit-name-error" : undefined}
         />
+        {nameError && (
+          <p id="child-edit-name-error" className="text-sm text-destructive">
+            {state.message}
+          </p>
+        )}
       </div>
       <input type="hidden" name="previousGender" value={gender ?? ""} />
       <GenderField defaultValue={gender} />
       <AvatarPicker name={value.trim()} emoji={emoji} color={color} />
-      {state.status === "error" && (
+      {state.status === "error" && !nameError && (
         <Notice tone="error" live>
           {state.message}
         </Notice>
