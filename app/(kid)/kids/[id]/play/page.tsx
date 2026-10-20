@@ -41,6 +41,8 @@ export default async function KidViewPage({ params }: { params: Promise<{ id: st
 
   return (
     <>
+      {/* This kid view rendered, so the service worker may save it for offline use (public/sw.js). */}
+      <span hidden data-offline-page="kid" />
       <RenderedTaps ids={renderedTaps} periods={tapPeriods(running, () => zone)} />
       <KidPlay
         child={{ id, name: child.name, emoji: child.avatar_emoji, color: child.avatar_color, theme: child.kid_theme, gender: child.gender }}

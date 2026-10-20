@@ -168,8 +168,9 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
 
   // Spacing (docs/design.md): sections 24px apart, the title over its summary 8px. Kept short so the
   // first check-in is on the first screen of a 320×640 phone, above the bottom nav.
+  // data-offline-page: this Today rendered, so the service worker may save it for offline use (public/sw.js).
   return (
-    <section className="flex flex-col gap-section py-section">
+    <section data-offline-page="today" className="flex flex-col gap-section py-section">
       <RenderedTaps ids={renderedTaps} periods={shownPeriods} />
       <div className="flex flex-col gap-inner">
         <div className="flex flex-wrap items-baseline justify-between gap-x-inner">
