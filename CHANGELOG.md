@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.9.0](https://github.com/naum-4ik/keepup/compare/v1.8.0...v1.9.0) (2026-10-20)
+
+
+### Features
+
+* **icons:** installed-app icons on the macOS grid, 1024 size, full-bleed logo inside the app ([#271](https://github.com/naum-4ik/keepup/issues/271)) ([e554ea5](https://github.com/naum-4ik/keepup/commit/e554ea526ce50050b094989c6046f71d532ae7f0))
+* **seo:** sitemap.xml for public pages, real 404 for unknown addresses when signed out ([#269](https://github.com/naum-4ik/keepup/issues/269)) ([8254550](https://github.com/naum-4ik/keepup/commit/82545507ccc0c7a6098d686d9f797bf99383dd86))
+
+
+### Performance Improvements
+
+* **nav:** loading screens and pending taps, so the app answers a tap at once; iPhone launch screen ([#274](https://github.com/naum-4ik/keepup/issues/274)) ([a74ced5](https://github.com/naum-4ik/keepup/commit/a74ced5cc3294a5d35b88c734c9ffdcfcb1c6a20))
+
 ## [1.8.0](https://github.com/naum-4ik/keepup/compare/v1.7.0...v1.8.0) (2026-10-19)
 
 
