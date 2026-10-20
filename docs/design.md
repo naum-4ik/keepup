@@ -199,7 +199,7 @@ Master artwork (`scripts/icon-art.mjs`; written out as `app/icon.svg`, rounded, 
 
 - **Every size comes from the master.** `node scripts/gen-app-icons.mjs` writes `app/icon.svg`, `app/favicon.ico` (16, 32, 48), `app/apple-icon.png` (180) and everything in `public/icons/`; `node scripts/gen-ios-splash.mjs` the launch screens. Never draw one by hand.
 - **The sprout is centred on its bounding box** (x 14–50, y 13–53.5, middle at y 33.25), so the top and bottom margins are equal: 8% of the tile at scale 1.32.
-- **Browser tab:** `icon.svg` and `favicon.ico` keep rounded corners (rx 14 of 64), since a tab shows them unmasked. At 16 px the gradient is flat `#B84F33`; it only muddied the few pixels.
+- **Browser tab:** `icon.svg` and `favicon.ico` keep rounded corners (rx 14 of 64), since a tab shows them unmasked. At 16 px the tile is flat `#B84F33`: the gradient is barely visible there, and a smaller sprout (scale 1.2, tried) read worse.
 - **Installed-app icons ("any": Chrome/Edge desktop, macOS Dock, Windows):** `icon-192/512/1024.png` put the tile on the macOS icon grid: a transparent canvas, the tile 824 of 1024 px with a 100 px margin, corner radius 185 px, a soft shadow, and no drawn edge. An edge-to-edge tile with its own border looked like a box in a box next to native icons.
 - **In-app pictures** (landing, sign-in, invite, the notification icon) use `logo-192.png`, the full-bleed tile; CSS rounds the corners.
 - **Push badge:** `badge-96.png`, the sprout alone in white. Android draws the badge from the alpha channel only, so a full tile showed as a white square.

@@ -3,7 +3,7 @@
 // compressPng (scripts/compress-images.mjs) shrinks the output.
 //
 // - app/icon.svg (browser tab, README) and app/favicon.ico (16, 32, 48): the tile with rounded corners,
-//   since a tab shows it unmasked. At 16 px the gradient is flattened to one colour.
+//   since a tab shows it unmasked. At 16 px the tile is one flat colour.
 // - app/apple-icon.png (180, iOS) and public/icons/logo-192.png (the pictures inside the app: landing,
 //   sign-in, invite, notifications; CSS rounds them): full bleed and opaque, the OS or CSS rounds them.
 // - public/icons/maskable-512.png (Android): full bleed, the sprout smaller so it stays in the safe zone
@@ -18,7 +18,7 @@ import sharp from "sharp";
 import { compressPng } from "./compress-images.mjs";
 import { GRADIENT, sprout, tileSvg } from "./icon-art.mjs";
 
-const MASKABLE_SCALE = 0.88; // the sprout's farthest point at 23.2 of the safe zone's 25.6 units
+const MASKABLE_SCALE = 0.88; // the sprout's farthest point at about 23.7 of the safe zone's 25.6 units (measured: 189 of 204.8 px)
 
 // An SVG drawn in 64 units, as a PNG of `size` px (rendered at 4× and scaled down for clean edges).
 const render = (svg, size) => sharp(Buffer.from(svg), { density: ((72 * size) / 64) * 4 }).resize(size, size);
