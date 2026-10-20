@@ -25,6 +25,29 @@ export function releaseLabel(r: Release, appVersion: string, locale: Locale, t: 
 
 export const RELEASES: Release[] = [
   {
+    version: "1.10.0",
+    notes: {
+      en: [
+        "A new app icon: a cream sprout on a terracotta tile, easier to spot on your Home Screen. To see it on iPhone, remove Keepup from the Home Screen and add it again.",
+        "Easier to read: text, buttons and field borders have stronger contrast, in light and dark mode.",
+        "Forms point to what needs fixing: the field is marked, the message sits under it, and the cursor jumps there.",
+        "A name typed right after saving is now saved when you press Enter.",
+      ],
+      ru: [
+        "Новая иконка: кремовый росток на терракотовой плитке, её проще найти на экране «Домой». Чтобы увидеть её на iPhone, удалите Keepup с экрана «Домой» и добавьте снова.",
+        "Читать проще: у текста, кнопок и рамок полей выше контраст, в светлой и тёмной теме.",
+        "Формы показывают, что исправить: поле подсвечено, подсказка под ним, и курсор сразу переходит туда.",
+        "Имя, набранное сразу после сохранения, теперь сохраняется по нажатию Enter.",
+      ],
+      he: [
+        "סמל חדש לאפליקציה: נבט בצבע שמנת על אריח טרקוטה, קל יותר למצוא אותו במסך הבית. כדי לראות אותו באייפון, הסירו את Keepup ממסך הבית והוסיפו שוב.",
+        "קל יותר לקרוא: לטקסט, לכפתורים ולמסגרות השדות יש ניגודיות חזקה יותר, במצב בהיר ובמצב כהה.",
+        "הטפסים מראים מה לתקן: השדה מסומן, ההודעה מופיעה מתחתיו, והסמן עובר אליו.",
+        "שם שמקלידים מיד אחרי שמירה נשמר עכשיו בלחיצה על Enter.",
+      ],
+    },
+  },
+  {
     version: "1.9.0",
     date: "2026-10-20",
     notes: {
