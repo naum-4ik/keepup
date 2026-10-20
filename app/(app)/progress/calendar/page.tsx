@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { LinkPending } from "@/components/ui/link-pending";
 import { MonthCalendar } from "@/components/overview/month-calendar";
 import { getProfile } from "@/lib/auth";
 import { formatMonth } from "@/lib/dates";
@@ -7,7 +8,7 @@ import { getT } from "@/lib/i18n/server";
 import { monthGrid, parseMonth, shiftMonth, summarizeDays } from "@/lib/calendar";
 import { getCalendarCells, getFirstHabitStart, getHabitSummaries } from "@/lib/habits";
 
-const NAV = "flex size-11 items-center justify-center rounded-full text-sm font-semibold";
+const NAV = "relative flex size-11 items-center justify-center rounded-full text-sm font-semibold";
 
 export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
   const { m } = await searchParams;
@@ -40,6 +41,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           {hasPrev ? (
             <Link href={`/progress/calendar?m=${prev}`} aria-label={t("progress.calendar.previousMonth", { month: monthName(prev) })} className={`${NAV} hover:bg-muted`}>
               <ChevronLeft aria-hidden className="size-5 rtl:-scale-x-100" />
+              <LinkPending className="rounded-full" />
             </Link>
           ) : (
             <span className="size-11" />
@@ -48,6 +50,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           {hasNext ? (
             <Link href={`/progress/calendar?m=${next}`} aria-label={t("progress.calendar.nextMonth", { month: monthName(next) })} className={`${NAV} hover:bg-muted`}>
               <ChevronRight aria-hidden className="size-5 rtl:-scale-x-100" />
+              <LinkPending className="rounded-full" />
             </Link>
           ) : (
             <span className="size-11" />

@@ -6,7 +6,7 @@
 
 **[Open Keepup](https://keepuphabits.vercel.app)** · [Try the demo](#try-it) · [Install](#how-to-install) · [How it's built](#how-its-built)
 
-[![CI](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml) ![Tests: 3904](https://img.shields.io/badge/tests-3904-brightgreen) [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![CI](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/naum-4ik/keepup/actions/workflows/ci.yml) ![Tests: 3913](https://img.shields.io/badge/tests-3913-brightgreen) [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 Check in with one tap, keep fair streaks, share habits with your family, and let kids tap in from their own view while a garden grows. It installs from the browser, sends reminders, works offline, and speaks English, Russian and Hebrew.
 
@@ -146,7 +146,7 @@ More: [architecture](docs/architecture.md) (diagrams, security layers, free-tier
 
 **Three languages, one catalog.** Screens, pushes and template habits come from one message catalog per language ([`supabase/functions/_shared/messages`](supabase/functions/_shared/messages)), shared by the app and the push function. Hebrew is laid out right to left, and kid lines follow the child's boy or girl setting.
 
-**Tests at every layer:** 1541 pgTAP tests in 58 files, 2108 Vitest and 255 Playwright tests (phone viewport), plus the Edge Function tests under Deno in CI. Counts from [`scripts/count-tests.mjs`](scripts/count-tests.mjs).
+**Tests at every layer:** 1541 pgTAP tests in 58 files, 2115 Vitest and 257 Playwright tests (phone viewport), plus the Edge Function tests under Deno in CI. Counts from [`scripts/count-tests.mjs`](scripts/count-tests.mjs).
 
 ## Environments
 

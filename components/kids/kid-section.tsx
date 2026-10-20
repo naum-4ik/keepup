@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Avatar } from "@/components/avatar";
 import { HabitCard } from "@/components/habits/habit-card";
+import { LinkPending } from "@/components/ui/link-pending";
 import { Notice } from "@/components/ui/notice";
 import type { HabitSummary } from "@/lib/habits";
 import type { MyChild } from "@/lib/kids";
@@ -15,11 +16,12 @@ export async function KidSection({ child, habits, stars }: { child: MyChild; hab
   const ordered = [...todo, ...done, ...later];
   return (
     <section aria-label={child.name} className="flex flex-col gap-item">
-      <Link href={`/kids/${child.child_id}`} className="-mx-inner flex min-h-11 items-center gap-inner rounded-xl px-inner hover:bg-muted/60">
+      <Link href={`/kids/${child.child_id}`} className="relative -mx-inner flex min-h-11 items-center gap-inner rounded-xl px-inner hover:bg-muted/60">
         <Avatar name={child.name} emoji={child.avatar_emoji} color={child.avatar_color} size="md" />
         <h2 className="min-w-0 flex-1 truncate text-base font-bold">{child.name}</h2>
         {stars !== null && <span className="text-sm font-bold tabular-nums">⭐ {stars}</span>}
         <ChevronRight aria-hidden className="size-5 text-muted-foreground rtl:-scale-x-100" />
+        <LinkPending className="rounded-xl" />
       </Link>
       {ordered.length > 0 ? (
         <ul className="flex flex-col gap-item">
@@ -37,9 +39,10 @@ export async function KidSection({ child, habits, stars }: { child: MyChild; hab
             <Link
               href={`/kids/${child.child_id}`}
               // A 44px target kept to the Notice's line height by negative margins (docs/design.md "Buttons").
-              className="-my-3 flex min-h-11 items-center rounded-lg px-inner font-bold text-primary hover:bg-background/60"
+              className="relative -my-3 flex min-h-11 items-center rounded-lg px-inner font-bold text-primary hover:bg-background/60"
             >
               {t("common.addHabit")}
+              <LinkPending className="rounded-lg" />
             </Link>
           }
         >

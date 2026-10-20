@@ -301,6 +301,9 @@ describe("sw.js pushsubscriptionchange", () => {
 const savedPages = (sw: { caches: ReturnType<typeof fakeCaches> }) =>
   [...(sw.caches.store.get("keepup-pages")?.keys() ?? [])].filter((k) => !k.includes("/__keepup-assets__/"));
 
+// Today and the kid view as they render (the marker the worker looks for before saving).
+const rendered = (s: string) => `<section data-offline-page="today">${s}</section>`;
+
 describe("sw.js offline shell", () => {
   // The network: each path's page, or a thrown TypeError when offline.
   function network() {
@@ -309,7 +312,7 @@ describe("sw.js offline shell", () => {
     const fetchImpl = vi.fn(async (r: string | { url: string }) => {
       if (!online) throw new TypeError("Failed to fetch");
       const path = new URL(typeof r === "string" ? r : r.url, ORIGIN).pathname;
-      return pages[path] ?? res(`page ${path}`);
+      return pages[path] ?? res(path === "/today" || path.endsWith("/play") ? rendered(`page ${path}`) : `page ${path}`);
     });
     return { fetchImpl, pages, setOnline: (v: boolean) => void (online = v) };
   }
@@ -347,12 +350,12 @@ describe("sw.js offline shell", () => {
   it("online, Today is fresh from the network and saved; offline, the saved copy shows", async () => {
     const net = network();
     const sw = worker([], undefined, net.fetchImpl);
-    net.pages["/today"] = res("today v1");
+    net.pages["/today"] = res(rendered("today v1"));
     expect((await sw.request("/today"))?.ok).toBe(true);
-    net.pages["/today"] = res("today v2");
-    expect((await sw.request("/today")) as Res).toMatchObject({ body: "today v2" });
+    net.pages["/today"] = res(rendered("today v2"));
+    expect((await sw.request("/today")) as Res).toMatchObject({ body: rendered("today v2") });
     net.setOnline(false);
-    expect((await sw.request("/today")) as Res).toMatchObject({ body: "today v2" });
+    expect((await sw.request("/today")) as Res).toMatchObject({ body: rendered("today v2") });
   });
 
   it("offline, a page that isn't saved gets the offline page", async () => {
@@ -361,6 +364,20 @@ describe("sw.js offline shell", () => {
     await sw.lifecycle("install");
     net.setOnline(false);
     expect((await sw.request("/progress")) as Res).toMatchObject({ body: "offline page" });
+  });
+
+  it("a page that didn't render (an error or not-found streamed after the 200) is never saved as Today", async () => {
+    const net = network();
+    const sw = worker([], undefined, net.fetchImpl);
+    net.pages["/today"] = res(rendered("today that rendered"));
+    await sw.request("/today");
+    net.pages["/today"] = res("<h1>Something went wrong</h1>"); // ok, not redirected, but no marker
+    await sw.request("/today");
+    await sw.message({ type: "keepup:save-page", path: "/today" });
+    expect((await sw.caches.api.match("/today"))?.body).toBe(rendered("today that rendered"));
+    net.pages["/kids/00000000-0000-0000-0000-0000000000f1/play"] = res("Page not found");
+    await sw.request("/kids/00000000-0000-0000-0000-0000000000f1/play");
+    expect(savedPages(sw)).toEqual([`${ORIGIN}/today`]);
   });
 
   it("saves the kid view, but no other page", async () => {
@@ -397,7 +414,7 @@ describe("sw.js offline shell", () => {
     const net = network();
     const sw = worker([], undefined, net.fetchImpl);
     await sw.lifecycle("install");
-    net.pages["/today"] = res("Anna's today");
+    net.pages["/today"] = res(rendered("Anna's today"));
     await sw.request("/today");
     sw.caches.clear(); // signOutCleanup deletes every cache
     net.pages["/today"] = res("login page", { redirected: true });
@@ -467,7 +484,7 @@ describe("sw.js offline shell", () => {
     await after.lifecycle("activate");
     expect([...store.store.keys()].sort()).toEqual(["keepup-assets", "keepup-pages", "keepup-shell-v2"]);
     net.setOnline(false);
-    expect((await after.request("/today")) as Res).toMatchObject({ body: "page /today" });
+    expect((await after.request("/today")) as Res).toMatchObject({ body: rendered("page /today") });
     expect((await after.request("/_next/static/chunks/v1-app.js", { mode: "no-cors" })) as Res).toMatchObject({ body: "page /_next/static/chunks/v1-app.js" });
   });
 
@@ -484,7 +501,7 @@ describe("sw.js offline shell", () => {
   it("a page reached by client-side navigation asks to be saved: Today and kid views only, same site, not a redirect", async () => {
     const net = network();
     const sw = worker([], undefined, net.fetchImpl);
-    net.pages["/today"] = res("today now");
+    net.pages["/today"] = res(rendered("today now"));
     await sw.message({ type: "keepup:save-page", path: "/today" });
     await sw.message({ type: "keepup:save-page", path: "/progress" });
     await sw.message({ type: "keepup:save-page", path: "https://evil.example/kids/00000000-0000-0000-0000-0000000000f1/play" });
@@ -492,7 +509,7 @@ describe("sw.js offline shell", () => {
     expect(savedPages(sw)).toEqual([`${ORIGIN}/today`]);
     net.pages["/today"] = res("login page", { redirected: true });
     await sw.message({ type: "keepup:save-page", path: "/today" });
-    expect((await sw.caches.api.match("/today"))?.body).toBe("today now");
+    expect((await sw.caches.api.match("/today"))?.body).toBe(rendered("today now"));
     net.setOnline(false);
     await expect(sw.message({ type: "keepup:save-page", path: "/today" })).resolves.toBeUndefined();
   });
@@ -500,9 +517,9 @@ describe("sw.js offline shell", () => {
   it("Today with a one-time query (?joined=…) is saved as the plain page", async () => {
     const net = network();
     const sw = worker([], undefined, net.fetchImpl);
-    net.pages["/today"] = res("plain today");
+    net.pages["/today"] = res(rendered("plain today"));
     await sw.request("/today?joined=abc");
-    expect((await sw.caches.api.match("/today"))?.body).toBe("plain today");
+    expect((await sw.caches.api.match("/today"))?.body).toBe(rendered("plain today"));
   });
 
   it("sign-out: waits for a save in flight, then clears every cache and says so", async () => {
@@ -597,23 +614,23 @@ describe("sw.js offline shell", () => {
       calls++;
       if (calls === 1) {
         await oldGate;
-        return res("today before the check-in");
+        return res(rendered("today before the check-in"));
       }
       return net.fetchImpl(r);
     });
     const sw = worker([], undefined, fetchImpl);
-    net.pages["/today"] = res("today after the check-in");
+    net.pages["/today"] = res(rendered("today after the check-in"));
     const older = sw.message({ type: "keepup:save-page", path: "/today" });
     await sw.message({ type: "keepup:save-page", path: "/today" });
     releaseOld();
     await older;
-    expect((await sw.caches.api.match("/today"))?.body).toBe("today after the check-in");
+    expect((await sw.caches.api.match("/today"))?.body).toBe(rendered("today after the check-in"));
   });
 
   it("saving a page also saves the scripts it lists, even ones it loads only on demand", async () => {
     const net = network();
     const sw = worker([], undefined, net.fetchImpl);
-    net.pages["/today"] = res('<script src="/_next/static/chunks/main.js"></script><script>self.__next_f.push([1,"static/chunks/late-card.js"])</script>');
+    net.pages["/today"] = res(rendered('<script src="/_next/static/chunks/main.js"></script><script>self.__next_f.push([1,"static/chunks/late-card.js"])</script>'));
     await sw.message({ type: "keepup:save-page", path: "/today" });
     expect([...sw.caches.store.get("keepup-assets")!.keys()].sort()).toEqual([
       `${ORIGIN}/_next/static/chunks/late-card.js`,
@@ -624,7 +641,7 @@ describe("sw.js offline shell", () => {
   it("the prune never drops a script a saved page needs, and drops the least recently used first", async () => {
     const net = network();
     const sw = worker([], undefined, net.fetchImpl);
-    net.pages["/today"] = res('"static/chunks/today-a.js" "static/chunks/today-b.js"');
+    net.pages["/today"] = res(rendered('"static/chunks/today-a.js" "static/chunks/today-b.js"'));
     await sw.message({ type: "keepup:save-page", path: "/today" });
     await sw.request("/_next/static/chunks/old-but-used.js", { mode: "no-cors" });
     for (let i = 0; i < 330; i++) {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChartColumn } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LinkPending } from "@/components/ui/link-pending";
 import { Surface } from "@/components/ui/surface";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { StreakBadge } from "@/components/habits/streak-badge";
@@ -31,14 +32,18 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
   // any more (lib/progress-lists.ts). Finished habits (ideas/habit-end-date.md) are archived too;
   // they get their own tab.
   const running = summaries.filter((h) => !h.archived_at);
-  const [ends, zones] = await Promise.all([getHabitEnds(running.map((h) => h.habit_id)), getGroupTimezones(running.map((h) => h.group_id))]);
+  // Tap a day: each day up to today, from the overview's cells plus my check-ins that week. The check-ins
+  // need only the overview, so they load beside the ends and zones.
+  const week = overview?.days ?? [];
+  const [ends, zones, checkIns] = await Promise.all([
+    getHabitEnds(running.map((h) => h.habit_id)),
+    getGroupTimezones(running.map((h) => h.group_id)),
+    week.length > 0 ? getMyCheckIns(week[0].local_date, week[week.length - 1].local_date) : [],
+  ]);
   const ended = (h: (typeof summaries)[number]) => hasEnded(ends.get(h.habit_id), todayIn((h.group_id && zones.get(h.group_id)) || profile.timezone));
   const habits = summaries.filter((h) => inProgressTab(h, tab, finishedIds, ended));
   const cellsFor = new Map((overview?.per_habit ?? []).map((p) => [p.habit_id, p.cells]));
   const categories = CATEGORY_ORDER.filter((c) => habits.some((h) => h.category === c));
-  // Tap a day: each day up to today, from the overview's cells plus my check-ins that week.
-  const week = overview?.days ?? [];
-  const checkIns = week.length > 0 ? await getMyCheckIns(week[0].local_date, week[week.length - 1].local_date) : [];
   const active = summaries.filter((h) => !h.archived_at);
   const days = overview
     ? Object.fromEntries(
@@ -70,11 +75,13 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
             href={tab.href}
             aria-current={tab.current ? "page" : undefined}
             className={cn(
-              "flex min-h-11 items-center justify-center rounded-lg text-sm font-semibold",
+              "relative flex min-h-11 items-center justify-center rounded-lg text-sm font-semibold",
               tab.current ? "bg-card text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground",
             )}
           >
             {tab.label}
+            {/* Only the list changes (?view=): the page stays up until it arrives, the tapped tab shows it's on its way. */}
+            <LinkPending className="rounded-lg" />
           </Link>
         ))}
       </nav>
@@ -108,7 +115,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                   // The row opens the habit (a Surface link). Restore / Start again sit beside it, not
                   // inside: a button can't live in a link.
                   <li key={h.habit_id} className="flex items-center gap-inner">
-                    <Surface as="a" href={`/habits/${h.habit_id}`} className="flex min-w-0 flex-1 items-center gap-item">
+                    <Surface as="a" prefetchOn="intent" href={`/habits/${h.habit_id}`} className="flex min-w-0 flex-1 items-center gap-item">
                       <HabitEmoji category={h.category} emoji={h.emoji} />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="flex min-w-0 items-center gap-inner">
