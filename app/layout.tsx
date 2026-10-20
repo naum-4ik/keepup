@@ -7,6 +7,7 @@ import { MovedNotice } from "@/components/moved/moved-notice";
 import { Faro } from "@/components/observability/faro";
 import { ServiceWorker } from "@/components/pwa/service-worker";
 import "./globals.css";
+import { iosStartupImages } from "@/lib/ios-splash";
 import { deploymentSiteUrl } from "@/lib/site-url";
 import { isRtl } from "@/supabase/functions/_shared/i18n";
 import { CLIENT_NAMESPACES } from "@/i18n/client-namespaces";
@@ -91,8 +92,9 @@ export async function generateMetadata(): Promise<Metadata> {
     applicationName: "Keepup",
     openGraph: { type: "website", siteName: "Keepup", title: shareTitle, description: shareText, url: "/" },
     twitter: { card: "summary_large_image", title: shareTitle, description: shareText },
-    // iPhone "Add to Home Screen": full screen, named Keepup (the icon is app/apple-icon.png).
-    appleWebApp: { capable: true, title: "Keepup", statusBarStyle: "default" },
+    // iPhone "Add to Home Screen": full screen, named Keepup (the icon is app/apple-icon.png), and a cream
+    // launch screen with the tile instead of a white one (lib/ios-splash.ts).
+    appleWebApp: { capable: true, title: "Keepup", statusBarStyle: "default", startupImage: iosStartupImages() },
   };
 }
 
