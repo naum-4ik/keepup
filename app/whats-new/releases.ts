@@ -26,6 +26,7 @@ export function releaseLabel(r: Release, appVersion: string, locale: Locale, t: 
 export const RELEASES: Release[] = [
   {
     version: "1.10.0",
+    date: "2026-10-20",
     notes: {
       en: [
         "A new app icon: a cream sprout on a terracotta tile, easier to spot on your Home Screen. To see it on iPhone, remove Keepup from the Home Screen and add it again.",
