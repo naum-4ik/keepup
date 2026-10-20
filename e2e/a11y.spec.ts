@@ -48,6 +48,9 @@ test("demo screens, a kid's page and the kid view have no axe violations", async
   await page.goto("/");
   await page.getByRole("button", { name: "Try a demo with sample habits" }).click();
   await expect(page.getByRole("button", { name: /^Check in: / }).first()).toBeVisible({ timeout: 15_000 });
+  // A fresh load, so the fixture waits until every streamed section (groups, kids) is in place.
+  await page.goto("/today");
+  await expect(page.getByRole("region", { name: "Nova" })).toBeVisible();
   await expectNoViolations(page, "today");
 
   const habit = await page.getByRole("link", { name: "Drink water" }).getAttribute("href");
