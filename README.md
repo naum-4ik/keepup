@@ -182,7 +182,7 @@ npm run dev                 # http://localhost:3000
 
 Tests: `npm test` (Vitest) · `npx supabase test db` (pgTAP) · `npm run e2e` (Playwright) · `npm run test:functions` (Deno) · counts: `node scripts/count-tests.mjs`
 
-README screenshots: `npm run readme:screenshots` (local stack; seeds a demo month, macOS `sips` resizes).
+README screenshots: `npm run readme:screenshots` (local stack; seeds a demo month, macOS `sips` resizes, `scripts/compress-images.mjs` shrinks them). Any new or changed PNG: `node scripts/compress-images.mjs <file or folder>` (visually lossless, same size in pixels).
 
 ## Roadmap
 
