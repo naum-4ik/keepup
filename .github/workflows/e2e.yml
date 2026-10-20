@@ -45,6 +45,10 @@ jobs:
         env:
           CI: "true"
           KEEPUP_LOCALES: en,ru,he
+      # The build the suite just ran against hands the browser only public values (a few seconds;
+      # PRs run the same scan in CI's sanity job).
+      - name: No secrets in the client bundle
+        run: node scripts/check-client-secrets.mjs
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
