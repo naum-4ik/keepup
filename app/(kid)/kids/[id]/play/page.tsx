@@ -16,18 +16,21 @@ export default async function KidViewPage({ params }: { params: Promise<{ id: st
   if (!isUuid(id)) notFound();
   const child = (await getMyChildren()).find((c) => c.child_id === id);
   if (!child) notFound();
-  const [summaries, rewards, zones, { profile }, tapRows] = await Promise.all([
-    getChildSummaries(id),
+  // The ends need only the habits: they load as soon as those are in, beside the rest.
+  const summariesP = getChildSummaries(id);
+  const endsP = summariesP.then((s) => getHabitEnds(s.filter((h) => !h.archived_at).map((h) => h.habit_id)));
+  const [summaries, rewards, zones, { profile }, tapRows, ends] = await Promise.all([
+    summariesP,
     getChildRewards(id),
     getGroupTimezones([child.group_id]),
     getProfile(),
     getRecentTapRows([id]),
+    endsP,
   ]);
   const running = summaries.filter((h) => !h.archived_at);
   // The check-ins these stars and cards count, for taps still waiting on this phone (RenderedTaps).
   const renderedTaps = renderedTapIds(tapRows, [id], currentPeriods(running));
   // A habit past its end (in the group's calendar) takes no more check-ins, so it leaves this view.
-  const ends = await getHabitEnds(running.map((h) => h.habit_id));
   const zone = zones.get(child.group_id) ?? profile.timezone;
   const today = todayIn(zone);
   // What the child can do now, and what's already done (a child likes to see those). Paused,

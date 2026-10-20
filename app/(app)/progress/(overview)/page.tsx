@@ -31,14 +31,18 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
   // any more (lib/progress-lists.ts). Finished habits (ideas/habit-end-date.md) are archived too;
   // they get their own tab.
   const running = summaries.filter((h) => !h.archived_at);
-  const [ends, zones] = await Promise.all([getHabitEnds(running.map((h) => h.habit_id)), getGroupTimezones(running.map((h) => h.group_id))]);
+  // Tap a day: each day up to today, from the overview's cells plus my check-ins that week. The check-ins
+  // need only the overview, so they load beside the ends and zones.
+  const week = overview?.days ?? [];
+  const [ends, zones, checkIns] = await Promise.all([
+    getHabitEnds(running.map((h) => h.habit_id)),
+    getGroupTimezones(running.map((h) => h.group_id)),
+    week.length > 0 ? getMyCheckIns(week[0].local_date, week[week.length - 1].local_date) : [],
+  ]);
   const ended = (h: (typeof summaries)[number]) => hasEnded(ends.get(h.habit_id), todayIn((h.group_id && zones.get(h.group_id)) || profile.timezone));
   const habits = summaries.filter((h) => inProgressTab(h, tab, finishedIds, ended));
   const cellsFor = new Map((overview?.per_habit ?? []).map((p) => [p.habit_id, p.cells]));
   const categories = CATEGORY_ORDER.filter((c) => habits.some((h) => h.category === c));
-  // Tap a day: each day up to today, from the overview's cells plus my check-ins that week.
-  const week = overview?.days ?? [];
-  const checkIns = week.length > 0 ? await getMyCheckIns(week[0].local_date, week[week.length - 1].local_date) : [];
   const active = summaries.filter((h) => !h.archived_at);
   const days = overview
     ? Object.fromEntries(
