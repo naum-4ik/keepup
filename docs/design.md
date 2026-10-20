@@ -171,31 +171,42 @@ Every action has four states and a next step:
 
 ## App icon
 
-A filled terracotta sprout on a peach square, drawn bold enough to read at 16 px. In-app sprouts (the Today empty state) use the same drawing via `components/sprout-icon.tsx`, never lucide's `Sprout`.
+A cream sprout on a terracotta tile, drawn bold enough to read at 16 px. In-app sprouts (the Today empty state) use the same drawing via `components/sprout-icon.tsx`, never lucide's `Sprout`.
+
+Why terracotta: until 2026-10-20 the tile was pale peach `#FDE3D3` with a small terracotta sprout. On the iPhone Home Screen, next to saturated native icons, it looked washed out (owner, 2026-10-20). The tile is now the saturated brand colour and the sprout 1.32 times larger.
 
 | Element | Color |
 |---|---|
-| Square | peach `#FDE3D3`, edge `#F6D2BE` |
-| Sprout, stem, ground | terracotta `#B84F33` |
+| Tile | vertical gradient, terracotta `#C85A3A` (top) to `#A3401F` (bottom) |
+| Tile, 16 px favicon | flat terracotta `#B84F33` |
+| Sprout, stem, ground | cream `#FFF3E8` |
+| Push badge | white sprout on transparent |
 
-Master artwork (`app/icon.svg`):
+Master artwork (`scripts/icon-art.mjs`; written out as `app/icon.svg`, rounded, by `scripts/gen-app-icons.mjs`):
 
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#FDE3D3" stroke="#F6D2BE" stroke-width="1.5"/>
-  <path d="M20 51 L44 51" fill="none" stroke="#B84F33" stroke-width="5" stroke-linecap="round"/>
-  <path d="M31 51 C33 44 31 38 33 29" fill="none" stroke="#B84F33" stroke-width="5" stroke-linecap="round"/>
-  <path d="M31 38 C22 38 16 32 14 23 C23 22 30 28 31 38 Z" fill="#B84F33"/>
-  <path d="M33 31 C33 21 39 14 50 13 C51 23 44 30 33 31 Z" fill="#B84F33"/>
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C85A3A"/><stop offset="1" stop-color="#A3401F"/></linearGradient></defs>
+  <rect width="64" height="64" fill="url(#g)"/>
+  <g transform="translate(32 32) scale(1.32) translate(-32 -33.25)">
+    <path d="M20 51 L44 51" fill="none" stroke="#FFF3E8" stroke-width="5" stroke-linecap="round"/>
+    <path d="M31 51 C33 44 31 38 33 29" fill="none" stroke="#FFF3E8" stroke-width="5" stroke-linecap="round"/>
+    <path d="M31 38 C22 38 16 32 14 23 C23 22 30 28 31 38 Z" fill="#FFF3E8"/>
+    <path d="M33 31 C33 21 39 14 50 13 C51 23 44 30 33 31 Z" fill="#FFF3E8"/>
+  </g>
 </svg>
 ```
 
-- **Every size comes from the master.** `app/favicon.ico` (16, 32, 48), `app/apple-icon.png` (180), and `public/icons/` are rendered from it by a script, never drawn by hand (`scripts/gen-app-icons.mjs` for the PNGs below).
-- **Installed-app icons ("any": Chrome/Edge desktop, macOS Dock, Windows):** `icon-192/512/1024.png` put the peach tile on the macOS icon grid: a transparent canvas, the tile 824 of 1024 px with a 100 px margin, corner radius 185 px, a soft shadow, and no drawn edge. An edge-to-edge tile with its own border looked like a box in a box next to native icons.
-- **In-app pictures** (landing, sign-in, invite, notifications) use `logo-192.png`, the full-bleed tile; CSS rounds the corners.
-- **The iOS icon is full-bleed; the OS rounds it.** `apple-icon.png` has no rounded corners and no edge.
-- **Maskable:** full-bleed peach, with the sprout at about 70% so it stays inside the safe zone.
-- **Launch screens:** Android draws its own from the manifest (`background_color` cream, the "any" icon). The installed iPhone app gets `public/splash/iphone-*.png`, cream with the tile at 30% of the width, one per screen size in `lib/ios-splash.json` (`scripts/gen-ios-splash.mjs`; a new iPhone size is a new row there).
+- **Every size comes from the master.** `node scripts/gen-app-icons.mjs` writes `app/icon.svg`, `app/favicon.ico` (16, 32, 48), `app/apple-icon.png` (180) and everything in `public/icons/`; `node scripts/gen-ios-splash.mjs` the launch screens. Never draw one by hand.
+- **The sprout is centred on its bounding box** (x 14–50, y 13–53.5, middle at y 33.25), so the top and bottom margins are equal: 8% of the tile at scale 1.32.
+- **Browser tab:** `icon.svg` and `favicon.ico` keep rounded corners (rx 14 of 64), since a tab shows them unmasked. At 16 px the gradient is flat `#B84F33`; it only muddied the few pixels.
+- **Installed-app icons ("any": Chrome/Edge desktop, macOS Dock, Windows):** `icon-192/512/1024.png` put the tile on the macOS icon grid: a transparent canvas, the tile 824 of 1024 px with a 100 px margin, corner radius 185 px, a soft shadow, and no drawn edge. An edge-to-edge tile with its own border looked like a box in a box next to native icons.
+- **In-app pictures** (landing, sign-in, invite, the notification icon) use `logo-192.png`, the full-bleed tile; CSS rounds the corners.
+- **Push badge:** `badge-96.png`, the sprout alone in white. Android draws the badge from the alpha channel only, so a full tile showed as a white square.
+- **The iOS icon is full-bleed and opaque; the OS rounds it.** `apple-icon.png` has no rounded corners and no edge (iOS fills transparency with black).
+- **Maskable:** full-bleed tile, the sprout at scale 0.88 so its farthest point stays inside the safe zone (the middle 80% circle).
+- **Launch screens:** Android draws its own from the manifest (`background_color` cream `#FFF8F0`, the "any" icon). The installed iPhone app gets `public/splash/iphone-*.png`, cream with the tile at 30% of the width, one per screen size in `lib/ios-splash.json` (a new iPhone size is a new row there).
+- **Install illustrations** (`docs/install/*.svg`) draw the same tile in their `#k` symbol.
 
 ## Voice
 
@@ -210,7 +221,7 @@ Short, warm, direct. Second person. No exclamation-mark spam.
 ## Avoid
 
 - Cartoon or RPG styling (mascots, pixel art, avatars with gear).
-- Gradients, glassmorphism, neon, cold grays and pure black.
+- Gradients (the app icon's tile is the one exception), glassmorphism, neon, cold grays and pure black.
 - More than one accent color on a screen, apart from category chips.
 - Red for anything but errors and destructive actions.
 - Guilt copy, countdown pressure, or naming who broke a group streak.
