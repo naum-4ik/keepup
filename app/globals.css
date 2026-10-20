@@ -367,6 +367,10 @@
   }
   html {
     @apply font-sans;
+    /* Keyboard focus never lands under the fixed tab bar or a form's pinned submit bar (WCAG 2.4.11):
+       scrolling a focused control into view stops this far above the bottom. 6rem: the pinned bar
+       (a 44 px button, 8 px padding each side) plus a line of error above it. */
+    scroll-padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 6rem);
   }
   /* Tailwind 4 no longer gives buttons a pointer cursor; every tappable thing should show one. */
   button:not(:disabled),
