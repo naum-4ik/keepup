@@ -200,8 +200,45 @@ README screenshots: `npm run readme:screenshots` (local stack; seeds a demo mont
 | v1.6 | The demo looks live on any day and in the visitor's language; a log of every push attempt | ✅ v1.6.0 |
 | v1.7 | Terms of use | ✅ v1.7.0 |
 | v1.8 | Design pass: fewer boxes, even spacing, a toast with Undo after every action, settings that save on change, a start page with one button | ✅ v1.8.0 |
+| v1.9 | Taps answer at once (loading screens, pending tabs), an iPhone launch screen, desktop icons, `sitemap.xml` and a real 404 page | ✅ v1.9.0 |
+| v1.10 | A new app icon, colour contrast to WCAG AA in light and dark, accessible names, one validation pattern for every form, CI guards for secrets and broken links | ✅ v1.10.0 |
 
-Next (merged, not yet released): `sitemap.xml`, a real 404 page, and installed-app icons for the macOS app grid.
+### What's next
+
+Grouped by theme, roughly in this order. Each line is one or a few PRs; nothing here is promised by a date.
+
+**1. Polish and trust** (small fixes, next up)
+- Russian and Hebrew wording reviewed by native speakers; time-zone city names in each language.
+- Friendlier messages where the database still answers with a raw error (an invalid group name, joining a group you just left).
+- A real 404 status for a missing habit, group or child page when signed in.
+- Pinned GitHub Actions versions and a full content security policy.
+- A faster first screen: a static start page and sign-in page, navigation preload in the service worker.
+- A short GIF of the app at the top of this README.
+
+**2. Everyday habits**
+- **Quit a habit:** count clean days until a slip, or set a daily maximum.
+- **A note on a check-in**, shown in the habit's history.
+
+**3. Look back and share**
+- A year grid on each habit's page.
+- A monthly and a yearly picture of your habits, to save or share.
+- Recaps that compare with the week before.
+
+**4. Beyond the browser**
+- **iPhone Shortcuts:** a personal link that checks in from a Home Screen button or an automation ("when a workout ends, check in").
+- **A Keepup MCP server:** check in and ask for your stats from an AI assistant such as Claude, with the same permissions as the app.
+
+**5. Engineering track** (learning, runs alongside)
+- Kubernetes on a laptop with `kind` and Helm: Keepup in a cluster, Prometheus and an OpenTelemetry Collector (a second redaction layer, tail sampling), a fault catalogue to practise on, and a CI check that deploys to `kind`. Production stays on Vercel and Supabase.
+- Push delivery in Grafana: one event per push, a panel, and an alert when reminders are due but nothing goes out.
+
+**Later**
+- Amounts with units ("2 L water", "20 pages") and an optional timer.
+- Kids: morning and evening routines, a replay of the week's garden, a parent PIN to leave the kid view, a theme from your own pictures, one child in more than one group.
+- Quiet hours and a daily cap for pushes.
+- A help centre with guides and answers to common questions.
+
+**Not planned:** payments or app-store apps (Keepup stays a free web app), leaderboards or rankings (never a competition), photo proof (kids' privacy), location reminders, and characters from films or games.
 
 ## How it was built
 
