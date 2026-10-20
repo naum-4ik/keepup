@@ -9,5 +9,6 @@
   { "width": 375, "height": 812, "ratio": 3, "devices": "iPhone X, XS, 11 Pro, 12 mini, 13 mini" },
   { "width": 414, "height": 896, "ratio": 3, "devices": "iPhone XS Max, 11 Pro Max" },
   { "width": 414, "height": 896, "ratio": 2, "devices": "iPhone XR, 11" },
+  { "width": 414, "height": 736, "ratio": 3, "devices": "iPhone 8 Plus" },
   { "width": 375, "height": 667, "ratio": 2, "devices": "iPhone SE (2nd, 3rd), 8" }
 ]

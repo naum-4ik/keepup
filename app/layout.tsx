@@ -95,6 +95,9 @@ export async function generateMetadata(): Promise<Metadata> {
     // iPhone "Add to Home Screen": full screen, named Keepup (the icon is app/apple-icon.png), and a cream
     // launch screen with the tile instead of a white one (lib/ios-splash.ts).
     appleWebApp: { capable: true, title: "Keepup", statusBarStyle: "default", startupImage: iosStartupImages() },
+    // Next writes only the standard mobile-web-app-capable; iOS still reads the legacy apple- one before it
+    // uses the launch screens above. Same full-screen launch the manifest's display: standalone asks for.
+    other: { "apple-mobile-web-app-capable": "yes" },
   };
 }
 
