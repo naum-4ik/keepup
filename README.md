@@ -229,7 +229,7 @@ Grouped by theme, roughly in this order. Each line is one or a few PRs; nothing 
 - **A Keepup MCP server:** check in and ask for your stats from an AI assistant such as Claude, with the same permissions as the app.
 
 **5. Engineering track** (learning, runs alongside)
-- Kubernetes on a laptop with `kind` and Helm: Keepup in a cluster, Prometheus and an OpenTelemetry Collector (a second redaction layer, tail sampling), a fault catalogue to practise on, and a CI check that deploys to `kind`. Production stays on Vercel and Supabase.
+- Kubernetes with `kind` and Helm: Keepup in a cluster, Prometheus and an OpenTelemetry Collector (a second redaction layer, tail sampling), a fault catalogue to practise on, and a CI check that deploys to `kind`. Production stays on Vercel and Supabase.
 - Push delivery in Grafana: one event per push, a panel, and an alert when reminders are due but nothing goes out.
 
 **Later**
