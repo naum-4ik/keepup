@@ -137,6 +137,8 @@ Every action has four states and a next step:
 | Success | A visible confirmation where the result isn't already on screen: a status toast, with the next step as its action ("Undo", "Open") |
 | Error | What happened and what to do, next to the control (a `live` error Notice), and the input kept |
 
+**Opening a page.** A tap answers at once. Every app route has a `loading.tsx` (prefetched with its link) that draws the page's shape in soft `bg-muted` blocks inside the shell, from `components/app-shell/page-skeleton.tsx`: same spacing and line boxes as the page, cards only where the page has cards, `motion-safe:animate-pulse`, `aria-busy` and one polite "Loading…" (no `role=status`: pages own theirs). A route that wasn't prefetched yet shows its tapped tab in the active colour with a small bar, and a tapped card a soft tint, until it commits (`useLinkStatus`). An index page whose section has child routes keeps its loading screen in a route group (`progress/(overview)/`), so a child route never shows the parent's skeleton first.
+
 **Settings save on change.** Each setting says "Saving…", then "Saved ✓" beside it (a `role=status` line, `components/profile/setting-status.tsx`), or why it wasn't saved and what to do. A choice that couldn't be saved goes back to the saved one, with that message beside it: never silently. A typed field (the display name) has its own Save right beside it, never one Save at the bottom for several fields. A download (Export) says which file it saved.
 
 **Status toast** (`components/ui/toast.tsx`, logic in `lib/toast.ts`): one at a time above the bottom nav; its words (not its buttons) are in a polite live region; 5 s, 8 s with an action, paused while hovered or focused; an X to close.
@@ -180,6 +182,7 @@ Master artwork (`app/icon.svg`):
 - **In-app pictures** (landing, sign-in, invite, notifications) use `logo-192.png`, the full-bleed tile; CSS rounds the corners.
 - **The iOS icon is full-bleed; the OS rounds it.** `apple-icon.png` has no rounded corners and no edge.
 - **Maskable:** full-bleed peach, with the sprout at about 70% so it stays inside the safe zone.
+- **Launch screens:** Android draws its own from the manifest (`background_color` cream, the "any" icon). The installed iPhone app gets `public/splash/iphone-*.png`, cream with the tile at 30% of the width, one per screen size in `lib/ios-splash.json` (`scripts/gen-ios-splash.mjs`; a new iPhone size is a new row there).
 
 ## Voice
 
