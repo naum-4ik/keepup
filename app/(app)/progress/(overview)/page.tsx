@@ -115,7 +115,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
                   // The row opens the habit (a Surface link). Restore / Start again sit beside it, not
                   // inside: a button can't live in a link.
                   <li key={h.habit_id} className="flex items-center gap-inner">
-                    <Surface as="a" href={`/habits/${h.habit_id}`} className="flex min-w-0 flex-1 items-center gap-item">
+                    <Surface as="a" prefetchOn="intent" href={`/habits/${h.habit_id}`} className="flex min-w-0 flex-1 items-center gap-item">
                       <HabitEmoji category={h.category} emoji={h.emoji} />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="flex min-w-0 items-center gap-inner">

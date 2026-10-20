@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ComponentProps, MouseEventHandler } from "react";
+import { IntentLink } from "@/components/ui/intent-link";
 import { LinkPending } from "@/components/ui/link-pending";
 import { cn } from "@/lib/utils";
 
@@ -14,14 +15,28 @@ const base =
 type ButtonBase = Omit<ComponentProps<"button">, "type" | "onClick">;
 
 export type SurfaceProps =
-  | ({ as: "a" } & ComponentProps<typeof Link>)
+  // prefetchOn "intent": a row in a long list prefetches when touched or hovered, not in view (IntentLink).
+  | ({ as: "a"; prefetchOn?: "viewport" } & ComponentProps<typeof Link>)
+  | ({ as: "a"; prefetchOn: "intent" } & ComponentProps<typeof IntentLink>)
   | ({ as: "button"; type?: "button"; onClick: MouseEventHandler<HTMLButtonElement> } & ButtonBase)
   | ({ as: "button"; type: "submit"; onClick?: MouseEventHandler<HTMLButtonElement> } & ButtonBase);
 
 export function Surface(props: SurfaceProps) {
   if (props.as === "a") {
-    const { as: kind, className, children, ...rest } = props;
+    if (props.prefetchOn === "intent") {
+      const { as: kind, prefetchOn, className, children, ...rest } = props;
+      void kind;
+      void prefetchOn;
+      return (
+        <IntentLink className={cn(base, className)} {...rest}>
+          {children}
+          <LinkPending />
+        </IntentLink>
+      );
+    }
+    const { as: kind, prefetchOn, className, children, ...rest } = props;
     void kind;
+    void prefetchOn;
     return (
       <Link className={cn(base, className)} {...rest}>
         {children}
