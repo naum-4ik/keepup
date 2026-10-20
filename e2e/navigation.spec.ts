@@ -33,3 +33,26 @@ test("a tapped tab answers before its page arrives, then the page shows", async 
   await expect(page.getByTestId("page-skeleton")).toHaveCount(0);
   await expect(tab.locator("[data-pending]")).toHaveCount(0);
 });
+
+test("a Progress tab (only the query changes) keeps the page up until the new list arrives: no loading screen", async ({ page }) => {
+  await signUpAndOnboard(page);
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  const isFinished = (url: URL) => url.pathname === "/progress" && url.searchParams.get("view") === "finished";
+  await page.route(isFinished, async (route) => {
+    if (route.request().headers()["rsc"] === "1") await held;
+    await route.continue().catch(() => {});
+  });
+  await page.goto("/progress");
+  const tabs = page.getByRole("navigation", { name: "Habit list" });
+  const navigation = page.waitForRequest((r) => isFinished(new URL(r.url())) && r.headers()["rsc"] === "1" && !r.headers()["next-router-prefetch"]);
+  await tabs.getByRole("link", { name: "Finished" }).click();
+  await navigation;
+  // The server hasn't answered: the same page, its tabs where they were, no skeleton.
+  await expect(page.getByRole("heading", { name: "Progress", level: 1 })).toBeVisible();
+  await expect(tabs.getByRole("link", { name: "Active" })).toHaveAttribute("aria-current", "page");
+  await expect(page.getByTestId("page-skeleton")).toHaveCount(0);
+
+  release();
+  await expect(tabs.getByRole("link", { name: "Finished" })).toHaveAttribute("aria-current", "page");
+});

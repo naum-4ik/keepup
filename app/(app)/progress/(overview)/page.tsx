@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChartColumn } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LinkPending } from "@/components/ui/link-pending";
 import { Surface } from "@/components/ui/surface";
 import { HabitEmoji } from "@/components/habits/category-icon";
 import { StreakBadge } from "@/components/habits/streak-badge";
@@ -74,11 +75,13 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
             href={tab.href}
             aria-current={tab.current ? "page" : undefined}
             className={cn(
-              "flex min-h-11 items-center justify-center rounded-lg text-sm font-semibold",
+              "relative flex min-h-11 items-center justify-center rounded-lg text-sm font-semibold",
               tab.current ? "bg-card text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground",
             )}
           >
             {tab.label}
+            {/* Only the list changes (?view=): the page stays up until it arrives, the tapped tab shows it's on its way. */}
+            <LinkPending className="rounded-lg" />
           </Link>
         ))}
       </nav>
