@@ -14,7 +14,8 @@ test("a tapped tab answers before its page arrives, then the page shows", async 
     (url) => url.pathname === "/progress",
     async (route) => {
       if (route.request().headers()["rsc"] === "1") await held;
-      await route.continue();
+      // The router may have dropped a held prefetch once the navigation started: nothing left to continue.
+      await route.continue().catch(() => {});
     },
   );
   await page.goto("/today");
