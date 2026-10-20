@@ -1,18 +1,14 @@
 // Builds the iPhone launch screens (apple-touch-startup-image) listed in lib/ios-splash.json, one per screen
 // size, into public/splash/. Run: node scripts/gen-ios-splash.mjs. Uses sharp (Next.js already installs it).
 // The picture: the page's cream (#FFF8F0, the manifest's background_color) with the app tile in the middle,
-// as Android's launch screen shows the icon on background_color. The tile is drawn as in
-// scripts/gen-app-icons.mjs (the master sprout, docs/design.md "App icon"), 30% of the screen's width.
-import { mkdirSync, readFileSync } from "node:fs";
+// as Android's launch screen shows the icon on background_color. The tile is the master one
+// (scripts/icon-art.mjs, docs/design.md "App icon"), 30% of the screen's width.
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import sharp from "sharp";
+import { compressPng } from "./compress-images.mjs";
+import { GRADIENT, tileArt } from "./icon-art.mjs";
 
 const screens = JSON.parse(readFileSync(new URL("../lib/ios-splash.json", import.meta.url), "utf8"));
-
-const SPROUT = `
-  <path d="M20 51 L44 51" fill="none" stroke="#B84F33" stroke-width="5" stroke-linecap="round"/>
-  <path d="M31 51 C33 44 31 38 33 29" fill="none" stroke="#B84F33" stroke-width="5" stroke-linecap="round"/>
-  <path d="M31 38 C22 38 16 32 14 23 C23 22 30 28 31 38 Z" fill="#B84F33"/>
-  <path d="M33 31 C33 21 39 14 50 13 C51 23 44 30 33 31 Z" fill="#B84F33"/>`;
 
 function splash(w, h) {
   const tile = Math.round(w * 0.3);
@@ -20,12 +16,11 @@ function splash(w, h) {
   const y = (h - tile) / 2;
   const radius = tile * (185 / 824); // the installed icon's corner, on the macOS grid
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-  <defs><filter id="s" x="-10%" y="-10%" width="120%" height="125%">
+  <defs>${GRADIENT}<filter id="s" x="-10%" y="-10%" width="120%" height="125%">
     <feDropShadow dx="0" dy="${tile * 0.012}" stdDeviation="${tile * 0.015}" flood-color="#5A2A1A" flood-opacity="0.18"/>
   </filter></defs>
   <rect width="${w}" height="${h}" fill="#FFF8F0"/>
-  <rect x="${x}" y="${y}" width="${tile}" height="${tile}" rx="${radius}" fill="#FDE3D3" filter="url(#s)"/>
-  <g transform="translate(${x} ${y}) scale(${tile / 64})">${SPROUT}</g>
+  <g filter="url(#s)"><g transform="translate(${x} ${y}) scale(${tile / 64})">${tileArt({ rx: radius * (64 / tile) })}</g></g>
 </svg>`;
 }
 
@@ -36,6 +31,7 @@ for (const { width, height, ratio } of screens) {
   const [w, h] = [width * ratio, height * ratio];
   if (done.has(`${w}x${h}`)) continue;
   done.add(`${w}x${h}`);
-  await sharp(Buffer.from(splash(w, h))).png({ compressionLevel: 9, palette: true }).toFile(`${out}/iphone-${w}x${h}.png`);
+  const png = await sharp(Buffer.from(splash(w, h))).png().toBuffer();
+  writeFileSync(`${out}/iphone-${w}x${h}.png`, await compressPng(png)); // the palette only if it doesn't band the gradient
 }
 console.log(`${done.size} launch screens written to ${out}`);
