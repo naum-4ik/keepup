@@ -168,7 +168,8 @@ test("a group gets an avatar on creation, admins change it, members only see it"
   await joinByLink(guest, url, "Dan");
   await guest.goto("/groups");
   await guest.getByRole("link", { name: /Pizza night/ }).click();
-  await expect(guest.getByRole("img", { name: "Pizza night" })).toContainText("🏡");
+  // Decoration here too (the h1 names the group), so found by its markup.
+  await expect(guest.getByRole("main").locator('header [role="img"]')).toContainText("🏡");
   await expect(guest.getByRole("button", { name: "Change the group avatar" })).toHaveCount(0);
   await guestContext.close();
 });

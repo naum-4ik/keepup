@@ -72,7 +72,7 @@ export function ThemePicker({ childId, childName, theme }: { childId: string; ch
             {/* The picked one also carries a ✓, so it isn't told by colour alone. 4 px in from the corner. */}
             {current === th.id && (
               <span aria-hidden className="absolute top-1 end-1 flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <Check className="size-3" strokeWidth={3} />
+                <Check aria-hidden className="size-3" strokeWidth={3} />
               </span>
             )}
           </button>

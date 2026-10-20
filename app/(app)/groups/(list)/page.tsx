@@ -19,7 +19,7 @@ export default async function GroupsPage() {
       <h1 className="text-xl font-bold">{tn("groups")}</h1>
       {groups.length === 0 ? (
         <EmptyState
-          icon={<Users className="size-6" />}
+          icon={<Users aria-hidden className="size-6" />}
           action={
             <Button asChild>
               <Link href="/groups/new">{t("list.create")}</Link>

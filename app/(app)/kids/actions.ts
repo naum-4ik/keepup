@@ -20,7 +20,9 @@ import { logError, track } from "@/lib/log";
 // code: the database rule that refused it ("keepup:<code>"), when there was one (an offline-queued
 // tap is dropped only for a rule refusal; anything else keeps it queued).
 export type KidActionResult = { ok: true } | { ok: false; message: string; code?: string };
-export type KidFormState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string };
+// `field`: the message is about that field, so the form shows it beside it (none: the form's).
+export type KidFormField = "name" | "title" | "emoji" | "targetCount" | "period" | "target";
+export type KidFormState = { status: "idle" } | { status: "saved" } | { status: "error"; message: string; field?: KidFormField };
 
 const notAvailable = async (): Promise<KidActionResult> => {
   const { t } = await getT();
@@ -72,7 +74,7 @@ export async function addChild(_prev: KidFormState, formData: FormData): Promise
   const groupId = String(formData.get("groupId") ?? "");
   if (!isUuid(groupId)) return { status: "error", message: t("habits.actions.pickGroup") };
   const name = parseChildName(String(formData.get("name") ?? ""));
-  if (!name.ok) return { status: "error", message: errorText(t, name.error) };
+  if (!name.ok) return { status: "error", message: errorText(t, name.error), field: "name" };
   if (formData.get("guardian") !== "on") return { status: "error", message: habitErrorMessage(t, { message: "keepup:guardian_required" }) };
   const avatar = readAvatar(formData);
   const gender = parseGender(formData.get("gender") as string | null);
@@ -128,7 +130,7 @@ export async function updateChild(childId: string, _prev: KidFormState, formData
   const { t } = await getT();
   if (!isUuid(childId)) return { status: "error", message: t("errors.childUnavailable") };
   const name = parseChildName(String(formData.get("name") ?? ""));
-  if (!name.ok) return { status: "error", message: errorText(t, name.error) };
+  if (!name.ok) return { status: "error", message: errorText(t, name.error), field: "name" };
   const avatar = readAvatar(formData);
   const gender = parseGender(formData.get("gender") as string | null);
   const previousGender = parseGender(formData.get("previousGender") as string | null);
@@ -161,7 +163,7 @@ export async function addChildHabit(childId: string, _prev: KidFormState, formDa
     habit = { title: kidTemplateTitle(t, tpl.id), emoji: tpl.emoji, targetCount: tpl.targetCount, period: tpl.period };
   } else {
     const emoji = String(formData.get("emoji") ?? "").trim();
-    if (emoji !== "" && !isOneEmoji(emoji)) return { status: "error", message: t("validation.emoji") };
+    if (emoji !== "" && !isOneEmoji(emoji)) return { status: "error", message: t("validation.emoji"), field: "emoji" };
     // The adult habit rules, minus the category (kid habits have none).
     const parsed = parseHabit({
       title: String(formData.get("title") ?? ""),
@@ -173,8 +175,8 @@ export async function addChildHabit(childId: string, _prev: KidFormState, formDa
     });
     if (!parsed.ok) {
       const e = parsed.errors;
-      const first = e.title ?? e.emoji ?? e.targetCount ?? e.period;
-      return { status: "error", message: first ? errorText(t, first) : t("errors.checkDetails") };
+      const field = (["title", "emoji", "targetCount", "period"] as const).find((f) => e[f]);
+      return field ? { status: "error", message: errorText(t, e[field]!), field } : { status: "error", message: t("errors.checkDetails") };
     }
     habit = { title: parsed.value.title, emoji: emoji || "⭐", targetCount: parsed.value.targetCount, period: parsed.value.period };
   }
@@ -214,7 +216,7 @@ export async function setGoal(childId: string, _prev: KidFormState, formData: Fo
     emoji: String(formData.get("emoji") ?? ""),
     target: String(formData.get("target") ?? ""),
   });
-  if (!goal.ok) return { status: "error", message: errorText(t, goal.error) };
+  if (!goal.ok) return { status: "error", message: errorText(t, goal.error), field: goal.field };
   const { supabase, who } = await requireUser();
   const { error } = await supabase.rpc("set_treat_goal", {
     p_child_id: childId,

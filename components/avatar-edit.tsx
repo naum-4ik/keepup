@@ -44,7 +44,7 @@ export function AvatarEdit({
           aria-hidden
           className="absolute -end-0.5 -bottom-0.5 flex size-8 items-center justify-center rounded-full border-2 border-background bg-card text-muted-foreground shadow-soft"
         >
-          <Pencil className="size-3.5" />
+          <Pencil aria-hidden className="size-3.5" />
         </span>
       </button>
       <Dialog open={open} onOpenChange={setOpen}>

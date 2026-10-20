@@ -204,7 +204,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
       {approvals.length > 0 && (
         <Surface as="a" href="/inbox" className="flex items-center gap-inner">
           <span aria-hidden className="flex size-8 shrink-0 items-center justify-center rounded-full bg-pending-soft text-pending">
-            <Clock className="size-4" />
+            <Clock aria-hidden className="size-4" />
           </span>
           <span className="flex-1 font-semibold">{tt("approvalsWaiting", { n: approvals.length })}</span>
           <ChevronRight aria-hidden className="size-5 text-muted-foreground rtl:-scale-x-100" />

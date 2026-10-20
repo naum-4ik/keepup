@@ -68,7 +68,7 @@ const RING_C = 2 * Math.PI * RING_R;
 // link's name says the percent). The fill eases to a new value; none under prefers-reduced-motion.
 function XpRing({ fraction }: { fraction: number }) {
   return (
-    <svg data-testid="xp-ring" data-progress={fraction.toFixed(2)} viewBox="0 0 26 26" className="pointer-events-none absolute -inset-[3px] size-[26px] -rotate-90 md:-inset-1 md:size-9" fill="none" strokeWidth={2}>
+    <svg aria-hidden data-testid="xp-ring" data-progress={fraction.toFixed(2)} viewBox="0 0 26 26" className="pointer-events-none absolute -inset-[3px] size-[26px] -rotate-90 md:-inset-1 md:size-9" fill="none" strokeWidth={2}>
       <circle cx={13} cy={13} r={RING_R} vectorEffect="non-scaling-stroke" className="stroke-muted" />
       <circle
         cx={13}

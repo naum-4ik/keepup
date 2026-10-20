@@ -99,7 +99,10 @@ export default async function KidPage({
 
         {/* The name wraps, never "Mar…": it is who this page is about. */}
         <header className="flex items-center gap-item">
-          <Avatar name={child.name} emoji={child.avatar_emoji} color={child.avatar_color} size="lg" />
+          {/* The h1 beside it names her, so the avatar is decoration here. */}
+          <span aria-hidden className="flex shrink-0">
+            <Avatar name={child.name} emoji={child.avatar_emoji} color={child.avatar_color} size="lg" />
+          </span>
           <div className="flex min-w-0 flex-1 flex-col">
             <h1 className="text-xl font-bold wrap-break-word">{child.name}</h1>
             <p className="truncate text-sm text-muted-foreground">{child.group_name}</p>
@@ -185,7 +188,7 @@ export default async function KidPage({
           </>
         ) : (
           <EmptyState
-            icon={<ListPlus className="size-6" />}
+            icon={<ListPlus aria-hidden className="size-6" />}
             action={<AddKidHabit childId={id} childName={child.name} existingTitles={unarchived.map((h) => h.title)} templateTitles={templateTitles} gender={child.gender} />}
           >
             {tk.rich("noHabits", { name: child.name, bdi })}

@@ -30,7 +30,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col gap-5 overflow-y-auto rounded-3xl bg-background p-5 shadow-soft",
+          "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col gap-5 overflow-y-auto scroll-pb-24 rounded-3xl bg-background p-5 shadow-soft",
           "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-200",
           className,
         )}
@@ -51,7 +51,7 @@ function DialogContent({
       >
         {children}
         <DialogPrimitive.Close className="absolute top-3 end-3 flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted">
-          <XIcon className="size-5" />
+          <XIcon aria-hidden className="size-5" />
           <span className="sr-only">{t("close")}</span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>

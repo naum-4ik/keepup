@@ -1136,6 +1136,163 @@
       }
     },
     {
+      "id": 44,
+      "type": "bargauge",
+      "title": "Landing funnel (events per step, in the range)",
+      "description": "From the landing to an account: signed-out landing views (server-side, prefetches and bots skipped), demo starts, sign-ups and finished onboardings. Event counts, not distinct people, and not a strict cohort: sign-ups also come from invite links and /login without a landing view, and a visitor can view the landing more than once. Landing views recorded from 19 October 2026.",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 60
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "sum(count_over_time({service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=\"keepup.landing_viewed\" [$__range]))",
+          "legendFormat": "1 \u00b7 landing viewed",
+          "range": true,
+          "queryType": "range"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "sum(count_over_time({service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=\"keepup.demo_started\" [$__range]))",
+          "legendFormat": "2 \u00b7 started the demo",
+          "range": true,
+          "queryType": "range"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "sum(count_over_time({service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=\"keepup.signed_up\" [$__range]))",
+          "legendFormat": "3 \u00b7 signed up",
+          "range": true,
+          "queryType": "range"
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "sum(count_over_time({service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=\"keepup.onboarding_completed\" [$__range]))",
+          "legendFormat": "4 \u00b7 finished onboarding",
+          "range": true,
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "namePlacement": "left",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "noValue": "0",
+          "color": {
+            "mode": "continuous-BlPu"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 45,
+      "type": "stat",
+      "title": "Landing conversion",
+      "description": "Demo starts and sign-ups per signed-out landing view, in the range. A rough rate: sign-ups that never saw the landing (invites, /login) count too. Empty until there is a landing view.",
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 60
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "sum(count_over_time({service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=\"keepup.demo_started\" [$__range])) / sum(count_over_time({service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=\"keepup.landing_viewed\" [$__range]))",
+          "legendFormat": "landing \u2192 demo",
+          "range": true,
+          "queryType": "range"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "expr": "sum(count_over_time({service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=\"keepup.signed_up\" [$__range])) / sum(count_over_time({service_name=\"keepup\", deployment_environment_name=~\"$env\"} | event_name=\"keepup.landing_viewed\" [$__range]))",
+          "legendFormat": "landing \u2192 sign-up",
+          "range": true,
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "orientation": "horizontal"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 1,
+          "noValue": "\u2013",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
       "id": 36,
       "type": "piechart",
       "title": "Check-ins: own habits vs for a child",
@@ -1148,7 +1305,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 60
+        "y": 68
       },
       "targets": [
         {
@@ -1223,7 +1380,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 60
+        "y": 68
       },
       "targets": [
         {
@@ -1276,7 +1433,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 60
+        "y": 68
       },
       "targets": [
         {
@@ -1326,7 +1483,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 68
+        "y": 76
       },
       "panels": []
     },
@@ -1343,7 +1500,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 69
+        "y": 77
       },
       "targets": [
         {
@@ -1396,7 +1553,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 69
+        "y": 77
       },
       "targets": [
         {
@@ -1449,7 +1606,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 69
+        "y": 77
       },
       "targets": [
         {
@@ -1502,7 +1659,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 77
+        "y": 85
       },
       "targets": [
         {
@@ -1561,7 +1718,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 84
+        "y": 92
       },
       "panels": []
     },
@@ -1578,7 +1735,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 85
+        "y": 93
       },
       "targets": [
         {
@@ -1632,7 +1789,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 85
+        "y": 93
       },
       "targets": [
         {
@@ -1682,7 +1839,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 95
+        "y": 103
       },
       "panels": []
     },
@@ -1699,7 +1856,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 96
+        "y": 104
       },
       "targets": [
         {
@@ -1753,7 +1910,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 96
+        "y": 104
       },
       "targets": [
         {
@@ -1806,7 +1963,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 96
+        "y": 104
       },
       "targets": [
         {
@@ -1859,7 +2016,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 104
+        "y": 112
       },
       "targets": [
         {
@@ -1913,7 +2070,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 104
+        "y": 112
       },
       "targets": [
         {
@@ -1963,7 +2120,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 112
+        "y": 120
       },
       "panels": []
     },
@@ -1980,7 +2137,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 113
+        "y": 121
       },
       "targets": [
         {
@@ -2034,7 +2191,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 113
+        "y": 121
       },
       "targets": [
         {

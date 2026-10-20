@@ -32,6 +32,15 @@ describe("kid schema", () => {
     expect(parseGoal({ title: "Zoo", emoji: "🦁", target: "201" }).ok).toBe(false);
     expect(parseGoal({ title: "", emoji: "🦁", target: "3" }).ok).toBe(false);
   });
+  it("names the field a goal is refused for, so the form shows the message beside it", () => {
+    const field = (r: ReturnType<typeof parseGoal>) => (r.ok ? null : r.field);
+    expect(field(parseGoal({ title: " ", emoji: "🦁", target: "3" }))).toBe("title");
+    expect(field(parseGoal({ title: "x".repeat(41), emoji: "🦁", target: "3" }))).toBe("title");
+    expect(field(parseGoal({ title: "Zoo", emoji: "ab", target: "3" }))).toBe("emoji");
+    expect(field(parseGoal({ title: "Zoo", emoji: "🦁", target: "" }))).toBe("target");
+    expect(field(parseGoal({ title: "Zoo", emoji: "🦁", target: "201" }))).toBe("target");
+    expect(field(parseGoal({ title: "Zoo", emoji: "🦁", target: "20" }))).toBeNull();
+  });
   it("names the export keepup-{nickname}-{date}.json", () => {
     expect(exportFileName("Mary", new Date(2026, 8, 30))).toBe("keepup-Mary-2026-09-30.json");
     expect(exportFileName("Anna Lou/1", new Date(2026, 0, 2))).toBe("keepup-Anna-Lou-1-2026-01-02.json");

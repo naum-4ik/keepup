@@ -25,16 +25,17 @@ Soft and warm: cream surfaces, warm-brown text, one terracotta accent, pastel ca
 | `background` | `#FFF8F0` cream | `#1F1915` | Page |
 | `card` | `#FFFFFF` | `#2A221C` | Cards, sheets |
 | `foreground` | `#3D2C22` warm brown | `#F5EDE4` | Main text (12.6:1 / 15:1) |
-| `muted-foreground` | `#7A6556` | `#B8A596` | Secondary text (5.2:1 / 7.3:1) |
-| `border` | `#EFE3D6` | `#3A2F27` | Dividers, inputs |
+| `muted-foreground` | `#776253` | `#B8A596` | Secondary text, placeholders (5.5:1 / 7.3:1 on the page; ≥ 4.6:1 on muted, accent, secondary) |
+| `border` | `#EFE3D6` | `#3A2F27` | Dividers, card edges: decoration, not 3:1 |
+| `input` | `#9C8D7E` | `#7A6C61` | Field borders, the open check-in circle (3.1:1 / 3.1:1: a transparent field's only edge) |
 
 ### Accent: Terracotta
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `primary` | `#B84F33` | `#F0A07F` | Primary buttons, active nav, links (4.7:1 on cream) |
-| `primary-foreground` | `#FFFFFF` | `#2A221C` | Text on primary (5.0:1 / 7.5:1) |
-| `flame` | `#E8804F` | `#F0A07F` | Streak 🔥 icon and count only (not body text) |
+| `primary` / `ring` | `#AD4529` | `#F0A07F` | Primary buttons, active nav, links, focus outline (5.5:1 on cream; ≥ 4.6:1 on accent, muted, secondary) |
+| `primary-foreground` | `#FFFFFF` | `#2A221C` | Text on primary (5.7:1 / 7.5:1) |
+| `flame` | `#B75420` | `#F0A07F` | Streak 🔥 icon and count only, not body text (the count is 14px bold, so 4.6:1 on cream) |
 
 ### Status
 
@@ -50,7 +51,7 @@ Soft tones; always paired with an icon. Tokens live in `app/globals.css` (Tailwi
 | `frozen` | `#3B6E99` soft blue | `#8FB8DC` | Paused text, snowflake |
 | `frozen-soft` | `#E3F1FA` | `#353A3E` | Paused surfaces |
 | `flame-soft` | `#FDE6D8` | `#543727` | Peach avatar |
-| `destructive` | `#C0392B` | `#E06C5E` | Missed / destructive, with x |
+| `destructive` | `#AE261A` | `#F37D6E` | Missed / destructive, with x (≥ 4.6:1 on the page, card and its own `/10`–`/20` tints) |
 
 ### Categories
 
@@ -61,7 +62,7 @@ Pastel chip background with a deeper icon color. Category tabs and pickers show 
 | Health | `cat-health` | `#E3F1FA` / `#2D353B` | `#3B82B8` / `#7FB0DA` | heart-pulse |
 | Fitness | `cat-fitness` | `#E5F2E6` / `#313729` | `#4F8A5B` / `#7FBF8C` | footprints |
 | Mind | `cat-mind` | `#EEE8F8` / `#3A2F3A` | `#7B61B0` / `#A992D6` | sun |
-| Learning | `cat-learning` | `#FBF3D9` / `#45371C` | `#B08A1E` / `#D9B54A` | book-open |
+| Learning | `cat-learning` | `#FBF3D9` / `#45371C` | `#A57F06` / `#D9B54A` | book-open |
 | People | `cat-people` | `#FBE6E8` / `#482B29` | `#C2505F` / `#E0848F` | users |
 | Home | `cat-home` | `#E0F3EF` / `#2D3730` | `#3A8C7E` / `#6FC0B0` | house |
 | Work & money | `cat-work-money` | `#F1EADF` / `#3D3124` | `#8A6B45` / `#C4A07A` | briefcase-business |
@@ -70,6 +71,16 @@ Pastel chip background with a deeper icon color. Category tabs and pickers show 
 Use `bg-cat-<name>-soft` for the chip and `text-cat-<name>` for the icon. Dark chips are 20% of the category colour mixed into the warm card (`#2A221C`), so they stay warm, never cold navy. Undone emoji chips fade with `grayscale` and opacity (60% in dark, 40% in light), never a darkening filter.
 
 Icons come from `lucide-react` (rounded line style). **Kid habits** use picture emoji a child recognizes (🪥 brush teeth, 🧸 tidy toys, 📖 read, 🛁 bath, 🥦 eat veggies, 😴 bedtime), chosen from a curated kid set, shown large in a pastel circle. **Habit emoji:** every habit has one emoji (templates bring theirs; "Create your own" picks one, or gets the category default: 🍎 health, 👟 fitness, 🌿 mind, 📚 learning, 💛 people, 🏠 home, 💼 work & money, 🚫 break a habit). It sits inside the category-coloured chip wherever the habit appears (Today, the habit page, Progress), so the colour tells the category and the emoji tells the habit. Otherwise emoji only in copy (🔥 in the streak count) and in avatars, never as UI icons.
+
+### Contrast
+
+WCAG 2.2 AA in light and dark: text 4.5:1 (3:1 only from 24px, or 18.66px bold), UI parts (field borders, the check-in circle, icons that carry meaning, focus outlines) 3:1 against what is next to them. Change a token, never one component: `lib/contrast.test.ts` reads `app/globals.css` and checks every pair the app uses, tints like `bg-destructive/10` included, so a token that drops below fails CI. A new pairing goes into that test.
+
+- Text tints: no `text-*/50` for text people need to read; only disabled controls may fade (they are exempt, but stay legible).
+- Destructive button: `bg-destructive/10` (hover `/20` light, `/15` dark); a stronger tint drops the red text below 4.5:1.
+- Focus: the solid `ring` (5.5:1 / 7.5:1) is the indicator; the soft `ring/50` halo around fields and buttons is extra.
+- Graphics without 3:1 between their steps (the recap heatmap's light shades, history and week dots) always carry a text alternative: `role="img"` with a label, a legend, or the numbers beside them.
+- Brand art (app icon, install pictures, emails) keeps `#B84F33`; their text still passes on white.
 
 ## Typography
 
@@ -101,7 +112,7 @@ A title over its meta line is line-height, not a gap. A value off the scale (12,
 ### App shell
 
 - **Header:** sticky, 4 px + the 44 px logo/bell row + 8 px. In the demo, one more 32 px line (the demo note: "Demo, resets in 24 h. Sign in", dismissible until the browser closes). At 320×640 that leaves at least 480 px of page between the header and the bottom nav.
-- **Bottom nav:** fixed, `z-40` (above anything a page lifts; dialogs and toasts are `z-50`). Its real height is `--nav-height` (60 px on phones, 74 px from `md`; `app/globals.css`), plus the safe-area inset. Everything that clears the nav uses it: `<main>`'s bottom padding (+32 px), the status toast (+8 px), the Subtle celebration, pinned form buttons. Change it together with the nav.
+- **Bottom nav:** fixed, `z-40` (above anything a page lifts; dialogs and toasts are `z-50`). Its real height is `--nav-height` (60 px on phones, 74 px from `md`; `app/globals.css`), plus the safe-area inset. Everything that clears the nav uses it: `<main>`'s bottom padding (+32 px), the status toast (+8 px), the Subtle celebration, pinned form buttons, `<html>`'s `scroll-padding-bottom` (so keyboard focus never lands under the nav or a pinned bar). Change it together with the nav.
 - **Kid view:** no header, no nav, no demo note (a child holds the phone).
 
 ### Surfaces (cards)
@@ -139,6 +150,8 @@ Every action has four states and a next step:
 
 **Opening a page.** A tap answers at once. Every app route has a `loading.tsx` (prefetched with its link) that draws the page's shape in soft `bg-muted` blocks inside the shell, from `components/app-shell/page-skeleton.tsx`: same spacing and line boxes as the page, cards only where the page has cards, `motion-safe:animate-pulse`, `aria-busy` and one polite "Loading…" (no `role=status`: pages own theirs). A route that wasn't prefetched yet shows its tapped tab in the active colour with a small bar, and a tapped card a soft tint, until it commits (`useLinkStatus`). An index page whose section has child routes keeps its loading screen in a route group (`progress/(overview)/`), so a child route never shows the parent's skeleton first.
 
+**Forms.** The app's own messages, never the browser's bubbles: every form is `noValidate`, and `required` stays on the fields so assistive tech still hears it. The server checks every field and names the one it refused; the message (what's wrong and what to do, from the catalog; beside the field a plain "Enter a nickname." says both) sits right under that field, which gets `aria-invalid="true"` and `aria-describedby` pointing at it (`describedBy()` in `lib/field-error.ts` joins it with a help line). A control group where `aria-invalid` isn't allowed (emoji button, chips) uses `data-invalid`. After a refused submit, focus moves to the first invalid field (`useFocusFirstInvalid`, `lib/focus-first-invalid.ts`), which reads its message, so the field message has no `role=alert`. A message about no single field (offline, a server error) is a `live` error Notice above the submit. The submit says what it's doing ("Adding…") and is disabled meanwhile. A destructive confirm (type RESET) keeps its button disabled until the word matches.
+
 **Settings save on change.** Each setting says "Saving…", then "Saved ✓" beside it (a `role=status` line, `components/profile/setting-status.tsx`), or why it wasn't saved and what to do. A choice that couldn't be saved goes back to the saved one, with that message beside it: never silently. A typed field (the display name) has its own Save right beside it, never one Save at the bottom for several fields. A download (Export) says which file it saved.
 
 **Status toast** (`components/ui/toast.tsx`, logic in `lib/toast.ts`): one at a time above the bottom nav; its words (not its buttons) are in a polite live region; 5 s, 8 s with an action, paused while hovered or focused; an X to close.
@@ -158,31 +171,42 @@ Every action has four states and a next step:
 
 ## App icon
 
-A filled terracotta sprout on a peach square, drawn bold enough to read at 16 px. In-app sprouts (the Today empty state) use the same drawing via `components/sprout-icon.tsx`, never lucide's `Sprout`.
+A cream sprout on a terracotta tile, drawn bold enough to read at 16 px. In-app sprouts (the Today empty state) use the same drawing via `components/sprout-icon.tsx`, never lucide's `Sprout`.
+
+Why terracotta: until 2026-10-20 the tile was pale peach `#FDE3D3` with a small terracotta sprout. On the iPhone Home Screen, next to saturated native icons, it looked washed out (owner, 2026-10-20). The tile is now the saturated brand colour and the sprout 1.32 times larger.
 
 | Element | Color |
 |---|---|
-| Square | peach `#FDE3D3`, edge `#F6D2BE` |
-| Sprout, stem, ground | terracotta `#B84F33` |
+| Tile | vertical gradient, terracotta `#C85A3A` (top) to `#A3401F` (bottom) |
+| Tile, 16 px favicon | flat terracotta `#B84F33` |
+| Sprout, stem, ground | cream `#FFF3E8` |
+| Push badge | white sprout on transparent |
 
-Master artwork (`app/icon.svg`):
+Master artwork (`scripts/icon-art.mjs`; written out as `app/icon.svg`, rounded, by `scripts/gen-app-icons.mjs`):
 
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#FDE3D3" stroke="#F6D2BE" stroke-width="1.5"/>
-  <path d="M20 51 L44 51" fill="none" stroke="#B84F33" stroke-width="5" stroke-linecap="round"/>
-  <path d="M31 51 C33 44 31 38 33 29" fill="none" stroke="#B84F33" stroke-width="5" stroke-linecap="round"/>
-  <path d="M31 38 C22 38 16 32 14 23 C23 22 30 28 31 38 Z" fill="#B84F33"/>
-  <path d="M33 31 C33 21 39 14 50 13 C51 23 44 30 33 31 Z" fill="#B84F33"/>
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C85A3A"/><stop offset="1" stop-color="#A3401F"/></linearGradient></defs>
+  <rect width="64" height="64" fill="url(#g)"/>
+  <g transform="translate(32 32) scale(1.32) translate(-32 -33.25)">
+    <path d="M20 51 L44 51" fill="none" stroke="#FFF3E8" stroke-width="5" stroke-linecap="round"/>
+    <path d="M31 51 C33 44 31 38 33 29" fill="none" stroke="#FFF3E8" stroke-width="5" stroke-linecap="round"/>
+    <path d="M31 38 C22 38 16 32 14 23 C23 22 30 28 31 38 Z" fill="#FFF3E8"/>
+    <path d="M33 31 C33 21 39 14 50 13 C51 23 44 30 33 31 Z" fill="#FFF3E8"/>
+  </g>
 </svg>
 ```
 
-- **Every size comes from the master.** `app/favicon.ico` (16, 32, 48), `app/apple-icon.png` (180), and `public/icons/` are rendered from it by a script, never drawn by hand (`scripts/gen-app-icons.mjs` for the PNGs below).
-- **Installed-app icons ("any": Chrome/Edge desktop, macOS Dock, Windows):** `icon-192/512/1024.png` put the peach tile on the macOS icon grid: a transparent canvas, the tile 824 of 1024 px with a 100 px margin, corner radius 185 px, a soft shadow, and no drawn edge. An edge-to-edge tile with its own border looked like a box in a box next to native icons.
-- **In-app pictures** (landing, sign-in, invite, notifications) use `logo-192.png`, the full-bleed tile; CSS rounds the corners.
-- **The iOS icon is full-bleed; the OS rounds it.** `apple-icon.png` has no rounded corners and no edge.
-- **Maskable:** full-bleed peach, with the sprout at about 70% so it stays inside the safe zone.
-- **Launch screens:** Android draws its own from the manifest (`background_color` cream, the "any" icon). The installed iPhone app gets `public/splash/iphone-*.png`, cream with the tile at 30% of the width, one per screen size in `lib/ios-splash.json` (`scripts/gen-ios-splash.mjs`; a new iPhone size is a new row there).
+- **Every size comes from the master.** `node scripts/gen-app-icons.mjs` writes `app/icon.svg`, `app/favicon.ico` (16, 32, 48), `app/apple-icon.png` (180) and everything in `public/icons/`; `node scripts/gen-ios-splash.mjs` the launch screens. Never draw one by hand.
+- **The sprout is centred on its bounding box** (x 14–50, y 13–53.5, middle at y 33.25), so the top and bottom margins are equal: 8% of the tile at scale 1.32.
+- **Browser tab:** `icon.svg` and `favicon.ico` keep rounded corners (rx 14 of 64), since a tab shows them unmasked. At 16 px the tile is flat `#B84F33`: the gradient is barely visible there, and a smaller sprout (scale 1.2, tried) read worse.
+- **Installed-app icons ("any": Chrome/Edge desktop, macOS Dock, Windows):** `icon-192/512/1024.png` put the tile on the macOS icon grid: a transparent canvas, the tile 824 of 1024 px with a 100 px margin, corner radius 185 px, a soft shadow, and no drawn edge. An edge-to-edge tile with its own border looked like a box in a box next to native icons.
+- **In-app pictures** (landing, sign-in, invite, the notification icon) use `logo-192.png`, the full-bleed tile; CSS rounds the corners.
+- **Push badge:** `badge-96.png`, the sprout alone in white. Android draws the badge from the alpha channel only, so a full tile showed as a white square.
+- **The iOS icon is full-bleed and opaque; the OS rounds it.** `apple-icon.png` has no rounded corners and no edge (iOS fills transparency with black).
+- **Maskable:** full-bleed tile, the sprout at scale 0.88 so its farthest point stays inside the safe zone (the middle 80% circle).
+- **Launch screens:** Android draws its own from the manifest (`background_color` cream `#FFF8F0`, the "any" icon). The installed iPhone app gets `public/splash/iphone-*.png`, cream with the tile at 30% of the width, one per screen size in `lib/ios-splash.json` (a new iPhone size is a new row there).
+- **Install illustrations** (`docs/install/*.svg`) draw the same tile in their `#k` symbol.
 
 ## Voice
 
@@ -197,7 +221,7 @@ Short, warm, direct. Second person. No exclamation-mark spam.
 ## Avoid
 
 - Cartoon or RPG styling (mascots, pixel art, avatars with gear).
-- Gradients, glassmorphism, neon, cold grays and pure black.
+- Gradients (the app icon's tile is the one exception), glassmorphism, neon, cold grays and pure black.
 - More than one accent color on a screen, apart from category chips.
 - Red for anything but errors and destructive actions.
 - Guilt copy, countdown pressure, or naming who broke a group streak.

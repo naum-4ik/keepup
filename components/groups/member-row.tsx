@@ -72,7 +72,10 @@ export function MemberRow({
   return (
     <li className="flex flex-col gap-inner">
       <div className="flex min-h-11 items-center gap-item">
-        <Avatar name={member.name} emoji={member.avatar_emoji} color={member.avatar_color} size="md" />
+        {/* Beside "You" the avatar says whose row it is; beside the name it is decoration. */}
+        <span aria-hidden={!isSelf || undefined} className="flex shrink-0">
+          <Avatar name={member.name} emoji={member.avatar_emoji} color={member.avatar_color} size="md" />
+        </span>
         <span className="min-w-0 flex-1 truncate font-semibold">{isSelf ? t("you") : member.name}</span>
         {isAdmin && (
           <span className="inline-flex h-6 items-center rounded-full bg-accent px-inner text-xs font-semibold text-accent-foreground">

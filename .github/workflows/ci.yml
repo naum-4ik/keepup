@@ -2,7 +2,8 @@ name: CI
 
 # What runs when (owner, 2026-10-07: PR checks should finish in about a minute; decision 0024):
 # - every PR: lint, types, unit tests, Edge Function tests (~50 s, required), and one sanity e2e
-#   test (~3 min, not required, so it never holds up a merge);
+#   test (~3 min, not required, so it never holds up a merge), which then scans the build it made
+#   for secrets in the client bundle (a few seconds; e2e.yml runs the same scan after each merge);
 # - a push to develop or main (a merge): the database tests too, which gate the staging deploy;
 #   the full e2e suite runs after each merge in e2e.yml;
 # - a PR labelled `full-ci`, or a manual run: the database tests (~2 min). The full e2e suite is not
@@ -26,10 +27,11 @@ permissions:
   contents: read
 
 jobs:
-  # Docs-only changes (Markdown and docs/, including the README screenshots) skip the build and test
-  # jobs. Skipped jobs count as passed for the required checks, and the staging deploy still sees a
-  # green run. Except docs/privacy-policy.md (the /privacy page is built from it and a unit test
-  # guards it: no placeholders left) and docs/install/ (the /install page imports its pictures):
+  # Docs-only changes (Markdown and docs/) skip the build and test jobs. Skipped jobs count as passed
+  # for the required checks, and the staging deploy still sees a green run. Except
+  # docs/privacy-policy.md (the /privacy page is built from it and a unit test guards it: no
+  # placeholders left), docs/install/ (the /install page imports its pictures), and README.md and
+  # docs/screenshots/ (lib/readme-links.test.ts checks every README link and picture exists):
   # an edit there runs everything.
   changes:
     runs-on: ubuntu-latest
@@ -47,7 +49,7 @@ jobs:
           if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then echo "code=true" >> "$GITHUB_OUTPUT"; exit 0; fi
           files=$(git diff --name-only "$BASE" HEAD)
           echo "$files"
-          if [ -n "$files" ] && ! echo "$files" | grep -qxF docs/privacy-policy.md && ! echo "$files" | grep -q '^docs/install/' && ! echo "$files" | grep -vqE '(\.md$|^docs/)'; then echo "code=false" >> "$GITHUB_OUTPUT"; else echo "code=true" >> "$GITHUB_OUTPUT"; fi
+          if [ -n "$files" ] && ! echo "$files" | grep -qxF docs/privacy-policy.md && ! echo "$files" | grep -q '^docs/install/' && ! echo "$files" | grep -qxF README.md && ! echo "$files" | grep -q '^docs/screenshots/' && ! echo "$files" | grep -vqE '(\.md$|^docs/)'; then echo "code=false" >> "$GITHUB_OUTPUT"; else echo "code=true" >> "$GITHUB_OUTPUT"; fi
 
   checks:
     needs: changes
@@ -117,8 +119,22 @@ jobs:
       - name: Sanity e2e
         run: npx playwright test e2e/sanity.spec.ts
         env:
+          # Canaries for the client-bundle secrets check: fake server-only values the build sees, so
+          # a leak of any of them fails the next step. Only on these steps (not `supabase start`); the
+          # app never reads them, only the send-push Edge Function uses these names.
+          PUSH_WEBHOOK_SECRET: ci-fake-push-webhook-secret-not-real
+          SUPABASE_SERVICE_ROLE_KEY: ci-fake-supabase-service-role-key-not-real
+          VAPID_PRIVATE_KEY: ci-fake-vapid-private-key-not-real
           CI: "true"
           KEEPUP_LOCALES: en,ru,he
+      # Reuses the production build Playwright's webServer just made (a few seconds): the client
+      # output must hold only public values (scripts/check-client-secrets.mjs).
+      - name: No secrets in the client bundle
+        run: node scripts/check-client-secrets.mjs
+        env:
+          PUSH_WEBHOOK_SECRET: ci-fake-push-webhook-secret-not-real
+          SUPABASE_SERVICE_ROLE_KEY: ci-fake-supabase-service-role-key-not-real
+          VAPID_PRIVATE_KEY: ci-fake-vapid-private-key-not-real
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { PenLine, Plus } from "lucide-react";
 import { unstable_rethrow } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Notice } from "@/components/ui/notice";
 import { useToast } from "@/components/ui/toast";
+import { useFocusFirstInvalid } from "@/lib/focus-first-invalid";
 import { HABIT_TITLE_MAX, type HabitPeriod } from "@/lib/habit-schema";
 import { useT } from "@/lib/i18n/client";
 import type { Gender } from "@/lib/garden";
@@ -187,6 +188,11 @@ function CustomHabitForm({
   // Controlled, so the stepper knows the period's limit; keepFormValues means no reset wipes them.
   const [count, setCount] = useState("1");
   const [period, setPeriod] = useState<HabitPeriod>("day");
+  // A message about one field sits beside it; any other (offline, a server error) above the buttons.
+  const field = state.status === "error" ? state.field : undefined;
+  const fieldError = (f: typeof field) => (state.status === "error" && field === f ? state.message : null);
+  const formRef = useRef<HTMLFormElement>(null);
+  useFocusFirstInvalid(formRef, state);
   useEffect(() => {
     if (state.status === "saved") onAdded(title.trim());
     // Only a new answer counts; the title is read as it was sent.
@@ -199,7 +205,8 @@ function CustomHabitForm({
         <DialogTitle>{t.rich("ownTitle", { name: childName, bdi })}</DialogTitle>
         <DialogDescription>{t.rich("ownDescription", { name: childName, gender: gender ?? "other", bdi })}</DialogDescription>
       </div>
-      <form onSubmit={keepFormValues(formAction)} className="flex flex-col gap-item">
+      {/* noValidate: the app's own messages beside each field, never the browser's bubbles. */}
+      <form ref={formRef} onSubmit={keepFormValues(formAction)} noValidate className="flex flex-col gap-item">
         <div className="flex flex-col gap-inner">
           <Label htmlFor="kid-habit-title" className="font-semibold">{tr("habits.form.titleLabel")}</Label>
           <Input
@@ -213,13 +220,22 @@ function CustomHabitForm({
             autoComplete="off"
             placeholder={t("titlePlaceholder")}
             className="h-11 rounded-xl px-3 text-base"
+            aria-invalid={Boolean(fieldError("title"))}
+            aria-describedby={fieldError("title") ? "kid-habit-title-error" : undefined}
           />
+          {fieldError("title") && <p id="kid-habit-title-error" className="text-sm text-destructive">{fieldError("title")}</p>}
         </div>
         <input type="hidden" name="emoji" value={emoji} />
         <div className="flex flex-col gap-inner">
         <p id="kid-habit-emoji" className="text-sm font-semibold">{t("picture")}</p>
         {/* As many 44 px tiles as fit (4 in the dialog at 320; 6 a row made them 38 px). */}
-        <div role="group" aria-labelledby="kid-habit-emoji" className="grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] gap-inner">
+        <div
+          role="group"
+          aria-labelledby="kid-habit-emoji"
+          aria-describedby={fieldError("emoji") ? "kid-habit-emoji-error" : undefined}
+          data-invalid={fieldError("emoji") ? "" : undefined}
+          className="grid grid-cols-[repeat(auto-fill,minmax(2.75rem,1fr))] gap-inner"
+        >
           {KID_EMOJI.map((e) => (
             <button
               key={e}
@@ -232,11 +248,19 @@ function CustomHabitForm({
             </button>
           ))}
         </div>
+        {fieldError("emoji") && <p id="kid-habit-emoji-error" className="text-sm text-destructive">{fieldError("emoji")}</p>}
         </div>
         <div className="grid grid-cols-2 gap-inner">
           <div className="flex flex-col gap-inner">
             <Label htmlFor="kid-habit-target" className="font-semibold">{tr("habits.form.times")}</Label>
-            <CountStepper id="kid-habit-target" value={count} onChange={setCount} period={period} />
+            <CountStepper
+              id="kid-habit-target"
+              value={count}
+              onChange={setCount}
+              period={period}
+              invalid={Boolean(fieldError("targetCount"))}
+              describedBy={fieldError("targetCount") ? "kid-habit-count-error" : undefined}
+            />
           </div>
           <div className="flex flex-col gap-inner">
             <Label htmlFor="kid-habit-period" className="font-semibold">{tr("habits.form.per")}</Label>
@@ -246,6 +270,8 @@ function CustomHabitForm({
               value={period}
               onChange={(e) => setPeriod(e.target.value as HabitPeriod)}
               className={selectClass}
+              aria-invalid={Boolean(fieldError("period"))}
+              aria-describedby={fieldError("period") ? "kid-habit-count-error" : undefined}
             >
               {(["day", "week", "month"] as const).map((p) => (
                 <option key={p} value={p}>{t("period", { period: p })}</option>
@@ -253,7 +279,11 @@ function CustomHabitForm({
             </select>
           </div>
         </div>
-        {state.status === "error" && (
+        {/* How often is one line under both: the count and its unit are checked together. */}
+        {(fieldError("targetCount") || fieldError("period")) && (
+          <p id="kid-habit-count-error" className="text-sm text-destructive">{fieldError("targetCount") ?? fieldError("period")}</p>
+        )}
+        {state.status === "error" && !field && (
           <Notice tone="error" live>
             {state.message}
           </Notice>

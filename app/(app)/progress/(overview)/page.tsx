@@ -88,7 +88,7 @@ export default async function ProgressPage({ searchParams }: { searchParams: Pro
 
       {habits.length === 0 ? (
         <EmptyState
-          icon={<ChartColumn className="size-6" />}
+          icon={<ChartColumn aria-hidden className="size-6" />}
           action={
             showArchived ? (
               // Finished and Archived fill up from the Active tab: the way back there.

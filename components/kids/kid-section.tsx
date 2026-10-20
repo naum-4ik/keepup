@@ -17,9 +17,18 @@ export async function KidSection({ child, habits, stars }: { child: MyChild; hab
   return (
     <section aria-label={child.name} className="flex flex-col gap-item">
       <Link href={`/kids/${child.child_id}`} className="relative -mx-inner flex min-h-11 items-center gap-inner rounded-xl px-inner hover:bg-muted/60">
-        <Avatar name={child.name} emoji={child.avatar_emoji} color={child.avatar_color} size="md" />
+        {/* The heading beside it names her, so the avatar is decoration here. */}
+        <span aria-hidden className="flex shrink-0">
+          <Avatar name={child.name} emoji={child.avatar_emoji} color={child.avatar_color} size="md" />
+        </span>
         <h2 className="min-w-0 flex-1 truncate text-base font-bold">{child.name}</h2>
-        {stars !== null && <span className="text-sm font-bold tabular-nums">⭐ {stars}</span>}
+        {/* "⭐ 4" reads as "star 4": screen readers get the words instead. */}
+        {stars !== null && (
+          <span className="text-sm font-bold tabular-nums">
+            <span aria-hidden>⭐ {stars}</span>
+            <span className="sr-only">{t("kidView.starsThisWeek", { count: stars })}</span>
+          </span>
+        )}
         <ChevronRight aria-hidden className="size-5 text-muted-foreground rtl:-scale-x-100" />
         <LinkPending className="rounded-xl" />
       </Link>

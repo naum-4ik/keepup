@@ -1,6 +1,6 @@
 {
   "name": "keepup",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -13,7 +13,7 @@
     "db:types": "supabase gen types typescript --local > lib/database.types.ts",
     "e2e": "playwright test",
     "test:functions": "deno test --no-lock --node-modules-dir=none --allow-env=NODE_ENV,KEEPUP_LOCALES supabase/functions && deno check --no-lock --node-modules-dir=none supabase/functions/send-push/index.ts",
-    "readme:screenshots": "playwright test -c playwright.readme.config.ts && sips -Z 1300 docs/screenshots/*.png >/dev/null && node scripts/readme/check-sizes.mjs"
+    "readme:screenshots": "playwright test -c playwright.readme.config.ts && sips -Z 1300 docs/screenshots/*.png >/dev/null && node scripts/compress-images.mjs docs/screenshots && node scripts/readme/check-sizes.mjs"
   },
   "dependencies": {
     "@grafana/faro-web-sdk": "^2.12.1",
@@ -51,6 +51,7 @@
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "axe-core": "^4.13.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
     "fake-indexeddb": "^6.2.5",

@@ -24,15 +24,21 @@ export function parseGender(raw: string | null | undefined): KidGender | null {
   return raw === "boy" || raw === "girl" ? raw : null;
 }
 
+export type GoalField = "title" | "emoji" | "target";
+
 // A treat goal: 1–200 stars (the treat_goals check), a short title, one emoji (🎁 when none).
-export function parseGoal(values: { title: string; emoji: string; target: string }): Parsed<{ title: string; emoji: string; target: number }> {
+// A refusal names its field, so the form shows the message beside it.
+export function parseGoal(values: { title: string; emoji: string; target: string }):
+  | { ok: true; value: { title: string; emoji: string; target: number } }
+  | { ok: false; error: FieldError; field: GoalField } {
   const title = values.title.trim();
   const emoji = values.emoji.trim() || GOAL_DEFAULT_EMOJI;
   const target = Number(values.target);
-  if (title === "") return { ok: false, error: { key: "validation.treatName" } };
-  if ([...title].length > GOAL_TITLE_MAX) return { ok: false, error: { key: "validation.maxChars", values: { max: GOAL_TITLE_MAX } } };
-  if (!isOneEmoji(emoji)) return { ok: false, error: { key: "validation.emoji" } };
-  if (values.target === "" || !Number.isInteger(target) || target < 1 || target > 200) return { ok: false, error: { key: "validation.stars", values: { max: 200 } } };
+  if (title === "") return { ok: false, error: { key: "validation.treatName" }, field: "title" };
+  if ([...title].length > GOAL_TITLE_MAX) return { ok: false, error: { key: "validation.maxChars", values: { max: GOAL_TITLE_MAX } }, field: "title" };
+  if (!isOneEmoji(emoji)) return { ok: false, error: { key: "validation.emoji" }, field: "emoji" };
+  if (values.target === "" || !Number.isInteger(target) || target < 1 || target > 200)
+    return { ok: false, error: { key: "validation.stars", values: { max: 200 } }, field: "target" };
   return { ok: true, value: { title, emoji, target } };
 }
 

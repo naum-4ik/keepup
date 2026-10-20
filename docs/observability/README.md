@@ -71,10 +71,11 @@ The uptime check is also the heartbeat: it keeps production traffic above zero, 
 [`dashboards/keepup-product.json`](dashboards/keepup-product.json): production by default (staging is mostly tests).
 - **What happened** (top; default the last 2 days, so a Monday look covers the weekend): new arrivals (sign-ups and demo starts) and sign-ins with IP, city and country (`lib/geo.ts`, from Vercel's `x-vercel-ip-*` and `x-real-ip` headers), every action as a timeline, browser visits also before sign-in, arrivals by country. Demo visitors show as `demo · ` and the start of their user id.
 - **People:** active people, visits, sign-ins and sign-ups (by method), demo visits, check-ins; activity per person.
-- **Growth and engagement:** daily active people, the new-user funnel, check-ins per active person, undo rate, cheers and nudges per person, reminders on, own vs a child's check-ins, private vs group habits, browser errors by screen.
+- **Growth and engagement:** daily active people, the new-user funnel, the landing funnel (signed-out landing views → demo starts → sign-ups → finished onboardings, event counts) with landing → demo and landing → sign-up rates, check-ins per active person, undo rate, cheers and nudges per person, reminders on, own vs a child's check-ins, private vs group habits, browser errors by screen.
 - **Devices** and **Screens** (Faro): browsers, systems, phone or computer, who uses what, most viewed screens.
 - **Habits**, **Features and friction**, **Live feed**: top habits, categories, the habit lifecycle, feature use, refusals by rule, the latest actions as readable lines.
 Infra also has **Limits**: database size against 500 MB, connections against 60 (the free plan's Nano compute), the data disk and memory, plus links to the monthly quotas the metrics feed doesn't carry.
+The two screenshots above are taken by hand: after replacing one, run `node scripts/compress-images.mjs docs/observability/screenshots`.
 
 ## Queries
 TraceQL (Tempo):

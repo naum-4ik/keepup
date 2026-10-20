@@ -10,11 +10,13 @@ type Props = {
   invalid: boolean;
   describedBy?: string;
   autoFocus?: boolean;
+  // With the form's noValidate: no browser bubble, but assistive tech still hears "required".
+  required?: boolean;
 };
 
 // A password field with a show/hide eye. Controlled, so the value survives the form reset React does
 // after a server action: an error ("Use at least 8 characters") doesn't make you type it again.
-export function PasswordInput({ autoComplete, invalid, describedBy, autoFocus }: Props) {
+export function PasswordInput({ autoComplete, invalid, describedBy, autoFocus, required }: Props) {
   const { t } = useT();
   const [show, setShow] = useState(false);
   const [value, setValue] = useState("");
@@ -29,6 +31,7 @@ export function PasswordInput({ autoComplete, invalid, describedBy, autoFocus }:
         value={value}
         onChange={(e) => setValue(e.target.value)}
         className="h-11 rounded-xl pe-11 ps-3"
+        required={required}
         aria-invalid={invalid}
         aria-describedby={describedBy}
       />
