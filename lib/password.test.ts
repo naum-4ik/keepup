@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BANNED_PATTERNS, BANNED_WORDS } from "./notification-copy";
 import { tEn } from "@/lib/i18n/test-t";
-import { PASSWORD_MIN, credentialsError, isFreshRecovery, newPasswordError, passwordAuthMessage } from "./password";
+import { PASSWORD_MIN, credentialsError, isFreshRecovery, newPasswordError, passwordAuthField, passwordAuthMessage } from "./password";
 
 const RESET_LINK_SENT = tEn("auth.resetLinkSent");
 const RESET_LINK_STALE = tEn("auth.resetLinkStale");
@@ -93,5 +93,22 @@ describe("isFreshRecovery", () => {
     expect(isFreshRecovery({ amr: [{ method: "otp", timestamp: at(0) }], is_anonymous: true }, now)).toBe(false);
     expect(isFreshRecovery({}, now)).toBe(false);
     expect(isFreshRecovery(null, now)).toBe(false);
+  });
+});
+
+describe("passwordAuthField", () => {
+  it("puts an answer about the address or the password beside that field", () => {
+    expect(passwordAuthField({ code: "user_already_exists" })).toBe("email");
+    expect(passwordAuthField({ code: "email_exists" })).toBe("email");
+    expect(passwordAuthField({ code: "email_address_invalid" })).toBe("email");
+    expect(passwordAuthField({ code: "weak_password" })).toBe("password");
+    expect(passwordAuthField({ code: "same_password" })).toBe("password");
+  });
+
+  it("leaves the pair and the form-wide answers unplaced", () => {
+    expect(passwordAuthField({ code: "invalid_credentials" })).toBeUndefined();
+    expect(passwordAuthField({ code: "over_request_rate_limit" })).toBeUndefined();
+    expect(passwordAuthField({ code: "something_new" })).toBeUndefined();
+    expect(passwordAuthField({})).toBeUndefined();
   });
 });
