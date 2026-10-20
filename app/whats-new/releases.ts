@@ -25,6 +25,26 @@ export function releaseLabel(r: Release, appVersion: string, locale: Locale, t: 
 
 export const RELEASES: Release[] = [
   {
+    version: "1.9.0",
+    notes: {
+      en: [
+        "Tabs and cards answer your tap at once: the next screen appears right away and fills in as it loads.",
+        "The installed app has a sharper icon on computers, and the iPhone app opens on a cream screen with the sprout instead of a white one.",
+        "A mistyped address now shows \"Page not found\" with a way home, instead of the sign-in screen.",
+      ],
+      ru: [
+        "Вкладки и карточки отвечают на нажатие сразу: следующий экран появляется мгновенно и заполняется по мере загрузки.",
+        "У установленного приложения на компьютере более чёткая иконка, а на iPhone приложение открывается с кремовым экраном и ростком вместо белого.",
+        "Если адрес набран с ошибкой, теперь откроется «Страница не найдена» со ссылкой на главную, а не экран входа.",
+      ],
+      he: [
+        "כרטיסיות וכרטיסים מגיבים להקשה מיד: המסך הבא מופיע מייד ומתמלא תוך כדי טעינה.",
+        "לאפליקציה המותקנת יש סמל חד יותר במחשב, ובאייפון היא נפתחת במסך קרם עם הנבט במקום מסך לבן.",
+        "כתובת שגויה מציגה עכשיו „הדף לא נמצא” עם קישור לדף הבית, במקום מסך הכניסה.",
+      ],
+    },
+  },
+  {
     version: "1.8.0",
     date: "2026-10-19",
     notes: {
