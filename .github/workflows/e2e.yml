@@ -43,12 +43,22 @@ jobs:
       - name: End-to-end tests
         run: npm run e2e
         env:
+          # Canaries for the client-bundle secrets check: fake server-only values the build sees, so
+          # a leak of any of them fails the next step. Only on these steps (not `supabase start`); the
+          # app never reads them, only the send-push Edge Function uses these names.
+          PUSH_WEBHOOK_SECRET: ci-fake-push-webhook-secret-not-real
+          SUPABASE_SERVICE_ROLE_KEY: ci-fake-supabase-service-role-key-not-real
+          VAPID_PRIVATE_KEY: ci-fake-vapid-private-key-not-real
           CI: "true"
           KEEPUP_LOCALES: en,ru,he
       # The build the suite just ran against hands the browser only public values (a few seconds;
       # PRs run the same scan in CI's sanity job).
       - name: No secrets in the client bundle
         run: node scripts/check-client-secrets.mjs
+        env:
+          PUSH_WEBHOOK_SECRET: ci-fake-push-webhook-secret-not-real
+          SUPABASE_SERVICE_ROLE_KEY: ci-fake-supabase-service-role-key-not-real
+          VAPID_PRIVATE_KEY: ci-fake-vapid-private-key-not-real
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
