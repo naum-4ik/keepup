@@ -28,7 +28,7 @@ self.addEventListener("install", (event) => {
       .open(SHELL)
       .then((c) =>
         c
-          .addAll([OFFLINE_URL, "/icons/logo-192.png"])
+          .addAll([OFFLINE_URL, "/icons/logo-192.png", "/icons/badge-96.png"])
           .then(() => c.match(OFFLINE_URL))
           .then((page) => page && page.text().then(saveAssetsOf))
           .then((assets) => assets && c.put(MANIFEST + OFFLINE_URL, manifestFor(assets))),
@@ -300,7 +300,7 @@ self.addEventListener("push", (event) => {
         silent: data.silent !== false,
         renotify: typeof data.tag === "string" && Boolean(data.tag) && data.silent === false,
         icon: "/icons/logo-192.png",
-        badge: "/icons/logo-192.png",
+        badge: "/icons/badge-96.png", // Android draws the badge from its alpha only: the sprout, not a square
         data: { url: typeof data.url === "string" && data.url ? data.url : "/inbox", checkInId: data.checkInId || null, version: VERSION },
         actions: Array.isArray(data.actions) ? data.actions : [],
       })
